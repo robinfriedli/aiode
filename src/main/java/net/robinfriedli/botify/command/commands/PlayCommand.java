@@ -14,7 +14,6 @@ import net.dv8tion.jda.core.entities.VoiceChannel;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.audio.AudioQueue;
-import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.audio.YouTubePlaylist;
 import net.robinfriedli.botify.audio.YouTubeService;
 import net.robinfriedli.botify.audio.YouTubeVideo;
@@ -32,8 +31,8 @@ public class PlayCommand extends AbstractCommand {
 
     public PlayCommand(CommandContext context, CommandManager commandManager, String commandString) {
         super(context, commandManager, commandString, false, false, false,
-            "Resume the paused playback, play the current track in the current queue or play specified track, " +
-                "video or playlist. Can play youtube and spotify tracks or lists and local playlists. Local playlists, " +
+            "Resume the paused playback, play the current track in the current queue or play the specified track, " +
+                "video or playlist. Can play youtube and spotify tracks or lists and also local playlists. Local playlists, " +
                 "like the queue, can contain both youtube videos and spotify tracks.\n" +
                 "Usage examples:\n$botify play\n$botify play numb\n$botify play $youtube youtube rewind 2018\n" +
                 "$botify play $youtube $list important videos\n$botify play $spotify $list $own goat");
@@ -111,7 +110,7 @@ public class PlayCommand extends AbstractCommand {
     private void playYouTubePlaylist(VoiceChannel channel, AudioManager audioManager, Guild guild, MessageChannel messageChannel) {
         YouTubeService youTubeService = getManager().getAudioManager().getYouTubeService();
         YouTubePlaylist youTubePlaylist = youTubeService.searchPlaylist(getCommandBody());
-        audioManager.getQueue(guild).set(audioManager.createPlayables(false, youTubePlaylist.getVideos()));
+        audioManager.getQueue(guild).set(audioManager.createPlayables(youTubePlaylist));
         audioManager.playTrack(guild, messageChannel, channel);
     }
 
@@ -127,7 +126,7 @@ public class PlayCommand extends AbstractCommand {
             throw new NoResultsFoundException("Playlist is empty");
         }
 
-        audioManager.getQueue(guild).set(createPlayables(audioManager, items));
+        audioManager.getQueue(guild).set(audioManager.createPlayables(!argumentSet("preview"), items));
         audioManager.playTrack(guild, messageChannel, channel);
     }
 
@@ -153,7 +152,7 @@ public class PlayCommand extends AbstractCommand {
                     throw new NoResultsFoundException("Playlist " + playlist.getName() + " has no tracks");
                 }
 
-                audioManager.getQueue(guild).set(createPlayables(audioManager, tracks));
+                audioManager.getQueue(guild).set(audioManager.createPlayables(!argumentSet("review"), tracks));
                 audioManager.playTrack(guild, communicationChannel, channel);
             } else if (playlists.isEmpty()) {
                 sendMessage(communicationChannel, "No results found");
@@ -169,19 +168,6 @@ public class PlayCommand extends AbstractCommand {
         } else {
             runWithCredentials(callable);
         }
-    }
-
-    private List<Playable> createPlayables(AudioManager audioManager, List<?> objects) {
-        if (!argumentSet("preview")) {
-            long toConvertCount = objects.stream().filter(o -> o instanceof Track).count();
-            if (toConvertCount > 10) {
-                int secondsPer50 = 20;
-                long secondsTotal = toConvertCount * secondsPer50 / 50;
-                sendMessage(getContext().getChannel(),
-                    "Have to find the YouTube video for " + toConvertCount + " Spotify tracks. This might take about " + secondsTotal + " seconds");
-            }
-        }
-        return audioManager.createPlayables(!argumentSet("preview"), objects);
     }
 
     @Override
@@ -201,7 +187,7 @@ public class PlayCommand extends AbstractCommand {
             PlaylistSimplified playlist = (PlaylistSimplified) chosenOption;
             SpotifyApi spotifyApi = getManager().getSpotifyApi();
             List<Track> tracks = runWithCredentials(() -> SearchEngine.getPlaylistTracks(spotifyApi, playlist));
-            audioManager.getQueue(guild).set(createPlayables(audioManager, tracks));
+            audioManager.getQueue(guild).set(audioManager.createPlayables(!argumentSet("preview"), tracks));
         }
 
         Member member = guild.getMember(getContext().getUser());

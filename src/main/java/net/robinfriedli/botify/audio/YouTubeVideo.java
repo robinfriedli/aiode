@@ -5,44 +5,29 @@ import javax.annotation.Nullable;
 import com.wrapper.spotify.model_objects.specification.Track;
 
 /**
- * Bean for YouTube videos
+ * Represents a YouTube video
  */
-public class YouTubeVideo {
+public interface YouTubeVideo {
 
-    private final String title;
-    private final String id;
-    private final long duration;
+    /**
+     * @return the title of the YouTube video
+     */
+    String getTitle();
+
+    /**
+     * @return the id of the YouTube video
+     */
+    String getId();
+
+    /**
+     * @return the duration of the YouTube video in milliseconds
+     */
+    long getDuration();
+
+    /**
+     * @return if this YouTube video is the result of a redirected Spotify track, return the corresponding track,
+     * else return null. For more about Spotify track redirection, see {@link YouTubeService#redirectSpotify(Track)}
+     */
     @Nullable
-    private final Track redirectedSpotifyTrack;
-
-    public YouTubeVideo(String title, String id, long duration) {
-        this.title = title;
-        this.id = id;
-        this.duration = duration;
-        redirectedSpotifyTrack = null;
-    }
-
-    public YouTubeVideo(String title, String id, long duration, @Nullable Track redirectedSpotifyTrack) {
-        this.title = title;
-        this.id = id;
-        this.duration = duration;
-        this.redirectedSpotifyTrack = redirectedSpotifyTrack;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public long getDuration() {
-        return duration;
-    }
-
-    @Nullable
-    public Track getRedirectedSpotifyTrack() {
-        return redirectedSpotifyTrack;
-    }
+    Track getRedirectedSpotifyTrack();
 }

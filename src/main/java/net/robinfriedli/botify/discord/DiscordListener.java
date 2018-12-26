@@ -129,7 +129,9 @@ public class DiscordListener extends ListenerAdapter {
         String path = PropertiesLoadingService.requireProperty("GUILD_PLAYLISTS_PATH", guild.getId());
         File xmlFile = new File(path);
         if (xmlFile.exists()) {
-            jxpBackend.createBoundContext(xmlFile, guild);
+            if (!jxpBackend.hasBoundContext(guild)) {
+                jxpBackend.createBoundContext(xmlFile, guild);
+            }
         } else {
             defaultPlaylistContext.copy(path, guild);
         }

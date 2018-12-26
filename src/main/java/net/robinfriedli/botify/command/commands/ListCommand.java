@@ -200,7 +200,6 @@ public class ListCommand extends AbstractCommand {
         YouTubePlaylist youTubePlaylist = youTubeService.searchPlaylist(getCommandBody());
         responseBuilder.append("Title: ").append(youTubePlaylist.getTitle()).append(System.lineSeparator());
         responseBuilder.append("Url: ").append(youTubePlaylist.getUrl()).append(System.lineSeparator());
-        responseBuilder.append("Duration: ").append(Util.normalizeMillis(youTubePlaylist.getDurationMs())).append(System.lineSeparator());
         responseBuilder.append("Videos: ").append(youTubePlaylist.getVideos().size()).append(System.lineSeparator());
         responseBuilder.append("Owner: ").append(youTubePlaylist.getChannelTitle());
 

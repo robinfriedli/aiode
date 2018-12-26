@@ -28,7 +28,7 @@ public class LoginCommand extends AbstractCommand {
         AuthorizationCodeUriRequest uriRequest = getManager().getSpotifyApi().authorizationCodeUri()
             .show_dialog(true)
             .state(user.getId())
-            .scope("playlist-read-private playlist-read-collaborative user-library-read")
+            .scope("playlist-read-private playlist-read-collaborative user-library-read playlist-modify-private playlist-modify-public")
             .build();
 
         LoginManager loginManager = getManager().getLoginManager();

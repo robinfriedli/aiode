@@ -8,16 +8,14 @@ public class YouTubePlaylist {
     private final String id;
     private final String url;
     private final String channelTitle;
-    private final List<YouTubeVideo> videos;
-    private final long durationMs;
+    private final List<HollowYouTubeVideo> videos;
 
-    public YouTubePlaylist(String title, String id, String channelTitle, List<YouTubeVideo> videos) {
+    public YouTubePlaylist(String title, String id, String channelTitle, List<HollowYouTubeVideo> videos) {
         this.title = title;
         this.id = id;
         this.url = String.format("https://www.youtube.com/playlist?list=%s", id);
         this.channelTitle = channelTitle;
         this.videos = videos;
-        durationMs = videos.stream().mapToLong(YouTubeVideo::getDuration).sum();
     }
 
     public String getTitle() {
@@ -36,11 +34,7 @@ public class YouTubePlaylist {
         return channelTitle;
     }
 
-    public List<YouTubeVideo> getVideos() {
+    public List<HollowYouTubeVideo> getVideos() {
         return videos;
-    }
-
-    public long getDurationMs() {
-        return durationMs;
     }
 }

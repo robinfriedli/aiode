@@ -12,6 +12,8 @@ public class AudioPlayback {
     private final AudioQueue audioQueue;
     private VoiceChannel voiceChannel;
     private MessageChannel communicationChannel;
+    private boolean repeatOne;
+    private boolean repeatAll;
 
     public AudioPlayback(AudioPlayer player, Guild guild) {
         this.guild = guild;
@@ -61,5 +63,21 @@ public class AudioPlayback {
 
     public void setCommunicationChannel(MessageChannel communicationChannel) {
         this.communicationChannel = communicationChannel;
+    }
+
+    public boolean isRepeatOne() {
+        return repeatOne;
+    }
+
+    public void setRepeatOne(boolean repeatOne) {
+        this.repeatOne = repeatOne;
+    }
+
+    public boolean isRepeatAll() {
+        return repeatAll;
+    }
+
+    public void setRepeatAll(boolean repeatAll) {
+        this.repeatAll = repeatAll;
     }
 }

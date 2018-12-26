@@ -24,10 +24,12 @@ import net.robinfriedli.botify.command.commands.PlayCommand;
 import net.robinfriedli.botify.command.commands.QueueCommand;
 import net.robinfriedli.botify.command.commands.RemoveCommand;
 import net.robinfriedli.botify.command.commands.RenameCommand;
+import net.robinfriedli.botify.command.commands.RepeatCommand;
 import net.robinfriedli.botify.command.commands.RewindCommand;
 import net.robinfriedli.botify.command.commands.SearchCommand;
 import net.robinfriedli.botify.command.commands.SkipCommand;
 import net.robinfriedli.botify.command.commands.StopCommand;
+import net.robinfriedli.botify.command.commands.UploadCommand;
 import net.robinfriedli.botify.discord.DiscordListener;
 import net.robinfriedli.botify.discord.GuildSpecificationManager;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
@@ -61,6 +63,8 @@ public class CommandManager {
         COMMANDS.put("create", CreateCommand.class);
         COMMANDS.put("delete", DeleteCommand.class);
         COMMANDS.put("help", HelpCommand.class);
+        COMMANDS.put("upload", UploadCommand.class);
+        COMMANDS.put("repeat", RepeatCommand.class);
     }
 
     private final CommandExecutor commandExecutor;

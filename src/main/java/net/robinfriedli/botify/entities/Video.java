@@ -8,6 +8,7 @@ import javax.annotation.Nullable;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.audio.YouTubeVideo;
+import net.robinfriedli.botify.audio.YouTubeVideoImpl;
 import net.robinfriedli.jxp.api.AbstractXmlElement;
 import net.robinfriedli.jxp.persist.Context;
 import org.w3c.dom.Element;
@@ -35,7 +36,7 @@ public class Video extends AbstractXmlElement {
     }
 
     public YouTubeVideo asYouTubeVideo() {
-        return new YouTubeVideo(
+        return new YouTubeVideoImpl(
             getAttribute("title").getValue(),
             getAttribute("id").getValue(),
             getAttribute("duration").getValue(Long.class)
