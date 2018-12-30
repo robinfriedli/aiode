@@ -47,7 +47,7 @@ public class AudioManager extends AudioEventAdapter {
                     playTrack(playback.getGuild(), playback.getCommunicationChannel(), playback.getVoiceChannel());
                 } else {
                     audioQueue.reset();
-                    if (playback.isRepeatAll()) {
+                    if (!playback.isRepeatAll()) {
                         leaveChannel(playback);
                     } else {
                         playTrack(playback.getGuild(), playback.getCommunicationChannel(), playback.getVoiceChannel());
