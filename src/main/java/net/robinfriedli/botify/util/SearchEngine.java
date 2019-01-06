@@ -39,7 +39,7 @@ import static net.robinfriedli.jxp.queries.Conditions.*;
 public class SearchEngine {
 
     private static final int MAX_LEVENSHTEIN_DISTANCE = 4;
-    private static final int MAX_REQUESTS = 30;
+    private static final int MAX_REQUESTS = 100;
 
     public static List<Track> searchTrack(SpotifyApi spotifyApi, String searchTerm) throws IOException, SpotifyWebApiException {
         Track[] tracks = spotifyApi.searchTracks(searchTerm).market(CountryCode.CH).build().execute().getItems();
@@ -106,7 +106,16 @@ public class SearchEngine {
             ),
             and(
                 instanceOf(Video.class),
-                editDistanceAttributeCondition("title", searchTerm)
+                or(
+                    and(
+                        editDistanceAttributeCondition("title", searchTerm),
+                        xmlElement -> !xmlElement.hasAttribute("spotifyTrackName")
+                    ),
+                    and(
+                        editDistanceAttributeCondition("spotifyTrackName", searchTerm),
+                        xmlElement -> xmlElement.hasAttribute("spotifyTrackName")
+                    )
+                )
             )
         )).execute(playlist.getSubElements()).collect();
 
@@ -114,7 +123,11 @@ public class SearchEngine {
             if (element instanceof Song) {
                 return element.getAttribute("name").getValue();
             } else {
-                return element.getAttribute("title").getValue();
+                if (element.hasAttribute("spotifyTrackName")) {
+                    return element.getAttribute("spotifyTrackName").getValue();
+                } else {
+                    return element.getAttribute("title").getValue();
+                }
             }
         });
     }

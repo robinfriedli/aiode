@@ -9,9 +9,17 @@
   </xs:complexType>
 
   <xs:complexType name="guildSpecification">
+    <xs:sequence>
+      <xs:element name="accessConfiguration" type="accessConfiguration"/>
+    </xs:sequence>
     <xs:attribute name="guildName" type="xs:string"/>
     <xs:attribute name="guildId" type="xs:string"/>
     <xs:attribute name="botifyName" type="xs:string"/>
+  </xs:complexType>
+
+  <xs:complexType name="accessConfiguration">
+    <xs:attribute name="commandIdentifier" type="xs:string"/>
+    <xs:attribute name="roleIds" type="xs:string"/>
   </xs:complexType>
 
 </xs:schema>

@@ -12,9 +12,9 @@ import net.robinfriedli.botify.exceptions.InvalidCommandException;
 
 public class SkipCommand extends AbstractCommand {
 
-    public SkipCommand(CommandContext context, CommandManager commandManager, String commandString) {
-        super(context, commandManager, commandString, false, false, false,
-            "Skip to the next track in the queue.");
+    public SkipCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier) {
+        super(context, commandManager, commandString, false, false, false, identifier,
+            "Skip to the next track in the queue.", Category.PLAYBACK);
     }
 
     @Override
@@ -34,7 +34,7 @@ public class SkipCommand extends AbstractCommand {
         } else {
             queue.next();
         }
-        audioManager.playTrack(guild, getContext().getChannel(), channel);
+        audioManager.playTrack(guild, channel);
     }
 
     @Override

@@ -7,20 +7,20 @@ import net.robinfriedli.botify.discord.GuildSpecificationManager;
 
 public class RenameCommand extends AbstractCommand {
 
-    public RenameCommand(CommandContext commandContext, CommandManager commandManager, String commandString) {
-        super(commandContext, commandManager, commandString, false, false, true,
-            "Change the name of the bot.");
+    public RenameCommand(CommandContext commandContext, CommandManager commandManager, String commandString, String identifier) {
+        super(commandContext, commandManager, commandString, false, false, true, identifier,
+            "Change the name of the bot.", Category.GENERAL);
     }
 
     @Override
     public void doRun() {
-        GuildSpecificationManager guildSpecificationManager = getManager().getNameManager();
+        GuildSpecificationManager guildSpecificationManager = getManager().getGuildManager();
         guildSpecificationManager.setName(getContext().getGuild(), getCommandBody());
     }
 
     @Override
     public void onSuccess() {
-        String name = getManager().getNameManager().getNameForGuild(getContext().getGuild());
+        String name = getManager().getGuildManager().getNameForGuild(getContext().getGuild());
         sendMessage(getContext().getChannel(), "You can now call me " + name);
     }
 

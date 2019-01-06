@@ -9,9 +9,9 @@ import net.robinfriedli.botify.command.CommandManager;
 
 public class StopCommand extends AbstractCommand {
 
-    public StopCommand(CommandContext context, CommandManager commandManager, String commandString) {
-        super(context, commandManager, commandString, false, false, false,
-            "Stop playback and empty the queue.");
+    public StopCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier) {
+        super(context, commandManager, commandString, false, false, false, identifier,
+            "Stop playback and empty the queue.", Category.PLAYBACK);
     }
 
     @Override
@@ -19,6 +19,7 @@ public class StopCommand extends AbstractCommand {
         Guild guild = getContext().getGuild();
         AudioManager audioManager = getManager().getAudioManager();
         AudioPlayback playback = audioManager.getPlaybackForGuild(guild);
+        playback.interruptTrackLoading();
         playback.stop();
         playback.getAudioQueue().clear();
         audioManager.leaveChannel(playback);

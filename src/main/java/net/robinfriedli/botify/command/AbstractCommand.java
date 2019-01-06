@@ -10,11 +10,16 @@ import java.util.function.Function;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.google.api.client.util.Sets;
+import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.MessageChannel;
 import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.command.commands.AnswerCommand;
 import net.robinfriedli.botify.discord.AlertService;
 import net.robinfriedli.botify.discord.DiscordListener;
+import net.robinfriedli.botify.discord.GuildSpecificationManager;
+import net.robinfriedli.botify.entities.AccessConfiguration;
+import net.robinfriedli.botify.exceptions.ForbiddenCommandException;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.util.Util;
 import net.robinfriedli.jxp.persist.Context;
@@ -31,12 +36,13 @@ public abstract class AbstractCommand {
     private final CommandManager commandManager;
     private final ArgumentContribution argumentContribution;
     private final AlertService alertService;
+    private final String identifier;
     private final String description;
+    private final Category category;
     private boolean requiresClientCredentials;
     private boolean requiresLogin;
     private boolean requiresInput;
     private String commandBody;
-    private StringList setArguments;
     // used to prevent onSuccess being called when no exception has been thrown but the command failed anyway
     private boolean isFailed;
 
@@ -46,15 +52,19 @@ public abstract class AbstractCommand {
                            boolean requiresClientCredentials,
                            boolean requiresLogin,
                            boolean requiresInput,
-                           String description) {
+                           String identifier,
+                           String description,
+                           Category category) {
         this.context = context;
         this.commandManager = commandManager;
-        this.description = description;
         this.requiresClientCredentials = requiresClientCredentials;
-        this.argumentContribution = setupArguments();
-        this.alertService = new AlertService();
         this.requiresLogin = requiresLogin;
         this.requiresInput = requiresInput;
+        this.identifier = identifier;
+        this.description = description;
+        this.category = category;
+        this.argumentContribution = setupArguments();
+        this.alertService = new AlertService();
 
         processCommand(commandString);
     }
@@ -87,15 +97,25 @@ public abstract class AbstractCommand {
      * @return the {@link ArgumentContribution}
      */
     public ArgumentContribution setupArguments() {
-        return new ArgumentContribution();
+        return new ArgumentContribution(this);
     }
 
     public void verify() {
+        GuildSpecificationManager guildManager = commandManager.getGuildManager();
+        User user = getContext().getUser();
+        Guild guild = context.getGuild();
+        Member member = guild.getMember(user);
+        if (!guildManager.checkAccess(identifier, member)) {
+            // if accessConfiguration were null we would not have got here
+            AccessConfiguration accessConfiguration = guildManager.getAccessConfiguration(identifier, getContext().getGuild());
+            throw new ForbiddenCommandException(user, identifier, accessConfiguration.getRoles(guild));
+        }
+
         if (requiresInput && commandBody.isBlank()) {
             throw new InvalidCommandException("That command requires more input!");
         }
 
-        argumentContribution.check(setArguments);
+        argumentContribution.complete();
     }
 
     /**
@@ -119,7 +139,11 @@ public abstract class AbstractCommand {
     }
 
     protected boolean argumentSet(String argument) {
-        return setArguments.contains(argument, true);
+        return argumentContribution.argumentSet(argument);
+    }
+
+    protected <E> E getArgumentValue(String argument, Class<E> type) {
+        return argumentContribution.getArgument(argument).getValue(type);
     }
 
     protected CommandContext getContext() {
@@ -186,6 +210,14 @@ public abstract class AbstractCommand {
         question.ask();
     }
 
+    protected void sendMessage(MessageChannel channel, String message) {
+        alertService.send(message, channel);
+    }
+
+    protected void sendMessage(User user, String message) {
+        alertService.send(message, user);
+    }
+
     /**
      * Used for any command with an A $to B syntax. Requires the command body to have exactly one argument preceded by
      * $.
@@ -216,9 +248,15 @@ public abstract class AbstractCommand {
         return Pair.of(left, right);
     }
 
-    public String getName() {
-        String simpleName = getClass().getSimpleName();
-        return simpleName.substring(0, simpleName.length() - 7).toLowerCase();
+    /**
+     * @return the String this command gets referenced with
+     */
+    public String getIdentifier() {
+        return identifier;
+    }
+
+    public Category getCategory() {
+        return category;
     }
 
     public String getDescription() {
@@ -249,22 +287,25 @@ public abstract class AbstractCommand {
         return requiresLogin;
     }
 
-    public void sendMessage(MessageChannel channel, String message) {
-        alertService.send(message, channel);
-    }
-
-    public void sendMessage(User user, String message) {
-        alertService.send(message, user);
-    }
-
     private void processCommand(String commandString) {
-        setArguments = StringListImpl.create();
         StringList words = StringListImpl.separateString(commandString, " ");
 
         int commandBodyIndex = 0;
         for (String word : words) {
             if (word.startsWith("$")) {
-                setArguments.add(word.replaceFirst("\\$", ""));
+                String argString = word.replaceFirst("\\$", "");
+                // check if the argument has an assigned value
+                int equalsIndex = argString.indexOf("=");
+                if (equalsIndex > -1) {
+                    if (equalsIndex == 0 || equalsIndex == word.length() - 1) {
+                        throw new InvalidCommandException("Malformed argument. Equals sign cannot be first or last character.");
+                    }
+                    String argument = argString.substring(0, equalsIndex);
+                    String value = argString.substring(equalsIndex + 1);
+                    argumentContribution.setArgument(argument.toLowerCase(), value);
+                } else {
+                    argumentContribution.setArgument(argString.toLowerCase());
+                }
             } else if (!word.isBlank()) {
                 break;
             }
@@ -273,4 +314,24 @@ public abstract class AbstractCommand {
 
         commandBody = words.toString().substring(commandBodyIndex).trim();
     }
+
+    public enum Category {
+
+        PLAYBACK("playback"),
+        PLAYLIST_MANAGEMENT("playlist management"),
+        SPOTIFY("spotify"),
+        SEARCH("search"),
+        GENERAL("general");
+
+        private final String name;
+
+        Category(String name) {
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
+    }
+
 }

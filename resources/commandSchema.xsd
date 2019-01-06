@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="commandSpace">
+
+  <xs:element name="commands" type="commands"/>
+  <xs:complexType name="commands">
+    <xs:sequence>
+      <xs:element name="command" type="command"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="command">
+    <xs:attribute name="identifier" type="xs:string"/>
+    <xs:attribute name="implementation" type="xs:string"/>
+  </xs:complexType>
+
+</xs:schema>

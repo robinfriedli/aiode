@@ -30,6 +30,10 @@ public class LoginManager {
         logins.add(login);
     }
 
+    public void removeLogin(User user) {
+        logins.remove(requireLoginForUser(user));
+    }
+
     public CompletableFuture<Login> getPendingLogin(User user) {
         CompletableFuture<Login> pendingLogin = expectedLogins.get(user);
 

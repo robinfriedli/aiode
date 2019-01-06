@@ -1,5 +1,7 @@
 package net.robinfriedli.botify.exceptions;
 
+import org.slf4j.Logger;
+
 import net.dv8tion.jda.core.entities.MessageChannel;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.discord.AlertService;
@@ -7,9 +9,11 @@ import net.robinfriedli.botify.discord.AlertService;
 public class CommandExceptionHandler implements Thread.UncaughtExceptionHandler {
 
     private final CommandContext commandContext;
+    private final Logger logger;
 
-    public CommandExceptionHandler(CommandContext commandContext) {
+    public CommandExceptionHandler(CommandContext commandContext, Logger logger) {
         this.commandContext = commandContext;
+        this.logger = logger;
     }
 
     @Override
@@ -24,8 +28,7 @@ public class CommandExceptionHandler implements Thread.UncaughtExceptionHandler 
             command, exception.getClass().getSimpleName(), exception.getMessage()));
         recursiveCause(responseBuilder, exception);
         alertService.send(responseBuilder.toString(), channel);
-        e.printStackTrace();
-        // TODO logging
+        logger.error(String.format("Exception while handling command %s on guild %s", command, commandContext.getGuild().getName()), exception);
     }
 
     private void recursiveCause(StringBuilder responseBuilder, Throwable exception) {

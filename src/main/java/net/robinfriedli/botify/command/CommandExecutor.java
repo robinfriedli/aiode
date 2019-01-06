@@ -9,6 +9,7 @@ import net.dv8tion.jda.core.entities.MessageChannel;
 import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.discord.AlertService;
 import net.robinfriedli.botify.exceptions.CommandRuntimeException;
+import net.robinfriedli.botify.exceptions.ForbiddenCommandException;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoLoginException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
@@ -48,7 +49,7 @@ public class CommandExecutor {
             MessageChannel channel = command.getContext().getChannel();
             User user = command.getContext().getUser();
             alertService.send("User " + user.getName() + " is not logged in to Spotify", channel);
-        } catch (InvalidCommandException | NoResultsFoundException e) {
+        } catch (InvalidCommandException | NoResultsFoundException | ForbiddenCommandException e) {
             AlertService alertService = new AlertService();
             alertService.send(e.getMessage(), command.getContext().getChannel());
         } catch (UnauthorizedException e) {

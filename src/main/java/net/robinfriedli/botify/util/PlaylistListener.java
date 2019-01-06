@@ -16,7 +16,7 @@ public class PlaylistListener extends EventListener {
             XmlElement playlist = source.getParent();
             playlist.setAttribute("songCount", playlist.getAttribute("songCount").getInt() + 1);
             playlist.setAttribute("duration",
-                playlist.getAttribute("duration").getValue(Long.class) + source.getAttribute("duration").getValue(Long.class));
+                playlist.getAttribute("duration").getLong() + source.getAttribute("duration").getLong());
         }
     }
 
@@ -28,7 +28,7 @@ public class PlaylistListener extends EventListener {
             //noinspection ConstantConditions
             playlist.setAttribute("songCount", playlist.getAttribute("songCount").getInt() - 1);
             playlist.setAttribute("duration",
-                playlist.getAttribute("duration").getValue(Long.class) - source.getAttribute("duration").getValue(Long.class));
+                playlist.getAttribute("duration").getLong() - source.getAttribute("duration").getLong());
         }
     }
 

@@ -1,6 +1,7 @@
 package net.robinfriedli.botify.entities;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,7 +13,6 @@ import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.core.entities.User;
-import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.jxp.api.AbstractXmlElement;
 import net.robinfriedli.jxp.api.XmlElement;
@@ -20,6 +20,10 @@ import net.robinfriedli.jxp.persist.Context;
 import org.w3c.dom.Element;
 
 public class Playlist extends AbstractXmlElement {
+
+    public Playlist(String tagName, Map<String, ?> attributeMap, List<XmlElement> subElements, String textContent, Context context) {
+        super(tagName, attributeMap, subElements, textContent, context);
+    }
 
     public Playlist(String name, User createdUser, List<XmlElement> tracks, Context context) {
         super("playlist", getAttributeMap(name, createdUser, tracks), Lists.newArrayList(tracks), context);
@@ -43,22 +47,25 @@ public class Playlist extends AbstractXmlElement {
         return getAttribute("name").getValue();
     }
 
-    public List<Playable> getPlayables(SpotifyApi spotifyApi, AudioManager audioManager, boolean redirectSpotify) throws IOException, SpotifyWebApiException {
-        return audioManager.createPlayables(redirectSpotify, getItems(spotifyApi));
-    }
-
     /**
      * Returns the items in this playlist as objects supported by the {@link Playable} class. Note that getting the
      * Spotify track for a Song requires this method to be invoked with client credentials
      */
     public List<Object> getItems(SpotifyApi spotifyApi) throws IOException, SpotifyWebApiException {
         List<Object> items = Lists.newArrayList();
+        List<String> trackIds = Lists.newArrayList();
         for (XmlElement item : getSubElements()) {
             if (item instanceof Song) {
-                items.add(((Song) item).asTrack(spotifyApi));
+                trackIds.add(item.getAttribute("id").getValue());
             } else if (item instanceof Video) {
                 items.add(((Video) item).asYouTubeVideo());
             }
+        }
+
+        List<List<String>> batches = Lists.partition(trackIds, 50);
+        for (List<String> batch : batches) {
+            Track[] tracks = spotifyApi.getSeveralTracks(batch.toArray(new String[0])).build().execute();
+            items.addAll(Arrays.asList(tracks));
         }
 
         return items;
@@ -87,7 +94,7 @@ public class Playlist extends AbstractXmlElement {
 
         long duration = 0;
         for (XmlElement track : tracks) {
-            duration = duration + track.getAttribute("duration").getValue(Long.class);
+            duration = duration + track.getAttribute("duration").getLong();
         }
 
         attributeMap.put("duration", duration);

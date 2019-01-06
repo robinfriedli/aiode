@@ -11,9 +11,9 @@ import net.robinfriedli.botify.exceptions.InvalidCommandException;
 
 public class RewindCommand extends AbstractCommand {
 
-    public RewindCommand(CommandContext context, CommandManager commandManager, String commandString) {
-        super(context, commandManager, commandString, false, false, false,
-            "Go back to the previous track in the queue");
+    public RewindCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier) {
+        super(context, commandManager, commandString, false, false, false, identifier,
+            "Go back to the previous track in the queue", Category.PLAYBACK);
     }
 
     @Override
@@ -28,7 +28,7 @@ public class RewindCommand extends AbstractCommand {
         }
 
         queue.previous();
-        audioManager.playTrack(guild, getContext().getChannel(), channel);
+        audioManager.playTrack(guild, channel);
     }
 
     @Override

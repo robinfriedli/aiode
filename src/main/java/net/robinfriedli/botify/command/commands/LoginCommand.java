@@ -16,10 +16,10 @@ import net.robinfriedli.botify.login.LoginManager;
 
 public class LoginCommand extends AbstractCommand {
 
-    public LoginCommand(CommandContext commandContext, CommandManager commandManager, String commandString) {
-        super(commandContext, commandManager, commandString, false, false, false,
+    public LoginCommand(CommandContext commandContext, CommandManager commandManager, String commandString, String identifier) {
+        super(commandContext, commandManager, commandString, false, false, false, identifier,
             "Login to spotify. This sends you a link to the spotify login page which then redirects to the " +
-                "botify callback.");
+                "botify callback.", Category.SPOTIFY);
     }
 
     @Override
@@ -39,6 +39,8 @@ public class LoginCommand extends AbstractCommand {
         sendMessage(user, response);
         sendMessage(getContext().getChannel(), "I sent you a login link");
 
+        // we do not want to send a "Still loading..." message when waiting for login to complete
+        getContext().interruptMonitoring();
         try {
             pendingLogin.get(10, TimeUnit.MINUTES);
         } catch (InterruptedException | ExecutionException e) {

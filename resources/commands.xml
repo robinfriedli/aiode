@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<commands xmlns="commandSpace">
+  <command identifier="add" implementation="net.robinfriedli.botify.command.commands.AddCommand"/>
+  <command identifier="answer" implementation="net.robinfriedli.botify.command.commands.AnswerCommand"/>
+  <command identifier="create" implementation="net.robinfriedli.botify.command.commands.CreateCommand"/>
+  <command identifier="delete" implementation="net.robinfriedli.botify.command.commands.DeleteCommand"/>
+  <command identifier="export" implementation="net.robinfriedli.botify.command.commands.ExportCommand"/>
+  <command identifier="help" implementation="net.robinfriedli.botify.command.commands.HelpCommand"/>
+  <command identifier="login" implementation="net.robinfriedli.botify.command.commands.LoginCommand"/>
+  <command identifier="pause" implementation="net.robinfriedli.botify.command.commands.PauseCommand"/>
+  <command identifier="play" implementation="net.robinfriedli.botify.command.commands.PlayCommand"/>
+  <command identifier="queue" implementation="net.robinfriedli.botify.command.commands.QueueCommand"/>
+  <command identifier="remove" implementation="net.robinfriedli.botify.command.commands.RemoveCommand"/>
+  <command identifier="rename" implementation="net.robinfriedli.botify.command.commands.RenameCommand"/>
+  <command identifier="repeat" implementation="net.robinfriedli.botify.command.commands.RepeatCommand"/>
+  <command identifier="rewind" implementation="net.robinfriedli.botify.command.commands.RewindCommand"/>
+  <command identifier="search" implementation="net.robinfriedli.botify.command.commands.SearchCommand"/>
+  <command identifier="shuffle" implementation="net.robinfriedli.botify.command.commands.ShuffleCommand"/>
+  <command identifier="skip" implementation="net.robinfriedli.botify.command.commands.SkipCommand"/>
+  <command identifier="stop" implementation="net.robinfriedli.botify.command.commands.StopCommand"/>
+  <command identifier="upload" implementation="net.robinfriedli.botify.command.commands.UploadCommand"/>
+  <command identifier="permission" implementation="net.robinfriedli.botify.command.commands.PermissionCommand"/>
+  <command identifier="logout" implementation="net.robinfriedli.botify.command.commands.LogoutCommand"/>
+</commands>

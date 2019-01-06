@@ -18,10 +18,10 @@ import net.robinfriedli.jxp.persist.Context;
 
 public class RemoveCommand extends AbstractCommand {
 
-    public RemoveCommand(CommandContext context, CommandManager commandManager, String commandString) {
-        super(context, commandManager, commandString, false, false, true,
-            "Remove an item from a local playlist. Put either the full title of the video or the spotify " +
-                "track name including 'by' plus the artist.");
+    public RemoveCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier) {
+        super(context, commandManager, commandString, false, false, true, identifier,
+            "Remove an item from a local playlist. Put either the full title of the YouTube video or the spotify " +
+                "track name.", Category.PLAYLIST_MANAGEMENT);
     }
 
     @Override

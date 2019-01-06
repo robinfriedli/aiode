@@ -37,6 +37,7 @@
         <xs:attribute name="addedUser" type="xs:string"/>
         <xs:attribute name="addedUserId" type="xs:string"/>
         <xs:attribute name="redirectedSpotifyId" type="xs:string"/>
+        <xs:attribute name="spotifyTrackName" type="xs:string"/>
     </xs:complexType>
 
 </xs:schema>

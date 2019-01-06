@@ -8,9 +8,9 @@ import net.robinfriedli.botify.command.CommandManager;
 
 public class RepeatCommand extends AbstractCommand {
 
-    public RepeatCommand(CommandContext context, CommandManager commandManager, String commandString) {
-        super(context, commandManager, commandString, false, false, false,
-            "Toggles repeat for either the entire queue or the current track.");
+    public RepeatCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier) {
+        super(context, commandManager, commandString, false, false, false, identifier,
+            "Toggles repeat for either the entire queue or the current track.", Category.PLAYBACK);
     }
 
     @Override
@@ -35,7 +35,7 @@ public class RepeatCommand extends AbstractCommand {
 
     @Override
     public ArgumentContribution setupArguments() {
-        ArgumentContribution argumentContribution = new ArgumentContribution();
+        ArgumentContribution argumentContribution = new ArgumentContribution(this);
         argumentContribution.map("one").excludesArguments("all")
             .setDescription("Toggle repeat for the current track.");
         argumentContribution.map("all").excludesArguments("one")

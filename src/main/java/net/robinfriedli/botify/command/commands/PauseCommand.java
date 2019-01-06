@@ -8,9 +8,9 @@ import net.robinfriedli.botify.command.CommandManager;
 
 public class PauseCommand extends AbstractCommand {
 
-    public PauseCommand(CommandContext context, CommandManager commandManager, String commandString) {
-        super(context, commandManager, commandString, false, false, false,
-            "Pause the current playback.");
+    public PauseCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier) {
+        super(context, commandManager, commandString, false, false, false, identifier,
+            "Pause the current playback.", Category.PLAYBACK);
     }
 
     @Override

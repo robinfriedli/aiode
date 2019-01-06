@@ -4,7 +4,8 @@ Discord bot that plays Spotify tracks and YouTube videos.
 * Play Spotify tracks and YouTube videos or playlists
 * Create local playlists with both YouTube videos and Spotify songs
 * Simple player commands
-* Sign in to Spotify to play your own playlists
+* Sign in to Spotify to play your own playlists or upload botify playlists
+* Manage what roles can access which commands
 
 ## Invite it to your guild
 
@@ -12,17 +13,24 @@ https://discordapp.com/api/oauth2/authorize?client_id=483377420494176258&permiss
 
 ## Host it yourself
 
-### 1. Create a discord app
+### 1. Create a Discord app
 
 #### 1.1 Go to https://discordapp.com/developers/applications and create an application
 #### 1.2 Click "Bot" on the side menu to create a bot and copy the token for later
-#### 1.3 Go to https://developer.spotify.com/dashboard/applications to create a Spotify application and copy the client id
-#### 1.4 Click on "Edit Settings" and whitelist your Redirect URI for the Spotify login
+
+### 2. Create a Spotify app
+
+#### 2.1 Go to https://developer.spotify.com/dashboard/applications to create a Spotify application and copy the client id
+#### 2.2 Click on "Edit Settings" and whitelist your Redirect URI for the Spotify login
 Don't have a domain? You could either go without logins all together and still use most of botify's features or use your
 router's public ip and setup port forwarding for your router.
-#### 1.5 Go to https://console.developers.google.com/ and create a project for the YouTube Data API and create and copy the credentials
-#### 1.6 Navigate to your cloned project and go to ./resources and create the settings.properties file, it should look like this:
-```
+
+### 3. Create a YouTube Data API project
+#### 3.1 Go to https://console.developers.google.com/ and create a project for the YouTube Data API and create and copy the credentials
+
+### 4. Setup botify settings
+#### 4.1 Navigate to your cloned project and go to ./resources and open the settings.properties file and fille in the blanks, it should look like this:
+```properties
 SERVER_PORT=8000
 LOGIN_CONTEXT_PATH=/login
 REDIRECT_URI=http://localhost:8000/login
@@ -33,5 +41,7 @@ YOUTUBE_CREDENTIALS=#copy your youtube credentials here
 PLAYLISTS_PATH=./resources/playlists.xml
 GUILD_PLAYLISTS_PATH=./resources/%splaylists.xml
 GUILD_SPECIFICATION_PATH=./resources/guildSpecifications.xml
+COMMANDS_PATH=./resources/commands.xml
+STARTUP_TASKS_PATH=./resources/startupTasks.xml
 MODE_PARTITIONED=true
 ```

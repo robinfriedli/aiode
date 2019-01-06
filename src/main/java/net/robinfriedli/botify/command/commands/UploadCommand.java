@@ -15,10 +15,10 @@ import net.robinfriedli.botify.util.SearchEngine;
 
 public class UploadCommand extends AbstractCommand {
 
-    public UploadCommand(CommandContext context, CommandManager commandManager, String commandString) {
-        super(context, commandManager, commandString, false, true, true,
+    public UploadCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier) {
+        super(context, commandManager, commandString, false, true, true, identifier,
             "Upload the items from a local list to a new Spotify playlist. This ignores youtube videos in the " +
-                "list, except for those that are originally redirected Spotify tracks.");
+                "list, except for those that are originally redirected Spotify tracks.", Category.SPOTIFY);
     }
 
     @Override

@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="startupTaskSpace">
+
+  <xs:element name="startupTasks" type="startupTasks"/>
+  <xs:complexType name="startupTasks">
+    <xs:sequence>
+      <xs:element name="startupTask" type="startupTask"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="startupTask">
+    <xs:attribute name="implementation" type="xs:string"/>
+  </xs:complexType>
+
+</xs:schema>

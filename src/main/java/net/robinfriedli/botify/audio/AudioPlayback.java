@@ -14,6 +14,8 @@ public class AudioPlayback {
     private MessageChannel communicationChannel;
     private boolean repeatOne;
     private boolean repeatAll;
+    // register Track loading Threads here so that they can be interrupted when a different playlist is being played
+    private Thread trackLoading;
 
     public AudioPlayback(AudioPlayer player, Guild guild) {
         this.guild = guild;
@@ -80,4 +82,24 @@ public class AudioPlayback {
     public void setRepeatAll(boolean repeatAll) {
         this.repeatAll = repeatAll;
     }
+
+    public boolean isShuffle() {
+        return audioQueue.isShuffle();
+    }
+
+    public void setShuffle(boolean isShuffle) {
+        audioQueue.setShuffle(isShuffle);
+    }
+
+    public void registerTrackLoading(Thread trackLoading) {
+        interruptTrackLoading();
+        this.trackLoading = trackLoading;
+    }
+
+    public void interruptTrackLoading() {
+        if (trackLoading != null && trackLoading.isAlive()) {
+            trackLoading.interrupt();
+        }
+    }
+
 }

@@ -10,6 +10,7 @@ public class CommandContext {
 
     private final String commandBody;
     private final Message message;
+    private Thread monitoringThread;
 
     public CommandContext(String namePrefix, Message message) {
         this.commandBody = message.getContentDisplay().substring(namePrefix.length()).trim();
@@ -39,4 +40,13 @@ public class CommandContext {
     public String getCommandBody() {
         return commandBody;
     }
+
+    public void registerMonitoring(Thread monitoringThread) {
+        this.monitoringThread = monitoringThread;
+    }
+
+    public void interruptMonitoring() {
+        monitoringThread.interrupt();
+    }
+
 }

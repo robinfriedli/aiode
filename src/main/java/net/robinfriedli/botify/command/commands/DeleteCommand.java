@@ -12,9 +12,9 @@ import static net.robinfriedli.jxp.queries.Conditions.*;
 
 public class DeleteCommand extends AbstractCommand {
 
-    public DeleteCommand(CommandContext context, CommandManager commandManager, String commandString) {
-        super(context, commandManager, commandString, false, false, true,
-            "Delete the local playlist with the given name like $botify delete my list");
+    public DeleteCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier) {
+        super(context, commandManager, commandString, false, false, true, identifier,
+            "Delete the local playlist with the given name like $botify delete my list", Category.PLAYLIST_MANAGEMENT);
     }
 
     @Override

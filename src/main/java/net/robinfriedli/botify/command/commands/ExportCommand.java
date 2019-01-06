@@ -23,9 +23,9 @@ import static net.robinfriedli.jxp.queries.Conditions.*;
 
 public class ExportCommand extends AbstractCommand {
 
-    public ExportCommand(CommandContext context, CommandManager commandManager, String commandString) {
-        super(context, commandManager, commandString, false, false, true,
-            "Export the current tracks in the queue to a new local list like $botify export my list");
+    public ExportCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier) {
+        super(context, commandManager, commandString, false, false, true, identifier,
+            "Export the current tracks in the queue to a new local list like $botify export my list", Category.PLAYLIST_MANAGEMENT);
     }
 
     @Override
@@ -57,7 +57,7 @@ public class ExportCommand extends AbstractCommand {
                 playlistElems.add(new Song((Track) delegate, createUser, persistContext));
             } else if (delegate instanceof YouTubeVideo) {
                 YouTubeVideo youTubeVideo = (YouTubeVideo) delegate;
-                playlistElems.add(new Video(youTubeVideo, createUser, youTubeVideo.getRedirectedSpotifyTrack(), persistContext));
+                playlistElems.add(new Video(youTubeVideo, createUser, persistContext));
             }
         }
 

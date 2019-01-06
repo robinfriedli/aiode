@@ -3,6 +3,8 @@ package net.robinfriedli.botify.discord;
 import java.io.File;
 import java.util.List;
 
+import org.slf4j.Logger;
+
 import com.google.common.base.Strings;
 import com.wrapper.spotify.SpotifyApi;
 import net.dv8tion.jda.core.entities.Guild;
@@ -17,6 +19,7 @@ import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandExecutor;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.exceptions.CommandExceptionHandler;
+import net.robinfriedli.botify.exceptions.ForbiddenCommandException;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 import net.robinfriedli.botify.login.LoginManager;
@@ -33,14 +36,21 @@ public class DiscordListener extends ListenerAdapter {
     private final Context defaultPlaylistContext;
     private final CommandManager commandManager;
     private final GuildSpecificationManager guildSpecificationManager;
+    private final Logger logger;
 
-    public DiscordListener(SpotifyApi spotifyApi, JxpBackend jxpBackend, LoginManager loginManager, YouTubeService youTubeService) {
-        audioManager = new AudioManager(youTubeService);
+    public DiscordListener(SpotifyApi spotifyApi,
+                           JxpBackend jxpBackend,
+                           LoginManager loginManager,
+                           YouTubeService youTubeService,
+                           Logger logger) {
+        audioManager = new AudioManager(youTubeService, logger);
         this.jxpBackend = jxpBackend;
         defaultPlaylistContext = jxpBackend.getContext(PropertiesLoadingService.requireProperty("PLAYLISTS_PATH"));
         Context guildSpecificationContext = jxpBackend.getContext(PropertiesLoadingService.requireProperty("GUILD_SPECIFICATION_PATH"));
         guildSpecificationManager = new GuildSpecificationManager(guildSpecificationContext);
-        commandManager = new CommandManager(new CommandExecutor(spotifyApi, loginManager), this, loginManager, spotifyApi);
+        Context commandContributionContext = jxpBackend.getContext(PropertiesLoadingService.requireProperty("COMMANDS_PATH"));
+        commandManager = new CommandManager(new CommandExecutor(spotifyApi, loginManager), this, loginManager, spotifyApi, commandContributionContext, logger);
+        this.logger = logger;
     }
 
     public void setupGuilds(Mode mode, List<Guild> guilds) {
@@ -76,14 +86,28 @@ public class DiscordListener extends ListenerAdapter {
                 Thread commandExecutionThread = new Thread(() -> {
                     try {
                         commandManager.runCommand(commandContext);
-                    } catch (InvalidCommandException | NoResultsFoundException e) {
+                    } catch (InvalidCommandException | NoResultsFoundException | ForbiddenCommandException e) {
                         message.getChannel().sendMessage(e.getMessage()).queue();
                     }
                 });
 
-                commandExecutionThread.setUncaughtExceptionHandler(new CommandExceptionHandler(commandContext));
+                commandExecutionThread.setUncaughtExceptionHandler(new CommandExceptionHandler(commandContext, logger));
                 commandExecutionThread.setName("botify command execution: " + commandContext);
                 commandExecutionThread.start();
+
+                Thread monitoringThread = new Thread(() -> {
+                    try {
+                        commandExecutionThread.join(5000);
+                    } catch (InterruptedException e) {
+                        return;
+                    }
+                    if (commandExecutionThread.isAlive()) {
+                        message.getChannel().sendMessage("Still loading...").queue();
+                    }
+                });
+
+                commandContext.registerMonitoring(monitoringThread);
+                monitoringThread.start();
             }
         }
     }
@@ -123,6 +147,10 @@ public class DiscordListener extends ListenerAdapter {
 
     public Mode getMode() {
         return mode;
+    }
+
+    public Logger getLogger() {
+        return logger;
     }
 
     private void setupGuildContext(Guild guild) {

@@ -15,6 +15,10 @@ import org.w3c.dom.Element;
 
 public class GuildSpecification extends AbstractXmlElement {
 
+    public GuildSpecification(String tagName, Map<String, ?> attributeMap, List<XmlElement> subElements, String textContent, Context context) {
+        super(tagName, attributeMap, subElements, textContent, context);
+    }
+
     public GuildSpecification(Guild guild, Context context) {
         this(guild.getName(), guild.getId(), context);
     }
@@ -27,10 +31,14 @@ public class GuildSpecification extends AbstractXmlElement {
         super("guildSpecification", buildAttributeMap(guildName, guildId, botifyName), context);
     }
 
+    // invoked by JXP
+    @SuppressWarnings("unused")
     public GuildSpecification(Element element, Context context) {
         super(element, context);
     }
 
+    // invoked by JXP
+    @SuppressWarnings("unused")
     public GuildSpecification(Element element, List<XmlElement> subElements, Context context) {
         super(element, subElements, context);
     }

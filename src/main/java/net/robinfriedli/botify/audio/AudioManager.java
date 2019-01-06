@@ -1,12 +1,11 @@
 package net.robinfriedli.botify.audio;
 
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
 
 import com.google.common.collect.Lists;
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
@@ -21,18 +20,20 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.MessageChannel;
 import net.dv8tion.jda.core.entities.VoiceChannel;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
+import net.robinfriedli.botify.exceptions.TrackLoadingExceptionHandler;
 
 public class AudioManager extends AudioEventAdapter {
 
     private final AudioPlayerManager playerManager = new DefaultAudioPlayerManager();
     private final YouTubeService youTubeService;
+    private final Logger logger;
     private List<AudioPlayback> audioPlaybacks = Lists.newArrayList();
 
-    public AudioManager(YouTubeService youTubeService) {
+    public AudioManager(YouTubeService youTubeService, Logger logger) {
         this.youTubeService = youTubeService;
+        this.logger = logger;
         AudioSourceManagers.registerRemoteSources(playerManager);
     }
 
@@ -44,30 +45,28 @@ public class AudioManager extends AudioEventAdapter {
             if (!playback.isRepeatOne()) {
                 if (audioQueue.hasNext()) {
                     audioQueue.next();
-                    playTrack(playback.getGuild(), playback.getCommunicationChannel(), playback.getVoiceChannel());
+                    playTrack(playback.getGuild(), playback.getVoiceChannel());
                 } else {
                     audioQueue.reset();
                     if (!playback.isRepeatAll()) {
                         leaveChannel(playback);
                     } else {
-                        playTrack(playback.getGuild(), playback.getCommunicationChannel(), playback.getVoiceChannel());
+                        playTrack(playback.getGuild(), playback.getVoiceChannel());
                     }
                 }
             } else {
-                playTrack(playback.getGuild(), playback.getCommunicationChannel(), playback.getVoiceChannel());
+                playTrack(playback.getGuild(), playback.getVoiceChannel());
             }
         }
     }
 
-    public void playTrack(Guild guild, MessageChannel communicationChannel, @Nullable VoiceChannel channel) {
+    public void playTrack(Guild guild, @Nullable VoiceChannel channel) {
         AudioPlayback audioPlayback = getPlaybackForGuild(guild);
         if (channel != null) {
             setChannel(audioPlayback, channel);
         } else if (audioPlayback.getVoiceChannel() == null) {
             throw new InvalidCommandException("Not in a voice channel");
         }
-
-        audioPlayback.setCommunicationChannel(communicationChannel);
 
         Playable track = audioPlayback.getAudioQueue().getCurrent();
         playerManager.loadItem(track.getPlaybackUrl(), new AudioLoadResultHandler() {
@@ -83,12 +82,14 @@ public class AudioManager extends AudioEventAdapter {
 
             @Override
             public void noMatches() {
-                communicationChannel.sendMessage("Audio player could not load " + track.getDisplay()).queue();
+                audioPlayback.getCommunicationChannel().sendMessage("Audio player could not load " + track.getDisplay()).queue();
             }
 
             @Override
             public void loadFailed(FriendlyException e) {
-                communicationChannel.sendMessage("Exception while loading " + track.getDisplay() + ". Message: " + e.getMessage()).queue();
+                audioPlayback
+                    .getCommunicationChannel()
+                    .sendMessage("Exception while loading " + track.getDisplay() + ". Message: " + e.getMessage()).queue();
                 e.printStackTrace();
             }
         });
@@ -108,40 +109,48 @@ public class AudioManager extends AudioEventAdapter {
 
     public Playable createPlayable(boolean redirectSpotify, Object objectToWrap) {
         if (redirectSpotify && objectToWrap instanceof Track) {
-            objectToWrap = youTubeService.redirectSpotify((Track) objectToWrap);
+            HollowYouTubeVideo youTubeVideo = new HollowYouTubeVideo(youTubeService, (Track) objectToWrap);
+            youTubeService.redirectSpotify(youTubeVideo);
+            return new Playable(this, youTubeVideo);
         }
 
         return new Playable(this, objectToWrap);
     }
 
-    public List<Playable> createPlayables(boolean redirectSpotify, Object... objects) {
-        return createPlayables(redirectSpotify, Lists.newArrayList(objects));
-    }
-
-    public List<Playable> createPlayables(boolean redirectSpotify, List<?> objects) {
-        Map<Object, LazyPlayable> lazyPlayableMap = new LinkedHashMap<>();
+    public List<Playable> createPlayables(boolean redirectSpotify, List<?> objects, AudioPlayback audioPlayback) {
+        List<Playable> createdPlayables = Lists.newArrayList();
+        List<HollowYouTubeVideo> tracksToRedirect = Lists.newArrayList();
 
         for (Object object : objects) {
-            lazyPlayableMap.put(object, new LazyPlayable(this, new CompletableFuture<>()));
+            if (redirectSpotify && object instanceof Track) {
+                HollowYouTubeVideo youTubeVideo = new HollowYouTubeVideo(youTubeService, (Track) object);
+                tracksToRedirect.add(youTubeVideo);
+                createdPlayables.add(new Playable(this, youTubeVideo));
+            } else {
+                createdPlayables.add(new Playable(this, object));
+            }
         }
 
-        Thread trackLoadingThread = new Thread(() -> {
-            for (Object object : lazyPlayableMap.keySet()) {
-                LazyPlayable lazyPlayable = lazyPlayableMap.get(object);
-                if (redirectSpotify && object instanceof Track) {
-                    object = youTubeService.redirectSpotify((Track) object);
+        if (!tracksToRedirect.isEmpty()) {
+            Thread trackRedirectingThread = new Thread(() -> {
+                for (HollowYouTubeVideo hollowYouTubeVideo : tracksToRedirect) {
+                    if (Thread.currentThread().isInterrupted()) {
+                        tracksToRedirect.stream().filter(hollow -> !hollow.isComplete()).forEach(HollowYouTubeVideo::cancel);
+                        break;
+                    }
+                    youTubeService.redirectSpotify(hollowYouTubeVideo);
                 }
-
-                lazyPlayable.complete(object);
-            }
-        });
-        trackLoadingThread.setName("Botify Track Loading " + objects.toString());
-        trackLoadingThread.start();
-
-        return Lists.newArrayList(lazyPlayableMap.values());
+            });
+            trackRedirectingThread.setName("Botify Redirecting Spotify thread: " + objects.size() + " tracks");
+            TrackLoadingExceptionHandler eh = new TrackLoadingExceptionHandler(logger, audioPlayback.getCommunicationChannel(), null);
+            trackRedirectingThread.setUncaughtExceptionHandler(eh);
+            audioPlayback.registerTrackLoading(trackRedirectingThread);
+            trackRedirectingThread.start();
+        }
+        return createdPlayables;
     }
 
-    public List<Playable> createPlayables(YouTubePlaylist youTubePlaylist) {
+    public List<Playable> createPlayables(YouTubePlaylist youTubePlaylist, AudioPlayback audioPlayback) {
         List<Playable> playables = Lists.newArrayList();
 
         for (HollowYouTubeVideo video : youTubePlaylist.getVideos()) {
@@ -149,7 +158,10 @@ public class AudioManager extends AudioEventAdapter {
         }
 
         Thread videoLoadingThread = new Thread(() -> youTubeService.populateList(youTubePlaylist));
-        videoLoadingThread.setName("Botify Video Loading " + youTubePlaylist);
+        videoLoadingThread.setName("Botify Video Loading " + youTubePlaylist.toString());
+        TrackLoadingExceptionHandler eh = new TrackLoadingExceptionHandler(logger, audioPlayback.getCommunicationChannel(), youTubePlaylist);
+        videoLoadingThread.setUncaughtExceptionHandler(eh);
+        audioPlayback.registerTrackLoading(videoLoadingThread);
         videoLoadingThread.start();
 
         return playables;
@@ -199,6 +211,9 @@ public class AudioManager extends AudioEventAdapter {
         }
         if (playback.isRepeatOne()) {
             messageBuilder.append(" (repeat one)");
+        }
+        if (playback.isShuffle()) {
+            messageBuilder.append(" (shuffle)");
         }
         playback.getCommunicationChannel().sendMessage(messageBuilder.toString()).queue();
     }
