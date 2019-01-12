@@ -21,7 +21,7 @@ public class Playable {
         return delegate;
     }
 
-    public String getPlaybackUrl() {
+    public String getPlaybackUrl() throws InterruptedException {
         if (delegate() instanceof Track) {
             return ((Track) delegate()).getPreviewUrl();
         } else if (delegate() instanceof YouTubeVideo) {
@@ -31,7 +31,7 @@ public class Playable {
         }
     }
 
-    public String getDisplay() {
+    public String getDisplay() throws InterruptedException {
         if (delegate() instanceof Track) {
             Track track = (Track) delegate();
             String name = track.getName();
@@ -44,7 +44,7 @@ public class Playable {
         }
     }
 
-    public long getDurationMs() {
+    public long getDurationMs() throws InterruptedException {
         if (delegate() instanceof Track) {
             return ((Track) delegate()).getDurationMs();
         } else if (delegate() instanceof YouTubeVideo) {

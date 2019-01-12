@@ -42,21 +42,25 @@ public class AudioManager extends AudioEventAdapter {
         if (reason.mayStartNext) {
             AudioPlayback playback = getPlaybackForPlayer(player);
             AudioQueue audioQueue = playback.getAudioQueue();
-            if (!playback.isRepeatOne()) {
-                if (audioQueue.hasNext()) {
-                    audioQueue.next();
-                    playTrack(playback.getGuild(), playback.getVoiceChannel());
-                } else {
-                    audioQueue.reset();
-                    if (!playback.isRepeatAll()) {
-                        leaveChannel(playback);
-                    } else {
-                        playTrack(playback.getGuild(), playback.getVoiceChannel());
-                    }
-                }
-            } else {
+            iterateQueue(playback, audioQueue);
+        }
+    }
+
+    private void iterateQueue(AudioPlayback playback, AudioQueue audioQueue) {
+        if (!playback.isRepeatOne()) {
+            if (audioQueue.hasNext()) {
+                audioQueue.next();
                 playTrack(playback.getGuild(), playback.getVoiceChannel());
+            } else {
+                audioQueue.reset();
+                if (!playback.isRepeatAll()) {
+                    leaveChannel(playback);
+                } else {
+                    playTrack(playback.getGuild(), playback.getVoiceChannel());
+                }
             }
+        } else {
+            playTrack(playback.getGuild(), playback.getVoiceChannel());
         }
     }
 
@@ -68,8 +72,17 @@ public class AudioManager extends AudioEventAdapter {
             throw new InvalidCommandException("Not in a voice channel");
         }
 
-        Playable track = audioPlayback.getAudioQueue().getCurrent();
-        playerManager.loadItem(track.getPlaybackUrl(), new AudioLoadResultHandler() {
+        AudioQueue audioQueue = audioPlayback.getAudioQueue();
+        Playable track = audioQueue.getCurrent();
+        String playbackUrl;
+        try {
+            playbackUrl = track.getPlaybackUrl();
+        } catch (InterruptedException e) {
+            iterateQueue(audioPlayback, audioQueue);
+            return;
+        }
+
+        playerManager.loadItem(playbackUrl, new AudioLoadResultHandler() {
             @Override
             public void trackLoaded(AudioTrack audioTrack) {
                 play(audioTrack, audioPlayback);
@@ -82,15 +95,24 @@ public class AudioManager extends AudioEventAdapter {
 
             @Override
             public void noMatches() {
-                audioPlayback.getCommunicationChannel().sendMessage("Audio player could not load " + track.getDisplay()).queue();
+                try {
+                    audioPlayback.getCommunicationChannel().sendMessage("Audio player could not load " + track.getDisplay()).queue();
+                } catch (InterruptedException ignored) {
+                }
             }
 
             @Override
             public void loadFailed(FriendlyException e) {
+                String trackDisplay;
+                try {
+                    trackDisplay = track.getDisplay();
+                } catch (InterruptedException e1) {
+                    trackDisplay = "";
+                }
                 audioPlayback
                     .getCommunicationChannel()
-                    .sendMessage("Exception while loading " + track.getDisplay() + ". Message: " + e.getMessage()).queue();
-                e.printStackTrace();
+                    .sendMessage("Exception while loading " + trackDisplay + ". Message: " + e.getMessage()).queue();
+                logger.error("lavaplayer threw an exception while loading track " + trackDisplay, e);
             }
         });
     }
@@ -135,7 +157,7 @@ public class AudioManager extends AudioEventAdapter {
             Thread trackRedirectingThread = new Thread(() -> {
                 for (HollowYouTubeVideo hollowYouTubeVideo : tracksToRedirect) {
                     if (Thread.currentThread().isInterrupted()) {
-                        tracksToRedirect.stream().filter(hollow -> !hollow.isComplete()).forEach(HollowYouTubeVideo::cancel);
+                        tracksToRedirect.stream().filter(HollowYouTubeVideo::isHollow).forEach(HollowYouTubeVideo::cancel);
                         break;
                     }
                     youTubeService.redirectSpotify(hollowYouTubeVideo);
@@ -202,7 +224,12 @@ public class AudioManager extends AudioEventAdapter {
 
         Playable currentTrack = playback.getAudioQueue().getCurrent();
         StringBuilder messageBuilder = new StringBuilder();
-        messageBuilder.append("Now playing ").append(currentTrack.getDisplay());
+        try {
+            messageBuilder.append("Now playing ").append(currentTrack.getDisplay());
+        } catch (InterruptedException e) {
+            // never reached since the track has been loaded, this it had been completed
+            return;
+        }
         if (playback.isPaused()) {
             messageBuilder.append(" (paused)");
         }

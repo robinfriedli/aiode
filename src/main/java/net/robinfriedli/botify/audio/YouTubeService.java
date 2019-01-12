@@ -286,6 +286,9 @@ public class YouTubeService {
             if (playlistItems.isEmpty()) {
                 throw new NoResultsFoundException("Playlist " + playlist.getTitle() + " has no items");
             }
+
+            // finally cancel each video that could be loaded e.g. if it's private
+            playlist.cancelLoading();
         } catch (IOException e) {
             throw new RuntimeException("Exception occurred while loading playlist items", e);
         }
@@ -293,14 +296,28 @@ public class YouTubeService {
 
     private void loadDurationsAsync(List<HollowYouTubeVideo> videos) {
         // ids have already been loaded in other thread
-        List<String> videoIds = videos.stream().map(HollowYouTubeVideo::getId).collect(Collectors.toList());
+        List<String> videoIds = Lists.newArrayList();
+        for (HollowYouTubeVideo hollowYouTubeVideo : videos) {
+            String id;
+            try {
+                id = hollowYouTubeVideo.getId();
+            } catch (InterruptedException e) {
+                return;
+            }
+            videoIds.add(id);
+        }
         // TrackLoadingExceptionHandler
         Thread.UncaughtExceptionHandler uncaughtExceptionHandler = Thread.currentThread().getUncaughtExceptionHandler();
         Thread durationLoadingThread = new Thread(() -> {
             try {
                 Map<String, Long> durationMillis = getDurationMillis(videoIds);
                 for (HollowYouTubeVideo video : videos) {
-                    Long duration = durationMillis.get(video.getId());
+                    Long duration;
+                    try {
+                        duration = durationMillis.get(video.getId());
+                    } catch (InterruptedException e) {
+                        return;
+                    }
                     video.setDuration(duration != null ? duration : 0);
                 }
             } catch (IOException e) {
@@ -320,7 +337,10 @@ public class YouTubeService {
      *
      * @param index the index of the item to load
      * @param playlist the playlist the item is a part of
+     * @deprecated deprecated as of 1.2.1 since the method is unreliable when the playlist contains unavailable items and
+     * very inefficient for minimal gain
      */
+    @Deprecated
     public void loadPlaylistItem(int index, YouTubePlaylist playlist) {
         if (index < 0 || index >= playlist.getVideos().size()) {
             throw new IllegalArgumentException("Index " + index + " out of bounds for list " + playlist.getTitle());
