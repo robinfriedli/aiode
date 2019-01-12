@@ -183,7 +183,14 @@ public class QueueCommand extends AbstractCommand {
             } else if (youTubeVideos.isEmpty()) {
                 throw new NoResultsFoundException("No YouTube video found for " + getCommandBody());
             } else {
-                askQuestion(youTubeVideos, YouTubeVideo::getTitle);
+                askQuestion(youTubeVideos, youTubeVideo -> {
+                    try {
+                        return youTubeVideo.getTitle();
+                    } catch (InterruptedException e) {
+                        // Unreachable since only HollowYouTubeVideos might get interrupted
+                        throw new RuntimeException(e);
+                    }
+                });
             }
         } else {
             YouTubeVideo youTubeVideo = youTubeService.searchVideo(getCommandBody());
@@ -215,20 +222,20 @@ public class QueueCommand extends AbstractCommand {
                     startOverflow = true;
                 }
                 previous = audioQueue.listPrevious(5);
-                previous.forEach(prev -> appendPlayable(table, prev));
+                for (Playable prev : previous) {
+                    appendPlayable(table, prev, false);
+                }
             }
-            table.addRow(
-                table.createCell(">", 5),
-                table.createCell(current.getDisplay()),
-                table.createCell(Util.normalizeMillis(current.getDurationMs()), 10)
-            );
+            appendPlayable(table, current, true);
             if (position < tracks.size() - 1) {
                 List<Playable> next;
                 if (tracks.size() > position + 6) {
                     endOverflow = true;
                 }
                 next = audioQueue.listNext(5);
-                next.forEach(n -> appendPlayable(table, n));
+                for (Playable n : next) {
+                    appendPlayable(table, n, false);
+                }
             }
 
             if (startOverflow) {
@@ -244,18 +251,34 @@ public class QueueCommand extends AbstractCommand {
         alertService.sendWrapped(responseBuilder.toString(), "```", getContext().getChannel());
     }
 
-    private void appendPlayable(Table table, Playable playable) {
+    private void appendPlayable(Table table, Playable playable, boolean current) {
+        String display;
+        try {
+            display = playable.getDisplay();
+        } catch (InterruptedException e) {
+            display = "[UNAVAILABLE]";
+        }
+        long durationMs = 0;
+        try {
+            durationMs = playable.getDurationMs();
+        } catch (InterruptedException ignored) {
+        }
         table.addRow(
-            table.createCell("", 5),
-            table.createCell(playable.getDisplay()),
-            table.createCell(Util.normalizeMillis(playable.getDurationMs()), 10)
+            table.createCell(current ? ">" : "", 5),
+            table.createCell(display),
+            table.createCell(Util.normalizeMillis(durationMs), 10)
         );
     }
 
     @Override
     public void onSuccess() {
         if (queuedTrack != null) {
-            sendMessage(getContext().getChannel(), "Queued " + queuedTrack.getDisplay());
+            try {
+                sendMessage(getContext().getChannel(), "Queued " + queuedTrack.getDisplay());
+            } catch (InterruptedException e) {
+                // Unreachable since track has been loaded completely
+                return;
+            }
         }
         if (queueLocalList != null) {
             sendMessage(getContext().getChannel(), "Queued playlist " + queueLocalList.getAttribute("name").getValue());
