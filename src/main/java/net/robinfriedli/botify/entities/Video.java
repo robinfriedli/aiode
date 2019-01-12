@@ -46,22 +46,18 @@ public class Video extends AbstractXmlElement {
     }
 
     private static Map<String, ?> getAttributeMap(YouTubeVideo video, User addedUser) {
-        try {
-            Track redirectedSpotifyTrack = video.getRedirectedSpotifyTrack();
-            Map<String, Object> attributeMap = new HashMap<>();
-            attributeMap.put("id", video.getId());
-            attributeMap.put("title", video.getTitle());
-            attributeMap.put("duration", video.getDuration());
-            attributeMap.put("addedUser", addedUser.getName());
-            attributeMap.put("addedUserId", addedUser.getId());
-            if (redirectedSpotifyTrack != null) {
-                attributeMap.put("redirectedSpotifyId", redirectedSpotifyTrack.getId());
-                attributeMap.put("spotifyTrackName", redirectedSpotifyTrack.getName());
-            }
-
-            return attributeMap;
-        } catch (InterruptedException e) {
-            throw new RuntimeException("Cannot create video element for cancelled YouTube video " + video.toString());
+        Track redirectedSpotifyTrack = video.getRedirectedSpotifyTrack();
+        Map<String, Object> attributeMap = new HashMap<>();
+        attributeMap.put("id", video.getId());
+        attributeMap.put("title", video.getTitle());
+        attributeMap.put("duration", video.getDuration());
+        attributeMap.put("addedUser", addedUser.getName());
+        attributeMap.put("addedUserId", addedUser.getId());
+        if (redirectedSpotifyTrack != null) {
+            attributeMap.put("redirectedSpotifyId", redirectedSpotifyTrack.getId());
+            attributeMap.put("spotifyTrackName", redirectedSpotifyTrack.getName());
         }
+
+        return attributeMap;
     }
 }

@@ -25,6 +25,7 @@ import net.robinfriedli.botify.entities.Song;
 import net.robinfriedli.botify.entities.Video;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
+import net.robinfriedli.botify.exceptions.TrackLoadingExceptionHandler;
 import net.robinfriedli.botify.util.SearchEngine;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
@@ -139,12 +140,14 @@ public class AddCommand extends AbstractCommand {
     }
 
     private void addYouTubeList(YouTubePlaylist youTubePlaylist, Pair<String, String> pair, YouTubeService youTubeService) {
-        youTubeService.populateList(youTubePlaylist);
+        Thread loadingThread = new Thread(() -> youTubeService.populateList(youTubePlaylist));
+        TrackLoadingExceptionHandler eh = new TrackLoadingExceptionHandler(getManager().getLogger(), getContext().getChannel(), youTubePlaylist);
+        loadingThread.setUncaughtExceptionHandler(eh);
+        loadingThread.setName("Botify track loading thread " + youTubePlaylist.toString());
+        loadingThread.start();
         List<XmlElement> videos = Lists.newArrayList();
         for (HollowYouTubeVideo video : youTubePlaylist.getVideos()) {
-            if (!video.isCanceled()) {
-                videos.add(new Video(video, getContext().getUser(), getPersistContext()));
-            }
+            videos.add(new Video(video, getContext().getUser(), getPersistContext()));
         }
         addToList(pair.getRight(), videos);
     }
@@ -166,14 +169,7 @@ public class AddCommand extends AbstractCommand {
                 } else if (youTubeVideos.isEmpty()) {
                     throw new NoResultsFoundException("No YouTube videos found for " + pair.getRight());
                 } else {
-                    askQuestion(youTubeVideos, youTubeVideo -> {
-                        try {
-                            return youTubeVideo.getTitle();
-                        } catch (InterruptedException e) {
-                            // Unreachable since only HollowYouTubeVideos might get interrupted
-                            throw new RuntimeException(e);
-                        }
-                    });
+                    askQuestion(youTubeVideos, YouTubeVideo::getTitle);
                 }
             } else {
                 YouTubeVideo youTubeVideo = youTubeService.searchVideo(pair.getLeft());

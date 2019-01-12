@@ -78,7 +78,7 @@ public class SearchCommand extends AbstractCommand {
         }
     }
 
-    private void searchYouTubeVideo() throws InterruptedException {
+    private void searchYouTubeVideo() {
         YouTubeService youTubeService = getManager().getAudioManager().getYouTubeService();
         if (argumentSet("limit")) {
             int limit = getArgumentValue("limit", Integer.class);
@@ -92,21 +92,14 @@ public class SearchCommand extends AbstractCommand {
             } else if (youTubeVideos.isEmpty()) {
                 throw new NoResultsFoundException("No YouTube videos found for " + getCommandBody());
             } else {
-                askQuestion(youTubeVideos, youTubeVideo -> {
-                    try {
-                        return youTubeVideo.getTitle();
-                    } catch (InterruptedException e) {
-                        // Unreachable since only HollowYouTubeVideos might get interrupted
-                        throw new RuntimeException(e);
-                    }
-                });
+                askQuestion(youTubeVideos, YouTubeVideo::getTitle);
             }
         } else {
             listYouTubeVideo(youTubeService.searchVideo(getCommandBody()));
         }
     }
 
-    private void listYouTubeVideo(YouTubeVideo youTubeVideo) throws InterruptedException {
+    private void listYouTubeVideo(YouTubeVideo youTubeVideo) {
         StringBuilder responseBuilder = new StringBuilder();
         responseBuilder.append("Title: ").append(youTubeVideo.getTitle()).append(System.lineSeparator());
         responseBuilder.append("Id: ").append(youTubeVideo.getId()).append(System.lineSeparator());

@@ -1,6 +1,5 @@
 package net.robinfriedli.botify.audio;
 
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -22,7 +21,8 @@ public class HollowYouTubeVideo implements YouTubeVideo {
     private final CompletableFuture<Long> duration;
     @Nullable
     private final Track redirectedSpotifyTrack;
-    private boolean canceled = false;
+    @Nullable
+    private YouTubePlaylist playlist;
 
     public HollowYouTubeVideo(YouTubeService youTubeService) {
         this.youTubeService = youTubeService;
@@ -41,17 +41,17 @@ public class HollowYouTubeVideo implements YouTubeVideo {
     }
 
     @Override
-    public String getTitle() throws InterruptedException {
+    public String getTitle() {
         return getCompleted(title);
     }
 
     @Override
-    public String getId() throws InterruptedException {
+    public String getId() {
         return getCompleted(id);
     }
 
     @Override
-    public long getDuration() throws InterruptedException {
+    public long getDuration() {
         return getCompleted(duration);
     }
 
@@ -77,30 +77,51 @@ public class HollowYouTubeVideo implements YouTubeVideo {
         title.cancel(false);
         id.cancel(false);
         duration.cancel(false);
-        canceled = true;
     }
 
-    public boolean isCanceled() {
-        return canceled;
+    public boolean isComplete() {
+        return title.isDone() && id.isDone() && duration.isDone();
     }
 
-    public boolean isHollow() {
-        return !(title.isDone() || id.isDone() || duration.isDone());
+    public void setPlaylist(@Nullable YouTubePlaylist playlist) {
+        this.playlist = playlist;
     }
 
-    private <E> E getCompleted(CompletableFuture<E> future) throws InterruptedException {
-        try {
-            if (!future.isDone() && redirectedSpotifyTrack != null) {
-                youTubeService.redirectSpotify(this);
+    private <E> E getCompleted(CompletableFuture<E> future) {
+        if (future.isDone()) {
+            try {
+                return future.get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
             }
-
-            return future.get(3, TimeUnit.MINUTES);
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
-        } catch (TimeoutException e) {
-            throw new RuntimeException("Video loading timed out", e);
-        } catch (CancellationException e) {
-            throw new InterruptedException();
+        } else {
+            completeManually();
+            try {
+                return future.get(3, TimeUnit.MINUTES);
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            } catch (TimeoutException e) {
+                throw new RuntimeException("Video loading timed out", e);
+            }
         }
     }
+
+    private void completeManually() {
+        // should be the CommandExceptionHandler of the current command
+        Thread.UncaughtExceptionHandler uncaughtExceptionHandler = Thread.currentThread().getUncaughtExceptionHandler();
+        Thread completionThread = new Thread(() -> {
+            if (redirectedSpotifyTrack != null) {
+                youTubeService.redirectSpotify(this);
+            } else if (playlist != null) {
+                int i = playlist.getVideos().indexOf(this);
+                youTubeService.loadPlaylistItem(i, playlist);
+            }
+        });
+        completionThread.setName("Botify manual HollowYouTubeVideo completion thread: " + toString());
+        if (uncaughtExceptionHandler != null) {
+            completionThread.setUncaughtExceptionHandler(uncaughtExceptionHandler);
+        }
+        completionThread.start();
+    }
+
 }

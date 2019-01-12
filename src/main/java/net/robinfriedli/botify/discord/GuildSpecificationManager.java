@@ -7,7 +7,6 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.Role;
@@ -86,8 +85,6 @@ public class GuildSpecificationManager {
         } else {
             GuildSpecification newSpecification = specificationContext.invoke(() -> {
                 GuildSpecification guildSpecification = new GuildSpecification(guild, specificationContext);
-                AccessConfiguration permissionConfiguration = new AccessConfiguration("permission", Lists.newArrayList(), specificationContext);
-                guildSpecification.addSubElement(permissionConfiguration);
                 guildSpecification.persist();
                 return guildSpecification;
             });

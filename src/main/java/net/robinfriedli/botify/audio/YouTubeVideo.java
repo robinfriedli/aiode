@@ -12,21 +12,21 @@ public interface YouTubeVideo {
     /**
      * @return the title of the YouTube video
      */
-    String getTitle() throws InterruptedException;
+    String getTitle();
 
     /**
      * @return the id of the YouTube video
      */
-    String getId() throws InterruptedException;
+    String getId();
 
     /**
      * @return the duration of the YouTube video in milliseconds
      */
-    long getDuration() throws InterruptedException;
+    long getDuration();
 
     /**
      * @return if this YouTube video is the result of a redirected Spotify track, return the corresponding track,
-     * else return null. For more about Spotify track redirection, see {@link YouTubeService#redirectSpotify(HollowYouTubeVideo)}
+     * else return null. For more about Spotify track redirection, see {@link YouTubeService#redirectSpotify(Track)}
      */
     @Nullable
     Track getRedirectedSpotifyTrack();

@@ -7,7 +7,6 @@ import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.audio.AudioQueue;
-import net.robinfriedli.botify.audio.HollowYouTubeVideo;
 import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.audio.YouTubeVideo;
 import net.robinfriedli.botify.command.AbstractCommand;
@@ -58,9 +57,7 @@ public class ExportCommand extends AbstractCommand {
                 playlistElems.add(new Song((Track) delegate, createUser, persistContext));
             } else if (delegate instanceof YouTubeVideo) {
                 YouTubeVideo youTubeVideo = (YouTubeVideo) delegate;
-                if (!(youTubeVideo instanceof HollowYouTubeVideo && ((HollowYouTubeVideo) youTubeVideo).isCanceled())) {
-                    playlistElems.add(new Video(youTubeVideo, createUser, persistContext));
-                }
+                playlistElems.add(new Video(youTubeVideo, createUser, persistContext));
             }
         }
 

@@ -16,6 +16,8 @@ public class YouTubePlaylist {
         this.url = String.format("https://www.youtube.com/playlist?list=%s", id);
         this.channelTitle = channelTitle;
         this.videos = videos;
+
+        videos.forEach(video -> video.setPlaylist(this));
     }
 
     public String getTitle() {
@@ -39,7 +41,7 @@ public class YouTubePlaylist {
     }
 
     public void cancelLoading() {
-        videos.stream().filter(HollowYouTubeVideo::isHollow).forEach(HollowYouTubeVideo::cancel);
+        videos.stream().filter(video -> !video.isComplete()).forEach(HollowYouTubeVideo::cancel);
     }
 
 }

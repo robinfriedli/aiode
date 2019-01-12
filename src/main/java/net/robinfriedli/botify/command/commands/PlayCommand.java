@@ -113,14 +113,7 @@ public class PlayCommand extends AbstractCommand {
             } else if (youTubeVideos.isEmpty()) {
                 throw new NoResultsFoundException("No YouTube videos found for " + getCommandBody());
             } else {
-                askQuestion(youTubeVideos, youTubeVideo -> {
-                    try {
-                        return youTubeVideo.getTitle();
-                    } catch (InterruptedException e) {
-                        // Unreachable since only HollowYouTubeVideos might get interrupted
-                        throw new RuntimeException(e);
-                    }
-                });
+                askQuestion(youTubeVideos, YouTubeVideo::getTitle);
             }
         } else {
             YouTubeVideo youTubeVideo = youTubeService.searchVideo(getCommandBody());
