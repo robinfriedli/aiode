@@ -44,15 +44,15 @@ public class SetRedirectedSpotifyTrackNameTask implements StartupTask {
 
         for (File file : files) {
             if (file.exists()) {
-                Context context = jxpBackend.getContext(file);
-                context.invoke(() -> {
-                    try {
-                        migrate(context, spotifyApi);
-                    } catch (IOException | SpotifyWebApiException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-                jxpBackend.removeContext(file);
+                try (Context context = jxpBackend.getContext(file)) {
+                    context.invoke(() -> {
+                        try {
+                            migrate(context, spotifyApi);
+                        } catch (IOException | SpotifyWebApiException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+                }
             }
         }
         spotifyApi.setAccessToken(null);
