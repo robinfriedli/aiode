@@ -6,6 +6,7 @@ import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
+import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
 
@@ -30,6 +31,14 @@ public class CreateCommand extends AbstractCommand {
 
         if (existingPlaylist != null) {
             throw new InvalidCommandException("Playlist " + getCommandBody() + " already exists");
+        }
+
+        String playlistCountMax = PropertiesLoadingService.loadProperty("PLAYLIST_COUNT_MAX");
+        if (playlistCountMax != null) {
+            int maxPlaylists = Integer.parseInt(playlistCountMax);
+            if (persistContext.getInstancesOf(Playlist.class).size() >= maxPlaylists) {
+                throw new InvalidCommandException("Maximum playlist count of " + maxPlaylists + " reached!");
+            }
         }
 
         Playlist playlist = new Playlist(getCommandBody(), getContext().getUser(), Lists.newArrayList(), persistContext);

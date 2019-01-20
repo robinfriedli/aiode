@@ -17,6 +17,7 @@ import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.Song;
 import net.robinfriedli.botify.entities.Video;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
+import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
 
@@ -49,6 +50,22 @@ public class ExportCommand extends AbstractCommand {
         }
 
         List<Playable> tracks = queue.getTracks();
+
+        String playlistCountMax = PropertiesLoadingService.loadProperty("PLAYLIST_COUNT_MAX");
+        if (playlistCountMax != null) {
+            int maxPlaylists = Integer.parseInt(playlistCountMax);
+            if (persistContext.getInstancesOf(Playlist.class).size() >= maxPlaylists) {
+                throw new InvalidCommandException("Maximum playlist count of " + maxPlaylists + " reached!");
+            }
+        }
+        String playlistSizeMax = PropertiesLoadingService.loadProperty("PLAYLIST_SIZE_MAX");
+        if (playlistSizeMax != null) {
+            int maxSize = Integer.parseInt(playlistSizeMax);
+            if (tracks.size() > maxSize) {
+                throw new InvalidCommandException("List exceeds maximum size of " + maxSize + " items!");
+            }
+        }
+
         User createUser = getContext().getUser();
         List<XmlElement> playlistElems = Lists.newArrayList();
 

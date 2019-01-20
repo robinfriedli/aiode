@@ -25,6 +25,7 @@ import net.robinfriedli.botify.entities.Song;
 import net.robinfriedli.botify.entities.Video;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
+import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.SearchEngine;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
@@ -213,6 +214,14 @@ public class AddCommand extends AbstractCommand {
 
         if (playlist == null) {
             throw new InvalidCommandException("No local list found for " + name);
+        }
+
+        String playlistSizeMax = PropertiesLoadingService.loadProperty("PLAYLIST_SIZE_MAX");
+        if (playlistSizeMax != null) {
+            int maxSize = Integer.parseInt(playlistSizeMax);
+            if (playlist.getAttribute("songCount").getInt() + elements.size() > maxSize) {
+                throw new InvalidCommandException("List exceeds maximum size of " + maxSize + " items!");
+            }
         }
 
         persistContext.invoke(true, true, () -> playlist.addSubElements(elements), getContext().getChannel());

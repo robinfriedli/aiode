@@ -172,7 +172,7 @@ public class ArgumentContribution {
             if (requiresValue && !hasValue()) {
                 throw new InvalidCommandException("Argument " + argument + " requires an assigned value!");
             } else if (!requiresValue && hasValue()) {
-                throw new InvalidCommandException("Argument " + argument + " does not require ans assigned value!");
+                throw new InvalidCommandException("Argument " + argument + " does not require an assigned value!");
             }
 
             if (requiresInput && getSourceCommand().getCommandBody().isBlank()) {
