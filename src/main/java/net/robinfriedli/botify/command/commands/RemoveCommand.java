@@ -21,7 +21,8 @@ public class RemoveCommand extends AbstractCommand {
     public RemoveCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier) {
         super(context, commandManager, commandString, false, false, true, identifier,
             "Remove an item from a local playlist. Put either the full title of the YouTube video or the spotify " +
-                "track name.", Category.PLAYLIST_MANAGEMENT);
+                "track name. If it was a track added by URL from a different source you can either remove it via its title or URL",
+            Category.PLAYLIST_MANAGEMENT);
     }
 
     @Override
@@ -34,7 +35,7 @@ public class RemoveCommand extends AbstractCommand {
             throw new NoResultsFoundException("No local list found for " + pair.getRight());
         }
 
-        List<XmlElement> playlistItems = SearchEngine.getPlaylistItems(playlist, pair.getLeft());
+        List<XmlElement> playlistItems = SearchEngine.searchPlaylistItems(playlist, pair.getLeft());
         if (playlistItems.size() == 1) {
             persistContext.invoke(true, true, () -> playlistItems.get(0).delete(), getContext().getChannel());
         } else if (playlistItems.isEmpty()) {

@@ -3,19 +3,14 @@ package net.robinfriedli.botify.command.commands;
 import java.util.List;
 
 import com.google.common.collect.Lists;
-import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.audio.AudioQueue;
-import net.robinfriedli.botify.audio.HollowYouTubeVideo;
 import net.robinfriedli.botify.audio.Playable;
-import net.robinfriedli.botify.audio.YouTubeVideo;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.Playlist;
-import net.robinfriedli.botify.entities.Song;
-import net.robinfriedli.botify.entities.Video;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.jxp.api.XmlElement;
@@ -70,15 +65,7 @@ public class ExportCommand extends AbstractCommand {
         List<XmlElement> playlistElems = Lists.newArrayList();
 
         for (Playable track : tracks) {
-            Object delegate = track.delegate();
-            if (delegate instanceof Track) {
-                playlistElems.add(new Song((Track) delegate, createUser, persistContext));
-            } else if (delegate instanceof YouTubeVideo) {
-                YouTubeVideo youTubeVideo = (YouTubeVideo) delegate;
-                if (!(youTubeVideo instanceof HollowYouTubeVideo && ((HollowYouTubeVideo) youTubeVideo).isCanceled())) {
-                    playlistElems.add(new Video(youTubeVideo, createUser, persistContext));
-                }
-            }
+            playlistElems.add(track.export(persistContext, getContext().getUser()));
         }
 
         persistContext.invoke(true, true,

@@ -26,6 +26,7 @@ import com.wrapper.spotify.model_objects.specification.Track;
 import net.robinfriedli.botify.audio.YouTubeService;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.Song;
+import net.robinfriedli.botify.entities.UrlTrack;
 import net.robinfriedli.botify.entities.Video;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
@@ -98,7 +99,7 @@ public class SearchEngine {
         //return (Playlist) context.query(and(instanceOf(Playlist.class), attribute("name").is(searchTerm))).getOnlyResult();
     }
 
-    public static List<XmlElement> getPlaylistItems(Playlist playlist, String searchTerm) {
+    public static List<XmlElement> searchPlaylistItems(Playlist playlist, String searchTerm) {
         List<XmlElement> found = Query.evaluate(or(
             and(
                 instanceOf(Song.class),
@@ -116,20 +117,31 @@ public class SearchEngine {
                         xmlElement -> xmlElement.hasAttribute("spotifyTrackName")
                     )
                 )
+            ),
+            and(
+                instanceOf(UrlTrack.class),
+                or(
+                    editDistanceAttributeCondition("title", searchTerm),
+                    attribute("url").is(searchTerm)
+                )
             )
         )).execute(playlist.getSubElements()).collect();
 
-        return getBestLevenshteinMatches(found, searchTerm, element -> {
-            if (element instanceof Song) {
-                return element.getAttribute("name").getValue();
-            } else {
-                if (element.hasAttribute("spotifyTrackName")) {
-                    return element.getAttribute("spotifyTrackName").getValue();
+        if (found.size() > 1) {
+            return getBestLevenshteinMatches(found, searchTerm, element -> {
+                if (element instanceof Song) {
+                    return element.getAttribute("name").getValue();
                 } else {
-                    return element.getAttribute("title").getValue();
+                    if (element.hasAttribute("spotifyTrackName")) {
+                        return element.getAttribute("spotifyTrackName").getValue();
+                    } else {
+                        return element.getAttribute("title").getValue();
+                    }
                 }
-            }
-        });
+            });
+        } else {
+            return found;
+        }
     }
 
     public static List<PlaylistSimplified> searchSpotifyPlaylist(SpotifyApi spotifyApi, String searchTerm) throws IOException, SpotifyWebApiException {

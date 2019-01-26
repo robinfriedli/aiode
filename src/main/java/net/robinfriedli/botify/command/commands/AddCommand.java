@@ -4,12 +4,15 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.validator.routines.UrlValidator;
 
 import com.google.common.collect.Lists;
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
 import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
+import net.robinfriedli.botify.audio.AudioManager;
+import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.audio.AudioQueue;
 import net.robinfriedli.botify.audio.HollowYouTubeVideo;
 import net.robinfriedli.botify.audio.Playable;
@@ -35,20 +38,16 @@ public class AddCommand extends AbstractCommand {
 
     public AddCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier) {
         super(context, commandManager, commandString, false, false, true, identifier,
-            "Add a specific song from spotify or youtube or the current queue to the specified local playlist.\n" +
+            "Add a specific song from spotify, youtube, the current queue or any URL to the specified local playlist.\n" +
                 "Add a specific track like: $botify add $spotify $own from the inside $to my list.\n" +
-                "Add tracks from current queue to list: $botify add my list", Category.PLAYLIST_MANAGEMENT);
+                "Add tracks from current queue to a list: $botify add $queue my list\n" +
+                "Add tracks from a url: $botify add https://www.youtube.com/playlist?list=PL9LkJszkF_Z6bJ82689htd2wch-HVbzCO $to linkin park",
+            Category.PLAYLIST_MANAGEMENT);
     }
 
     @Override
     public void doRun() throws Exception {
-        if (argumentSet("youtube") || argumentSet("spotify") || argumentSet("list")) {
-            if (argumentSet("list")) {
-                addList();
-            } else {
-                addSpecificTrack();
-            }
-        } else {
+        if (argumentSet("queue")) {
             AudioQueue queue = getManager().getAudioManager().getQueue(getContext().getGuild());
             if (queue.isEmpty()) {
                 throw new InvalidCommandException("Queue is empty");
@@ -57,20 +56,32 @@ public class AddCommand extends AbstractCommand {
             List<Playable> tracks = queue.getTracks();
             List<XmlElement> elements = Lists.newArrayList();
             for (Playable track : tracks) {
-                Object item = track.delegate();
-                if (item instanceof Track) {
-                    elements.add(new Song((Track) item, getContext().getUser(), getPersistContext()));
-                } else if (item instanceof YouTubeVideo) {
-                    elements.add(new Video((YouTubeVideo) item, getContext().getUser(), getPersistContext()));
-                }
+                elements.add(track.export(getPersistContext(), getContext().getUser()));
             }
 
             addToList(getCommandBody(), elements);
+        } else {
+            Pair<String, String> pair = splitInlineArgument("to");
+            if (argumentSet("list")) {
+                addList(pair);
+            } else if (UrlValidator.getInstance().isValid(pair.getLeft())) {
+                addUrl(pair);
+            } else {
+                addSpecificTrack(pair);
+            }
         }
     }
 
-    private void addList() throws Exception {
-        Pair<String, String> pair = splitInlineArgument("to");
+    private void addUrl(Pair<String, String> pair) {
+        AudioManager audioManager = getManager().getAudioManager();
+        AudioPlayback playback = audioManager.getPlaybackForGuild(getContext().getGuild());
+        List<Playable> playables = audioManager.createPlayables(pair.getLeft(), playback);
+        List<XmlElement> elements = Lists.newArrayList();
+        playables.forEach(playable -> elements.add(playable.export(getPersistContext(), getContext().getUser())));
+        addToList(pair.getRight(), elements);
+    }
+
+    private void addList(Pair<String, String> pair) throws Exception {
         if (argumentSet("spotify")) {
             SpotifyApi spotifyApi = getManager().getSpotifyApi();
             Callable<Void> callable = () -> {
@@ -150,9 +161,7 @@ public class AddCommand extends AbstractCommand {
         addToList(pair.getRight(), videos);
     }
 
-    private void addSpecificTrack() throws Exception {
-        Pair<String, String> pair = splitInlineArgument("to");
-
+    private void addSpecificTrack(Pair<String, String> pair) throws Exception {
         if (argumentSet("youtube")) {
             YouTubeService youTubeService = getManager().getAudioManager().getYouTubeService();
             if (argumentSet("limit")) {
@@ -266,7 +275,7 @@ public class AddCommand extends AbstractCommand {
         argumentContribution.map("spotify").excludesArguments("youtube")
             .setDescription("Add specific spotify track.");
         argumentContribution.map("queue").excludesArguments("youtube", "spotify")
-            .setDescription("Add items from current queue. This is the default option.");
+            .setDescription("Add items from the current queue.");
         argumentContribution.map("own").needsArguments("spotify")
             .setDescription("Limit search to tracks in your library. This requires a spotify login.");
         argumentContribution.map("list")

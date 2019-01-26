@@ -23,6 +23,10 @@ public class AudioQueue {
         return currentTrack;
     }
 
+    public void setPosition(int position) {
+        currentTrack = position;
+    }
+
     public int getCurrentTrackNumber() {
         if (isShuffle) {
             return randomizedOrder.get(currentTrack);

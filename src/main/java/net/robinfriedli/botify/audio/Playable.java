@@ -1,60 +1,38 @@
 package net.robinfriedli.botify.audio;
 
-import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
-import com.wrapper.spotify.model_objects.specification.Track;
-import net.robinfriedli.stringlist.StringListImpl;
+import net.dv8tion.jda.core.entities.User;
+import net.robinfriedli.jxp.api.XmlElement;
+import net.robinfriedli.jxp.persist.Context;
 
 /**
  * Wrapper class for everything that can be added to the {@link AudioQueue}
  */
-public class Playable {
+public interface Playable {
 
-    private final AudioManager audioManager;
-    private final Object delegate;
+    /**
+     * @return The url of the music file to stream
+     * @throws InterruptedException if the thread loading the data asynchronously gets interrupted
+     */
+    String getPlaybackUrl() throws InterruptedException;
 
-    public Playable(AudioManager audioManager, Object delegate) {
-        this.audioManager = audioManager;
-        this.delegate = delegate;
-    }
+    /**
+     * @return The human readable String to identify the track with. For random URLs just the url itself (for YouTube
+     * videos or Spotify tracks its the title)
+     * @throws InterruptedException if the thread loading the data asynchronously gets interrupted
+     */
+    String getDisplay() throws InterruptedException;
 
-    public Object delegate() {
-        return delegate;
-    }
+    /**
+     * @return The duration of the audio track in milliseconds
+     * @throws InterruptedException if the thread loading the data asynchronously gets interrupted
+     */
+    long getDurationMs() throws InterruptedException;
 
-    public String getPlaybackUrl() throws InterruptedException {
-        if (delegate() instanceof Track) {
-            return ((Track) delegate()).getPreviewUrl();
-        } else if (delegate() instanceof YouTubeVideo) {
-            return String.format("https://www.youtube.com/watch?v=%s", ((YouTubeVideo) delegate()).getId());
-        } else {
-            throw new UnsupportedOperationException("Unsupported playable: " + delegate().getClass().getSimpleName());
-        }
-    }
+    /**
+     * @param context the context for the XML file
+     * @param user the user that adds the element
+     * @return an XML element with the data for this playable to save it in a playlist
+     */
+    XmlElement export(Context context, User user);
 
-    public String getDisplay() throws InterruptedException {
-        if (delegate() instanceof Track) {
-            Track track = (Track) delegate();
-            String name = track.getName();
-            String artistString = StringListImpl.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", ");
-            return String.format("%s by %s", name, artistString);
-        } else if (delegate() instanceof YouTubeVideo) {
-            return ((YouTubeVideo) delegate()).getTitle();
-        } else {
-            throw new UnsupportedOperationException("Unsupported playable: " + delegate().getClass().getSimpleName());
-        }
-    }
-
-    public long getDurationMs() throws InterruptedException {
-        if (delegate() instanceof Track) {
-            return ((Track) delegate()).getDurationMs();
-        } else if (delegate() instanceof YouTubeVideo) {
-            return ((YouTubeVideo) delegate()).getDuration();
-        } else {
-            throw new UnsupportedOperationException("Unsupported playable: " + delegate().getClass().getSimpleName());
-        }
-    }
-
-    public AudioManager getAudioManager() {
-        return audioManager;
-    }
 }

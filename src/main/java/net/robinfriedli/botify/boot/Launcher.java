@@ -20,6 +20,7 @@ import net.robinfriedli.botify.entities.CommandContribution;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.Song;
+import net.robinfriedli.botify.entities.UrlTrack;
 import net.robinfriedli.botify.entities.Video;
 import net.robinfriedli.botify.login.LoginManager;
 import net.robinfriedli.botify.login.LoginServer;
@@ -51,6 +52,7 @@ public class Launcher {
                 .mapClass("playlist", Playlist.class)
                 .mapClass("song", Song.class)
                 .mapClass("video", Video.class)
+                .mapClass("urlTrack", UrlTrack.class)
                 .mapClass("guildSpecification", GuildSpecification.class)
                 .mapClass("command", CommandContribution.class)
                 .mapClass("accessConfiguration", AccessConfiguration.class)

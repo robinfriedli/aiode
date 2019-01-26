@@ -9,6 +9,7 @@ import com.google.common.collect.Multimap;
 import net.dv8tion.jda.core.entities.MessageChannel;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.Song;
+import net.robinfriedli.botify.entities.UrlTrack;
 import net.robinfriedli.botify.entities.Video;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.events.ElementCreatedEvent;
@@ -34,7 +35,7 @@ public class AlertEventListener extends EventListener {
             XmlElement source = createdElement.getSource();
             if (source instanceof Playlist) {
                 createdPlaylists.add((Playlist) source);
-            } else if (source instanceof Song || source instanceof Video) {
+            } else if (source instanceof Song || source instanceof Video || source instanceof UrlTrack) {
                 createdTracks.add(source);
             }
         }
@@ -43,7 +44,7 @@ public class AlertEventListener extends EventListener {
             XmlElement source = deletedElement.getSource();
             if (source instanceof Playlist) {
                 removedPlaylists.add((Playlist) source);
-            } else if (source instanceof Song || source instanceof Video) {
+            } else if (source instanceof Song || source instanceof Video || source instanceof UrlTrack) {
                 Playlist oldParent = (Playlist) deletedElement.getOldParent();
                 removedTracks.put(oldParent, source);
             }

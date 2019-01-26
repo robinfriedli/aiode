@@ -13,7 +13,7 @@ import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.core.entities.User;
-import net.robinfriedli.botify.audio.Playable;
+import net.robinfriedli.botify.audio.PlayableImpl;
 import net.robinfriedli.jxp.api.AbstractXmlElement;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
@@ -48,7 +48,7 @@ public class Playlist extends AbstractXmlElement {
     }
 
     /**
-     * Returns the items in this playlist as objects supported by the {@link Playable} class. Note that getting the
+     * Returns the items in this playlist as objects supported by the {@link PlayableImpl} class. Note that getting the
      * Spotify track for a Song requires this method to be invoked with client credentials
      */
     public List<Object> getItems(SpotifyApi spotifyApi) throws IOException, SpotifyWebApiException {
@@ -59,6 +59,8 @@ public class Playlist extends AbstractXmlElement {
                 trackIds.add(item.getAttribute("id").getValue());
             } else if (item instanceof Video) {
                 items.add(((Video) item).asYouTubeVideo());
+            } else if (item instanceof UrlTrack) {
+                items.add(item);
             }
         }
 

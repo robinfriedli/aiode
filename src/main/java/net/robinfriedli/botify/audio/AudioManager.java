@@ -1,11 +1,22 @@
 package net.robinfriedli.botify.audio;
 
+import java.net.URI;
+import java.nio.charset.Charset;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
 
 import com.google.common.collect.Lists;
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
@@ -21,7 +32,9 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.VoiceChannel;
+import net.robinfriedli.botify.entities.UrlTrack;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
+import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 import net.robinfriedli.botify.exceptions.TrackLoadingExceptionHandler;
 
 public class AudioManager extends AudioEventAdapter {
@@ -46,24 +59,6 @@ public class AudioManager extends AudioEventAdapter {
         }
     }
 
-    private void iterateQueue(AudioPlayback playback, AudioQueue audioQueue) {
-        if (!playback.isRepeatOne()) {
-            if (audioQueue.hasNext()) {
-                audioQueue.next();
-                playTrack(playback.getGuild(), playback.getVoiceChannel());
-            } else {
-                audioQueue.reset();
-                if (!playback.isRepeatAll()) {
-                    leaveChannel(playback);
-                } else {
-                    playTrack(playback.getGuild(), playback.getVoiceChannel());
-                }
-            }
-        } else {
-            playTrack(playback.getGuild(), playback.getVoiceChannel());
-        }
-    }
-
     public void playTrack(Guild guild, @Nullable VoiceChannel channel) {
         AudioPlayback audioPlayback = getPlaybackForGuild(guild);
         if (channel != null) {
@@ -82,39 +77,16 @@ public class AudioManager extends AudioEventAdapter {
             return;
         }
 
-        playerManager.loadItem(playbackUrl, new AudioLoadResultHandler() {
-            @Override
-            public void trackLoaded(AudioTrack audioTrack) {
-                play(audioTrack, audioPlayback);
+        Object audioTrack = loadUrl(playbackUrl);
+        if (audioTrack != null) {
+            if (audioTrack instanceof AudioTrack) {
+                play((AudioTrack) audioTrack, audioPlayback);
+            } else {
+                throw new UnsupportedOperationException("Expected an AudioTrack");
             }
-
-            @Override
-            public void playlistLoaded(AudioPlaylist audioPlaylist) {
-                throw new UnsupportedOperationException("Expected a track, not a playlist");
-            }
-
-            @Override
-            public void noMatches() {
-                try {
-                    audioPlayback.getCommunicationChannel().sendMessage("Audio player could not load " + track.getDisplay()).queue();
-                } catch (InterruptedException ignored) {
-                }
-            }
-
-            @Override
-            public void loadFailed(FriendlyException e) {
-                String trackDisplay;
-                try {
-                    trackDisplay = track.getDisplay();
-                } catch (InterruptedException e1) {
-                    trackDisplay = "";
-                }
-                audioPlayback
-                    .getCommunicationChannel()
-                    .sendMessage("Exception while loading " + trackDisplay + ". Message: " + e.getMessage()).queue();
-                logger.error("lavaplayer threw an exception while loading track " + trackDisplay, e);
-            }
-        });
+        } else {
+            iterateQueue(audioPlayback, audioQueue);
+        }
     }
 
     public AudioPlayback getPlaybackForGuild(Guild guild) {
@@ -130,13 +102,21 @@ public class AudioManager extends AudioEventAdapter {
     }
 
     public Playable createPlayable(boolean redirectSpotify, Object objectToWrap) {
+        if (objectToWrap instanceof Playable) {
+            return (Playable) objectToWrap;
+        }
+
         if (redirectSpotify && objectToWrap instanceof Track) {
             HollowYouTubeVideo youTubeVideo = new HollowYouTubeVideo(youTubeService, (Track) objectToWrap);
             youTubeService.redirectSpotify(youTubeVideo);
-            return new Playable(this, youTubeVideo);
+            return new PlayableImpl(youTubeVideo);
         }
 
-        return new Playable(this, objectToWrap);
+        if (objectToWrap instanceof UrlTrack) {
+            return ((UrlTrack) objectToWrap).asPlayable();
+        }
+
+        return new PlayableImpl(objectToWrap);
     }
 
     public List<Playable> createPlayables(boolean redirectSpotify, List<?> objects, AudioPlayback audioPlayback) {
@@ -144,12 +124,16 @@ public class AudioManager extends AudioEventAdapter {
         List<HollowYouTubeVideo> tracksToRedirect = Lists.newArrayList();
 
         for (Object object : objects) {
-            if (redirectSpotify && object instanceof Track) {
+            if (object instanceof Playable) {
+                createdPlayables.add((Playable) object);
+            } else if (redirectSpotify && object instanceof Track) {
                 HollowYouTubeVideo youTubeVideo = new HollowYouTubeVideo(youTubeService, (Track) object);
                 tracksToRedirect.add(youTubeVideo);
-                createdPlayables.add(new Playable(this, youTubeVideo));
+                createdPlayables.add(new PlayableImpl(youTubeVideo));
+            } else if (object instanceof UrlTrack) {
+                createdPlayables.add(((UrlTrack) object).asPlayable());
             } else {
-                createdPlayables.add(new Playable(this, object));
+                createdPlayables.add(new PlayableImpl(object));
             }
         }
 
@@ -176,7 +160,7 @@ public class AudioManager extends AudioEventAdapter {
         List<Playable> playables = Lists.newArrayList();
 
         for (HollowYouTubeVideo video : youTubePlaylist.getVideos()) {
-            playables.add(new Playable(this, video));
+            playables.add(new PlayableImpl(video));
         }
 
         Thread videoLoadingThread = new Thread(() -> youTubeService.populateList(youTubePlaylist));
@@ -185,6 +169,48 @@ public class AudioManager extends AudioEventAdapter {
         videoLoadingThread.setUncaughtExceptionHandler(eh);
         audioPlayback.registerTrackLoading(videoLoadingThread);
         videoLoadingThread.start();
+
+        return playables;
+    }
+
+    public List<Playable> createPlayables(String url, AudioPlayback playback) {
+        List<Playable> playables;
+
+        URI uri = URI.create(url);
+        if (uri.getHost().contains("youtube.com")) {
+            List<NameValuePair> parameters = URLEncodedUtils.parse(uri, Charset.forName("UTF-8"));
+            Map<String, String> parameterMap = new HashMap<>();
+            parameters.forEach(param -> parameterMap.put(param.getName(), param.getValue()));
+            String videoId = parameterMap.get("v");
+            String playlistId = parameterMap.get("list");
+            if (videoId != null) {
+                YouTubeVideo youTubeVideo = youTubeService.videoForId(videoId);
+                playables = Lists.newArrayList(createPlayable(false, youTubeVideo));
+            } else if (playlistId != null) {
+                YouTubePlaylist youTubePlaylist = youTubeService.playlistForId(playlistId);
+                playables = createPlayables(youTubePlaylist, playback);
+            } else {
+                throw new InvalidCommandException("Detected YouTube URL but no video or playlist id provided.");
+            }
+        } else {
+            Object result = loadUrl(uri.toString());
+
+            if (result == null) {
+                throw new NoResultsFoundException("Could not load audio for provided URL");
+            }
+
+            if (result instanceof AudioTrack) {
+                playables = Lists.newArrayList(new UrlPlayable((AudioTrack) result));
+            } else if (result instanceof AudioPlaylist) {
+                AudioPlaylist playlist = (AudioPlaylist) result;
+                playables = Lists.newArrayList();
+                for (AudioTrack track : playlist.getTracks()) {
+                    playables.add(new UrlPlayable(track));
+                }
+            } else {
+                throw new UnsupportedOperationException("Expected an AudioTrack or AudioPlaylist but got " + result.getClass().getSimpleName());
+            }
+        }
 
         return playables;
     }
@@ -243,6 +269,61 @@ public class AudioManager extends AudioEventAdapter {
             messageBuilder.append(" (shuffle)");
         }
         playback.getCommunicationChannel().sendMessage(messageBuilder.toString()).queue();
+    }
+
+    private void iterateQueue(AudioPlayback playback, AudioQueue audioQueue) {
+        if (!playback.isRepeatOne()) {
+            if (audioQueue.hasNext()) {
+                audioQueue.next();
+                playTrack(playback.getGuild(), playback.getVoiceChannel());
+            } else {
+                audioQueue.reset();
+                if (!playback.isRepeatAll()) {
+                    leaveChannel(playback);
+                } else {
+                    playTrack(playback.getGuild(), playback.getVoiceChannel());
+                }
+            }
+        } else {
+            playTrack(playback.getGuild(), playback.getVoiceChannel());
+        }
+    }
+
+    @Nullable
+    private Object loadUrl(String playbackUrl) {
+        CompletableFuture<Object> result = new CompletableFuture<>();
+        playerManager.loadItem(playbackUrl, new AudioLoadResultHandler() {
+            @Override
+            public void trackLoaded(AudioTrack audioTrack) {
+                result.complete(audioTrack);
+            }
+
+            @Override
+            public void playlistLoaded(AudioPlaylist audioPlaylist) {
+                result.complete(audioPlaylist);
+            }
+
+            @Override
+            public void noMatches() {
+                result.cancel(false);
+            }
+
+            @Override
+            public void loadFailed(FriendlyException e) {
+                result.cancel(false);
+                if (e.severity != FriendlyException.Severity.COMMON) {
+                    logger.error("lavaplayer threw an exception while loading track " + playbackUrl, e);
+                }
+            }
+        });
+
+        try {
+            return result.get(3, TimeUnit.SECONDS);
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        } catch (TimeoutException | CancellationException e) {
+            return null;
+        }
     }
 
     private void initializeGuild(Guild guild) {

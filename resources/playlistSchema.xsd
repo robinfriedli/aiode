@@ -12,6 +12,7 @@
         <xs:sequence>
             <xs:element name="song" type="song"/>
             <xs:element name="video" type="video"/>
+            <xs:element name="urlTrack" type="urlTrack"/>
         </xs:sequence>
         <xs:attribute name="name" type="xs:string"/>
         <xs:attribute name="duration" type="xs:long"/>
@@ -38,6 +39,14 @@
         <xs:attribute name="addedUserId" type="xs:string"/>
         <xs:attribute name="redirectedSpotifyId" type="xs:string"/>
         <xs:attribute name="spotifyTrackName" type="xs:string"/>
+    </xs:complexType>
+
+    <xs:complexType name="urlTrack">
+        <xs:attribute name="url" type="xs:string"/>
+        <xs:attribute name="title" type="xs:string"/>
+        <xs:attribute name="duration" type="xs:long"/>
+        <xs:attribute name="addedUser" type="xs:string"/>
+        <xs:attribute name="addedUserId" type="xs:string"/>
     </xs:complexType>
 
 </xs:schema>

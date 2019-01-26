@@ -226,7 +226,6 @@ public abstract class AbstractCommand {
      */
     protected Pair<String, String> splitInlineArgument(String argument) {
         StringList words = StringListImpl.create(getCommandBody(), " ");
-        words.assertThat(s -> s.stream().filter(w -> w.startsWith("$")).count() == 1, "Expected one inline argument: " + argument, InvalidCommandException.class);
 
         List<Integer> positions = words.findPositionsOf("$" + argument, true);
         if (positions.isEmpty()) {

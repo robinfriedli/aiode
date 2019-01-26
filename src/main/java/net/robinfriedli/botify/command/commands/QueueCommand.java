@@ -3,6 +3,8 @@ package net.robinfriedli.botify.command.commands;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+import org.apache.commons.validator.routines.UrlValidator;
+
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
 import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
@@ -30,9 +32,10 @@ import net.robinfriedli.stringlist.StringListImpl;
 public class QueueCommand extends AbstractCommand {
 
     private Playable queuedTrack;
-    private Playlist queueLocalList;
+    private Playlist queuedLocalList;
     private PlaylistSimplified queuedSpotifyPlaylist;
     private YouTubePlaylist queuedYouTubePlaylist;
+    private int queuedAmount;
 
     public QueueCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier) {
         super(context, commandManager, commandString, false, false, false, identifier,
@@ -59,11 +62,19 @@ public class QueueCommand extends AbstractCommand {
             } else {
                 if (argumentSet("youtube")) {
                     queueYouTubeVideo(audioManager, playback);
+                } else if (UrlValidator.getInstance().isValid(getCommandBody())) {
+                    queuedUrlItems(audioManager, playback);
                 } else {
                     queueTrack(audioManager, playback);
                 }
             }
         }
+    }
+
+    private void queuedUrlItems(AudioManager audioManager, AudioPlayback playback) {
+        List<Playable> playables = audioManager.createPlayables(getCommandBody(), playback);
+        playback.getAudioQueue().add(playables);
+        queuedAmount = playables.size();
     }
 
     private void queueLocalList(AudioManager audioManager, AudioPlayback playback) throws Exception {
@@ -80,7 +91,7 @@ public class QueueCommand extends AbstractCommand {
 
         List<Playable> playables = audioManager.createPlayables(!argumentSet("preview"), items, playback);
         playback.getAudioQueue().add(playables);
-        queueLocalList = playlist;
+        queuedLocalList = playlist;
     }
 
     private void queueYouTubeList(AudioManager audioManager, AudioPlayback playback) {
@@ -280,14 +291,18 @@ public class QueueCommand extends AbstractCommand {
                 return;
             }
         }
-        if (queueLocalList != null) {
-            sendMessage(getContext().getChannel(), "Queued playlist " + queueLocalList.getAttribute("name").getValue());
+        if (queuedLocalList != null) {
+            sendMessage(getContext().getChannel(), "Queued playlist " + queuedLocalList.getAttribute("name").getValue());
         }
         if (queuedSpotifyPlaylist != null) {
             sendMessage(getContext().getChannel(), "Queued playlist " + queuedSpotifyPlaylist.getName());
         }
         if (queuedYouTubePlaylist != null) {
             sendMessage(getContext().getChannel(), "Queued playlist " + queuedYouTubePlaylist.getTitle());
+        }
+        if (queuedAmount > 0) {
+            String queuedString = queuedAmount > 1 ? "items" : "item";
+            sendMessage(getContext().getChannel(), "Queued " + queuedAmount + " " + queuedString);
         }
     }
 

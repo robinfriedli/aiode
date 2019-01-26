@@ -395,6 +395,51 @@ public class YouTubeService {
         }
     }
 
+    public YouTubeVideo videoForId(String id) {
+        try {
+            YouTube.Videos.List videoRequest = youTube.videos().list("snippet");
+            videoRequest.setId(id);
+            videoRequest.setFields("items(contentDetails/duration,snippet/title)");
+            videoRequest.setKey(apiKey);
+            videoRequest.setMaxResults(1L);
+            List<Video> items = videoRequest.execute().getItems();
+
+            if (items.isEmpty()) {
+                throw new NoResultsFoundException("No YouTube video found for id " + id);
+            }
+
+            Video video = items.get(0);
+            return new YouTubeVideoImpl(video.getSnippet().getTitle(), id, getDurationMillis(id));
+        } catch (IOException e) {
+            throw new RuntimeException("Exception occurred while loading video " + id);
+        }
+    }
+
+    public YouTubePlaylist playlistForId(String id) {
+        try {
+            YouTube.Playlists.List playlistRequest = youTube.playlists().list("snippet,contentDetails");
+            playlistRequest.setId(id);
+            playlistRequest.setFields("items(contentDetails/itemCount,snippet/title,snippet/channelTitle)");
+            playlistRequest.setKey(apiKey);
+            List<Playlist> items = playlistRequest.execute().getItems();
+
+            if (items.isEmpty()) {
+                throw new NoResultsFoundException("No YouTube playlist found for id " + id);
+            }
+
+            Playlist playlist = items.get(0);
+
+            List<HollowYouTubeVideo> videoPlaceholders = Lists.newArrayList();
+            for (int i = 0; i < playlist.getContentDetails().getItemCount(); i++) {
+                videoPlaceholders.add(new HollowYouTubeVideo(this));
+            }
+
+            return new YouTubePlaylist(playlist.getSnippet().getTitle(), id, playlist.getSnippet().getChannelTitle(), videoPlaceholders);
+        } catch (IOException e) {
+            throw new RuntimeException("Exception occurred while loading playlist " + id);
+        }
+    }
+
     /**
      * Calls the video source to retrieve its duration in milliseconds
      *

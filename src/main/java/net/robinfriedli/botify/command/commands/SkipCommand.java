@@ -14,7 +14,7 @@ public class SkipCommand extends AbstractCommand {
 
     public SkipCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier) {
         super(context, commandManager, commandString, false, false, false, identifier,
-            "Skip to the next track in the queue.", Category.PLAYBACK);
+            "Skip to the next track in the queue or skip the specified amount of tracks.", Category.PLAYBACK);
     }
 
     @Override
@@ -29,10 +29,40 @@ public class SkipCommand extends AbstractCommand {
             throw new InvalidCommandException("No next item in queue");
         }
 
-        if (playback.isRepeatAll() && !queue.hasNext()) {
-            queue.reset();
+        if (getCommandBody().isBlank()) {
+            if (playback.isRepeatAll() && !queue.hasNext()) {
+                queue.reset();
+            } else {
+                queue.next();
+            }
         } else {
-            queue.next();
+            int offset;
+            try {
+                offset = Integer.parseInt(getCommandBody());
+            } catch (NumberFormatException e) {
+                throw new InvalidCommandException(getCommandBody() + " is not an integer");
+            }
+
+            if (offset < 1) {
+                throw new InvalidCommandException("Expected a number greater than 0");
+            }
+
+            int newIndex;
+            int queueSize = queue.getTracks().size();
+            boolean overflow = queue.getPosition() + offset >= queueSize;
+            if (!playback.isRepeatAll() && overflow) {
+                newIndex = queueSize - 1;
+            } else if (overflow) {
+                // if the current index is 30 with 50 tracks in the queue and the user wants to skip 24, the result should be 4
+                // if the user wants to skip 20, the result be 0
+                int provisional = queue.getPosition() + offset;
+                int page = provisional / queueSize;
+                newIndex = provisional - (page * queueSize);
+            } else {
+                newIndex = queue.getPosition() + offset;
+            }
+
+            queue.setPosition(newIndex);
         }
         audioManager.playTrack(guild, channel);
     }

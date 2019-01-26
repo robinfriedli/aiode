@@ -3,6 +3,8 @@ package net.robinfriedli.botify.command.commands;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+import org.apache.commons.validator.routines.UrlValidator;
+
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
 import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
@@ -14,6 +16,7 @@ import net.dv8tion.jda.core.entities.VoiceChannel;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.audio.AudioQueue;
+import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.audio.YouTubePlaylist;
 import net.robinfriedli.botify.audio.YouTubeService;
 import net.robinfriedli.botify.audio.YouTubeVideo;
@@ -32,9 +35,11 @@ public class PlayCommand extends AbstractCommand {
     public PlayCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier) {
         super(context, commandManager, commandString, false, false, false, identifier,
             "Resume the paused playback, play the current track in the current queue or play the specified track, " +
-                "video or playlist. Can play youtube and spotify tracks or lists and also local playlists. Local playlists, " +
-                "like the queue, can contain both youtube videos and spotify tracks.\n" +
-                "Usage examples:\n$botify play\n$botify play numb\n$botify play $youtube youtube rewind 2018\n" +
+                "video or playlist. Can play any URL or search youtube and spotify tracks or lists and also local playlists. Local playlists, " +
+                "like the queue, can contain tracks from any source (YouTube, Spotify and URL).\n" +
+                "Usage examples:\n$botify play\n$botify play numb" +
+                "\n$botify play https://www.youtube.com/watch?v=Gd9OhYroLN0&t=0s&index=4&list=FLFU3o5-LHX2nB60-mKAtBjw" +
+                "\n$botify play $youtube youtube rewind 2018\n" +
                 "$botify play $youtube $list important videos\n$botify play $spotify $list $own goat", Category.PLAYBACK);
     }
 
@@ -69,11 +74,19 @@ public class PlayCommand extends AbstractCommand {
             } else {
                 if (argumentSet("youtube")) {
                     playYouTubeVideo(channel, audioManager, guild);
+                } else if (!argumentSet("spotify") && UrlValidator.getInstance().isValid(getCommandBody())) {
+                    playUrl(channel, audioManager, playbackForGuild, guild);
                 } else {
                     playSpotifyTrack(channel, audioManager, guild, messageChannel);
                 }
             }
         }
+    }
+
+    private void playUrl(VoiceChannel channel, AudioManager audioManager, AudioPlayback playback, Guild guild) {
+        List<Playable> playables = audioManager.createPlayables(getCommandBody(), playback);
+        playback.getAudioQueue().set(playables);
+        audioManager.playTrack(guild, channel);
     }
 
     private void playSpotifyTrack(VoiceChannel channel, AudioManager audioManager, Guild guild, MessageChannel messageChannel) throws Exception {
