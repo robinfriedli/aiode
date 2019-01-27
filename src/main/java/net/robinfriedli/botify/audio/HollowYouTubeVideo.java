@@ -2,6 +2,7 @@ package net.robinfriedli.botify.audio;
 
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -82,6 +83,15 @@ public class HollowYouTubeVideo implements YouTubeVideo {
 
     public boolean isCanceled() {
         return canceled;
+    }
+
+    public void awaitCompletion() {
+        try {
+            title.join();
+            id.join();
+            duration.join();
+        } catch (CancellationException | CompletionException ignored) {
+        }
     }
 
     public boolean isHollow() {

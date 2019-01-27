@@ -6,7 +6,9 @@ import com.google.common.collect.Lists;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.audio.AudioQueue;
+import net.robinfriedli.botify.audio.HollowYouTubeVideo;
 import net.robinfriedli.botify.audio.Playable;
+import net.robinfriedli.botify.audio.PlayableImpl;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
@@ -65,6 +67,13 @@ public class ExportCommand extends AbstractCommand {
         List<XmlElement> playlistElems = Lists.newArrayList();
 
         for (Playable track : tracks) {
+            if (track instanceof PlayableImpl && ((PlayableImpl) track).delegate() instanceof HollowYouTubeVideo) {
+                HollowYouTubeVideo video = (HollowYouTubeVideo) ((PlayableImpl) track).delegate();
+                video.awaitCompletion();
+                if (video.isCanceled()) {
+                    continue;
+                }
+            }
             playlistElems.add(track.export(persistContext, getContext().getUser()));
         }
 
