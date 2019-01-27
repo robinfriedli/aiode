@@ -120,6 +120,10 @@ public class AudioManager extends AudioEventAdapter {
     }
 
     public List<Playable> createPlayables(boolean redirectSpotify, List<?> objects, AudioPlayback audioPlayback) {
+        return createPlayables(redirectSpotify, objects, audioPlayback, true);
+    }
+
+    public List<Playable> createPlayables(boolean redirectSpotify, List<?> objects, AudioPlayback audioPlayback, boolean mayInterrupt) {
         List<Playable> createdPlayables = Lists.newArrayList();
         List<HollowYouTubeVideo> tracksToRedirect = Lists.newArrayList();
 
@@ -150,13 +154,19 @@ public class AudioManager extends AudioEventAdapter {
             trackRedirectingThread.setName("Botify Redirecting Spotify thread: " + objects.size() + " tracks");
             TrackLoadingExceptionHandler eh = new TrackLoadingExceptionHandler(logger, audioPlayback.getCommunicationChannel(), null);
             trackRedirectingThread.setUncaughtExceptionHandler(eh);
-            audioPlayback.registerTrackLoading(trackRedirectingThread);
-            trackRedirectingThread.start();
+
+            AudioPlayback.TrackLoadingThread loadingThread = new AudioPlayback.TrackLoadingThread(trackRedirectingThread, mayInterrupt);
+            audioPlayback.registerTrackLoading(loadingThread);
+            loadingThread.start();
         }
         return createdPlayables;
     }
 
     public List<Playable> createPlayables(YouTubePlaylist youTubePlaylist, AudioPlayback audioPlayback) {
+        return createPlayables(youTubePlaylist, audioPlayback, true);
+    }
+
+    public List<Playable> createPlayables(YouTubePlaylist youTubePlaylist, AudioPlayback audioPlayback, boolean mayInterrupt) {
         List<Playable> playables = Lists.newArrayList();
 
         for (HollowYouTubeVideo video : youTubePlaylist.getVideos()) {
@@ -167,13 +177,19 @@ public class AudioManager extends AudioEventAdapter {
         videoLoadingThread.setName("Botify Video Loading " + youTubePlaylist.toString());
         TrackLoadingExceptionHandler eh = new TrackLoadingExceptionHandler(logger, audioPlayback.getCommunicationChannel(), youTubePlaylist);
         videoLoadingThread.setUncaughtExceptionHandler(eh);
-        audioPlayback.registerTrackLoading(videoLoadingThread);
-        videoLoadingThread.start();
+
+        AudioPlayback.TrackLoadingThread loadingThread = new AudioPlayback.TrackLoadingThread(videoLoadingThread, mayInterrupt);
+        audioPlayback.registerTrackLoading(loadingThread);
+        loadingThread.start();
 
         return playables;
     }
 
     public List<Playable> createPlayables(String url, AudioPlayback playback) {
+        return createPlayables(url, playback, true);
+    }
+
+    public List<Playable> createPlayables(String url, AudioPlayback playback, boolean mayInterrupt) {
         List<Playable> playables;
 
         URI uri = URI.create(url);
@@ -188,7 +204,7 @@ public class AudioManager extends AudioEventAdapter {
                 playables = Lists.newArrayList(createPlayable(false, youTubeVideo));
             } else if (playlistId != null) {
                 YouTubePlaylist youTubePlaylist = youTubeService.playlistForId(playlistId);
-                playables = createPlayables(youTubePlaylist, playback);
+                playables = createPlayables(youTubePlaylist, playback, mayInterrupt);
             } else {
                 throw new InvalidCommandException("Detected YouTube URL but no video or playlist id provided.");
             }

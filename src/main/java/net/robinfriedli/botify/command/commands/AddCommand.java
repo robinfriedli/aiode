@@ -16,6 +16,7 @@ import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.audio.AudioQueue;
 import net.robinfriedli.botify.audio.HollowYouTubeVideo;
 import net.robinfriedli.botify.audio.Playable;
+import net.robinfriedli.botify.audio.PlayableImpl;
 import net.robinfriedli.botify.audio.YouTubePlaylist;
 import net.robinfriedli.botify.audio.YouTubeService;
 import net.robinfriedli.botify.audio.YouTubeVideo;
@@ -75,9 +76,23 @@ public class AddCommand extends AbstractCommand {
     private void addUrl(Pair<String, String> pair) {
         AudioManager audioManager = getManager().getAudioManager();
         AudioPlayback playback = audioManager.getPlaybackForGuild(getContext().getGuild());
-        List<Playable> playables = audioManager.createPlayables(pair.getLeft(), playback);
+        List<Playable> playables = audioManager.createPlayables(pair.getLeft(), playback, false);
+
+        try {
+            playback.awaitLoaded();
+        } catch (InterruptedException e) {
+            // command execution threads do not get interrupted
+            throw new RuntimeException(e);
+        }
+
         List<XmlElement> elements = Lists.newArrayList();
-        playables.forEach(playable -> elements.add(playable.export(getPersistContext(), getContext().getUser())));
+        playables.forEach(playable -> {
+            if (!(playable instanceof PlayableImpl
+                && ((PlayableImpl) playable).delegate() instanceof HollowYouTubeVideo
+                && ((HollowYouTubeVideo) ((PlayableImpl) playable).delegate()).isCanceled())) {
+                elements.add(playable.export(getPersistContext(), getContext().getUser()));
+            }
+        });
         addToList(pair.getRight(), elements);
     }
 
