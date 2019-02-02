@@ -1,4 +1,4 @@
-# botify
+![# botify](https://raw.githubusercontent.com/robinfriedli/botify/master/resources-public/img/botify-logo-wide.png)
  Discord bot that plays Spotify tracks and YouTube videos or any URL including Soundcloud links.
 
 * Play and search Spotify tracks and YouTube videos or playlists or any URL including Soundcloud links
