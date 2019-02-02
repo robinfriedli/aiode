@@ -24,14 +24,8 @@ public class PermissionCommand extends AbstractCommand {
 
     private StringBuilder successMessageBuilder = new StringBuilder();
 
-    public PermissionCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier) {
-        super(context, commandManager, commandString, false, false, true, identifier,
-            "Add or remove a role required to run a certain command. By default all commands are available to " +
-                "each user, except for this command which initially is only available to the guild owner. But as soon as" +
-                " a role has been added only those members with said role can use the command. The guild owner can always " +
-                "use any command.\n" +
-                "Usage: permission $grant play $to playmanager\npermission $deny add $for playmanager\n" +
-                "permission $clear shuffle", Category.GENERAL);
+    public PermissionCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
+        super(context, commandManager, commandString, false, false, true, identifier, description, Category.GENERAL);
     }
 
     @Override

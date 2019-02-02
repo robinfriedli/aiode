@@ -37,9 +37,8 @@ public class QueueCommand extends AbstractCommand {
     private YouTubePlaylist queuedYouTubePlaylist;
     private int queuedAmount;
 
-    public QueueCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier) {
-        super(context, commandManager, commandString, false, false, false, identifier,
-            "Add a youtube video or spotify track to the current queue.", Category.PLAYBACK);
+    public QueueCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
+        super(context, commandManager, commandString, false, false, false, identifier, description, Category.PLAYBACK);
     }
 
     @Override

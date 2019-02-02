@@ -32,15 +32,8 @@ import net.robinfriedli.stringlist.StringListImpl;
 
 public class PlayCommand extends AbstractCommand {
 
-    public PlayCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier) {
-        super(context, commandManager, commandString, false, false, false, identifier,
-            "Resume the paused playback, play the current track in the current queue or play the specified track, " +
-                "video or playlist. Can play any URL or search youtube and spotify tracks or lists and also local playlists. Local playlists, " +
-                "like the queue, can contain tracks from any source (YouTube, Spotify and URL).\n" +
-                "Usage examples:\n$botify play\n$botify play numb" +
-                "\n$botify play https://www.youtube.com/watch?v=Gd9OhYroLN0&t=0s&index=4&list=FLFU3o5-LHX2nB60-mKAtBjw" +
-                "\n$botify play $youtube youtube rewind 2018\n" +
-                "$botify play $youtube $list important videos\n$botify play $spotify $list $own goat", Category.PLAYBACK);
+    public PlayCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
+        super(context, commandManager, commandString, false, false, false, identifier, description, Category.PLAYBACK);
     }
 
     @Override

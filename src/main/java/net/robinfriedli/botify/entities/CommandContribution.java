@@ -38,6 +38,7 @@ public class CommandContribution extends AbstractXmlElement {
     public AbstractCommand instantiate(CommandManager commandManager, CommandContext commandContext, String commandBody) {
         String identifier = getAttribute("identifier").getValue();
         String implementation = getAttribute("implementation").getValue();
+        String description = getAttribute("description").getValue();
         Class<? extends AbstractCommand> commandClass;
         try {
             commandClass = (Class<? extends AbstractCommand>) Class.forName(implementation);
@@ -49,8 +50,8 @@ public class CommandContribution extends AbstractXmlElement {
 
         try {
             Constructor<? extends AbstractCommand> constructor =
-                commandClass.getConstructor(CommandContext.class, CommandManager.class, String.class, String.class);
-            return constructor.newInstance(commandContext, commandManager, commandBody, identifier);
+                commandClass.getConstructor(CommandContext.class, CommandManager.class, String.class, String.class, String.class);
+            return constructor.newInstance(commandContext, commandManager, commandBody, identifier, description);
         } catch (InvocationTargetException e) {
             Throwable cause = e.getCause();
             if (cause instanceof InvalidCommandException) {

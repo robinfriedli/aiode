@@ -37,13 +37,8 @@ import net.robinfriedli.stringlist.StringListImpl;
 
 public class AddCommand extends AbstractCommand {
 
-    public AddCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier) {
-        super(context, commandManager, commandString, false, false, true, identifier,
-            "Add a specific song from spotify, youtube, the current queue or any URL to the specified local playlist.\n" +
-                "Add a specific track like: $botify add $spotify $own from the inside $to my list.\n" +
-                "Add tracks from current queue to a list: $botify add $queue my list\n" +
-                "Add tracks from a url: $botify add https://www.youtube.com/playlist?list=PL9LkJszkF_Z6bJ82689htd2wch-HVbzCO $to linkin park",
-            Category.PLAYLIST_MANAGEMENT);
+    public AddCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
+        super(context, commandManager, commandString, false, false, true, identifier, description, Category.PLAYLIST_MANAGEMENT);
     }
 
     @Override

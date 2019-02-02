@@ -12,9 +12,8 @@ import net.robinfriedli.botify.exceptions.InvalidCommandException;
 
 public class SkipCommand extends AbstractCommand {
 
-    public SkipCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier) {
-        super(context, commandManager, commandString, false, false, false, identifier,
-            "Skip to the next track in the queue or skip the specified amount of tracks.", Category.PLAYBACK);
+    public SkipCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
+        super(context, commandManager, commandString, false, false, false, identifier, description, Category.PLAYBACK);
     }
 
     @Override

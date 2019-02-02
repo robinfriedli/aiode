@@ -10,10 +10,8 @@ public class AnswerCommand extends AbstractCommand {
 
     private AbstractCommand sourceCommand;
 
-    public AnswerCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier) {
-        super(context, commandManager, commandString, false, false, true, identifier,
-            "Answer a question asked by the bot. Commands like the play command may ask you to specify what " +
-                "track you meant if several options where found.", Category.GENERAL);
+    public AnswerCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
+        super(context, commandManager, commandString, false, false, true, identifier, description, Category.GENERAL);
     }
 
     @Override

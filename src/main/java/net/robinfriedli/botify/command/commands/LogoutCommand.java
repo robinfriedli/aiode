@@ -6,9 +6,8 @@ import net.robinfriedli.botify.command.CommandManager;
 
 public class LogoutCommand extends AbstractCommand {
 
-    public LogoutCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier) {
-        super(context, commandManager, commandString, false, false, false, identifier,
-            "Log out from Spotify.", Category.SPOTIFY);
+    public LogoutCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
+        super(context, commandManager, commandString, false, false, false, identifier, description, Category.SPOTIFY);
     }
 
     @Override

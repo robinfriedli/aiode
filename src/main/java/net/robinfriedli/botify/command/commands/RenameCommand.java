@@ -7,9 +7,8 @@ import net.robinfriedli.botify.discord.GuildSpecificationManager;
 
 public class RenameCommand extends AbstractCommand {
 
-    public RenameCommand(CommandContext commandContext, CommandManager commandManager, String commandString, String identifier) {
-        super(commandContext, commandManager, commandString, false, false, true, identifier,
-            "Change the name of the bot.", Category.GENERAL);
+    public RenameCommand(CommandContext commandContext, CommandManager commandManager, String commandString, String identifier, String description) {
+        super(commandContext, commandManager, commandString, false, false, true, identifier, description, Category.GENERAL);
     }
 
     @Override

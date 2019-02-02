@@ -1,6 +1,8 @@
 package net.robinfriedli.botify.command.commands;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
@@ -18,9 +20,8 @@ import net.robinfriedli.stringlist.StringListImpl;
 
 public class HelpCommand extends AbstractCommand {
 
-    public HelpCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier) {
-        super(context, commandManager, commandString, false, false, false, identifier,
-            "Lists all available commands and their descriptions or provides help with a specific command.", Category.GENERAL);
+    public HelpCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
+        super(context, commandManager, commandString, false, false, false, identifier, description, Category.GENERAL);
     }
 
     @Override
@@ -36,7 +37,9 @@ public class HelpCommand extends AbstractCommand {
             for (AbstractCommand command : commands) {
                 commandsByCategory.put(command.getCategory(), command);
             }
-            for (Category category : commandsByCategory.keySet()) {
+
+            List<Category> categories = commandsByCategory.keySet().stream().sorted(Comparator.comparingInt(Enum::ordinal)).collect(Collectors.toList());
+            for (Category category : categories) {
                 sb.append("__**").append(category.getName()).append("**__").append(System.lineSeparator());
                 for (AbstractCommand command : commandsByCategory.get(category)) {
                     sb.append("**").append(command.getIdentifier()).append("**").append(System.lineSeparator());

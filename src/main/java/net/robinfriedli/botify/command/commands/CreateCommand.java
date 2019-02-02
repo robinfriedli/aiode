@@ -14,9 +14,8 @@ import static net.robinfriedli.jxp.queries.Conditions.*;
 
 public class CreateCommand extends AbstractCommand {
 
-    public CreateCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier) {
-        super(context, commandManager, commandString, false, false, true, identifier,
-            "Create an emtpy local playlist with the given name like $botify create my list", Category.PLAYLIST_MANAGEMENT);
+    public CreateCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
+        super(context, commandManager, commandString, false, false, true, identifier, description, Category.PLAYLIST_MANAGEMENT);
     }
 
     @Override

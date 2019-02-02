@@ -22,9 +22,8 @@ import static net.robinfriedli.jxp.queries.Conditions.*;
 
 public class ExportCommand extends AbstractCommand {
 
-    public ExportCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier) {
-        super(context, commandManager, commandString, false, false, true, identifier,
-            "Export the current tracks in the queue to a new local list like $botify export my list", Category.PLAYLIST_MANAGEMENT);
+    public ExportCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
+        super(context, commandManager, commandString, false, false, true, identifier, description, Category.PLAYLIST_MANAGEMENT);
     }
 
     @Override

@@ -10,6 +10,7 @@
   <xs:complexType name="command">
     <xs:attribute name="identifier" type="xs:string"/>
     <xs:attribute name="implementation" type="xs:string"/>
+    <xs:attribute name="description" type="xs:string"/>
   </xs:complexType>
 
 </xs:schema>

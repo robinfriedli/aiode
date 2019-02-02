@@ -27,9 +27,8 @@ import net.robinfriedli.stringlist.StringListImpl;
 
 public class SearchCommand extends AbstractCommand {
 
-    public SearchCommand(CommandContext commandContext, CommandManager commandManager, String commandString, String identifier) {
-        super(commandContext, commandManager, commandString, false, false, false, identifier,
-            "Search for a youtube video or spotify track.", Category.SEARCH);
+    public SearchCommand(CommandContext commandContext, CommandManager commandManager, String commandString, String identifier, String description) {
+        super(commandContext, commandManager, commandString, false, false, false, identifier, description, Category.SEARCH);
     }
 
     @Override

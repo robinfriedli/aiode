@@ -1,24 +1,45 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <commands xmlns="commandSpace">
-  <command identifier="add" implementation="net.robinfriedli.botify.command.commands.AddCommand"/>
-  <command identifier="answer" implementation="net.robinfriedli.botify.command.commands.AnswerCommand"/>
-  <command identifier="create" implementation="net.robinfriedli.botify.command.commands.CreateCommand"/>
-  <command identifier="delete" implementation="net.robinfriedli.botify.command.commands.DeleteCommand"/>
-  <command identifier="export" implementation="net.robinfriedli.botify.command.commands.ExportCommand"/>
-  <command identifier="help" implementation="net.robinfriedli.botify.command.commands.HelpCommand"/>
-  <command identifier="login" implementation="net.robinfriedli.botify.command.commands.LoginCommand"/>
-  <command identifier="pause" implementation="net.robinfriedli.botify.command.commands.PauseCommand"/>
-  <command identifier="play" implementation="net.robinfriedli.botify.command.commands.PlayCommand"/>
-  <command identifier="queue" implementation="net.robinfriedli.botify.command.commands.QueueCommand"/>
-  <command identifier="remove" implementation="net.robinfriedli.botify.command.commands.RemoveCommand"/>
-  <command identifier="rename" implementation="net.robinfriedli.botify.command.commands.RenameCommand"/>
-  <command identifier="repeat" implementation="net.robinfriedli.botify.command.commands.RepeatCommand"/>
-  <command identifier="rewind" implementation="net.robinfriedli.botify.command.commands.RewindCommand"/>
-  <command identifier="search" implementation="net.robinfriedli.botify.command.commands.SearchCommand"/>
-  <command identifier="shuffle" implementation="net.robinfriedli.botify.command.commands.ShuffleCommand"/>
-  <command identifier="skip" implementation="net.robinfriedli.botify.command.commands.SkipCommand"/>
-  <command identifier="stop" implementation="net.robinfriedli.botify.command.commands.StopCommand"/>
-  <command identifier="upload" implementation="net.robinfriedli.botify.command.commands.UploadCommand"/>
-  <command identifier="permission" implementation="net.robinfriedli.botify.command.commands.PermissionCommand"/>
-  <command identifier="logout" implementation="net.robinfriedli.botify.command.commands.LogoutCommand"/>
+  <command identifier="add" implementation="net.robinfriedli.botify.command.commands.AddCommand"
+           description="Add a specific song from spotify, youtube, the current queue or any URL to the specified local playlist.&#xA;Add a specific track like: $botify add $spotify $own from the inside $to my list.&#xA;Add tracks from current queue to a list: $botify add $queue my list&#xA;Add tracks from a url: $botify add someurl.com $to linkin park"/>
+  <command identifier="answer" implementation="net.robinfriedli.botify.command.commands.AnswerCommand"
+           description="Answer a question asked by the bot. Commands like the play command may ask you to specify what track you meant if several options where found."/>
+  <command identifier="create" implementation="net.robinfriedli.botify.command.commands.CreateCommand"
+           description="Create an emtpy local playlist with the given name like $botify create my list"/>
+  <command identifier="delete" implementation="net.robinfriedli.botify.command.commands.DeleteCommand"
+           description="Delete the local playlist with the given name like $botify delete my list"/>
+  <command identifier="export" implementation="net.robinfriedli.botify.command.commands.ExportCommand"
+           description="Export the current tracks in the queue to a new local list like $botify export my list"/>
+  <command identifier="help" implementation="net.robinfriedli.botify.command.commands.HelpCommand"
+           description="Lists all available commands and their descriptions or provides help with a specific command."/>
+  <command identifier="login" implementation="net.robinfriedli.botify.command.commands.LoginCommand"
+           description="Login to spotify. This sends you a link to the spotify login page which then redirects to the botify callback."/>
+  <command identifier="pause" implementation="net.robinfriedli.botify.command.commands.PauseCommand"
+           description="Pause the current playback."/>
+  <command identifier="play" implementation="net.robinfriedli.botify.command.commands.PlayCommand"
+           description="Resume the paused playback, play the current track in the current queue or play the specified track, video or playlist. Can play any URL or search youtube and spotify tracks or lists and also local playlists. Local playlists, like the queue, can contain tracks from any source (YouTube, Spotify and URL). Usage examples (&quot;$botify&quot; can be replaced with the name of your bot):&#xA;$botify play&#xA;$botify play numb&#xA;$botify play someurl.com&#xA;$botify play $youtube youtube rewind 2018&#xA;$botify play $youtube $list important videos&#xA;$botify play $spotify $list $own goat"/>
+  <command identifier="queue" implementation="net.robinfriedli.botify.command.commands.QueueCommand"
+           description="Add a youtube video or playlist, spotify track or playlist, local playlist or any URL to the current queue or simply list the current queue."/>
+  <command identifier="remove" implementation="net.robinfriedli.botify.command.commands.RemoveCommand"
+           description="Remove an item from a local playlist. Put either the full title of the YouTube video or the spotify track name. If it was a track added by URL from a different source you can either remove it via its title or URL"/>
+  <command identifier="rename" implementation="net.robinfriedli.botify.command.commands.RenameCommand"
+           description="Change the name of the bot."/>
+  <command identifier="repeat" implementation="net.robinfriedli.botify.command.commands.RepeatCommand"
+           description="Toggles repeat for either the entire queue or the current track."/>
+  <command identifier="rewind" implementation="net.robinfriedli.botify.command.commands.RewindCommand"
+           description="Go back to the previous track in the queue. You can provide a number to rewind more than one track like this: $botify rewind 5"/>
+  <command identifier="search" implementation="net.robinfriedli.botify.command.commands.SearchCommand"
+           description="Search for YouTube and Spotify tracks or playlists and local playlists or list all local playlists."/>
+  <command identifier="shuffle" implementation="net.robinfriedli.botify.command.commands.ShuffleCommand"
+           description="Toggles shuffle for this guild's queue. This generates a random order in which each track only appears once."/>
+  <command identifier="skip" implementation="net.robinfriedli.botify.command.commands.SkipCommand"
+           description="Skip to the next track in the queue or skip the specified amount of tracks. You can provide a number to skip more than one track like this: $botify skip 5"/>
+  <command identifier="stop" implementation="net.robinfriedli.botify.command.commands.StopCommand"
+           description="Stop playback and empty the queue."/>
+  <command identifier="upload" implementation="net.robinfriedli.botify.command.commands.UploadCommand"
+           description="Upload the items from a local list to a new Spotify playlist. This ignores elements that are not Spotify tracks."/>
+  <command identifier="permission" implementation="net.robinfriedli.botify.command.commands.PermissionCommand"
+           description="Add or remove a role required to run a certain command. By default all commands are available to each user, except for this command which initially is only available to the guild owner. But as soon as a role has been added only those members with said role can use the command. The guild owner can always use any command.&#xA;Usage: $botify permission $grant play $to playmanager&#xA;$botify permission $deny add $for playmanager&#xA;$boitfy permission $clear shuffle"/>
+  <command identifier="logout" implementation="net.robinfriedli.botify.command.commands.LogoutCommand"
+           description="Log out from Spotify."/>
 </commands>

@@ -16,10 +16,8 @@ import net.robinfriedli.botify.login.LoginManager;
 
 public class LoginCommand extends AbstractCommand {
 
-    public LoginCommand(CommandContext commandContext, CommandManager commandManager, String commandString, String identifier) {
-        super(commandContext, commandManager, commandString, false, false, false, identifier,
-            "Login to spotify. This sends you a link to the spotify login page which then redirects to the " +
-                "botify callback.", Category.SPOTIFY);
+    public LoginCommand(CommandContext commandContext, CommandManager commandManager, String commandString, String identifier, String description) {
+        super(commandContext, commandManager, commandString, false, false, false, identifier, description, Category.SPOTIFY);
     }
 
     @Override

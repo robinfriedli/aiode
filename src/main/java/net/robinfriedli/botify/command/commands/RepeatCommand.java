@@ -8,9 +8,8 @@ import net.robinfriedli.botify.command.CommandManager;
 
 public class RepeatCommand extends AbstractCommand {
 
-    public RepeatCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier) {
-        super(context, commandManager, commandString, false, false, false, identifier,
-            "Toggles repeat for either the entire queue or the current track.", Category.PLAYBACK);
+    public RepeatCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
+        super(context, commandManager, commandString, false, false, false, identifier, description, Category.PLAYBACK);
     }
 
     @Override
