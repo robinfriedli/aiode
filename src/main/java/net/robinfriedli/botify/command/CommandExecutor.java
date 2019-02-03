@@ -2,6 +2,8 @@ package net.robinfriedli.botify.command;
 
 import java.util.concurrent.Callable;
 
+import org.slf4j.Logger;
+
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.detailed.UnauthorizedException;
 import com.wrapper.spotify.model_objects.credentials.ClientCredentials;
@@ -23,10 +25,12 @@ public class CommandExecutor {
 
     private final SpotifyApi spotifyApi;
     private final LoginManager loginManager;
+    private final Logger logger;
 
-    public CommandExecutor(SpotifyApi spotifyApi, LoginManager loginManager) {
+    public CommandExecutor(SpotifyApi spotifyApi, LoginManager loginManager, Logger logger) {
         this.spotifyApi = spotifyApi;
         this.loginManager = loginManager;
+        this.logger = logger;
     }
 
     public void runCommand(AbstractCommand command) {
@@ -45,15 +49,15 @@ public class CommandExecutor {
                 command.onSuccess();
             }
         } catch (NoLoginException e) {
-            AlertService alertService = new AlertService();
+            AlertService alertService = new AlertService(logger);
             MessageChannel channel = command.getContext().getChannel();
             User user = command.getContext().getUser();
             alertService.send("User " + user.getName() + " is not logged in to Spotify", channel);
         } catch (InvalidCommandException | NoResultsFoundException | ForbiddenCommandException e) {
-            AlertService alertService = new AlertService();
+            AlertService alertService = new AlertService(logger);
             alertService.send(e.getMessage(), command.getContext().getChannel());
         } catch (UnauthorizedException e) {
-            AlertService alertService = new AlertService();
+            AlertService alertService = new AlertService(logger);
             alertService.send("Unauthorized: " + e.getMessage(), command.getContext().getChannel());
         } catch (CommandRuntimeException e) {
             throw e;

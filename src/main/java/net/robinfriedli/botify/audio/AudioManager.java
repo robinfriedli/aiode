@@ -32,6 +32,7 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.VoiceChannel;
+import net.robinfriedli.botify.discord.AlertService;
 import net.robinfriedli.botify.entities.UrlTrack;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
@@ -284,7 +285,9 @@ public class AudioManager extends AudioEventAdapter {
         if (playback.isShuffle()) {
             messageBuilder.append(" (shuffle)");
         }
-        playback.getCommunicationChannel().sendMessage(messageBuilder.toString()).queue();
+
+        AlertService alertService = new AlertService(logger);
+        alertService.send(messageBuilder.toString(), playback.getCommunicationChannel());
     }
 
     private void iterateQueue(AudioPlayback playback, AudioQueue audioQueue) {

@@ -33,7 +33,6 @@ public class SearchCommand extends AbstractCommand {
 
     @Override
     public void doRun() throws Exception {
-        AlertService alertService = new AlertService();
         if (argumentSet("list")) {
             if (argumentSet("spotify")) {
                 listSpotifyList();
@@ -46,12 +45,12 @@ public class SearchCommand extends AbstractCommand {
             if (argumentSet("youtube")) {
                 searchYouTubeVideo();
             } else {
-                searchSpotifyTrack(alertService);
+                searchSpotifyTrack();
             }
         }
     }
 
-    private void searchSpotifyTrack(AlertService alertService) throws Exception {
+    private void searchSpotifyTrack() throws Exception {
         SpotifyApi spotifyApi = getManager().getSpotifyApi();
         List<Track> found;
         if (argumentSet("own")) {
@@ -71,7 +70,7 @@ public class SearchCommand extends AbstractCommand {
                 table.addRow(table.createCell(track.getName()), table.createCell(album), table.createCell(artist));
             }
 
-            alertService.sendWrapped(table.normalize(), "```", getContext().getChannel());
+            sendWrapped(table.normalize(), "```", getContext().getChannel());
         } else {
             sendMessage(getContext().getChannel(), "No results found");
         }
@@ -133,8 +132,7 @@ public class SearchCommand extends AbstractCommand {
                 table.addRow(table.createCell(name), table.createCell(duration, 10), table.createCell(items, 8));
             }
 
-            AlertService alertService = new AlertService();
-            alertService.sendWrapped(table.normalize(), "```", getContext().getChannel());
+            sendWrapped(table.normalize(), "```", getContext().getChannel());
         } else {
             Playlist playlist = SearchEngine.searchLocalList(getPersistContext(), getCommandBody());
             if (playlist == null) {
@@ -191,8 +189,7 @@ public class SearchCommand extends AbstractCommand {
                 responseBuilder.append(trackTable.normalize());
             }
 
-            AlertService alertService = new AlertService();
-            alertService.sendWrapped(responseBuilder.toString(), "```", getContext().getChannel());
+            sendWrapped(responseBuilder.toString(), "```", getContext().getChannel());
         }
     }
 
@@ -257,7 +254,6 @@ public class SearchCommand extends AbstractCommand {
     }
 
     private void listTracks(PlaylistSimplified playlist, List<Track> tracks) {
-        AlertService alertService = new AlertService();
         StringBuilder responseBuilder = new StringBuilder();
 
         Table overviewTable = Table.createNoBorder(50, 1, false);
@@ -290,7 +286,7 @@ public class SearchCommand extends AbstractCommand {
             responseBuilder.append(table.normalize());
         }
 
-        alertService.sendWrapped(responseBuilder.toString(), "```", getContext().getChannel());
+        sendWrapped(responseBuilder.toString(), "```", getContext().getChannel());
     }
 
     @Override

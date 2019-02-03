@@ -40,7 +40,7 @@ public class TrackLoadingExceptionHandler implements Thread.UncaughtExceptionHan
             logger.error("Exception while loading tracks", e);
         }
 
-        AlertService alertService = new AlertService();
+        AlertService alertService = new AlertService(logger);
         alertService.send(sb.toString(), channel);
     }
 

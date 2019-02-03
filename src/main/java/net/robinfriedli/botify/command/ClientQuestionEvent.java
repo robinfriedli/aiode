@@ -50,8 +50,7 @@ public class ClientQuestionEvent {
         return target.cast(get(key));
     }
 
-    public void ask() {
-        AlertService alertService = new AlertService();
+    public void ask(AlertService alertService) {
         StringBuilder questionBuilder = new StringBuilder();
         questionBuilder.append("Several options found: ").append(System.lineSeparator());
         questionBuilder.append("Choose an option using the answer command: $botify answer KEY");

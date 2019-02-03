@@ -2,9 +2,13 @@ package net.robinfriedli.botify.discord;
 
 import java.util.List;
 
+import org.slf4j.Logger;
+
 import com.google.common.collect.Lists;
 import net.dv8tion.jda.core.entities.MessageChannel;
+import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.entities.User;
+import net.dv8tion.jda.core.exceptions.InsufficientPermissionException;
 import net.robinfriedli.stringlist.StringList;
 import net.robinfriedli.stringlist.StringListImpl;
 
@@ -14,48 +18,63 @@ import net.robinfriedli.stringlist.StringListImpl;
 public class AlertService {
 
     private final int limit;
+    private final Logger logger;
 
-    public AlertService() {
+    public AlertService(Logger logger) {
+        this.logger = logger;
         limit = 1000;
     }
 
-    public AlertService(int limit) {
+    public AlertService(int limit, Logger logger) {
         this.limit = limit;
+        this.logger = logger;
     }
 
     public void send(String message, MessageChannel channel) {
         if (message.length() < limit) {
-            channel.sendMessage(message).queue();
+            sendInternal(channel, message);
         } else {
             List<String> outputParts = separateMessage(message);
-            outputParts.forEach(part -> channel.sendMessage(part).queue());
+            outputParts.forEach(part -> sendInternal(channel, part));
         }
     }
 
     public void send(String message, User user) {
         if (message.length() < limit) {
-            user.openPrivateChannel().queue(channel -> channel.sendMessage(message).queue());
+            user.openPrivateChannel().queue(channel -> sendInternal(channel, message));
         } else {
             List<String> outputParts = separateMessage(message);
-            outputParts.forEach(part -> user.openPrivateChannel().queue(channel -> channel.sendMessage(part).queue()));
+            outputParts.forEach(part -> user.openPrivateChannel().queue(channel -> sendInternal(channel, part)));
         }
     }
 
     public void sendWrapped(String message, String wrapper, MessageChannel channel) {
         if (message.length() < limit) {
-            channel.sendMessage(wrapper + message + wrapper).queue();
+            sendInternal(channel, wrapper + message + wrapper);
         } else {
             List<String> outputParts = separateMessage(message);
-            outputParts.forEach(part -> channel.sendMessage(wrapper + part + wrapper).queue());
+            outputParts.forEach(part -> sendInternal(channel, wrapper + part + wrapper));
         }
     }
 
     public void sendWrapped(String message, String wrapper, User user) {
         if (message.length() < limit) {
-            user.openPrivateChannel().queue(channel -> channel.sendMessage(wrapper + message + wrapper).queue());
+            user.openPrivateChannel().queue(channel -> sendInternal(channel, wrapper + message + wrapper));
         } else {
             List<String> outputParts = separateMessage(message);
-            outputParts.forEach(part -> user.openPrivateChannel().queue(channel -> channel.sendMessage(wrapper + part + wrapper).queue()));
+            outputParts.forEach(part -> user.openPrivateChannel().queue(channel -> sendInternal(channel, wrapper + part + wrapper)));
+        }
+    }
+
+    private void sendInternal(MessageChannel channel, String text) {
+        try {
+            channel.sendMessage(text).queue();
+        } catch (InsufficientPermissionException e) {
+            StringBuilder messageBuilder = new StringBuilder("Insufficient permissions to send messages to channel" + channel.getName());
+            if (channel instanceof TextChannel) {
+                messageBuilder.append(" on guild ").append(((TextChannel) channel).getGuild().getName());
+            }
+            logger.warn(messageBuilder.toString(), e);
         }
     }
 

@@ -257,8 +257,7 @@ public class QueueCommand extends AbstractCommand {
             }
         }
 
-        AlertService alertService = new AlertService();
-        alertService.sendWrapped(responseBuilder.toString(), "```", getContext().getChannel());
+        sendWrapped(responseBuilder.toString(), "```", getContext().getChannel());
     }
 
     private void appendPlayable(Table table, Playable playable, boolean current) {

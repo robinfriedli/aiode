@@ -48,7 +48,7 @@ public class Launcher {
             boolean modePartitioned = PropertiesLoadingService.loadBoolProperty("MODE_PARTITIONED");
             // setup JXP
             JxpBackend jxpBackend = new JxpBuilder()
-                .addListeners(new AlertEventListener(), new PlaylistListener())
+                .addListeners(new AlertEventListener(logger), new PlaylistListener())
                 .mapClass("playlist", Playlist.class)
                 .mapClass("song", Song.class)
                 .mapClass("video", Video.class)

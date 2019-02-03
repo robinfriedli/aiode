@@ -21,7 +21,7 @@ public class CommandExceptionHandler implements Thread.UncaughtExceptionHandler 
         StringBuilder responseBuilder = new StringBuilder();
         MessageChannel channel = commandContext.getChannel();
         String command = commandContext.getMessage().getContentDisplay();
-        AlertService alertService = new AlertService();
+        AlertService alertService = new AlertService(logger);
 
         Throwable exception = e instanceof CommandRuntimeException ? e.getCause() : e;
         responseBuilder.append(String.format("Uncaught exception while handling command '%s'. Error (%s): %s",

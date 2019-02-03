@@ -3,9 +3,12 @@ package net.robinfriedli.botify.discord;
 import java.util.Collection;
 import java.util.List;
 
+import org.slf4j.Logger;
+
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
+import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.MessageChannel;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.Song;
@@ -21,6 +24,12 @@ import net.robinfriedli.stringlist.StringList;
 import net.robinfriedli.stringlist.StringListImpl;
 
 public class AlertEventListener extends EventListener {
+
+    private final Logger logger;
+
+    public AlertEventListener(Logger logger) {
+        this.logger = logger;
+    }
 
     @Override
     public void transactionApplied(Transaction transaction) {
@@ -102,9 +111,18 @@ public class AlertEventListener extends EventListener {
         if (!"".equals(response)) {
             Object envVar = context.getEnvVar();
             if (envVar instanceof MessageChannel) {
-                ((MessageChannel) envVar).sendMessage(response).queue();
+                AlertService alertService = new AlertService(logger);
+                alertService.send(response, (MessageChannel) envVar);
             } else {
-                System.out.println(response);
+                String suffix = "";
+                if (context instanceof Context.BindableContext) {
+                    Context.BindableContext bindableContext = (Context.BindableContext) context;
+                    if (bindableContext.getBindingObject() instanceof Guild) {
+                        suffix = " (Guild: " + ((Guild) bindableContext.getBindingObject()).getName() + ")";
+                    }
+                }
+                logger.info(response + suffix);
+                logger.warn("Environment variable message channel was not set");
             }
         }
     }

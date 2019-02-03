@@ -26,7 +26,6 @@ public class HelpCommand extends AbstractCommand {
 
     @Override
     public void doRun() {
-        AlertService alertService = new AlertService();
         if (getCommandBody().isBlank()) {
             StringBuilder sb = new StringBuilder();
             sb.append("To get help with a specific command just enter the name of the command.").append(System.lineSeparator());
@@ -78,7 +77,7 @@ public class HelpCommand extends AbstractCommand {
                     sb.append(System.lineSeparator()).append(table.normalize());
                 }
 
-                alertService.sendWrapped(sb.toString(), "```", getContext().getChannel());
+                sendWrapped(sb.toString(), "```", getContext().getChannel());
             }, () -> {
                 throw new InvalidCommandException("No command found for " + getCommandBody());
             });

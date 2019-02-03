@@ -64,7 +64,7 @@ public abstract class AbstractCommand {
         this.description = description;
         this.category = category;
         this.argumentContribution = setupArguments();
-        this.alertService = new AlertService();
+        this.alertService = new AlertService(commandManager.getLogger());
 
         processCommand(commandString);
     }
@@ -207,7 +207,7 @@ public abstract class AbstractCommand {
     protected void askQuestion(ClientQuestionEvent question) {
         setFailed(true);
         commandManager.addQuestion(question);
-        question.ask();
+        question.ask(alertService);
     }
 
     protected void sendMessage(MessageChannel channel, String message) {
@@ -216,6 +216,10 @@ public abstract class AbstractCommand {
 
     protected void sendMessage(User user, String message) {
         alertService.send(message, user);
+    }
+
+    protected void sendWrapped(String message, String wrapper, MessageChannel channel) {
+        alertService.sendWrapped(message, wrapper, channel);
     }
 
     /**

@@ -49,7 +49,7 @@ public class DiscordListener extends ListenerAdapter {
         Context guildSpecificationContext = jxpBackend.getContext(PropertiesLoadingService.requireProperty("GUILD_SPECIFICATION_PATH"));
         guildSpecificationManager = new GuildSpecificationManager(guildSpecificationContext);
         Context commandContributionContext = jxpBackend.getContext(PropertiesLoadingService.requireProperty("COMMANDS_PATH"));
-        commandManager = new CommandManager(new CommandExecutor(spotifyApi, loginManager), this, loginManager, spotifyApi, commandContributionContext, logger);
+        commandManager = new CommandManager(new CommandExecutor(spotifyApi, loginManager, logger), this, loginManager, spotifyApi, commandContributionContext, logger);
         this.logger = logger;
     }
 
@@ -82,12 +82,13 @@ public class DiscordListener extends ListenerAdapter {
                     namePrefix = botName;
                 }
 
+                AlertService alertService = new AlertService(logger);
                 CommandContext commandContext = new CommandContext(namePrefix, message);
                 Thread commandExecutionThread = new Thread(() -> {
                     try {
                         commandManager.runCommand(commandContext);
                     } catch (InvalidCommandException | NoResultsFoundException | ForbiddenCommandException e) {
-                        message.getChannel().sendMessage(e.getMessage()).queue();
+                        alertService.send(e.getMessage(), message.getChannel());
                     }
                 });
 
@@ -102,7 +103,7 @@ public class DiscordListener extends ListenerAdapter {
                         return;
                     }
                     if (commandExecutionThread.isAlive()) {
-                        message.getChannel().sendMessage("Still loading...").queue();
+                        alertService.send("Still loading...", message.getChannel());
                     }
                 });
 
