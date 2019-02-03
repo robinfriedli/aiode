@@ -38,10 +38,15 @@ public class GuildSpecificationManager {
         return specifiedGuilds.get(guild).getName();
     }
 
-    public void setName(Guild guild, String name) {
+    public boolean setName(Guild guild, String name) {
         GuildSpecification guildSpecification = specifiedGuilds.get(guild);
         specificationContext.invoke(() -> guildSpecification.setAttribute("botifyName", name));
-        guild.getController().setNickname(guild.getSelfMember(), name).queue();
+        try {
+            guild.getController().setNickname(guild.getSelfMember(), name).queue();
+            return true;
+        } catch (InsufficientPermissionException ignored) {
+            return false;
+        }
     }
 
     public boolean checkAccess(String commandIdentifier, Member member) {

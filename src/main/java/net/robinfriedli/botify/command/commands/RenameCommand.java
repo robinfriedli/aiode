@@ -7,6 +7,8 @@ import net.robinfriedli.botify.discord.GuildSpecificationManager;
 
 public class RenameCommand extends AbstractCommand {
 
+    private boolean couldChangeNickname;
+
     public RenameCommand(CommandContext commandContext, CommandManager commandManager, String commandString, String identifier, String description) {
         super(commandContext, commandManager, commandString, false, false, true, identifier, description, Category.GENERAL);
     }
@@ -14,13 +16,17 @@ public class RenameCommand extends AbstractCommand {
     @Override
     public void doRun() {
         GuildSpecificationManager guildSpecificationManager = getManager().getGuildManager();
-        guildSpecificationManager.setName(getContext().getGuild(), getCommandBody());
+        couldChangeNickname = guildSpecificationManager.setName(getContext().getGuild(), getCommandBody());
     }
 
     @Override
     public void onSuccess() {
         String name = getManager().getGuildManager().getNameForGuild(getContext().getGuild());
-        sendMessage(getContext().getChannel(), "You can now call me " + name);
+        if (couldChangeNickname) {
+            sendMessage(getContext().getChannel(), "You can now call me " + name);
+        } else {
+            sendMessage(getContext().getChannel(), "I do not have permission to change my nickname, but you can still call me " + getCommandBody());
+        }
     }
 
 }
