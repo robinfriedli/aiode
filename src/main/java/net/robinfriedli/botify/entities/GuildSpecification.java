@@ -46,11 +46,11 @@ public class GuildSpecification extends AbstractXmlElement {
     @Nullable
     @Override
     public String getId() {
-        return getAttribute("botifyName").getValue();
+        return null;
     }
 
     public String getName() {
-        return getId();
+        return getAttribute("botifyName").getValue();
     }
 
     public String getGuildName() {
