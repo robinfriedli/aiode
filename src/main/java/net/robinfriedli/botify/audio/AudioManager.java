@@ -32,6 +32,7 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.VoiceChannel;
+import net.dv8tion.jda.core.exceptions.InsufficientPermissionException;
 import net.robinfriedli.botify.discord.AlertService;
 import net.robinfriedli.botify.entities.UrlTrack;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
@@ -258,7 +259,11 @@ public class AudioManager extends AudioEventAdapter {
         audioPlayback.setVoiceChannel(channel);
         Guild guild = audioPlayback.getGuild();
         guild.getAudioManager().setSendingHandler(new AudioPlayerSendHandler(audioPlayback.getAudioPlayer()));
-        guild.getAudioManager().openAudioConnection(channel);
+        try {
+            guild.getAudioManager().openAudioConnection(channel);
+        } catch (InsufficientPermissionException e) {
+            throw new InvalidCommandException("I do not have permission to join this voice channel!");
+        }
     }
 
     private void play(AudioTrack track, AudioPlayback playback) {
