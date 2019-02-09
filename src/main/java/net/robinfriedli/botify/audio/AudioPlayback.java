@@ -15,7 +15,7 @@ public class AudioPlayback {
     private boolean repeatOne;
     private boolean repeatAll;
     // register Track loading Threads here so that they can be interrupted when a different playlist is being played
-    private TrackLoadingThread trackLoading;
+    private Thread trackLoadingThread;
 
     public AudioPlayback(AudioPlayer player, Guild guild) {
         this.guild = guild;
@@ -91,63 +91,16 @@ public class AudioPlayback {
         audioQueue.setShuffle(isShuffle);
     }
 
-    public void registerTrackLoading(TrackLoadingThread trackLoading) {
-        if (this.trackLoading != null) {
-            if (this.trackLoading.mayInterrupt()) {
-                interruptTrackLoading();
-            }
+    public void registerTrackLoading(Thread thread) {
+        if (this.trackLoadingThread != null) {
+            interruptTrackLoading();
         }
-        this.trackLoading = trackLoading;
+        this.trackLoadingThread = thread;
     }
 
     public void interruptTrackLoading() {
-        if (trackLoading != null && trackLoading.isAlive()) {
-            trackLoading.interrupt();
-        }
-    }
-
-    public void awaitLoaded() throws InterruptedException {
-        if (trackLoading != null) {
-            trackLoading.join();
-        } else {
-            System.out.println("bla");
-        }
-    }
-
-    public static class TrackLoadingThread {
-
-        private final Thread thread;
-        private final boolean mayInterrupt;
-
-        public TrackLoadingThread(Thread thread, boolean mayInterrupt) {
-            this.thread = thread;
-            this.mayInterrupt = mayInterrupt;
-        }
-
-        public void start() {
-            thread.start();
-        }
-
-        public boolean isAlive() {
-            return thread.isAlive();
-        }
-
-        public void interrupt() {
-            if (mayInterrupt) {
-                thread.interrupt();
-            }
-        }
-
-        public void join() throws InterruptedException {
-            thread.join();
-        }
-
-        public boolean mayInterrupt() {
-            return mayInterrupt;
-        }
-
-        public Thread getThread() {
-            return thread;
+        if (trackLoadingThread != null && trackLoadingThread.isAlive()) {
+            trackLoadingThread.interrupt();
         }
     }
 

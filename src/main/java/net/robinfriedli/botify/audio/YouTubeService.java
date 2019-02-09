@@ -245,6 +245,12 @@ public class YouTubeService {
         return itemCounts;
     }
 
+    /**
+     * Load each hollow YouTube video of given playlist. This is quite slow because the YouTube API does not allow
+     * requesting more than 50 youtube items at once.
+     *
+     * @param playlist the playlist to load
+     */
     public void populateList(YouTubePlaylist playlist) {
         try {
             YouTube.PlaylistItems.List itemSearch = youTube.playlistItems().list("snippet");

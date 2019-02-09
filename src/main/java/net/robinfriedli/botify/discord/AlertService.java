@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 
 import com.google.common.collect.Lists;
 import net.dv8tion.jda.core.entities.MessageChannel;
+import net.dv8tion.jda.core.entities.MessageEmbed;
 import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.exceptions.InsufficientPermissionException;
@@ -46,6 +47,10 @@ public class AlertService {
             List<String> outputParts = separateMessage(message);
             outputParts.forEach(part -> user.openPrivateChannel().queue(channel -> sendInternal(channel, part)));
         }
+    }
+
+    public void send(MessageEmbed messageEmbed, MessageChannel messageChannel) {
+        messageChannel.sendMessage(messageEmbed).queue();
     }
 
     public void sendWrapped(String message, String wrapper, MessageChannel channel) {
