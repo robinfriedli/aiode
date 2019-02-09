@@ -13,6 +13,7 @@ import com.google.api.client.util.Sets;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.MessageChannel;
+import net.dv8tion.jda.core.entities.MessageEmbed;
 import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.command.commands.AnswerCommand;
 import net.robinfriedli.botify.discord.AlertService;
@@ -211,6 +212,10 @@ public abstract class AbstractCommand {
     }
 
     protected void sendMessage(MessageChannel channel, String message) {
+        alertService.send(message, channel);
+    }
+
+    protected void sendMessage(MessageChannel channel, MessageEmbed message) {
         alertService.send(message, channel);
     }
 

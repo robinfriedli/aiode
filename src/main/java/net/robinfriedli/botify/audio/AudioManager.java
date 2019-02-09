@@ -157,9 +157,11 @@ public class AudioManager extends AudioEventAdapter {
             TrackLoadingExceptionHandler eh = new TrackLoadingExceptionHandler(logger, audioPlayback.getCommunicationChannel(), null);
             trackRedirectingThread.setUncaughtExceptionHandler(eh);
 
-            AudioPlayback.TrackLoadingThread loadingThread = new AudioPlayback.TrackLoadingThread(trackRedirectingThread, mayInterrupt);
-            audioPlayback.registerTrackLoading(loadingThread);
-            loadingThread.start();
+            if (mayInterrupt) {
+                audioPlayback.registerTrackLoading(trackRedirectingThread);
+            }
+
+            trackRedirectingThread.start();
         }
         return createdPlayables;
     }
@@ -180,9 +182,11 @@ public class AudioManager extends AudioEventAdapter {
         TrackLoadingExceptionHandler eh = new TrackLoadingExceptionHandler(logger, audioPlayback.getCommunicationChannel(), youTubePlaylist);
         videoLoadingThread.setUncaughtExceptionHandler(eh);
 
-        AudioPlayback.TrackLoadingThread loadingThread = new AudioPlayback.TrackLoadingThread(videoLoadingThread, mayInterrupt);
-        audioPlayback.registerTrackLoading(loadingThread);
-        loadingThread.start();
+        if (mayInterrupt) {
+            audioPlayback.registerTrackLoading(videoLoadingThread);
+        }
+
+        videoLoadingThread.start();
 
         return playables;
     }
@@ -255,6 +259,43 @@ public class AudioManager extends AudioEventAdapter {
         playback.setVoiceChannel(null);
     }
 
+    @Nullable
+    Object loadUrl(String playbackUrl) {
+        CompletableFuture<Object> result = new CompletableFuture<>();
+        playerManager.loadItem(playbackUrl, new AudioLoadResultHandler() {
+            @Override
+            public void trackLoaded(AudioTrack audioTrack) {
+                result.complete(audioTrack);
+            }
+
+            @Override
+            public void playlistLoaded(AudioPlaylist audioPlaylist) {
+                result.complete(audioPlaylist);
+            }
+
+            @Override
+            public void noMatches() {
+                result.cancel(false);
+            }
+
+            @Override
+            public void loadFailed(FriendlyException e) {
+                result.cancel(false);
+                if (e.severity != FriendlyException.Severity.COMMON) {
+                    logger.error("lavaplayer threw an exception while loading track " + playbackUrl, e);
+                }
+            }
+        });
+
+        try {
+            return result.get(30, TimeUnit.SECONDS);
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        } catch (TimeoutException | CancellationException e) {
+            return null;
+        }
+    }
+
     private void setChannel(AudioPlayback audioPlayback, VoiceChannel channel) {
         audioPlayback.setVoiceChannel(channel);
         Guild guild = audioPlayback.getGuild();
@@ -310,43 +351,6 @@ public class AudioManager extends AudioEventAdapter {
             }
         } else {
             playTrack(playback.getGuild(), playback.getVoiceChannel());
-        }
-    }
-
-    @Nullable
-    private Object loadUrl(String playbackUrl) {
-        CompletableFuture<Object> result = new CompletableFuture<>();
-        playerManager.loadItem(playbackUrl, new AudioLoadResultHandler() {
-            @Override
-            public void trackLoaded(AudioTrack audioTrack) {
-                result.complete(audioTrack);
-            }
-
-            @Override
-            public void playlistLoaded(AudioPlaylist audioPlaylist) {
-                result.complete(audioPlaylist);
-            }
-
-            @Override
-            public void noMatches() {
-                result.cancel(false);
-            }
-
-            @Override
-            public void loadFailed(FriendlyException e) {
-                result.cancel(false);
-                if (e.severity != FriendlyException.Severity.COMMON) {
-                    logger.error("lavaplayer threw an exception while loading track " + playbackUrl, e);
-                }
-            }
-        });
-
-        try {
-            return result.get(3, TimeUnit.SECONDS);
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
-        } catch (TimeoutException | CancellationException e) {
-            return null;
         }
     }
 

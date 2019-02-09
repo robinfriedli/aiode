@@ -73,20 +73,16 @@ public class AddCommand extends AbstractCommand {
         AudioPlayback playback = audioManager.getPlaybackForGuild(getContext().getGuild());
         List<Playable> playables = audioManager.createPlayables(pair.getLeft(), playback, false);
 
-        try {
-            playback.awaitLoaded();
-        } catch (InterruptedException e) {
-            // command execution threads do not get interrupted
-            throw new RuntimeException(e);
-        }
-
         List<XmlElement> elements = Lists.newArrayList();
         playables.forEach(playable -> {
-            if (!(playable instanceof PlayableImpl
-                && ((PlayableImpl) playable).delegate() instanceof HollowYouTubeVideo
-                && ((HollowYouTubeVideo) ((PlayableImpl) playable).delegate()).isCanceled())) {
-                elements.add(playable.export(getPersistContext(), getContext().getUser()));
+            if (playable instanceof PlayableImpl && ((PlayableImpl) playable).delegate() instanceof HollowYouTubeVideo) {
+                HollowYouTubeVideo video = (HollowYouTubeVideo) ((PlayableImpl) playable).delegate();
+                video.awaitCompletion();
+                if (video.isCanceled()) {
+                    return;
+                }
             }
+            elements.add(playable.export(getPersistContext(), getContext().getUser()));
         });
         addToList(pair.getRight(), elements);
     }

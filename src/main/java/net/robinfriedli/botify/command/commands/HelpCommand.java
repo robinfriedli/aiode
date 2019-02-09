@@ -1,18 +1,19 @@
 package net.robinfriedli.botify.command.commands;
 
+import java.awt.Color;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Role;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.discord.AlertService;
 import net.robinfriedli.botify.entities.AccessConfiguration;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.util.Table;
@@ -27,9 +28,10 @@ public class HelpCommand extends AbstractCommand {
     @Override
     public void doRun() {
         if (getCommandBody().isBlank()) {
-            StringBuilder sb = new StringBuilder();
-            sb.append("To get help with a specific command just enter the name of the command.").append(System.lineSeparator());
-            sb.append("Available commands:").append(System.lineSeparator());
+            EmbedBuilder embedBuilder = new EmbedBuilder();
+            embedBuilder.setColor(Color.GREEN);
+            embedBuilder.setTitle("Commands:");
+            embedBuilder.appendDescription("To get help with a specific command just enter the name of the command.");
 
             List<AbstractCommand> commands = getManager().getAllCommands(getContext());
             Multimap<Category, AbstractCommand> commandsByCategory = HashMultimap.create();
@@ -39,45 +41,45 @@ public class HelpCommand extends AbstractCommand {
 
             List<Category> categories = commandsByCategory.keySet().stream().sorted(Comparator.comparingInt(Enum::ordinal)).collect(Collectors.toList());
             for (Category category : categories) {
-                sb.append("__**").append(category.getName()).append("**__").append(System.lineSeparator());
+                embedBuilder.addField("__" + category.getName() + "__", "", false);
                 for (AbstractCommand command : commandsByCategory.get(category)) {
-                    sb.append("**").append(command.getIdentifier()).append("**").append(System.lineSeparator());
-                    sb.append(command.getDescription()).append(System.lineSeparator());
+                    embedBuilder.addField(command.getIdentifier(), command.getDescription(), false);
                 }
-                sb.append(System.lineSeparator());
             }
 
-            sendMessage(getContext().getChannel(), sb.toString());
+            sendMessage(getContext().getChannel(), embedBuilder.build());
         } else {
             getManager().getCommand(getContext(), getCommandBody()).ifPresentOrElse(command -> {
-                StringBuilder sb = new StringBuilder();
-                sb.append(command.getDescription());
+                EmbedBuilder embedBuilder = new EmbedBuilder();
+                embedBuilder.setTitle("Command " + command.getIdentifier() + ":");
+                embedBuilder.setDescription(command.getDescription());
                 Guild guild = getContext().getGuild();
                 AccessConfiguration accessConfiguration = getManager().getGuildManager().getAccessConfiguration(command.getIdentifier(), guild);
                 if (accessConfiguration != null) {
-                    sb.append(System.lineSeparator()).append("-".repeat(50)).append(System.lineSeparator());
-                    sb.append("Available to roles: ");
+                    String title = "Available to roles: ";
+                    String text;
                     List<Role> roles = accessConfiguration.getRoles(guild);
                     if (!roles.isEmpty()) {
-                        sb.append(StringListImpl.create(roles, Role::getName));
+                        text = StringListImpl.create(roles, Role::getName).toSeparatedString(", ");
                     } else {
-                        sb.append("Guild owner only");
+                        text = "Guild owner only";
                     }
+
+                    embedBuilder.addField(title, text, false);
                 }
                 ArgumentContribution argumentContribution = command.setupArguments();
                 if (!argumentContribution.isEmpty()) {
+                    embedBuilder.addField("__Arguments__", "", false);
                     Table table = Table.create(50, 1, false, "", "", "", "=");
                     table.setTableHead(table.createCell("Argument", 12), table.createCell("Description"));
 
                     for (ArgumentContribution.Argument argument : argumentContribution.getArguments()) {
-                        table.addRow(table.createCell("$" + argument.getArgument(), 12), table.createCell(argument.getDescription()));
+                        embedBuilder.addField("$" + argument.getArgument(), argument.getDescription(), false);
                     }
 
-                    sb.append(System.lineSeparator()).append("-".repeat(50));
-                    sb.append(System.lineSeparator()).append(table.normalize());
                 }
 
-                sendWrapped(sb.toString(), "```", getContext().getChannel());
+                sendMessage(getContext().getChannel(), embedBuilder.build());
             }, () -> {
                 throw new InvalidCommandException("No command found for " + getCommandBody());
             });
