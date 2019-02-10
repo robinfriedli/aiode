@@ -20,7 +20,6 @@ import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.discord.AlertService;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
@@ -71,7 +70,7 @@ public class QueueCommand extends AbstractCommand {
     }
 
     private void queuedUrlItems(AudioManager audioManager, AudioPlayback playback) {
-        List<Playable> playables = audioManager.createPlayables(getCommandBody(), playback);
+        List<Playable> playables = audioManager.createPlayables(getCommandBody(), playback, false);
         playback.getAudioQueue().add(playables);
         queuedAmount = playables.size();
     }
@@ -88,7 +87,7 @@ public class QueueCommand extends AbstractCommand {
             throw new NoResultsFoundException("Playlist is empty");
         }
 
-        List<Playable> playables = audioManager.createPlayables(!argumentSet("preview"), items, playback);
+        List<Playable> playables = audioManager.createPlayables(!argumentSet("preview"), items, playback, false);
         playback.getAudioQueue().add(playables);
         queuedLocalList = playlist;
     }
@@ -105,7 +104,7 @@ public class QueueCommand extends AbstractCommand {
             List<YouTubePlaylist> playlists = youTubeService.searchSeveralPlaylists(limit, getCommandBody());
             if (playlists.size() == 1) {
                 YouTubePlaylist playlist = playlists.get(0);
-                List<Playable> playables = audioManager.createPlayables(playlist, playback);
+                List<Playable> playables = audioManager.createPlayables(playlist, playback, false);
                 playback.getAudioQueue().add(playables);
                 queuedYouTubePlaylist = playlist;
             } else if (playlists.isEmpty()) {
@@ -115,7 +114,7 @@ public class QueueCommand extends AbstractCommand {
             }
         } else {
             YouTubePlaylist youTubePlaylist = youTubeService.searchPlaylist(getCommandBody());
-            List<Playable> playables = audioManager.createPlayables(youTubePlaylist, playback);
+            List<Playable> playables = audioManager.createPlayables(youTubePlaylist, playback, false);
             playback.getAudioQueue().add(playables);
             queuedYouTubePlaylist = youTubePlaylist;
         }
@@ -134,7 +133,7 @@ public class QueueCommand extends AbstractCommand {
             if (found.size() == 1) {
                 PlaylistSimplified playlist = found.get(0);
                 List<Track> playlistTracks = SearchEngine.getPlaylistTracks(spotifyApi, playlist);
-                List<Playable> playables = audioManager.createPlayables(!argumentSet("preview"), playlistTracks, playback);
+                List<Playable> playables = audioManager.createPlayables(!argumentSet("preview"), playlistTracks, playback, false);
                 playback.getAudioQueue().add(playables);
                 queuedSpotifyPlaylist = playlist;
             } else if (found.isEmpty()) {
@@ -315,13 +314,13 @@ public class QueueCommand extends AbstractCommand {
             PlaylistSimplified playlist = (PlaylistSimplified) chosenOption;
             List<Track> tracks = runWithCredentials(() -> SearchEngine.getPlaylistTracks(getManager().getSpotifyApi(), playlist));
             AudioPlayback playbackForGuild = audioManager.getPlaybackForGuild(getContext().getGuild());
-            List<Playable> playables = audioManager.createPlayables(!argumentSet("preview"), tracks, playbackForGuild);
+            List<Playable> playables = audioManager.createPlayables(!argumentSet("preview"), tracks, playbackForGuild, false);
             playbackForGuild.getAudioQueue().add(playables);
             queuedSpotifyPlaylist = playlist;
         } else if (chosenOption instanceof YouTubePlaylist) {
             AudioPlayback playback = audioManager.getPlaybackForGuild(getContext().getGuild());
             YouTubePlaylist youTubePlaylist = (YouTubePlaylist) chosenOption;
-            List<Playable> playables = audioManager.createPlayables(youTubePlaylist, playback);
+            List<Playable> playables = audioManager.createPlayables(youTubePlaylist, playback, false);
             playback.getAudioQueue().add(playables);
             queuedYouTubePlaylist = youTubePlaylist;
         }
