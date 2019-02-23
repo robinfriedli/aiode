@@ -1,37 +1,24 @@
 package net.robinfriedli.botify.login;
 
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.Lists;
-import com.wrapper.spotify.SpotifyApi;
 import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.exceptions.NoLoginException;
-import net.robinfriedli.botify.util.UserMap;
+import net.robinfriedli.botify.util.ISnowflakeMap;
 
 public class LoginManager {
 
-    private final SpotifyApi spotifyApi;
-    private List<Login> logins = Lists.newArrayList();
-    private UserMap<CompletableFuture<Login>> expectedLogins = new UserMap<>();
-
-    public LoginManager(SpotifyApi spotifyApi) {
-        this.spotifyApi = spotifyApi;
-    }
+    private ISnowflakeMap<Login> logins = new ISnowflakeMap<>();
+    private ISnowflakeMap<CompletableFuture<Login>> expectedLogins = new ISnowflakeMap<>();
 
     public void addLogin(Login login) {
-        Login loginForUser = getLoginForUser(login.getUser());
-        if (loginForUser != null) {
-            logins.remove(loginForUser);
-        }
-        logins.add(login);
+        logins.put(login.getUser(), login);
     }
 
     public void removeLogin(User user) {
-        logins.remove(requireLoginForUser(user));
+        logins.remove(user);
     }
 
     public CompletableFuture<Login> getPendingLogin(User user) {
@@ -64,14 +51,9 @@ public class LoginManager {
 
     @Nullable
     public Login getLoginForUser(User user) {
-        List<Login> foundLogins = logins.stream()
-            .filter(login -> !login.isExpired() && login.getUser().getId().equals(user.getId()))
-            .collect(Collectors.toList());
-
-        if (foundLogins.size() == 1) {
-            return logins.get(0);
-        } else if (foundLogins.size() > 1) {
-            throw new IllegalStateException("Duplicate logins found for user " + user.getName());
+        Login login = logins.get(user);
+        if (login != null && !login.isExpired()) {
+            return login;
         }
 
         return null;
