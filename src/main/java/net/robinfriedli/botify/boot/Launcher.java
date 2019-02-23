@@ -72,7 +72,7 @@ public class Launcher {
             }).setApplicationName("botify-youtube-search").build();
             YouTubeService youTubeService = new YouTubeService(youTube, youTubeCredentials);
             // setup JDA and DiscordListener
-            LoginManager loginManager = new LoginManager(spotifyApi);
+            LoginManager loginManager = new LoginManager();
             DiscordListener discordListener = new DiscordListener(spotifyApi, jxpBackend, loginManager, youTubeService, logger);
             JDA jda = new JDABuilder(AccountType.BOT)
                 .setToken(discordToken)
