@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="httpHandlerSpace">
+
+  <xs:element name="httpHandlers" type="httpHandlers"/>
+  <xs:complexType name="httpHandlers">
+    <xs:sequence>
+      <xs:element name="httpHandler" type="httpHandler"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="httpHandler">
+    <xs:attribute name="path" type="xs:string"/>
+    <xs:attribute name="implementation" type="xs:string"/>
+  </xs:complexType>
+
+</xs:schema>

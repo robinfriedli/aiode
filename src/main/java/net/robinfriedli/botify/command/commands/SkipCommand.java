@@ -13,7 +13,7 @@ import net.robinfriedli.botify.exceptions.InvalidCommandException;
 public class SkipCommand extends AbstractCommand {
 
     public SkipCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(context, commandManager, commandString, false, false, false, identifier, description, Category.PLAYBACK);
+        super(context, commandManager, commandString, false, identifier, description, Category.PLAYBACK);
     }
 
     @Override

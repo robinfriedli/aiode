@@ -10,7 +10,7 @@ import net.robinfriedli.stringlist.StringListImpl;
 /**
  * Exception thrown when a user tries to use a command that requires a certain role the user does not have
  */
-public class ForbiddenCommandException extends RuntimeException {
+public class ForbiddenCommandException extends UserException {
 
     public ForbiddenCommandException(User user, String commandIdentifier, List<Role> roles) {
         super(String.format("User %s is not allowed to use command %s. %s.",

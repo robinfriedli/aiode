@@ -4,7 +4,7 @@ package net.robinfriedli.botify.exceptions;
  * Type of command thrown when the cause is user error. This exception typically gets caught and its message sent to
  * Discord.
  */
-public class InvalidCommandException extends RuntimeException {
+public class InvalidCommandException extends UserException {
 
     public InvalidCommandException() {
         super();

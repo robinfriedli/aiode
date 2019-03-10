@@ -2,7 +2,6 @@ package net.robinfriedli.botify.command.commands;
 
 import java.util.List;
 
-import com.google.common.collect.Lists;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.audio.AudioQueue;
@@ -15,19 +14,18 @@ import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
-import net.robinfriedli.jxp.api.XmlElement;
-import net.robinfriedli.jxp.persist.Context;
-
-import static net.robinfriedli.jxp.queries.Conditions.*;
+import net.robinfriedli.botify.util.SearchEngine;
+import org.hibernate.Session;
 
 public class ExportCommand extends AbstractCommand {
 
     public ExportCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(context, commandManager, commandString, false, false, true, identifier, description, Category.PLAYLIST_MANAGEMENT);
+        super(context, commandManager, commandString, true, identifier, description, Category.PLAYLIST_MANAGEMENT);
     }
 
     @Override
     public void doRun() {
+        Session session = getContext().getSession();
         Guild guild = getContext().getGuild();
         AudioQueue queue = getManager().getAudioManager().getQueue(guild);
 
@@ -35,12 +33,7 @@ public class ExportCommand extends AbstractCommand {
             throw new InvalidCommandException("Queue is empty");
         }
 
-        Context persistContext = getPersistContext();
-
-        XmlElement existingPlaylist = persistContext.query(and(
-            instanceOf(Playlist.class),
-            attribute("name").fuzzyIs(getCommandBody()))
-        ).getOnlyResult();
+        Playlist existingPlaylist = SearchEngine.searchLocalList(session, getCommandBody(), isPartitioned(), guild.getId());
         if (existingPlaylist != null) {
             throw new InvalidCommandException("Playlist " + getCommandBody() + " already exists");
         }
@@ -50,7 +43,9 @@ public class ExportCommand extends AbstractCommand {
         String playlistCountMax = PropertiesLoadingService.loadProperty("PLAYLIST_COUNT_MAX");
         if (playlistCountMax != null) {
             int maxPlaylists = Integer.parseInt(playlistCountMax);
-            if (persistContext.getInstancesOf(Playlist.class).size() >= maxPlaylists) {
+            String query = "select count(*) from " + Playlist.class.getName();
+            Long playlistCount = (Long) session.createQuery(isPartitioned() ? query + " where guild_id = '" + guild.getId() + "'" : query).uniqueResult();
+            if (playlistCount >= maxPlaylists) {
                 throw new InvalidCommandException("Maximum playlist count of " + maxPlaylists + " reached!");
             }
         }
@@ -63,22 +58,22 @@ public class ExportCommand extends AbstractCommand {
         }
 
         User createUser = getContext().getUser();
-        List<XmlElement> playlistElems = Lists.newArrayList();
+        Playlist playlist = new Playlist(getCommandBody(), createUser, guild);
 
-        for (Playable track : tracks) {
-            if (track instanceof PlayableImpl && ((PlayableImpl) track).delegate() instanceof HollowYouTubeVideo) {
-                HollowYouTubeVideo video = (HollowYouTubeVideo) ((PlayableImpl) track).delegate();
-                video.awaitCompletion();
-                if (video.isCanceled()) {
-                    continue;
+        invoke(() -> {
+            for (Playable track : tracks) {
+                if (track instanceof PlayableImpl && ((PlayableImpl) track).delegate() instanceof HollowYouTubeVideo) {
+                    HollowYouTubeVideo video = (HollowYouTubeVideo) ((PlayableImpl) track).delegate();
+                    video.awaitCompletion();
+                    if (video.isCanceled()) {
+                        continue;
+                    }
                 }
+                session.persist(track.export(playlist, getContext().getUser(), session));
             }
-            playlistElems.add(track.export(persistContext, getContext().getUser()));
-        }
 
-        persistContext.invoke(true, true,
-            () -> new Playlist(getCommandBody(), createUser, playlistElems, persistContext).persist(),
-            getContext().getChannel());
+            session.persist(playlist);
+        });
     }
 
     @Override

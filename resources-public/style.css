@@ -1,0 +1,18 @@
+.general-wrapper {
+    font-family: 'DejaVu Sans', Arial, Helvetica, sans-serif;
+    font-size: 14px;
+}
+
+.head-wrapper {
+    font-family: 'DejaVu Sans', Arial, Helvetica, sans-serif;
+    font-size: 20px;
+}
+
+
+.content-table td {
+    padding: 5px;
+}
+
+.head-table td {
+    padding: 10px;
+}

@@ -42,4 +42,6 @@
            description="Add or remove a role required to run a certain command. By default all commands are available to each user, except for this command which initially is only available to the guild owner. But as soon as a role has been added only those members with said role can use the command. The guild owner can always use any command.&#xA;Usage: $botify permission $grant play $to playmanager&#xA;$botify permission $deny add $for playmanager&#xA;$boitfy permission $clear shuffle"/>
   <command identifier="logout" implementation="net.robinfriedli.botify.command.commands.LogoutCommand"
            description="Log out from Spotify."/>
+  <command identifier="analytics" implementation="net.robinfriedli.botify.command.commands.AnalyticsCommand"
+           description="Show various analytics about this bot"/>
 </commands>

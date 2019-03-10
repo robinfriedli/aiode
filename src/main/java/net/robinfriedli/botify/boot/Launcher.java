@@ -1,5 +1,7 @@
 package net.robinfriedli.botify.boot;
 
+import java.io.File;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,23 +15,34 @@ import net.dv8tion.jda.core.AccountType;
 import net.dv8tion.jda.core.JDA;
 import net.dv8tion.jda.core.JDABuilder;
 import net.robinfriedli.botify.audio.YouTubeService;
-import net.robinfriedli.botify.discord.AlertEventListener;
 import net.robinfriedli.botify.discord.DiscordListener;
 import net.robinfriedli.botify.entities.AccessConfiguration;
+import net.robinfriedli.botify.entities.Artist;
 import net.robinfriedli.botify.entities.CommandContribution;
+import net.robinfriedli.botify.entities.CommandHistory;
+import net.robinfriedli.botify.entities.CommandInterceptorContribution;
 import net.robinfriedli.botify.entities.GuildSpecification;
+import net.robinfriedli.botify.entities.HttpHandlerContribution;
+import net.robinfriedli.botify.entities.PlaybackHistory;
 import net.robinfriedli.botify.entities.Playlist;
+import net.robinfriedli.botify.entities.PlaylistItem;
 import net.robinfriedli.botify.entities.Song;
 import net.robinfriedli.botify.entities.UrlTrack;
 import net.robinfriedli.botify.entities.Video;
+import net.robinfriedli.botify.listener.InterceptorChain;
+import net.robinfriedli.botify.listener.PlaylistItemTimestampListener;
 import net.robinfriedli.botify.login.LoginManager;
-import net.robinfriedli.botify.login.LoginServer;
-import net.robinfriedli.botify.util.PlaylistListener;
+import net.robinfriedli.botify.servers.HttpServerStarter;
+import net.robinfriedli.botify.util.ParameterContainer;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.api.JxpBuilder;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.hibernate.cfg.Configuration;
 
 public class Launcher {
 
@@ -46,24 +59,34 @@ public class Launcher {
             String youTubeCredentials = PropertiesLoadingService.requireProperty("YOUTUBE_CREDENTIALS");
             String startupTasksPath = PropertiesLoadingService.requireProperty("STARTUP_TASKS_PATH");
             boolean modePartitioned = PropertiesLoadingService.loadBoolProperty("MODE_PARTITIONED");
-            // setup JXP
+            String httpHandlersPath = PropertiesLoadingService.requireProperty("HTTP_HANDLERS_PATH");
+            // setup persistence
             JxpBackend jxpBackend = new JxpBuilder()
-                .addListeners(new AlertEventListener(logger), new PlaylistListener())
-                .mapClass("playlist", Playlist.class)
-                .mapClass("song", Song.class)
-                .mapClass("video", Video.class)
-                .mapClass("urlTrack", UrlTrack.class)
                 .mapClass("guildSpecification", GuildSpecification.class)
                 .mapClass("command", CommandContribution.class)
                 .mapClass("accessConfiguration", AccessConfiguration.class)
+                .mapClass("commandInterceptor", CommandInterceptorContribution.class)
+                .mapClass("httpHandler", HttpHandlerContribution.class)
                 .build();
 
+            Configuration configuration = new Configuration();
+            configuration.configure(new File("./resources/hibernate.cfg.xml"));
+            configuration.addAnnotatedClass(Playlist.class);
+            configuration.addAnnotatedClass(Song.class);
+            configuration.addAnnotatedClass(Video.class);
+            configuration.addAnnotatedClass(UrlTrack.class);
+            configuration.addAnnotatedClass(Artist.class);
+            configuration.addAnnotatedClass(PlaylistItem.class);
+            configuration.addAnnotatedClass(CommandHistory.class);
+            configuration.addAnnotatedClass(PlaybackHistory.class);
+            StandardServiceRegistryBuilder serviceBuilder = new StandardServiceRegistryBuilder().applySettings(configuration.getProperties());
+            SessionFactory sessionFactory = configuration.buildSessionFactory(serviceBuilder.build());
+
             // setup spotify api
-            SpotifyApi spotifyApi = new SpotifyApi.Builder()
+            SpotifyApi.Builder spotifyApiBuilder = new SpotifyApi.Builder()
                 .setClientId(clientId)
                 .setClientSecret(clientSecret)
-                .setRedirectUri(SpotifyHttpManager.makeUri(redirectUri))
-                .build();
+                .setRedirectUri(SpotifyHttpManager.makeUri(redirectUri));
             // setup YouTube API
             NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
             JacksonFactory jacksonFactory = JacksonFactory.getDefaultInstance();
@@ -73,19 +96,26 @@ public class Launcher {
             YouTubeService youTubeService = new YouTubeService(youTube, youTubeCredentials);
             // setup JDA and DiscordListener
             LoginManager loginManager = new LoginManager();
-            DiscordListener discordListener = new DiscordListener(spotifyApi, jxpBackend, loginManager, youTubeService, logger);
+            DiscordListener discordListener = new DiscordListener(jxpBackend, spotifyApiBuilder, sessionFactory, loginManager, youTubeService, logger);
             JDA jda = new JDABuilder(AccountType.BOT)
                 .setToken(discordToken)
-                .addEventListener(discordListener)
                 .build()
                 .awaitReady();
 
+            // start servers
+            Context httpHanldersContext = jxpBackend.getContext(httpHandlersPath);
+            ParameterContainer parameterContainer = new ParameterContainer(jda, spotifyApiBuilder.build(), loginManager, sessionFactory, discordListener, discordListener.getAudioManager());
+            HttpServerStarter serverStarter = new HttpServerStarter(httpHanldersContext, parameterContainer);
+            serverStarter.start();
+
             // run startup tasks
             Context context = jxpBackend.getContext(startupTasksPath);
+            Session session = sessionFactory.withOptions().interceptor(InterceptorChain.of(PlaylistItemTimestampListener.class)).openSession();
             for (XmlElement element : context.getElements()) {
                 Class<StartupTask> task = (Class<StartupTask>) Class.forName(element.getAttribute("implementation").getValue());
-                task.getConstructor().newInstance().perform(jxpBackend, jda, spotifyApi, youTubeService);
+                task.getConstructor().newInstance().perform(jxpBackend, jda, spotifyApiBuilder.build(), youTubeService, session);
             }
+            session.close();
 
             if (modePartitioned) {
                 discordListener.setupGuilds(DiscordListener.Mode.PARTITIONED, jda.getGuilds());
@@ -93,9 +123,9 @@ public class Launcher {
                 discordListener.setupGuilds(DiscordListener.Mode.SHARED, jda.getGuilds());
             }
 
-            LoginServer.start(jda, spotifyApi, loginManager);
+            jda.addEventListener(discordListener);
             logger.info("All starters done");
-        } catch (Exception e) {
+        } catch (Throwable e) {
             logger.error("Exception in starter. Application will terminate.", e);
             System.exit(1);
         }

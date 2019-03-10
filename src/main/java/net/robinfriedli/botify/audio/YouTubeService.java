@@ -48,7 +48,6 @@ public class YouTubeService {
      * For reference, see <a href="https://github.com/spotify/web-api/issues/57">Web playback of Full Tracks - Github</a>
      *
      * @param youTubeVideo the hollow youtube that has already been added to the queue and awaits to receive values
-     * @return the URL for the matching YouTube video
      */
     public void redirectSpotify(HollowYouTubeVideo youTubeVideo) {
         Track spotifyTrack = youTubeVideo.getRedirectedSpotifyTrack();
@@ -72,7 +71,8 @@ public class YouTubeService {
 
             List<SearchResult> items = search.execute().getItems();
             if (items.isEmpty()) {
-                throw new NoResultsFoundException("No YouTube Video found for track " + searchTerm);
+                youTubeVideo.cancel();
+                return;
             }
             SearchResult searchResult = items.get(0);
             String videoId = searchResult.getId().getVideoId();
@@ -93,10 +93,17 @@ public class YouTubeService {
             List<SearchResult> items = searchVideos(1, searchTerm);
             SearchResult searchResult = items.get(0);
             String videoId = searchResult.getId().getVideoId();
-            String title = searchResult.getSnippet().getTitle();
-            long durationMillis = getDurationMillis(videoId);
+            VideoListResponse videoListResponse = youTube.videos().list("snippet,contentDetails")
+                .setKey(apiKey)
+                .setId(videoId)
+                .setFields("items(snippet/title,contentDetails/duration)")
+                .setMaxResults(1L)
+                .execute();
+            Video video = videoListResponse.getItems().get(0);
 
-            return new YouTubeVideoImpl(title, videoId, durationMillis);
+            return new YouTubeVideoImpl(video.getSnippet().getTitle(),
+                videoId,
+                Duration.parse(video.getContentDetails().getDuration()).get(ChronoUnit.SECONDS) * 1000);
         } catch (IOException e) {
             throw new RuntimeException("Exception occurred during YouTube search", e);
         }
@@ -106,13 +113,13 @@ public class YouTubeService {
         try {
             List<SearchResult> searchResults = searchVideos(limit, searchTerm);
             List<String> videoIds = searchResults.stream().map(result -> result.getId().getVideoId()).collect(Collectors.toList());
-            Map<String, Long> allDurations = getAllDurations(videoIds);
+            List<Video> youtubeVideos = getAllVideos(videoIds);
             List<YouTubeVideo> videos = Lists.newArrayList();
 
-            for (SearchResult searchResult : searchResults) {
-                String videoId = searchResult.getId().getVideoId();
-                String title = searchResult.getSnippet().getTitle();
-                Long duration = allDurations.get(videoId);
+            for (Video video : youtubeVideos) {
+                String videoId = video.getId();
+                String title = video.getSnippet().getTitle();
+                long duration = Duration.parse(video.getContentDetails().getDuration()).get(ChronoUnit.SECONDS) * 1000;
 
                 videos.add(new YouTubeVideoImpl(title, videoId, duration));
             }
@@ -137,6 +144,24 @@ public class YouTubeService {
         }
 
         return items;
+    }
+
+    private List<Video> getAllVideos(List<String> videoIds) throws IOException {
+        List<Video> videos = Lists.newArrayList();
+        YouTube.Videos.List query = youTube.videos().list("snippet,contentDetails")
+            .setKey(apiKey)
+            .setId(String.join(",", videoIds))
+            .setFields("items(snippet/title,contentDetails/duration)")
+            .setMaxResults(50L);
+
+        String nextPageToken;
+        do {
+            VideoListResponse response = query.execute();
+            videos.addAll(response.getItems());
+            nextPageToken = response.getNextPageToken();
+        } while (nextPageToken != null);
+
+        return videos;
     }
 
     private Map<String, Long> getAllDurations(List<String> videoIds) throws IOException {

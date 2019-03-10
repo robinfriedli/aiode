@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="commandInterceptorSpace">
+
+  <xs:element name="commandInterceptors" type="commandInterceptors"/>
+  <xs:complexType name="commandInterceptors">
+    <xs:sequence>
+      <xs:element name="commandInterceptor" type="commandInterceptor"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="commandInterceptor">
+    <xs:attribute name="order" type="xs:int"/>
+    <xs:attribute name="implementation" type="xs:string"/>
+  </xs:complexType>
+
+</xs:schema>

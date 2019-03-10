@@ -16,33 +16,39 @@ import net.robinfriedli.botify.util.SearchEngine;
 public class UploadCommand extends AbstractCommand {
 
     public UploadCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(context, commandManager, commandString, false, true, true, identifier, description, Category.SPOTIFY);
+        super(context, commandManager, commandString, true, identifier, description, Category.SPOTIFY);
     }
 
     @Override
     public void doRun() throws Exception {
-        SpotifyApi spotifyApi = getManager().getSpotifyApi();
-        Playlist playlist = SearchEngine.searchLocalList(getPersistContext(), getCommandBody());
+        SpotifyApi spotifyApi = getContext().getSpotifyApi();
+        Playlist playlist = SearchEngine.searchLocalList(getContext().getSession(), getCommandBody(), isPartitioned(), getContext().getGuild().getId());
 
         if (playlist == null) {
             throw new InvalidCommandException("No local list found for " + getCommandBody());
         }
 
-        List<Track> tracks = playlist.asTrackList(spotifyApi);
-        String name = playlist.getAttribute("name").getValue();
+        runWithLogin(getContext().getUser(), () -> {
+            List<Track> tracks = playlist.asTrackList(spotifyApi);
+            String name = playlist.getName();
 
-        if (tracks.isEmpty()) {
-            throw new InvalidCommandException("Playlist " + name + " has no Spotify tracks.");
-        }
+            if (tracks.isEmpty()) {
+                throw new InvalidCommandException("Playlist " + name + " has no Spotify tracks.");
+            }
 
-        String userId = spotifyApi.getCurrentUsersProfile().build().execute().getId();
-        com.wrapper.spotify.model_objects.specification.Playlist spotifyPlaylist = spotifyApi.createPlaylist(userId, name).build().execute();
-        String playlistId = spotifyPlaylist.getId();
-        List<String> trackUris = tracks.stream().map(Track::getUri).collect(Collectors.toList());
-        List<List<String>> sequences = Lists.partition(trackUris, 90);
-        for (List<String> sequence : sequences) {
-            spotifyApi.addTracksToPlaylist(playlistId, sequence.toArray(new String[0])).build().execute();
-        }
+            String userId = spotifyApi.getCurrentUsersProfile().build().execute().getId();
+            com.wrapper.spotify.model_objects.specification.Playlist spotifyPlaylist = spotifyApi.createPlaylist(userId, name).build().execute();
+            String playlistId = spotifyPlaylist.getId();
+            List<String> trackUris = tracks.stream().map(Track::getUri).collect(Collectors.toList());
+            List<List<String>> sequences = Lists.partition(trackUris, 90);
+            for (List<String> sequence : sequences) {
+                spotifyApi.addTracksToPlaylist(playlistId, sequence.toArray(new String[0])).build().execute();
+                // avoid too many requests exception
+                Thread.sleep(500);
+            }
+
+            return null;
+        });
     }
 
     @Override

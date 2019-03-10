@@ -2,4 +2,6 @@
 <startupTasks xmlns="startupTaskSpace">
   <startupTask implementation="net.robinfriedli.botify.boot.tasks.CreatePermissionAccessConfigurationTask"/>
   <startupTask implementation="net.robinfriedli.botify.boot.tasks.SetRedirectedSpotifyTrackNameTask"/>
+  <startupTask implementation="net.robinfriedli.botify.boot.tasks.MigratePlaylistsTask"/>
+  <startupTask implementation="net.robinfriedli.botify.boot.tasks.VersionUpdateAlertTask"/>
 </startupTasks>

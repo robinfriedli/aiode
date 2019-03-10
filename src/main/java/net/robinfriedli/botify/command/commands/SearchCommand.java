@@ -1,11 +1,16 @@
 package net.robinfriedli.botify.command.commands;
 
+import java.awt.Color;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
 import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
+import net.dv8tion.jda.core.EmbedBuilder;
 import net.robinfriedli.botify.audio.YouTubePlaylist;
 import net.robinfriedli.botify.audio.YouTubeService;
 import net.robinfriedli.botify.audio.YouTubeVideo;
@@ -13,22 +18,20 @@ import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.discord.AlertService;
 import net.robinfriedli.botify.entities.Playlist;
-import net.robinfriedli.botify.entities.Song;
+import net.robinfriedli.botify.entities.PlaylistItem;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
+import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.SearchEngine;
-import net.robinfriedli.botify.util.Table;
 import net.robinfriedli.botify.util.Util;
-import net.robinfriedli.jxp.api.XmlElement;
-import net.robinfriedli.jxp.persist.Context;
 import net.robinfriedli.stringlist.StringListImpl;
+import org.hibernate.Session;
 
 public class SearchCommand extends AbstractCommand {
 
     public SearchCommand(CommandContext commandContext, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContext, commandManager, commandString, false, false, false, identifier, description, Category.SEARCH);
+        super(commandContext, commandManager, commandString, false, identifier, description, Category.SEARCH);
     }
 
     @Override
@@ -51,7 +54,11 @@ public class SearchCommand extends AbstractCommand {
     }
 
     private void searchSpotifyTrack() throws Exception {
-        SpotifyApi spotifyApi = getManager().getSpotifyApi();
+        if (getCommandBody().isBlank()) {
+            throw new InvalidCommandException("No search term entered");
+        }
+
+        SpotifyApi spotifyApi = getContext().getSpotifyApi();
         List<Track> found;
         if (argumentSet("own")) {
             found = runWithLogin(getContext().getUser(), () -> SearchEngine.searchOwnTrack(spotifyApi, getCommandBody()));
@@ -59,18 +66,25 @@ public class SearchCommand extends AbstractCommand {
             found = runWithCredentials(() -> SearchEngine.searchTrack(spotifyApi, getCommandBody()));
         }
         if (!found.isEmpty()) {
-            Table table = Table.create(50, 1, false, "", "", "", "=");
-            table.setTableHead(table.createCell("Track"), table.createCell("Album"), table.createCell("Artist"));
-            for (int i = 0; i < found.size(); i++) {
-                Track track = found.get(i);
+            EmbedBuilder embedBuilder = new EmbedBuilder();
 
-                String album = track.getAlbum().getName();
+            StringBuilder trackListBuilder = new StringBuilder();
+            StringBuilder albumListBuilder = new StringBuilder();
+            StringBuilder artistListBuilder = new StringBuilder();
+
+            for (Track track : found) {
+                trackListBuilder.append(track.getName()).append(System.lineSeparator());
+                albumListBuilder.append(track.getAlbum().getName()).append(System.lineSeparator());
                 String artist = StringListImpl.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", ");
-
-                table.addRow(table.createCell(track.getName()), table.createCell(album), table.createCell(artist));
+                artistListBuilder.append(artist).append(System.lineSeparator());
             }
 
-            sendWrapped(table.normalize(), "```", getContext().getChannel());
+            embedBuilder.addField("Track", trackListBuilder.toString(), true);
+            embedBuilder.addField("Album", albumListBuilder.toString(), true);
+            embedBuilder.addField("Artist", artistListBuilder.toString(), true);
+            embedBuilder.setColor(Color.decode("#1DB954"));
+
+            sendMessage(getContext().getChannel(), embedBuilder.build());
         } else {
             sendMessage(getContext().getChannel(), "No results found");
         }
@@ -114,82 +128,77 @@ public class SearchCommand extends AbstractCommand {
         sendMessage(getContext().getChannel(), responseBuilder.toString());
     }
 
-    private void listLocalList() {
+    private void listLocalList() throws IOException {
         if (getCommandBody().isBlank()) {
-            Context persistContext = getPersistContext();
-            List<Playlist> playlists = persistContext.getInstancesOf(Playlist.class);
+            Session session = getContext().getSession();
+            List<Playlist> playlists;
+            if (isPartitioned()) {
+                playlists = session.createQuery("from " + Playlist.class.getName() + " where guild_id = '" + getContext().getGuild().getId() + "'", Playlist.class).getResultList();
+            } else {
+                playlists = session.createQuery("from " + Playlist.class.getName(), Playlist.class).getResultList();
+            }
             if (playlists.isEmpty()) {
                 throw new NoResultsFoundException("No playlists");
             }
 
-            Table table = Table.create(50, 1, false, "", "", "-", "=");
-            table.setTableHead(table.createCell("Playlist"), table.createCell("Duration", 10), table.createCell("Items", 8));
+            EmbedBuilder embedBuilder = new EmbedBuilder();
+            embedBuilder.setColor(Color.decode("#1DB954"));
+
+            StringBuilder listBuilder = new StringBuilder();
+            StringBuilder durationBuilder = new StringBuilder();
+            StringBuilder itemBuilder = new StringBuilder();
 
             for (Playlist playlist : playlists) {
-                String name = playlist.getAttribute("name").getValue();
-                String duration = Util.normalizeMillis(playlist.getAttribute("duration").getLong());
-                String items = playlist.getAttribute("songCount").getValue();
-                table.addRow(table.createCell(name), table.createCell(duration, 10), table.createCell(items, 8));
+                listBuilder.append(playlist.getName()).append(System.lineSeparator());
+                durationBuilder.append(Util.normalizeMillis(playlist.getDuration())).append(System.lineSeparator());
+                itemBuilder.append(playlist.getSongCount()).append(System.lineSeparator());
             }
 
-            sendWrapped(table.normalize(), "```", getContext().getChannel());
+            embedBuilder.addField("Playlist", listBuilder.toString(), true);
+            embedBuilder.addField("Duration", durationBuilder.toString(), true);
+            embedBuilder.addField("Items", itemBuilder.toString(), true);
+
+            sendMessage(getContext().getChannel(), embedBuilder.build());
         } else {
-            Playlist playlist = SearchEngine.searchLocalList(getPersistContext(), getCommandBody());
+            Playlist playlist = SearchEngine.searchLocalList(getContext().getSession(), getCommandBody(), isPartitioned(), getContext().getGuild().getId());
             if (playlist == null) {
                 throw new NoResultsFoundException("No local list found for " + getCommandBody());
             }
 
-            StringBuilder responseBuilder = new StringBuilder();
-            String name = playlist.getAttribute("name").getValue();
-            long duration = playlist.getAttribute("duration").getLong();
-            String createdUserId = playlist.getAttribute("createdUserId").getValue();
+            String createdUserId = playlist.getCreatedUserId();
             String createdUser;
             if (createdUserId.equals("system")) {
-                createdUser = playlist.getAttribute("createdUser").getValue();
+                createdUser = playlist.getCreatedUser();
             } else {
                 createdUser = getContext().getJda().getUserById(createdUserId).getName();
             }
-            List<XmlElement> subElements = playlist.getSubElements();
-            int itemCount = subElements.size();
 
-            Table table = Table.createNoBorder(50, 1, false);
-            table.addRow(table.createCell("Name:", 15), table.createCell(name));
-            table.addRow(table.createCell("Duration:", 15), table.createCell(Util.normalizeMillis(duration)));
-            table.addRow(table.createCell("Created:", 15), table.createCell(createdUser));
-            table.addRow(table.createCell("Tracks:", 15), table.createCell(String.valueOf(itemCount)));
 
-            responseBuilder.append(table.normalize());
+            String baseUri = PropertiesLoadingService.requireProperty("BASE_URI");
+            EmbedBuilder embedBuilder = new EmbedBuilder();
+            embedBuilder.addField("Name", playlist.getName(), true);
+            embedBuilder.addField("Duration", Util.normalizeMillis(playlist.getDuration()), true);
+            embedBuilder.addField("Created by", createdUser, true);
+            embedBuilder.addField("Tracks", String.valueOf(playlist.getSongCount()), true);
+            embedBuilder.addBlankField(false);
 
-            if (itemCount > 0) {
-                Table trackTable = Table.create(50, 1, false, "", "", "-", "=");
-                trackTable.setTableHead(trackTable.createCell("Track"), trackTable.createCell("Duration", 10));
+            String url = baseUri +
+                String.format("/list?name=%s&guildId=%s", URLEncoder.encode(playlist.getName(), StandardCharsets.UTF_8), playlist.getGuildId());
+            embedBuilder.addField("First tracks:", "[Full list](" + url + ")", false);
 
-                for (int i = 0; i < 5 && i < itemCount; i++) {
-                    XmlElement item = subElements.get(i);
-                    String trackDuration = Util.normalizeMillis(item.getAttribute("duration").getLong());
-                    String display;
-                    if (item instanceof Song) {
-                        String trackName = item.getAttribute("name").getValue();
-                        String artistString = StringListImpl.create(item.getAttribute("artists").getValue(), ",").toSeparatedString(", ");
-                        display = trackName + " by " + artistString;
-                    } else {
-                        display = item.getAttribute("title").getValue();
-                    }
-
-                    trackTable.addRow(trackTable.createCell(display), trackTable.createCell(trackDuration, 10));
-                }
-
-                responseBuilder.append(System.lineSeparator());
-                responseBuilder.append("-".repeat(50));
-                responseBuilder.append(System.lineSeparator());
-                responseBuilder.append("First tracks:");
-                responseBuilder.append(System.lineSeparator());
-                responseBuilder.append("-".repeat(50));
-                responseBuilder.append(System.lineSeparator());
-                responseBuilder.append(trackTable.normalize());
+            StringBuilder trackListBuilder = new StringBuilder();
+            StringBuilder durationListBuilder = new StringBuilder();
+            List<PlaylistItem> items = playlist.getPlaylistItems();
+            for (int i = 0; i < 5 && i < items.size(); i++) {
+                PlaylistItem item = items.get(i);
+                trackListBuilder.append(item.display()).append(System.lineSeparator());
+                durationListBuilder.append(Util.normalizeMillis(item.getDuration())).append(System.lineSeparator());
             }
 
-            sendWrapped(responseBuilder.toString(), "```", getContext().getChannel());
+            embedBuilder.addField("Track", trackListBuilder.toString(), true);
+            embedBuilder.addField("Duration", durationListBuilder.toString(), true);
+
+            sendWithLogo(getContext().getChannel(), embedBuilder);
         }
     }
 
@@ -229,7 +238,7 @@ public class SearchCommand extends AbstractCommand {
     }
 
     private void listSpotifyList() throws Exception {
-        SpotifyApi spotifyApi = getManager().getSpotifyApi();
+        SpotifyApi spotifyApi = getContext().getSpotifyApi();
         String commandBody = getContext().getCommandBody();
 
         if (commandBody.isBlank()) {
@@ -254,39 +263,37 @@ public class SearchCommand extends AbstractCommand {
     }
 
     private void listTracks(PlaylistSimplified playlist, List<Track> tracks) {
-        StringBuilder responseBuilder = new StringBuilder();
-
-        Table overviewTable = Table.createNoBorder(50, 1, false);
+        EmbedBuilder embedBuilder = new EmbedBuilder();
         long totalDuration = tracks.stream().mapToLong(Track::getDurationMs).sum();
-        overviewTable.addRow(overviewTable.createCell("Name:", 15), overviewTable.createCell(playlist.getName()));
-        overviewTable.addRow(overviewTable.createCell("Song count:", 15), overviewTable.createCell(String.valueOf(tracks.size())));
-        overviewTable.addRow(overviewTable.createCell("Duration:", 15), overviewTable.createCell(Util.normalizeMillis(totalDuration)));
-        overviewTable.addRow(overviewTable.createCell("Owner:", 15), overviewTable.createCell(playlist.getOwner().getDisplayName()));
 
-        responseBuilder.append(overviewTable.normalize());
+        embedBuilder.addField("Name", playlist.getName(), true);
+        embedBuilder.addField("Song count", String.valueOf(tracks.size()), true);
+        embedBuilder.addField("Duration", Util.normalizeMillis(totalDuration), true);
+        embedBuilder.addField("Owner", playlist.getOwner().getDisplayName(), true);
 
         if (!tracks.isEmpty()) {
-            Table table = Table.create(50, 1, false, "", "", "-", "=");
-            table.setTableHead(table.createCell("Track"), table.createCell("Artist"), table.createCell("Duration", 10));
+            String url = "https://open.spotify.com/playlist/" + playlist.getId();
+            embedBuilder.addField("First tracks:", "[Full list](" + url + ")", false);
+
+            StringBuilder trackListBuilder = new StringBuilder();
+            StringBuilder artistListBuilder = new StringBuilder();
+            StringBuilder durationListBuilder = new StringBuilder();
 
             for (int i = 0; i < 5 && i < tracks.size(); i++) {
                 Track track = tracks.get(i);
+                trackListBuilder.append(track.getName()).append(System.lineSeparator());
                 String artists = StringListImpl.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", ");
-                String duration = Util.normalizeMillis(track.getDurationMs());
-                table.addRow(table.createCell(track.getName()), table.createCell(artists), table.createCell(duration, 10));
+                artistListBuilder.append(artists).append(System.lineSeparator());
+                durationListBuilder.append(Util.normalizeMillis(track.getDurationMs())).append(System.lineSeparator());
             }
 
-            responseBuilder.append(System.lineSeparator());
-            responseBuilder.append("-".repeat(50));
-            responseBuilder.append(System.lineSeparator());
-            responseBuilder.append("First tracks:");
-            responseBuilder.append(System.lineSeparator());
-            responseBuilder.append("-".repeat(50));
-            responseBuilder.append(System.lineSeparator());
-            responseBuilder.append(table.normalize());
+            embedBuilder.addField("Track", trackListBuilder.toString(), true);
+            embedBuilder.addField("Artist", artistListBuilder.toString(), true);
+            embedBuilder.addField("Duration", durationListBuilder.toString(), true);
         }
 
-        sendWrapped(responseBuilder.toString(), "```", getContext().getChannel());
+        embedBuilder.setColor(Color.decode("#1DB954"));
+        sendMessage(getContext().getChannel(), embedBuilder.build());
     }
 
     @Override
@@ -296,7 +303,7 @@ public class SearchCommand extends AbstractCommand {
     @Override
     public void withUserResponse(Object chosenOption) throws Exception {
         if (chosenOption instanceof PlaylistSimplified) {
-            SpotifyApi spotifyApi = getManager().getSpotifyApi();
+            SpotifyApi spotifyApi = getContext().getSpotifyApi();
             PlaylistSimplified playlist = (PlaylistSimplified) chosenOption;
             List<Track> tracks = runWithCredentials(() -> SearchEngine.getPlaylistTracks(spotifyApi, playlist));
             listTracks(playlist, tracks);

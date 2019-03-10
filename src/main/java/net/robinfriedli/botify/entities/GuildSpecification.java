@@ -43,6 +43,14 @@ public class GuildSpecification extends AbstractXmlElement {
         super(element, subElements, context);
     }
 
+    private static Map<String, String> buildAttributeMap(String guildName, String guildId, String botifyName) {
+        Map<String, String> attributeMap = new HashMap<>();
+        attributeMap.put("guildName", guildName);
+        attributeMap.put("guildId", guildId);
+        attributeMap.put("botifyName", botifyName);
+        return attributeMap;
+    }
+
     @Nullable
     @Override
     public String getId() {
@@ -63,14 +71,6 @@ public class GuildSpecification extends AbstractXmlElement {
 
     public Guild getGuild(JDA jda) {
         return jda.getGuildById(getGuildId());
-    }
-
-    private static Map<String, String> buildAttributeMap(String guildName, String guildId, String botifyName) {
-        Map<String, String> attributeMap = new HashMap<>();
-        attributeMap.put("guildName", guildName);
-        attributeMap.put("guildId", guildId);
-        attributeMap.put("botifyName", botifyName);
-        return attributeMap;
     }
 
 }

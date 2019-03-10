@@ -17,13 +17,13 @@ import net.robinfriedli.botify.login.LoginManager;
 public class LoginCommand extends AbstractCommand {
 
     public LoginCommand(CommandContext commandContext, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContext, commandManager, commandString, false, false, false, identifier, description, Category.SPOTIFY);
+        super(commandContext, commandManager, commandString, false, identifier, description, Category.SPOTIFY);
     }
 
     @Override
     public void doRun() {
         User user = getContext().getUser();
-        AuthorizationCodeUriRequest uriRequest = getManager().getSpotifyApi().authorizationCodeUri()
+        AuthorizationCodeUriRequest uriRequest = getContext().getSpotifyApi().authorizationCodeUri()
             .show_dialog(true)
             .state(user.getId())
             .scope("playlist-read-private playlist-read-collaborative user-library-read playlist-modify-private playlist-modify-public")

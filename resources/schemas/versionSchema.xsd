@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="versionSpace">
+
+  <xs:element name="versions" type="versions"/>
+  <xs:complexType name="versions">
+    <xs:sequence>
+      <xs:element name="version" type="version"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="version">
+    <xs:attribute name="version" type="xs:string"/>
+    <xs:attribute name="launched" type="xs:boolean"/>
+  </xs:complexType>
+
+</xs:schema>

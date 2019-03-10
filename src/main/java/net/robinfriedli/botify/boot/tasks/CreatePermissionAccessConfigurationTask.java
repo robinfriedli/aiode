@@ -14,6 +14,7 @@ import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
 import net.robinfriedli.jxp.queries.Query;
+import org.hibernate.Session;
 
 import static net.robinfriedli.jxp.queries.Conditions.*;
 
@@ -23,7 +24,7 @@ import static net.robinfriedli.jxp.queries.Conditions.*;
 public class CreatePermissionAccessConfigurationTask implements StartupTask {
 
     @Override
-    public void perform(JxpBackend jxpBackend, JDA jda, SpotifyApi spotifyApi, YouTubeService youTubeService) {
+    public void perform(JxpBackend jxpBackend, JDA jda, SpotifyApi spotifyApi, YouTubeService youTubeService, Session session) {
         String guildSpecificationPath = PropertiesLoadingService.requireProperty("GUILD_SPECIFICATION_PATH");
         Context context = jxpBackend.getContext(guildSpecificationPath);
         List<GuildSpecification> guildSpecifications = context.getInstancesOf(GuildSpecification.class);

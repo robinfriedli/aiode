@@ -1,6 +1,6 @@
 package net.robinfriedli.botify.exceptions;
 
-public class NoResultsFoundException extends RuntimeException {
+public class NoResultsFoundException extends UserException {
 
     public NoResultsFoundException() {
         super();

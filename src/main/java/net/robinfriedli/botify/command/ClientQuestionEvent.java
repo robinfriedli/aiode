@@ -1,15 +1,16 @@
 package net.robinfriedli.botify.command;
 
+import java.awt.Color;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.discord.AlertService;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
-import net.robinfriedli.botify.util.Table;
 
 /**
  * represents a two sided conversation between user and bot triggered when a user enters an ambiguous command
@@ -51,18 +52,23 @@ public class ClientQuestionEvent {
     }
 
     public void ask(AlertService alertService) {
-        StringBuilder questionBuilder = new StringBuilder();
-        questionBuilder.append("Several options found: ").append(System.lineSeparator());
-        questionBuilder.append("Choose an option using the answer command: $botify answer KEY");
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setTitle("Several options found");
+        embedBuilder.setDescription("Choose an option using the answer command: $botify answer KEY");
 
-        Table selectionTable = Table.createNoBorder(50, 1, false);
-        selectionTable.setTableHead(selectionTable.createCell("Key", 7), selectionTable.createCell("Option"));
+        StringBuilder keyListBuilder = new StringBuilder();
+        StringBuilder optionListBuilder = new StringBuilder();
+
         for (String optionKey : options.keySet()) {
-            selectionTable.addRow(selectionTable.createCell(optionKey, 7), selectionTable.createCell(options.get(optionKey).getDisplay()));
+            keyListBuilder.append(optionKey).append(System.lineSeparator());
+            optionListBuilder.append(options.get(optionKey).getDisplay()).append(System.lineSeparator());
         }
 
-        alertService.send(questionBuilder.toString(), sourceCommand.getContext().getChannel());
-        alertService.sendWrapped(selectionTable.normalize(), "```", sourceCommand.getContext().getChannel());
+        embedBuilder.addField("Key", keyListBuilder.toString(), true);
+        embedBuilder.addField("Option", optionListBuilder.toString(), true);
+        embedBuilder.setColor(Color.decode("#1DB954"));
+
+        alertService.send(embedBuilder.build(), sourceCommand.getContext().getChannel());
     }
 
     public void destroy() {

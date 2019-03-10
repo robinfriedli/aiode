@@ -16,22 +16,23 @@ import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.AccessConfiguration;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
-import net.robinfriedli.botify.util.Table;
 import net.robinfriedli.stringlist.StringListImpl;
 
 public class HelpCommand extends AbstractCommand {
 
     public HelpCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(context, commandManager, commandString, false, false, false, identifier, description, Category.GENERAL);
+        super(context, commandManager, commandString, false, identifier, description, Category.GENERAL);
     }
 
     @Override
     public void doRun() {
         if (getCommandBody().isBlank()) {
             EmbedBuilder embedBuilder = new EmbedBuilder();
-            embedBuilder.setColor(Color.GREEN);
+            embedBuilder.setColor(Color.decode("#1DB954"));
             embedBuilder.setTitle("Commands:");
             embedBuilder.appendDescription("To get help with a specific command just enter the name of the command.");
+
+            sendMessage(getContext().getChannel(), embedBuilder.build());
 
             List<AbstractCommand> commands = getManager().getAllCommands(getContext());
             Multimap<Category, AbstractCommand> commandsByCategory = HashMultimap.create();
@@ -41,18 +42,22 @@ public class HelpCommand extends AbstractCommand {
 
             List<Category> categories = commandsByCategory.keySet().stream().sorted(Comparator.comparingInt(Enum::ordinal)).collect(Collectors.toList());
             for (Category category : categories) {
-                embedBuilder.addField("__" + category.getName() + "__", "", false);
+                EmbedBuilder embedBuilderCategory = new EmbedBuilder();
+                embedBuilderCategory.setTitle("**" + category.getName() + "**");
+                embedBuilderCategory.setDescription(category.getDescription());
+                embedBuilderCategory.setColor(Color.decode("#1DB954"));
                 for (AbstractCommand command : commandsByCategory.get(category)) {
-                    embedBuilder.addField(command.getIdentifier(), command.getDescription(), false);
+                    embedBuilderCategory.addField(command.getIdentifier(), command.getDescription(), false);
                 }
+                sendMessage(getContext().getChannel(), embedBuilderCategory.build());
             }
 
-            sendMessage(getContext().getChannel(), embedBuilder.build());
         } else {
             getManager().getCommand(getContext(), getCommandBody()).ifPresentOrElse(command -> {
                 EmbedBuilder embedBuilder = new EmbedBuilder();
                 embedBuilder.setTitle("Command " + command.getIdentifier() + ":");
                 embedBuilder.setDescription(command.getDescription());
+                embedBuilder.setColor(Color.decode("#1DB954"));
                 Guild guild = getContext().getGuild();
                 AccessConfiguration accessConfiguration = getManager().getGuildManager().getAccessConfiguration(command.getIdentifier(), guild);
                 if (accessConfiguration != null) {
@@ -70,8 +75,6 @@ public class HelpCommand extends AbstractCommand {
                 ArgumentContribution argumentContribution = command.setupArguments();
                 if (!argumentContribution.isEmpty()) {
                     embedBuilder.addField("__Arguments__", "", false);
-                    Table table = Table.create(50, 1, false, "", "", "", "=");
-                    table.setTableHead(table.createCell("Argument", 12), table.createCell("Description"));
 
                     for (ArgumentContribution.Argument argument : argumentContribution.getArguments()) {
                         embedBuilder.addField("$" + argument.getArgument(), argument.getDescription(), false);

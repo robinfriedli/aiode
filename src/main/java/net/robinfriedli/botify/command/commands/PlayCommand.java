@@ -33,7 +33,7 @@ import net.robinfriedli.stringlist.StringListImpl;
 public class PlayCommand extends AbstractCommand {
 
     public PlayCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(context, commandManager, commandString, false, false, false, identifier, description, Category.PLAYBACK);
+        super(context, commandManager, commandString, false, identifier, description, Category.PLAYBACK);
     }
 
     @Override
@@ -77,14 +77,14 @@ public class PlayCommand extends AbstractCommand {
     }
 
     private void playUrl(VoiceChannel channel, AudioManager audioManager, AudioPlayback playback, Guild guild) {
-        List<Playable> playables = audioManager.createPlayables(getCommandBody(), playback);
+        List<Playable> playables = audioManager.createPlayables(getCommandBody(), playback, getContext().getSpotifyApi(), !argumentSet("preview"));
         playback.getAudioQueue().set(playables);
         audioManager.playTrack(guild, channel);
     }
 
     private void playSpotifyTrack(VoiceChannel channel, AudioManager audioManager, Guild guild, MessageChannel messageChannel) throws Exception {
         List<Track> found;
-        SpotifyApi spotifyApi = getManager().getSpotifyApi();
+        SpotifyApi spotifyApi = getContext().getSpotifyApi();
         if (argumentSet("own")) {
             found = runWithLogin(getContext().getUser(), () -> SearchEngine.searchOwnTrack(spotifyApi, getCommandBody()));
         } else {
@@ -95,7 +95,7 @@ public class PlayCommand extends AbstractCommand {
             audioManager.getQueue(guild).set(audioManager.createPlayable(!argumentSet("preview"), found.get(0)));
             audioManager.playTrack(guild, channel);
         } else if (found.isEmpty()) {
-            sendMessage(messageChannel, "No results found");
+            throw new NoResultsFoundException("No results found");
         } else {
             askQuestion(found, track -> {
                 String artistString = StringListImpl.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", ");
@@ -162,12 +162,12 @@ public class PlayCommand extends AbstractCommand {
                                AudioManager audioManager,
                                Guild guild,
                                AudioPlayback audioPlayback) throws Exception {
-        Playlist playlist = SearchEngine.searchLocalList(getPersistContext(), getCommandBody());
+        Playlist playlist = SearchEngine.searchLocalList(getContext().getSession(), getCommandBody(), isPartitioned(), guild.getId());
         if (playlist == null) {
             throw new InvalidCommandException("No local playlist found for '" + getCommandBody() + "'");
         }
 
-        List<Object> items = runWithCredentials(() -> playlist.getItems(getManager().getSpotifyApi()));
+        List<Object> items = runWithCredentials(() -> playlist.getItems(getContext().getSpotifyApi()));
 
         if (items.isEmpty()) {
             throw new NoResultsFoundException("Playlist is empty");
@@ -181,7 +181,7 @@ public class PlayCommand extends AbstractCommand {
         AudioManager audioManager = getManager().getAudioManager();
         Guild guild = getContext().getGuild();
         MessageChannel communicationChannel = getContext().getChannel();
-        SpotifyApi spotifyApi = getManager().getSpotifyApi();
+        SpotifyApi spotifyApi = getContext().getSpotifyApi();
 
         Callable<Void> callable = () -> {
             List<PlaylistSimplified> playlists;
@@ -233,7 +233,7 @@ public class PlayCommand extends AbstractCommand {
             queue.set(audioManager.createPlayable(!argumentSet("preview"), chosenOption));
         } else if (chosenOption instanceof PlaylistSimplified) {
             PlaylistSimplified playlist = (PlaylistSimplified) chosenOption;
-            SpotifyApi spotifyApi = getManager().getSpotifyApi();
+            SpotifyApi spotifyApi = getContext().getSpotifyApi();
             List<Track> tracks = runWithCredentials(() -> SearchEngine.getPlaylistTracks(spotifyApi, playlist));
             queue.set(audioManager.createPlayables(!argumentSet("preview"), tracks, playback));
         } else if (chosenOption instanceof YouTubePlaylist) {

@@ -2,9 +2,10 @@ package net.robinfriedli.botify.audio;
 
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import net.dv8tion.jda.core.entities.User;
+import net.robinfriedli.botify.entities.Playlist;
+import net.robinfriedli.botify.entities.PlaylistItem;
 import net.robinfriedli.botify.entities.UrlTrack;
-import net.robinfriedli.jxp.api.XmlElement;
-import net.robinfriedli.jxp.persist.Context;
+import org.hibernate.Session;
 
 public class UrlPlayable implements Playable {
 
@@ -19,9 +20,9 @@ public class UrlPlayable implements Playable {
     }
 
     public UrlPlayable(UrlTrack urlTrack) {
-        url = urlTrack.getAttribute("url").getValue();
-        display = urlTrack.getAttribute("title").getValue();
-        duration = urlTrack.getAttribute("duration").getLong();
+        url = urlTrack.getUrl();
+        display = urlTrack.getTitle();
+        duration = urlTrack.getDuration();
     }
 
     @Override
@@ -40,7 +41,13 @@ public class UrlPlayable implements Playable {
     }
 
     @Override
-    public XmlElement export(Context context, User user) {
-        return new UrlTrack(this, user, context);
+    public PlaylistItem export(Playlist playlist, User user, Session session) {
+        return new UrlTrack(this, user, playlist);
     }
+
+    @Override
+    public String getSource() {
+        return "Url";
+    }
+
 }

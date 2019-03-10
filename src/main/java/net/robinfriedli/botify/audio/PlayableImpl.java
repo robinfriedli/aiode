@@ -3,11 +3,12 @@ package net.robinfriedli.botify.audio;
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.core.entities.User;
+import net.robinfriedli.botify.entities.Playlist;
+import net.robinfriedli.botify.entities.PlaylistItem;
 import net.robinfriedli.botify.entities.Song;
 import net.robinfriedli.botify.entities.Video;
-import net.robinfriedli.jxp.api.XmlElement;
-import net.robinfriedli.jxp.persist.Context;
 import net.robinfriedli.stringlist.StringListImpl;
+import org.hibernate.Session;
 
 /**
  * A standard Playable that can either be a YouTube video or Spotify track
@@ -61,13 +62,29 @@ public class PlayableImpl implements Playable {
     }
 
     @Override
-    public XmlElement export(Context context, User user) {
+    public PlaylistItem export(Playlist playlist, User user, Session session) {
         if (delegate() instanceof Track) {
-            return new Song((Track) delegate(), user, context);
+            return new Song((Track) delegate(), user, playlist, session);
         } else if (delegate() instanceof YouTubeVideo) {
-            return new Video((YouTubeVideo) delegate(), user, context);
+            return new Video((YouTubeVideo) delegate(), user, playlist);
         } else {
             throw new UnsupportedOperationException("Unsupported playable: " + delegate().getClass().getSimpleName());
         }
     }
+
+    @Override
+    public String getSource() {
+        if (delegate() instanceof Track) {
+            return "Spotify";
+        } else if (delegate() instanceof YouTubeVideo) {
+            if (((YouTubeVideo) delegate()).getRedirectedSpotifyTrack() != null) {
+                return "Spotify";
+            } else {
+                return "YouTube";
+            }
+        } else {
+            throw new UnsupportedOperationException("Unsupported playable: " + delegate().getClass().getSimpleName());
+        }
+    }
+
 }

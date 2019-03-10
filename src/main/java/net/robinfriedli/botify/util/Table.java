@@ -5,12 +5,15 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
+import net.dv8tion.jda.core.EmbedBuilder;
 
 /**
  * Utility class for building and printing normalized tables. Necessary since Discord does not support markdown tables.
  *
  * Hint: when sending the table to discord it should be wrapped in "```" markdown highlights to send the table as a code
  * snippet to make sure all characters are the same size.
+ *
+ * As of botify 1.4 the table class has been replaced by the usage of {@link EmbedBuilder}
  */
 public class Table {
 

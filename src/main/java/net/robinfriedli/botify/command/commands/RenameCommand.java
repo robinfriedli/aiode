@@ -10,7 +10,7 @@ public class RenameCommand extends AbstractCommand {
     private boolean couldChangeNickname;
 
     public RenameCommand(CommandContext commandContext, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContext, commandManager, commandString, false, false, true, identifier, description, Category.GENERAL);
+        super(commandContext, commandManager, commandString, true, identifier, description, Category.GENERAL);
     }
 
     @Override

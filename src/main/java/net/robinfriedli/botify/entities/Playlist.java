@@ -2,49 +2,129 @@ package net.robinfriedli.botify.entities;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import javax.annotation.Nullable;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
 
 import com.google.common.collect.Lists;
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
 import com.wrapper.spotify.model_objects.specification.Track;
+import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.audio.PlayableImpl;
-import net.robinfriedli.jxp.api.AbstractXmlElement;
-import net.robinfriedli.jxp.api.XmlElement;
-import net.robinfriedli.jxp.persist.Context;
-import org.w3c.dom.Element;
 
-public class Playlist extends AbstractXmlElement {
+@Entity
+@Table(name = "playlist")
+public class Playlist {
 
-    public Playlist(String tagName, Map<String, ?> attributeMap, List<XmlElement> subElements, String textContent, Context context) {
-        super(tagName, attributeMap, subElements, textContent, context);
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "pk")
+    private long pk;
+    @Column(name = "name")
+    private String name;
+    @Column(name = "created_user")
+    private String createdUser;
+    @Column(name = "created_user_id")
+    private String createdUserId;
+    @Column(name = "guild")
+    private String guild;
+    @Column(name = "guild_id")
+    private String guildId;
+    @OneToMany(mappedBy = "playlist")
+    private List<Song> songs = Lists.newArrayList();
+    @OneToMany(mappedBy = "playlist")
+    private List<Video> videos = Lists.newArrayList();
+    @OneToMany(mappedBy = "playlist")
+    private List<UrlTrack> urlTracks = Lists.newArrayList();
+
+    public Playlist() {
     }
 
-    public Playlist(String name, User createdUser, List<XmlElement> tracks, Context context) {
-        super("playlist", getAttributeMap(name, createdUser, tracks), Lists.newArrayList(tracks), context);
+    public Playlist(String name, User user, Guild guild) {
+        this.name = name;
+        createdUser = user.getName();
+        createdUserId = user.getId();
+        this.guild = guild.getName();
+        this.guildId = guild.getId();
     }
 
-    @SuppressWarnings("unused")
-    // invoked by JXP
-    public Playlist(Element element, Context context) {
-        super(element, context);
+    public long getPk() {
+        return pk;
     }
 
-    @SuppressWarnings("unused")
-    // invoked by JXP
-    public Playlist(Element element, List<XmlElement> subElements, Context context) {
-        super(element, subElements, context);
+    public void setPk(long pk) {
+        this.pk = pk;
     }
 
-    @Nullable
-    @Override
-    public String getId() {
-        return getAttribute("name").getValue();
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public long getDuration() {
+        return getPlaylistItems().stream().mapToLong(PlaylistItem::getDuration).sum();
+    }
+
+    public int getSongCount() {
+        return songs.size() + videos.size() + urlTracks.size();
+    }
+
+    public String getCreatedUser() {
+        return createdUser;
+    }
+
+    public void setCreatedUser(String createdUser) {
+        this.createdUser = createdUser;
+    }
+
+    public String getCreatedUserId() {
+        return createdUserId;
+    }
+
+    public void setCreatedUserId(String createdUserId) {
+        this.createdUserId = createdUserId;
+    }
+
+    public String getGuild() {
+        return guild;
+    }
+
+    public void setGuild(String guild) {
+        this.guild = guild;
+    }
+
+    public String getGuildId() {
+        return guildId;
+    }
+
+    public void setGuildId(String guildId) {
+        this.guildId = guildId;
+    }
+
+    public List<PlaylistItem> getPlaylistItems() {
+        return Stream.of(getSongs(), getVideos(), getUrlTracks())
+            .flatMap(Collection::stream)
+            .sorted(Comparator.comparing(PlaylistItem::getCreatedTimestamp))
+            .collect(Collectors.toList());
+    }
+
+    public Stream<PlaylistItem> stream() {
+        return Stream.of(getSongs(), getVideos(), getUrlTracks()).flatMap(Collection::stream);
     }
 
     /**
@@ -54,9 +134,9 @@ public class Playlist extends AbstractXmlElement {
     public List<Object> getItems(SpotifyApi spotifyApi) throws IOException, SpotifyWebApiException {
         List<Object> items = Lists.newArrayList();
         List<String> trackIds = Lists.newArrayList();
-        for (XmlElement item : getSubElements()) {
+        for (PlaylistItem item : getPlaylistItems()) {
             if (item instanceof Song) {
-                trackIds.add(item.getAttribute("id").getValue());
+                trackIds.add(((Song) item).getId());
             } else if (item instanceof Video) {
                 items.add(((Video) item).asYouTubeVideo());
             } else if (item instanceof UrlTrack) {
@@ -79,31 +159,38 @@ public class Playlist extends AbstractXmlElement {
      */
     public List<Track> asTrackList(SpotifyApi spotifyApi) throws IOException, SpotifyWebApiException {
         List<Track> tracks = Lists.newArrayList();
-        for (XmlElement track : getSubElements()) {
-            if (track instanceof Song) {
-                tracks.add(spotifyApi.getTrack(track.getAttribute("id").getValue()).build().execute());
-            } else if (track instanceof Video && track.hasAttribute("redirectedSpotifyId")) {
-                tracks.add(spotifyApi.getTrack(track.getAttribute("redirectedSpotifyId").getValue()).build().execute());
+        for (PlaylistItem item : getPlaylistItems()) {
+            if (item instanceof Song) {
+                tracks.add(spotifyApi.getTrack(((Song) item).getId()).build().execute());
+            } else if (item instanceof Video && ((Video) item).getRedirectedSpotifyId() != null) {
+                tracks.add(spotifyApi.getTrack(((Video) item).getRedirectedSpotifyId()).build().execute());
             }
         }
 
         return tracks;
     }
 
-    private static Map<String, ?> getAttributeMap(String name, User createdUser, List<XmlElement> tracks) {
-        Map<String, Object> attributeMap = new HashMap<>();
-        attributeMap.put("name", name);
+    public List<Song> getSongs() {
+        return songs;
+    }
 
-        long duration = 0;
-        for (XmlElement track : tracks) {
-            duration = duration + track.getAttribute("duration").getLong();
-        }
+    public void setSongs(List<Song> songs) {
+        this.songs = songs;
+    }
 
-        attributeMap.put("duration", duration);
-        attributeMap.put("songCount", tracks.size());
-        attributeMap.put("createdUser", createdUser.getName());
-        attributeMap.put("createdUserId", createdUser.getId());
+    public List<Video> getVideos() {
+        return videos;
+    }
 
-        return attributeMap;
+    public void setVideos(List<Video> videos) {
+        this.videos = videos;
+    }
+
+    public List<UrlTrack> getUrlTracks() {
+        return urlTracks;
+    }
+
+    public void setUrlTracks(List<UrlTrack> urlTracks) {
+        this.urlTracks = urlTracks;
     }
 }

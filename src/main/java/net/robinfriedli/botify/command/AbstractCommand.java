@@ -1,5 +1,7 @@
 package net.robinfriedli.botify.command;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,20 +12,17 @@ import java.util.function.Function;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.google.api.client.util.Sets;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.Member;
+import net.dv8tion.jda.core.EmbedBuilder;
+import net.dv8tion.jda.core.MessageBuilder;
 import net.dv8tion.jda.core.entities.MessageChannel;
 import net.dv8tion.jda.core.entities.MessageEmbed;
 import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.command.commands.AnswerCommand;
 import net.robinfriedli.botify.discord.AlertService;
 import net.robinfriedli.botify.discord.DiscordListener;
-import net.robinfriedli.botify.discord.GuildSpecificationManager;
-import net.robinfriedli.botify.entities.AccessConfiguration;
-import net.robinfriedli.botify.exceptions.ForbiddenCommandException;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
+import net.robinfriedli.botify.util.CheckedRunnable;
 import net.robinfriedli.botify.util.Util;
-import net.robinfriedli.jxp.persist.Context;
 import net.robinfriedli.stringlist.StringList;
 import net.robinfriedli.stringlist.StringListImpl;
 
@@ -40,8 +39,6 @@ public abstract class AbstractCommand {
     private final String identifier;
     private final String description;
     private final Category category;
-    private boolean requiresClientCredentials;
-    private boolean requiresLogin;
     private boolean requiresInput;
     private String commandBody;
     // used to prevent onSuccess being called when no exception has been thrown but the command failed anyway
@@ -50,16 +47,12 @@ public abstract class AbstractCommand {
     public AbstractCommand(CommandContext context,
                            CommandManager commandManager,
                            String commandString,
-                           boolean requiresClientCredentials,
-                           boolean requiresLogin,
                            boolean requiresInput,
                            String identifier,
                            String description,
                            Category category) {
         this.context = context;
         this.commandManager = commandManager;
-        this.requiresClientCredentials = requiresClientCredentials;
-        this.requiresLogin = requiresLogin;
         this.requiresInput = requiresInput;
         this.identifier = identifier;
         this.description = description;
@@ -101,22 +94,20 @@ public abstract class AbstractCommand {
         return new ArgumentContribution(this);
     }
 
-    public void verify() {
-        GuildSpecificationManager guildManager = commandManager.getGuildManager();
-        User user = getContext().getUser();
-        Guild guild = context.getGuild();
-        Member member = guild.getMember(user);
-        if (!guildManager.checkAccess(identifier, member)) {
-            // if accessConfiguration were null we would not have got here
-            AccessConfiguration accessConfiguration = guildManager.getAccessConfiguration(identifier, getContext().getGuild());
-            throw new ForbiddenCommandException(user, identifier, accessConfiguration.getRoles(guild));
-        }
+    public ArgumentContribution getArgumentContribution() {
+        return argumentContribution;
+    }
 
-        if (requiresInput && commandBody.isBlank()) {
-            throw new InvalidCommandException("That command requires more input!");
-        }
+    public void invoke(CheckedRunnable runnable) {
+        getManager().getCommandExecutor().invoke(getContext().getSession(), runnable);
+    }
 
-        argumentContribution.complete();
+    public <E> E invoke(Callable<E> callable) {
+        return getManager().getCommandExecutor().invoke(getContext().getSession(), callable);
+    }
+
+    public CommandContext getContext() {
+        return context;
     }
 
     /**
@@ -128,7 +119,7 @@ public abstract class AbstractCommand {
      * @param callable the code to run
      */
     protected <E> E runWithLogin(User user, Callable<E> callable) throws Exception {
-        return getManager().getCommandExecutor().runForUser(user, callable);
+        return getManager().getCommandExecutor().runForUser(user, getContext().getSpotifyApi(), callable);
     }
 
     /**
@@ -136,7 +127,7 @@ public abstract class AbstractCommand {
      * requiresCredentials is false.
      */
     protected <E> E runWithCredentials(Callable<E> callable) throws Exception {
-        return getManager().getCommandExecutor().runWithCredentials(callable);
+        return getManager().getCommandExecutor().runWithCredentials(getContext().getSpotifyApi(), callable);
     }
 
     protected boolean argumentSet(String argument) {
@@ -147,17 +138,9 @@ public abstract class AbstractCommand {
         return argumentContribution.getArgument(argument).getValue(type);
     }
 
-    protected CommandContext getContext() {
-        return context;
-    }
-
-    protected Context getPersistContext() {
+    protected boolean isPartitioned() {
         DiscordListener.Mode mode = commandManager.getDiscordListener().getMode();
-        if (mode == DiscordListener.Mode.PARTITIONED) {
-            return commandManager.getJxpBackend().requireBoundContext(getContext().getGuild());
-        } else {
-            return commandManager.getDiscordListener().getDefaultPlaylistContext();
-        }
+        return mode == DiscordListener.Mode.PARTITIONED;
     }
 
     /**
@@ -227,6 +210,14 @@ public abstract class AbstractCommand {
         alertService.sendWrapped(message, wrapper, channel);
     }
 
+    protected void sendMessage(MessageChannel channel, InputStream file, String fileName, MessageBuilder messageBuilder) {
+        alertService.send(messageBuilder, file, fileName, channel);
+    }
+
+    protected void sendWithLogo(MessageChannel channel, EmbedBuilder embedBuilder) throws IOException {
+        alertService.sendWithLogo(embedBuilder, channel);
+    }
+
     /**
      * Used for any command with an A $to B syntax. Requires the command body to have exactly one argument preceded by
      * $.
@@ -287,12 +278,8 @@ public abstract class AbstractCommand {
         this.isFailed = isFailed;
     }
 
-    public boolean requiresClientCredentials() {
-        return requiresClientCredentials;
-    }
-
-    public boolean requiresLogin() {
-        return requiresLogin;
+    public boolean requiresInput() {
+        return requiresInput;
     }
 
     private void processCommand(String commandString) {
@@ -325,20 +312,26 @@ public abstract class AbstractCommand {
 
     public enum Category {
 
-        PLAYBACK("playback"),
-        PLAYLIST_MANAGEMENT("playlist management"),
-        SPOTIFY("spotify"),
-        SEARCH("search"),
-        GENERAL("general");
+        PLAYBACK("playback", "Commands that manage the music playback"),
+        PLAYLIST_MANAGEMENT("playlist management", "Commands that add or remove items from botify playlists"),
+        SPOTIFY("spotify", "Commands that manage the Spotify login or upload playlists to Spotify"),
+        SEARCH("search", "Commands that search for botify playlists or list all of them or search for Spotify and Youtube tracks, videos and playlists"),
+        GENERAL("general", "General commands that manage this bot");
 
         private final String name;
+        private final String description;
 
-        Category(String name) {
+        Category(String name, String description) {
             this.name = name;
+            this.description = description;
         }
 
         public String getName() {
             return name;
+        }
+
+        public String getDescription() {
+            return description;
         }
     }
 

@@ -2,11 +2,11 @@ package net.robinfriedli.botify.command.commands;
 
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.validator.routines.UrlValidator;
 
-import com.google.common.collect.Lists;
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
 import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
@@ -25,56 +25,71 @@ import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.Playlist;
+import net.robinfriedli.botify.entities.PlaylistItem;
 import net.robinfriedli.botify.entities.Song;
 import net.robinfriedli.botify.entities.Video;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.SearchEngine;
-import net.robinfriedli.jxp.api.XmlElement;
-import net.robinfriedli.jxp.persist.Context;
 import net.robinfriedli.stringlist.StringListImpl;
+import org.hibernate.Session;
 
 public class AddCommand extends AbstractCommand {
 
     public AddCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(context, commandManager, commandString, false, false, true, identifier, description, Category.PLAYLIST_MANAGEMENT);
+        super(context, commandManager, commandString, true, identifier, description, Category.PLAYLIST_MANAGEMENT);
     }
 
     @Override
-    public void doRun() throws Exception {
+    public void doRun() {
+        Session session = getContext().getSession();
         if (argumentSet("queue")) {
             AudioQueue queue = getManager().getAudioManager().getQueue(getContext().getGuild());
             if (queue.isEmpty()) {
                 throw new InvalidCommandException("Queue is empty");
             }
 
-            List<Playable> tracks = queue.getTracks();
-            List<XmlElement> elements = Lists.newArrayList();
-            for (Playable track : tracks) {
-                elements.add(track.export(getPersistContext(), getContext().getUser()));
+            Playlist playlist = SearchEngine.searchLocalList(session, getCommandBody(), isPartitioned(), getContext().getGuild().getId());
+            if (playlist == null) {
+                throw new NoResultsFoundException("No local list found for " + getCommandBody());
             }
 
-            addToList(getCommandBody(), elements);
+            List<Playable> tracks = queue.getTracks();
+            checkSize(playlist, tracks.size());
+            invoke(() -> {
+                for (Playable track : tracks) {
+                    session.persist(track.export(playlist, getContext().getUser(), session));
+                }
+            });
         } else {
             Pair<String, String> pair = splitInlineArgument("to");
-            if (argumentSet("list")) {
-                addList(pair);
-            } else if (UrlValidator.getInstance().isValid(pair.getLeft())) {
-                addUrl(pair);
-            } else {
-                addSpecificTrack(pair);
+            Playlist playlist = SearchEngine.searchLocalList(session, pair.getRight(), isPartitioned(), getContext().getGuild().getId());
+
+            if (playlist == null) {
+                throw new NoResultsFoundException("No local list found for " + pair.getRight());
             }
+
+            invoke(() -> {
+                if (argumentSet("list")) {
+                    addList(playlist, pair.getLeft());
+                } else if (UrlValidator.getInstance().isValid(pair.getLeft())) {
+                    addUrl(playlist, pair.getLeft());
+                } else {
+                    addSpecificTrack(playlist, pair.getLeft());
+                }
+            });
         }
     }
 
-    private void addUrl(Pair<String, String> pair) {
+    private void addUrl(Playlist playlist, String searchTerm) {
         AudioManager audioManager = getManager().getAudioManager();
         AudioPlayback playback = audioManager.getPlaybackForGuild(getContext().getGuild());
-        List<Playable> playables = audioManager.createPlayables(pair.getLeft(), playback, false);
+        List<Playable> playables = audioManager.createPlayables(searchTerm, playback, getContext().getSpotifyApi(), false, false);
+        Session session = getContext().getSession();
 
-        List<XmlElement> elements = Lists.newArrayList();
-        playables.forEach(playable -> {
+        checkSize(playlist, playables.size());
+        invoke(() -> playables.forEach(playable -> {
             if (playable instanceof PlayableImpl && ((PlayableImpl) playable).delegate() instanceof HollowYouTubeVideo) {
                 HollowYouTubeVideo video = (HollowYouTubeVideo) ((PlayableImpl) playable).delegate();
                 video.awaitCompletion();
@@ -82,34 +97,34 @@ public class AddCommand extends AbstractCommand {
                     return;
                 }
             }
-            elements.add(playable.export(getPersistContext(), getContext().getUser()));
-        });
-        addToList(pair.getRight(), elements);
+
+            session.persist(playable.export(playlist, getContext().getUser(), session));
+        }));
     }
 
-    private void addList(Pair<String, String> pair) throws Exception {
+    private void addList(Playlist playlist, String searchTerm) throws Exception {
         if (argumentSet("spotify")) {
-            SpotifyApi spotifyApi = getManager().getSpotifyApi();
+            SpotifyApi spotifyApi = getContext().getSpotifyApi();
             Callable<Void> callable = () -> {
                 List<PlaylistSimplified> playlists;
                 if (argumentSet("own")) {
-                    playlists = SearchEngine.searchOwnPlaylist(spotifyApi, pair.getLeft());
+                    playlists = SearchEngine.searchOwnPlaylist(spotifyApi, searchTerm);
                 } else {
-                    playlists = SearchEngine.searchSpotifyPlaylist(spotifyApi, pair.getLeft());
+                    playlists = SearchEngine.searchSpotifyPlaylist(spotifyApi, searchTerm);
                 }
 
                 if (playlists.size() == 1) {
-                    List<XmlElement> songs = Lists.newArrayList();
                     List<Track> playlistTracks = SearchEngine.getPlaylistTracks(spotifyApi, playlists.get(0));
-                    for (Track playlistTrack : playlistTracks) {
-                        songs.add(new Song(playlistTrack, getContext().getUser(), getPersistContext()));
-                    }
-
-                    addToList(pair.getRight(), songs);
+                    List<PlaylistItem> songs = playlistTracks
+                        .stream()
+                        .map(t -> new Song(t, getContext().getUser(), playlist, getContext().getSession()))
+                        .collect(Collectors.toList());
+                    checkSize(playlist, songs.size());
+                    songs.forEach(item -> getContext().getSession().persist(item));
                 } else if (playlists.isEmpty()) {
-                    throw new NoResultsFoundException("No Spotify playlists found for " + pair.getLeft());
+                    throw new NoResultsFoundException("No Spotify playlists found for " + searchTerm);
                 } else {
-                    askQuestion(playlists, PlaylistSimplified::getName, playlist -> playlist.getOwner().getDisplayName());
+                    askQuestion(playlists, PlaylistSimplified::getName, p -> p.getOwner().getDisplayName());
                 }
 
                 return null;
@@ -128,46 +143,46 @@ public class AddCommand extends AbstractCommand {
                     throw new InvalidCommandException("Limit must be between 1 and 10");
                 }
 
-                List<YouTubePlaylist> playlists = youTubeService.searchSeveralPlaylists(limit, pair.getLeft());
+                List<YouTubePlaylist> playlists = youTubeService.searchSeveralPlaylists(limit, searchTerm);
                 if (playlists.size() == 1) {
                     YouTubePlaylist youTubePlaylist = playlists.get(0);
-                    addYouTubeList(youTubePlaylist, pair, youTubeService);
+                    addYouTubeList(youTubePlaylist, playlist, youTubeService, getManager().getAudioManager().getPlaybackForGuild(getContext().getGuild()));
                 } else if (playlists.isEmpty()) {
-                    throw new NoResultsFoundException("No YouTube playlists found for " + pair.getLeft());
+                    throw new NoResultsFoundException("No YouTube playlists found for " + searchTerm);
                 } else {
                     askQuestion(playlists, YouTubePlaylist::getTitle, YouTubePlaylist::getChannelTitle);
                 }
             } else {
-                YouTubePlaylist youTubePlaylist = youTubeService.searchPlaylist(pair.getLeft());
-                addYouTubeList(youTubePlaylist, pair, youTubeService);
+                YouTubePlaylist youTubePlaylist = youTubeService.searchPlaylist(searchTerm);
+                addYouTubeList(youTubePlaylist, playlist, youTubeService, getManager().getAudioManager().getPlaybackForGuild(getContext().getGuild()));
             }
         } else {
-            Playlist playlist = SearchEngine.searchLocalList(getPersistContext(), pair.getLeft());
+            Playlist targetList = SearchEngine.searchLocalList(getContext().getSession(), searchTerm, isPartitioned(), getContext().getGuild().getId());
 
-            if (playlist == null) {
-                throw new InvalidCommandException("No local playlist found for " + pair.getLeft());
+            if (targetList == null) {
+                throw new InvalidCommandException("No local playlist found for " + searchTerm);
             }
 
-            List<XmlElement> elements = Lists.newArrayList();
-            for (XmlElement subElement : playlist.getSubElements()) {
-                elements.add(subElement.copy(false, true));
-            }
-            addToList(pair.getRight(), elements);
+            List<PlaylistItem> items = targetList.getPlaylistItems().stream().map(item -> item.copy(playlist)).collect(Collectors.toList());
+            checkSize(playlist, items.size());
+            items.forEach(item -> getContext().getSession().persist(item));
         }
     }
 
-    private void addYouTubeList(YouTubePlaylist youTubePlaylist, Pair<String, String> pair, YouTubeService youTubeService) {
-        youTubeService.populateList(youTubePlaylist);
-        List<XmlElement> videos = Lists.newArrayList();
-        for (HollowYouTubeVideo video : youTubePlaylist.getVideos()) {
+    private void addYouTubeList(YouTubePlaylist youTubePlaylist, Playlist playlist, YouTubeService youTubeService, AudioPlayback playback) {
+        playback.load(() -> youTubeService.populateList(youTubePlaylist), false);
+        List<HollowYouTubeVideo> videos = youTubePlaylist.getVideos();
+        checkSize(playlist, videos.size());
+        for (HollowYouTubeVideo video : videos) {
+            video.awaitCompletion();
             if (!video.isCanceled()) {
-                videos.add(new Video(video, getContext().getUser(), getPersistContext()));
+                getContext().getSession().persist(new Video(video, getContext().getUser(), playlist));
             }
         }
-        addToList(pair.getRight(), videos);
+
     }
 
-    private void addSpecificTrack(Pair<String, String> pair) throws Exception {
+    private void addSpecificTrack(Playlist playlist, String searchTerm) throws Exception {
         if (argumentSet("youtube")) {
             YouTubeService youTubeService = getManager().getAudioManager().getYouTubeService();
             if (argumentSet("limit")) {
@@ -175,12 +190,12 @@ public class AddCommand extends AbstractCommand {
                 if (!(limit > 0 && limit <= 10)) {
                     throw new InvalidCommandException("Limit must be between 1 and 10");
                 }
-                List<YouTubeVideo> youTubeVideos = youTubeService.searchSeveralVideos(limit, pair.getLeft());
+                List<YouTubeVideo> youTubeVideos = youTubeService.searchSeveralVideos(limit, searchTerm);
                 if (youTubeVideos.size() == 1) {
-                    Video video = new Video(youTubeVideos.get(0), getContext().getUser(), getPersistContext());
-                    addToList(pair.getRight(), video);
+                    checkSize(playlist, 1);
+                    getContext().getSession().persist(new Video(youTubeVideos.get(0), getContext().getUser(), playlist));
                 } else if (youTubeVideos.isEmpty()) {
-                    throw new NoResultsFoundException("No YouTube videos found for " + pair.getRight());
+                    throw new NoResultsFoundException("No YouTube videos found for " + searchTerm);
                 } else {
                     askQuestion(youTubeVideos, youTubeVideo -> {
                         try {
@@ -192,24 +207,24 @@ public class AddCommand extends AbstractCommand {
                     });
                 }
             } else {
-                YouTubeVideo youTubeVideo = youTubeService.searchVideo(pair.getLeft());
-                Video video = new Video(youTubeVideo, getContext().getUser(), getPersistContext());
-                addToList(pair.getRight(), video);
+                YouTubeVideo youTubeVideo = youTubeService.searchVideo(searchTerm);
+                checkSize(playlist, 1);
+                getContext().getSession().persist(new Video(youTubeVideo, getContext().getUser(), playlist));
             }
         } else {
-            SpotifyApi spotifyApi = getManager().getSpotifyApi();
+            SpotifyApi spotifyApi = getContext().getSpotifyApi();
             List<Track> tracks;
             if (argumentSet("own")) {
-                tracks = runWithLogin(getContext().getUser(), () -> SearchEngine.searchOwnTrack(spotifyApi, pair.getLeft()));
+                tracks = runWithLogin(getContext().getUser(), () -> SearchEngine.searchOwnTrack(spotifyApi, searchTerm));
             } else {
-                tracks = runWithCredentials(() -> SearchEngine.searchTrack(spotifyApi, pair.getLeft()));
+                tracks = runWithCredentials(() -> SearchEngine.searchTrack(spotifyApi, searchTerm));
             }
 
             if (tracks.size() == 1) {
-                Song song = new Song(tracks.get(0), getContext().getUser(), getPersistContext());
-                addToList(pair.getRight(), song);
+                checkSize(playlist, 1);
+                getContext().getSession().persist(new Song(tracks.get(0), getContext().getUser(), playlist, getContext().getSession()));
             } else if (tracks.isEmpty()) {
-                throw new NoResultsFoundException("No spotify track found for " + pair.getLeft());
+                throw new NoResultsFoundException("No spotify track found for " + searchTerm);
             } else {
                 askQuestion(tracks, track -> {
                     String artistString = StringListImpl.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", ");
@@ -219,27 +234,14 @@ public class AddCommand extends AbstractCommand {
         }
     }
 
-    private void addToList(String name, XmlElement element) {
-        addToList(name, Lists.newArrayList(element));
-    }
-
-    private void addToList(String name, List<XmlElement> elements) {
-        Context persistContext = getPersistContext();
-        Playlist playlist = SearchEngine.searchLocalList(persistContext, name);
-
-        if (playlist == null) {
-            throw new InvalidCommandException("No local list found for " + name);
-        }
-
+    private void checkSize(Playlist playlist, int toAddSize) {
         String playlistSizeMax = PropertiesLoadingService.loadProperty("PLAYLIST_SIZE_MAX");
         if (playlistSizeMax != null) {
             int maxSize = Integer.parseInt(playlistSizeMax);
-            if (playlist.getAttribute("songCount").getInt() + elements.size() > maxSize) {
+            if (playlist.getSongCount() + toAddSize > maxSize) {
                 throw new InvalidCommandException("List exceeds maximum size of " + maxSize + " items!");
             }
         }
-
-        persistContext.invoke(true, true, () -> playlist.addSubElements(elements), getContext().getChannel());
     }
 
     @Override
@@ -248,29 +250,33 @@ public class AddCommand extends AbstractCommand {
     }
 
     @Override
-    public void withUserResponse(Object option) throws Exception {
-        if (option instanceof Track) {
-            Pair<String, String> pair = splitInlineArgument("to");
-            Song song = new Song((Track) option, getContext().getUser(), getPersistContext());
-            addToList(pair.getRight(), song);
-        } else if (option instanceof YouTubeVideo) {
-            Pair<String, String> pair = splitInlineArgument("to");
-            Video video = new Video((YouTubeVideo) option, getContext().getUser(), getPersistContext());
-            addToList(pair.getRight(), video);
-        } else if (option instanceof PlaylistSimplified) {
-            Pair<String, String> pair = splitInlineArgument("to");
-            SpotifyApi spotifyApi = getManager().getSpotifyApi();
-            List<XmlElement> songs = Lists.newArrayList();
-            List<Track> playlistTracks = runWithCredentials(() -> SearchEngine.getPlaylistTracks(spotifyApi, (PlaylistSimplified) option));
-            for (Track playlistTrack : playlistTracks) {
-                songs.add(new Song(playlistTrack, getContext().getUser(), getPersistContext()));
-            }
+    public void withUserResponse(Object option) {
+        Session session = getContext().getSession();
+        Pair<String, String> pair = splitInlineArgument("to");
 
-            addToList(pair.getRight(), songs);
-        } else if (option instanceof YouTubePlaylist) {
-            YouTubeService youTubeService = getManager().getAudioManager().getYouTubeService();
-            addYouTubeList((YouTubePlaylist) option, splitInlineArgument("to"), youTubeService);
+        Playlist playlist = SearchEngine.searchLocalList(session, pair.getRight(), isPartitioned(), getContext().getGuild().getId());
+        if (playlist == null) {
+            throw new NoResultsFoundException("No local list found for " + getCommandBody());
         }
+
+        invoke(() -> {
+            if (option instanceof Track) {
+                checkSize(playlist, 1);
+                session.persist(new Song((Track) option, getContext().getUser(), playlist, session));
+            } else if (option instanceof YouTubeVideo) {
+                checkSize(playlist, 1);
+                session.persist(new Video((YouTubeVideo) option, getContext().getUser(), playlist));
+            } else if (option instanceof PlaylistSimplified) {
+                SpotifyApi spotifyApi = getContext().getSpotifyApi();
+                List<Track> playlistTracks = runWithCredentials(() -> SearchEngine.getPlaylistTracks(spotifyApi, (PlaylistSimplified) option));
+                List<PlaylistItem> songs = playlistTracks.stream().map(t -> new Song(t, getContext().getUser(), playlist, session)).collect(Collectors.toList());
+                checkSize(playlist, songs.size());
+                songs.forEach(session::persist);
+            } else if (option instanceof YouTubePlaylist) {
+                YouTubeService youTubeService = getManager().getAudioManager().getYouTubeService();
+                addYouTubeList((YouTubePlaylist) option, playlist, youTubeService, getManager().getAudioManager().getPlaybackForGuild(getContext().getGuild()));
+            }
+        });
     }
 
     @Override

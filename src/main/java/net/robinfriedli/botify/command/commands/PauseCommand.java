@@ -9,7 +9,7 @@ import net.robinfriedli.botify.command.CommandManager;
 public class PauseCommand extends AbstractCommand {
 
     public PauseCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(context, commandManager, commandString, false, false, false, identifier, description, Category.PLAYBACK);
+        super(context, commandManager, commandString, false, identifier, description, Category.PLAYBACK);
     }
 
     @Override

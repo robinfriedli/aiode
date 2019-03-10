@@ -1,7 +1,9 @@
 package net.robinfriedli.botify.audio;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,15 +31,22 @@ import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
+import com.wrapper.spotify.SpotifyApi;
+import com.wrapper.spotify.exceptions.SpotifyWebApiException;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.VoiceChannel;
 import net.dv8tion.jda.core.exceptions.InsufficientPermissionException;
 import net.robinfriedli.botify.discord.AlertService;
+import net.robinfriedli.botify.entities.PlaybackHistory;
 import net.robinfriedli.botify.entities.UrlTrack;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
-import net.robinfriedli.botify.exceptions.TrackLoadingExceptionHandler;
+import net.robinfriedli.botify.util.SearchEngine;
+import net.robinfriedli.stringlist.StringList;
+import net.robinfriedli.stringlist.StringListImpl;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 
 public class AudioManager extends AudioEventAdapter {
 
@@ -45,10 +54,12 @@ public class AudioManager extends AudioEventAdapter {
     private final YouTubeService youTubeService;
     private final Logger logger;
     private List<AudioPlayback> audioPlaybacks = Lists.newArrayList();
+    private final SessionFactory sessionFactory;
 
-    public AudioManager(YouTubeService youTubeService, Logger logger) {
+    public AudioManager(YouTubeService youTubeService, Logger logger, SessionFactory sessionFactory) {
         this.youTubeService = youTubeService;
         this.logger = logger;
+        this.sessionFactory = sessionFactory;
         AudioSourceManagers.registerRemoteSources(playerManager);
     }
 
@@ -83,12 +94,28 @@ public class AudioManager extends AudioEventAdapter {
         if (audioTrack != null) {
             if (audioTrack instanceof AudioTrack) {
                 play((AudioTrack) audioTrack, audioPlayback);
+                new Thread(() -> {
+                    try {
+                        createHistoryEntry(track, guild);
+                    } catch (Throwable e) {
+                        logger.error("Exception while creating playback history entry", e);
+                    }
+                }).start();
             } else {
                 throw new UnsupportedOperationException("Expected an AudioTrack");
             }
         } else {
             iterateQueue(audioPlayback, audioQueue);
         }
+    }
+
+    private void createHistoryEntry(Playable playable, Guild guild) {
+        Session session = sessionFactory.openSession();
+        PlaybackHistory playbackHistory = new PlaybackHistory(new Date(), playable, guild, session);
+        session.beginTransaction();
+        session.persist(playbackHistory);
+        session.getTransaction().commit();
+        session.close();
     }
 
     public AudioPlayback getPlaybackForGuild(Guild guild) {
@@ -144,7 +171,7 @@ public class AudioManager extends AudioEventAdapter {
         }
 
         if (!tracksToRedirect.isEmpty()) {
-            Thread trackRedirectingThread = new Thread(() -> {
+            audioPlayback.load(() -> {
                 for (HollowYouTubeVideo hollowYouTubeVideo : tracksToRedirect) {
                     if (Thread.currentThread().isInterrupted()) {
                         tracksToRedirect.stream().filter(HollowYouTubeVideo::isHollow).forEach(HollowYouTubeVideo::cancel);
@@ -152,16 +179,7 @@ public class AudioManager extends AudioEventAdapter {
                     }
                     youTubeService.redirectSpotify(hollowYouTubeVideo);
                 }
-            });
-            trackRedirectingThread.setName("Botify Redirecting Spotify thread: " + objects.size() + " tracks");
-            TrackLoadingExceptionHandler eh = new TrackLoadingExceptionHandler(logger, audioPlayback.getCommunicationChannel(), null);
-            trackRedirectingThread.setUncaughtExceptionHandler(eh);
-
-            if (mayInterrupt) {
-                audioPlayback.registerTrackLoading(trackRedirectingThread);
-            }
-
-            trackRedirectingThread.start();
+            }, mayInterrupt);
         }
         return createdPlayables;
     }
@@ -177,25 +195,16 @@ public class AudioManager extends AudioEventAdapter {
             playables.add(new PlayableImpl(video));
         }
 
-        Thread videoLoadingThread = new Thread(() -> youTubeService.populateList(youTubePlaylist));
-        videoLoadingThread.setName("Botify Video Loading " + youTubePlaylist.toString());
-        TrackLoadingExceptionHandler eh = new TrackLoadingExceptionHandler(logger, audioPlayback.getCommunicationChannel(), youTubePlaylist);
-        videoLoadingThread.setUncaughtExceptionHandler(eh);
-
-        if (mayInterrupt) {
-            audioPlayback.registerTrackLoading(videoLoadingThread);
-        }
-
-        videoLoadingThread.start();
+        audioPlayback.load(() -> youTubeService.populateList(youTubePlaylist), mayInterrupt);
 
         return playables;
     }
 
-    public List<Playable> createPlayables(String url, AudioPlayback playback) {
-        return createPlayables(url, playback, true);
+    public List<Playable> createPlayables(String url, AudioPlayback playback, SpotifyApi spotifyApi, boolean redirectSpotify) {
+        return createPlayables(url, playback, spotifyApi, redirectSpotify, true);
     }
 
-    public List<Playable> createPlayables(String url, AudioPlayback playback, boolean mayInterrupt) {
+    public List<Playable> createPlayables(String url, AudioPlayback playback, SpotifyApi spotifyApi, boolean redirectSpotify, boolean mayInterrupt) {
         List<Playable> playables;
 
         URI uri = URI.create(url);
@@ -213,6 +222,43 @@ public class AudioManager extends AudioEventAdapter {
                 playables = createPlayables(youTubePlaylist, playback, mayInterrupt);
             } else {
                 throw new InvalidCommandException("Detected YouTube URL but no video or playlist id provided.");
+            }
+        } else if (uri.getHost().equals("open.spotify.com")) {
+            StringList pathFragments = StringListImpl.create(uri.getPath(), "/");
+            if (pathFragments.contains("playlist")) {
+                String playlistId = pathFragments.tryGet(pathFragments.indexOf("playlist") + 1);
+                if (playlistId == null) {
+                    throw new InvalidCommandException("No playlist id provided");
+                }
+
+                try {
+                    String accessToken = spotifyApi.clientCredentials().build().execute().getAccessToken();
+                    spotifyApi.setAccessToken(accessToken);
+                    List<Track> playlistTracks = SearchEngine.getPlaylistTracks(spotifyApi, playlistId);
+                    return createPlayables(redirectSpotify, playlistTracks, playback, mayInterrupt);
+                } catch (IOException | SpotifyWebApiException e) {
+                    throw new RuntimeException("Exception during Spotify request", e);
+                } finally {
+                    spotifyApi.setAccessToken(null);
+                }
+            } else if (pathFragments.contains("track")) {
+                String trackId = pathFragments.tryGet(pathFragments.indexOf("track") + 1);
+                if (trackId == null) {
+                    throw new InvalidCommandException("No track id provided");
+                }
+
+                try {
+                    String accessToken = spotifyApi.clientCredentials().build().execute().getAccessToken();
+                    spotifyApi.setAccessToken(accessToken);
+                    Track track = spotifyApi.getTrack(trackId).build().execute();
+                    return Lists.newArrayList(createPlayable(redirectSpotify, track));
+                } catch (IOException | SpotifyWebApiException e) {
+                    throw new RuntimeException("Exception during Spotify request", e);
+                } finally {
+                    spotifyApi.setAccessToken(null);
+                }
+            } else {
+                throw new InvalidCommandException("Detected Spotify URL but no track or playlist id provided.");
             }
         } else {
             Object result = loadUrl(uri.toString());
@@ -357,7 +403,7 @@ public class AudioManager extends AudioEventAdapter {
     private void initializeGuild(Guild guild) {
         AudioPlayer player = playerManager.createPlayer();
         player.addListener(this);
-        audioPlaybacks.add(new AudioPlayback(player, guild));
+        audioPlaybacks.add(new AudioPlayback(player, guild, logger));
     }
 
     private AudioPlayback getPlaybackForPlayer(AudioPlayer player) {

@@ -33,6 +33,13 @@ public class AccessConfiguration extends AbstractXmlElement {
         super(element, context);
     }
 
+    private static Map<String, ?> buildAttributes(String commandIdentifier, List<Role> roles) {
+        Map<String, String> attributeMap = new HashMap<>();
+        attributeMap.put("commandIdentifier", commandIdentifier);
+        attributeMap.put("roleIds", roles.stream().map(ISnowflake::getId).collect(Collectors.joining(",")));
+        return attributeMap;
+    }
+
     @Nullable
     @Override
     public String getId() {
@@ -110,13 +117,6 @@ public class AccessConfiguration extends AbstractXmlElement {
         }
 
         return roles;
-    }
-
-    private static Map<String, ?> buildAttributes(String commandIdentifier, List<Role> roles) {
-        Map<String, String> attributeMap = new HashMap<>();
-        attributeMap.put("commandIdentifier", commandIdentifier);
-        attributeMap.put("roleIds", roles.stream().map(ISnowflake::getId).collect(Collectors.joining(",")));
-        return attributeMap;
     }
 
 }

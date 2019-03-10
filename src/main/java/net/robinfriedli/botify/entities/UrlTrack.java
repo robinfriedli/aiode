@@ -1,52 +1,87 @@
 package net.robinfriedli.botify.entities;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.annotation.Nullable;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
 import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.audio.UrlPlayable;
-import net.robinfriedli.jxp.api.AbstractXmlElement;
-import net.robinfriedli.jxp.api.XmlElement;
-import net.robinfriedli.jxp.persist.Context;
-import org.w3c.dom.Element;
 
-public class UrlTrack extends AbstractXmlElement {
+@Entity
+@Table(name = "url_track")
+public class UrlTrack extends PlaylistItem {
 
-    public UrlTrack(String tagName, Map<String, ?> attributeMap, List<XmlElement> subElements, String textContent, Context context) {
-        super(tagName, attributeMap, subElements, textContent, context);
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "pk")
+    private long pk;
+    @Column(name = "url")
+    private String url;
+    @Column(name = "title")
+    private String title;
+
+    public UrlTrack() {
     }
 
-    public UrlTrack(UrlPlayable playable, User addedUser, Context context) {
-        super("urlTrack", getAttributeMap(playable, addedUser), context);
+    public UrlTrack(UrlPlayable playable, User user, Playlist playlist) {
+        super(user, playlist);
+        this.url = playable.getPlaybackUrl();
+        this.title = playable.getDisplay();
+        this.duration = playable.getDurationMs();
+        playlist.getUrlTracks().add(this);
     }
 
-    @SuppressWarnings("unused")
-    // invoked by JXP
-    public UrlTrack(Element element, Context context) {
-        super(element, context);
-    }
-
-    @Nullable
     @Override
-    public String getId() {
-        return getAttribute("id").getValue();
+    public PlaylistItem copy(Playlist playlist) {
+        UrlTrack urlTrack = new UrlTrack();
+        urlTrack.setUrl(getUrl());
+        urlTrack.setTitle(getTitle());
+        urlTrack.setDuration(getDuration());
+        urlTrack.setAddedUser(getAddedUser());
+        urlTrack.setAddedUserId(getAddedUserId());
+        urlTrack.setPlaylist(playlist);
+        return urlTrack;
+    }
+
+    @Override
+    public boolean matches(String searchTerm) {
+        return title.equalsIgnoreCase(searchTerm) || url.equals(searchTerm);
+    }
+
+    @Override
+    public String display() {
+        return title;
     }
 
     public UrlPlayable asPlayable() {
         return new UrlPlayable(this);
     }
 
-    private static Map<String, ?> getAttributeMap(UrlPlayable playable, User addedUser) {
-        Map<String, Object> attributeMap = new HashMap<>();
-        attributeMap.put("url", playable.getPlaybackUrl());
-        attributeMap.put("title", playable.getDisplay());
-        attributeMap.put("duration", playable.getDurationMs());
-        attributeMap.put("addedUser", addedUser.getName());
-        attributeMap.put("addedUserId", addedUser.getId());
-
-        return attributeMap;
+    public long getPk() {
+        return pk;
     }
+
+    public void setPk(long pk) {
+        this.pk = pk;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
 }

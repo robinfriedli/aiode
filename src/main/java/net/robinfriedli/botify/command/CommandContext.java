@@ -1,18 +1,35 @@
 package net.robinfriedli.botify.command;
 
+import org.slf4j.LoggerFactory;
+
+import com.wrapper.spotify.SpotifyApi;
 import net.dv8tion.jda.core.JDA;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.MessageChannel;
 import net.dv8tion.jda.core.entities.User;
+import net.robinfriedli.botify.boot.Launcher;
+import net.robinfriedli.botify.entities.CommandHistory;
+import net.robinfriedli.botify.listener.AlertEventListener;
+import net.robinfriedli.botify.listener.InterceptorChain;
+import net.robinfriedli.botify.listener.PlaylistItemTimestampListener;
+import net.robinfriedli.botify.util.ParameterContainer;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 
 public class CommandContext {
 
     private final String commandBody;
     private final Message message;
+    private final SessionFactory sessionFactory;
+    private final SpotifyApi spotifyApi;
+    private Session session;
+    private CommandHistory commandHistory;
     private Thread monitoringThread;
 
-    public CommandContext(String namePrefix, Message message) {
+    public CommandContext(String namePrefix, Message message, SessionFactory sessionFactory, SpotifyApi spotifyApi) {
+        this.sessionFactory = sessionFactory;
+        this.spotifyApi = spotifyApi;
         this.commandBody = message.getContentDisplay().substring(namePrefix.length()).trim();
         this.message = message;
     }
@@ -49,4 +66,35 @@ public class CommandContext {
         monitoringThread.interrupt();
     }
 
+    public Session getSession() {
+        if (session != null && session.isOpen()) {
+            return session;
+        } else {
+            ParameterContainer parameterContainer = new ParameterContainer(getChannel(), LoggerFactory.getLogger(Launcher.class));
+            Session session = sessionFactory
+                .withOptions()
+                .interceptor(InterceptorChain.of(parameterContainer, PlaylistItemTimestampListener.class, AlertEventListener.class))
+                .openSession();
+            this.session = session;
+            return session;
+        }
+    }
+
+    public void closeSession() {
+        if (session != null && session.isOpen()) {
+            session.close();
+        }
+    }
+
+    public SpotifyApi getSpotifyApi() {
+        return spotifyApi;
+    }
+
+    public CommandHistory getCommandHistory() {
+        return commandHistory;
+    }
+
+    public void setCommandHistory(CommandHistory commandHistory) {
+        this.commandHistory = commandHistory;
+    }
 }

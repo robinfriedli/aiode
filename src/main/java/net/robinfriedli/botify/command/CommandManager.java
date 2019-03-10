@@ -1,17 +1,19 @@
 package net.robinfriedli.botify.command;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
 import org.slf4j.Logger;
 
 import com.google.common.collect.Lists;
-import com.wrapper.spotify.SpotifyApi;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.command.commands.AnswerCommand;
 import net.robinfriedli.botify.discord.DiscordListener;
 import net.robinfriedli.botify.discord.GuildSpecificationManager;
 import net.robinfriedli.botify.entities.CommandContribution;
+import net.robinfriedli.botify.entities.CommandInterceptorContribution;
+import net.robinfriedli.botify.exceptions.ForbiddenCommandException;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.login.LoginManager;
 import net.robinfriedli.jxp.api.JxpBackend;
@@ -29,8 +31,8 @@ public class CommandManager {
     private final CommandExecutor commandExecutor;
     private final DiscordListener discordListener;
     private final LoginManager loginManager;
-    private final SpotifyApi spotifyApi;
     private final Context commandContributionContext;
+    private final Context commandInterceptorContext;
     private final Logger logger;
 
     /**
@@ -41,14 +43,13 @@ public class CommandManager {
     public CommandManager(CommandExecutor commandExecutor,
                           DiscordListener discordListener,
                           LoginManager loginManager,
-                          SpotifyApi spotifyApi,
                           Context commandContributionContext,
-                          Logger logger) {
+                          Context commandInterceptorContext, Logger logger) {
         this.commandExecutor = commandExecutor;
         this.discordListener = discordListener;
         this.loginManager = loginManager;
-        this.spotifyApi = spotifyApi;
         this.commandContributionContext = commandContributionContext;
+        this.commandInterceptorContext = commandInterceptorContext;
         this.logger = logger;
         pendingQuestions = Lists.newArrayList();
     }
@@ -77,6 +78,20 @@ public class CommandManager {
             // if the user has a pending question, destroy
             getQuestion(context).ifPresent(ClientQuestionEvent::destroy);
         }
+
+        commandInterceptorContext.getInstancesOf(CommandInterceptorContribution.class)
+            .stream()
+            .sorted(Comparator.comparingInt(o -> o.getAttribute("order").getInt()))
+            .forEach(commandInterceptorContribution -> {
+                try {
+                    CommandInterceptor interceptor = commandInterceptorContribution.instantiate();
+                    interceptor.intercept(commandInstance);
+                } catch (InvalidCommandException | ForbiddenCommandException e) {
+                    throw e;
+                } catch (Throwable e) {
+                    logger.error("Exception in interceptor", e);
+                }
+            });
 
         commandExecutor.runCommand(commandInstance);
     }
@@ -141,10 +156,6 @@ public class CommandManager {
 
     public DiscordListener getDiscordListener() {
         return discordListener;
-    }
-
-    public SpotifyApi getSpotifyApi() {
-        return spotifyApi;
     }
 
     public LoginManager getLoginManager() {

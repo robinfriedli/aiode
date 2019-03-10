@@ -1,15 +1,24 @@
 package net.robinfriedli.botify.discord;
 
+import java.awt.Color;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 
 import com.google.common.collect.Lists;
+import net.dv8tion.jda.core.EmbedBuilder;
+import net.dv8tion.jda.core.MessageBuilder;
+import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.MessageChannel;
 import net.dv8tion.jda.core.entities.MessageEmbed;
 import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.exceptions.InsufficientPermissionException;
+import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.stringlist.StringList;
 import net.robinfriedli.stringlist.StringListImpl;
 
@@ -49,8 +58,40 @@ public class AlertService {
         }
     }
 
+    public void send(String message, Guild guild) {
+        acceptForGuild(guild, messageChannel -> messageChannel.sendMessage(message).queue());
+    }
+
     public void send(MessageEmbed messageEmbed, MessageChannel messageChannel) {
-        messageChannel.sendMessage(messageEmbed).queue();
+        sendInternal(messageChannel, messageEmbed);
+    }
+
+    public void sendWithLogo(EmbedBuilder embedBuilder, MessageChannel channel) throws IOException {
+        MessageBuilder messageBuilder = new MessageBuilder();
+        String baseUri = PropertiesLoadingService.requireProperty("BASE_URI");
+        InputStream file = new URL(baseUri + "/resources-public/img/botify-logo.png").openStream();
+        embedBuilder.setThumbnail("attachment://logo.png");
+        embedBuilder.setColor(Color.decode("#1DB954"));
+        messageBuilder.setEmbed(embedBuilder.build());
+        send(messageBuilder, file, "logo.png", channel);
+    }
+
+    public void sendWithLogo(EmbedBuilder embedBuilder, Guild guild) throws IOException {
+        MessageBuilder messageBuilder = new MessageBuilder();
+        String baseUri = PropertiesLoadingService.requireProperty("BASE_URI");
+        InputStream file = new URL(baseUri + "/resources-public/img/botify-logo.png").openStream();
+        embedBuilder.setThumbnail("attachment://logo.png");
+        embedBuilder.setColor(Color.decode("#1DB954"));
+        messageBuilder.setEmbed(embedBuilder.build());
+        send(messageBuilder, file, "logo.png", guild);
+    }
+
+    public void send(MessageBuilder messageBuilder, InputStream file, String fileName, MessageChannel messageChannel) {
+        accept(messageChannel, c -> c.sendFile(file, fileName, messageBuilder.build()).queue());
+    }
+
+    public void send(MessageBuilder messageBuilder, InputStream file, String fileName, Guild guild) {
+        acceptForGuild(guild, c -> c.sendFile(file, fileName, messageBuilder.build()).queue());
     }
 
     public void sendWrapped(String message, String wrapper, MessageChannel channel) {
@@ -72,14 +113,34 @@ public class AlertService {
     }
 
     private void sendInternal(MessageChannel channel, String text) {
+        accept(channel, c -> c.sendMessage(text).queue());
+    }
+
+    private void sendInternal(MessageChannel channel, MessageEmbed messageEmbed) {
+        accept(channel, c -> c.sendMessage(messageEmbed).queue());
+    }
+
+    private void accept(MessageChannel channel, Consumer<MessageChannel> function) {
         try {
-            channel.sendMessage(text).queue();
+            function.accept(channel);
         } catch (InsufficientPermissionException e) {
             StringBuilder messageBuilder = new StringBuilder("Insufficient permissions to send messages to channel" + channel.getName());
             if (channel instanceof TextChannel) {
                 messageBuilder.append(" on guild ").append(((TextChannel) channel).getGuild().getName());
             }
             logger.warn(messageBuilder.toString(), e);
+        }
+    }
+
+    private void acceptForGuild(Guild guild, Consumer<MessageChannel> function) {
+        TextChannel defaultChannel = guild.getDefaultChannel();
+        if (defaultChannel != null) {
+            accept(defaultChannel, function);
+        } else {
+            TextChannel systemChannel = guild.getSystemChannel();
+            if (systemChannel != null) {
+                accept(systemChannel, function);
+            }
         }
     }
 

@@ -15,13 +15,11 @@ import net.dv8tion.jda.core.JDA;
 import net.dv8tion.jda.core.entities.Guild;
 import net.robinfriedli.botify.audio.YouTubeService;
 import net.robinfriedli.botify.boot.StartupTask;
-import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
-
-import static net.robinfriedli.jxp.queries.Conditions.*;
+import org.hibernate.Session;
 
 /**
  * As of botify 1.2, the track name and artist is now separated for videos that are redirected Spotify tracks rather than
@@ -31,7 +29,7 @@ import static net.robinfriedli.jxp.queries.Conditions.*;
 public class SetRedirectedSpotifyTrackNameTask implements StartupTask {
 
     @Override
-    public void perform(JxpBackend jxpBackend, JDA jda, SpotifyApi spotifyApi, YouTubeService youTubeService) throws Exception {
+    public void perform(JxpBackend jxpBackend, JDA jda, SpotifyApi spotifyApi, YouTubeService youTubeService, Session session) throws Exception {
         ClientCredentials clientCredentials = spotifyApi.clientCredentials().build().execute();
         spotifyApi.setAccessToken(clientCredentials.getAccessToken());
         String playlistsPath = PropertiesLoadingService.requireProperty("PLAYLISTS_PATH");
@@ -59,7 +57,7 @@ public class SetRedirectedSpotifyTrackNameTask implements StartupTask {
     }
 
     private void migrate(Context context, SpotifyApi spotifyApi) throws IOException, SpotifyWebApiException {
-        for (XmlElement playlist : context.query(instanceOf(Playlist.class)).collect()) {
+        for (XmlElement playlist : context.query(elem -> elem.getTagName().equals("playlist")).collect()) {
             Map<String, XmlElement> itemsToMigrate = new HashMap<>();
             for (XmlElement playlistItem : playlist.getSubElements()) {
                 if (playlistItem.hasAttribute("redirectedSpotifyId")

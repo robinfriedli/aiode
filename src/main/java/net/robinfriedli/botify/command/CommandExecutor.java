@@ -5,70 +5,164 @@ import java.util.concurrent.Callable;
 import org.slf4j.Logger;
 
 import com.wrapper.spotify.SpotifyApi;
+import com.wrapper.spotify.exceptions.detailed.TooManyRequestsException;
 import com.wrapper.spotify.exceptions.detailed.UnauthorizedException;
 import com.wrapper.spotify.model_objects.credentials.ClientCredentials;
 import net.dv8tion.jda.core.entities.MessageChannel;
 import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.discord.AlertService;
+import net.robinfriedli.botify.entities.CommandHistory;
 import net.robinfriedli.botify.exceptions.CommandRuntimeException;
-import net.robinfriedli.botify.exceptions.ForbiddenCommandException;
-import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoLoginException;
-import net.robinfriedli.botify.exceptions.NoResultsFoundException;
+import net.robinfriedli.botify.exceptions.UserException;
 import net.robinfriedli.botify.login.Login;
 import net.robinfriedli.botify.login.LoginManager;
+import net.robinfriedli.botify.util.CheckedRunnable;
+import org.hibernate.Session;
 
 /**
- * responsible for executing a command based on whether it requires a login or client credentials
+ * responsible for executing a command based
  */
 public class CommandExecutor {
 
-    private final SpotifyApi spotifyApi;
     private final LoginManager loginManager;
     private final Logger logger;
 
-    public CommandExecutor(SpotifyApi spotifyApi, LoginManager loginManager, Logger logger) {
-        this.spotifyApi = spotifyApi;
+    public CommandExecutor(LoginManager loginManager, Logger logger) {
         this.loginManager = loginManager;
         this.logger = logger;
     }
 
     public void runCommand(AbstractCommand command) {
+        boolean completedSuccessfully = false;
+        boolean failedManually = false;
+        String errorMessage = null;
+        boolean unexpectedException = false;
         try {
-            command.verify();
-            if (command.requiresLogin()) {
-                User user = command.getContext().getUser();
-                Login login = loginManager.requireLoginForUser(user);
-                spotifyApi.setAccessToken(login.getAccessToken());
-            } else if (command.requiresClientCredentials()) {
-                ClientCredentials credentials = spotifyApi.clientCredentials().build().execute();
-                spotifyApi.setAccessToken(credentials.getAccessToken());
-            }
             command.doRun();
             if (!command.isFailed()) {
                 command.onSuccess();
+                completedSuccessfully = true;
+            } else {
+                failedManually = true;
             }
         } catch (NoLoginException e) {
             AlertService alertService = new AlertService(logger);
             MessageChannel channel = command.getContext().getChannel();
             User user = command.getContext().getUser();
-            alertService.send("User " + user.getName() + " is not logged in to Spotify", channel);
-        } catch (InvalidCommandException | NoResultsFoundException | ForbiddenCommandException e) {
+            String message = "User " + user.getName() + " is not logged in to Spotify";
+            alertService.send(message, channel);
+            errorMessage = message;
+        } catch (UserException e) {
             AlertService alertService = new AlertService(logger);
             alertService.send(e.getMessage(), command.getContext().getChannel());
+            errorMessage = e.getMessage();
         } catch (UnauthorizedException e) {
             AlertService alertService = new AlertService(logger);
-            alertService.send("Unauthorized: " + e.getMessage(), command.getContext().getChannel());
+            String message = "Unauthorized: " + e.getMessage();
+            alertService.send(message, command.getContext().getChannel());
+            logger.warn("Unauthorized Spotify API operation", e);
+            errorMessage = message;
+            unexpectedException = true;
+        } catch (TooManyRequestsException e) {
+            AlertService alertService = new AlertService(logger);
+            String message = "Executing too many Spotify requests at the moment, please try again later.";
+            alertService.send(message,
+                command.getContext().getChannel());
+            logger.warn("Executing too many Spotify requests", e);
+            errorMessage = message;
+            unexpectedException = true;
         } catch (CommandRuntimeException e) {
+            if (e.getCause() != null) {
+                errorMessage = e.getCause().getClass().getSimpleName() + ": " + e.getCause().getMessage();
+            } else {
+                errorMessage = e.getClass().getSimpleName() + ": " + e.getMessage();
+            }
+            unexpectedException = true;
             throw e;
-        } catch (Exception e) {
+        } catch (Throwable e) {
+            errorMessage = e.getClass().getSimpleName() + ": " + e.getMessage();
+            unexpectedException = true;
             throw new CommandRuntimeException(e);
         } finally {
-            spotifyApi.setAccessToken(null);
+            try {
+                postCommand(command, completedSuccessfully, failedManually, errorMessage, unexpectedException);
+            } catch (Throwable e) {
+                logger.error("Exception in postCommand ", e);
+            }
         }
     }
 
-    public <E> E runForUser(User user, Callable<E> callable) throws Exception {
+    private void postCommand(AbstractCommand command,
+                             boolean completedSuccessfully,
+                             boolean failedManually,
+                             String errorMessage,
+                             boolean unexpectedException) {
+        CommandContext context = command.getContext();
+        context.interruptMonitoring();
+        CommandHistory history = context.getCommandHistory();
+        if (history != null) {
+            history.setDurationMs(System.currentTimeMillis() - history.getStartMillis());
+            history.setCompletedSuccessfully(completedSuccessfully);
+            history.setFailedManually(failedManually);
+            history.setUnexpectedException(unexpectedException);
+            history.setErrorMessage(errorMessage);
+
+            Session session = context.getSession();
+            invoke(session, () -> session.persist(history));
+        } else {
+            logger.warn("Command " + command + " has not history");
+        }
+
+    }
+
+    public void invoke(Session session, CheckedRunnable runnable) {
+        invoke(session, () -> {
+            runnable.run();
+            return null;
+        });
+    }
+
+    /**
+     * Invoke a callable in a hibernate transaction. This method is synchronised since the concurrent creation of
+     * entities might lead to clashing primary keys.
+     *
+     * @param session the target hibernate session, individual for each command execution
+     * @param callable tho callable to run
+     * @param <E> the return type
+     * @return the value the callable returns, often void
+     */
+    public synchronized <E> E invoke(Session session, Callable<E> callable) {
+        boolean isNested = false;
+        if (session.getTransaction() == null || !session.getTransaction().isActive()) {
+            session.beginTransaction();
+        } else {
+            isNested = true;
+        }
+        if (isNested) {
+            try {
+                return callable.call();
+            } catch (RuntimeException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new CommandRuntimeException(e);
+            }
+        }
+        E retVal;
+        try {
+            retVal = callable.call();
+            session.getTransaction().commit();
+        } catch (UserException e) {
+            session.getTransaction().rollback();
+            throw e;
+        } catch (Exception e) {
+            session.getTransaction().rollback();
+            throw new RuntimeException("Exception in invoked callable. Transaction rolled back.", e);
+        }
+        return retVal;
+    }
+
+    public <E> E runForUser(User user, SpotifyApi spotifyApi, Callable<E> callable) throws Exception {
         try {
             Login loginForUser = loginManager.requireLoginForUser(user);
             spotifyApi.setAccessToken(loginForUser.getAccessToken());
@@ -78,7 +172,7 @@ public class CommandExecutor {
         }
     }
 
-    public <E> E runWithCredentials(Callable<E> callable) throws Exception {
+    public <E> E runWithCredentials(SpotifyApi spotifyApi, Callable<E> callable) throws Exception {
         try {
             ClientCredentials credentials = spotifyApi.clientCredentials().build().execute();
             spotifyApi.setAccessToken(credentials.getAccessToken());

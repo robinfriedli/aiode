@@ -1,67 +1,114 @@
 package net.robinfriedli.botify.entities;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
-import javax.annotation.Nullable;
-
-import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.audio.YouTubeVideo;
 import net.robinfriedli.botify.audio.YouTubeVideoImpl;
-import net.robinfriedli.jxp.api.AbstractXmlElement;
-import net.robinfriedli.jxp.api.XmlElement;
-import net.robinfriedli.jxp.persist.Context;
-import org.w3c.dom.Element;
 
-public class Video extends AbstractXmlElement {
+@Entity
+@Table(name = "video")
+public class Video extends PlaylistItem {
 
-    public Video(String tagName, Map<String, ?> attributeMap, List<XmlElement> subElements, String textContent, Context context) {
-        super(tagName, attributeMap, subElements, textContent, context);
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "pk")
+    private long pk;
+    @Column(name = "id")
+    private String id;
+    @Column(name = "title")
+    private String title;
+    @Column(name = "redirected_spotify_id")
+    private String redirectedSpotifyId;
+    @Column(name = "spotify_track_name")
+    private String spotifyTrackName;
+
+    public Video() {
     }
 
-    public Video(YouTubeVideo video, User addedUser, Context context) {
-        super("video", getAttributeMap(video, addedUser), context);
+    public Video(YouTubeVideo video, User user, Playlist playlist) {
+        super(user, playlist);
+        try {
+            id = video.getId();
+            title = video.getTitle();
+            duration = video.getDuration();
+            playlist.getVideos().add(this);
+        } catch (InterruptedException e) {
+            throw new RuntimeException("Cannot create video element for cancelled YouTube video " + video.toString(), e);
+        }
     }
 
-    @SuppressWarnings("unused")
-    // invoked by JXP
-    public Video(Element element, Context context) {
-        super(element, context);
-    }
-
-    @Nullable
     @Override
-    public String getId() {
-        return getAttribute("id").getValue();
+    public PlaylistItem copy(Playlist playlist) {
+        Video video = new Video();
+        video.setId(getId());
+        video.setTitle(getTitle());
+        video.setRedirectedSpotifyId(getRedirectedSpotifyId());
+        video.setSpotifyTrackName(getSpotifyTrackName());
+        video.setDuration(getDuration());
+        video.setAddedUser(getAddedUser());
+        video.setAddedUserId(getAddedUserId());
+        video.setPlaylist(playlist);
+        return video;
+    }
+
+    @Override
+    public boolean matches(String searchTerm) {
+        return title.equalsIgnoreCase(searchTerm) || (spotifyTrackName != null && spotifyTrackName.equalsIgnoreCase(searchTerm));
+    }
+
+    @Override
+    public String display() {
+        return title;
     }
 
     public YouTubeVideo asYouTubeVideo() {
-        return new YouTubeVideoImpl(
-            getAttribute("title").getValue(),
-            getAttribute("id").getValue(),
-            getAttribute("duration").getLong()
-        );
+        return new YouTubeVideoImpl(getTitle(), getId(), getDuration());
     }
 
-    private static Map<String, ?> getAttributeMap(YouTubeVideo video, User addedUser) {
-        try {
-            Track redirectedSpotifyTrack = video.getRedirectedSpotifyTrack();
-            Map<String, Object> attributeMap = new HashMap<>();
-            attributeMap.put("id", video.getId());
-            attributeMap.put("title", video.getTitle());
-            attributeMap.put("duration", video.getDuration());
-            attributeMap.put("addedUser", addedUser.getName());
-            attributeMap.put("addedUserId", addedUser.getId());
-            if (redirectedSpotifyTrack != null) {
-                attributeMap.put("redirectedSpotifyId", redirectedSpotifyTrack.getId());
-                attributeMap.put("spotifyTrackName", redirectedSpotifyTrack.getName());
-            }
-
-            return attributeMap;
-        } catch (InterruptedException e) {
-            throw new RuntimeException("Cannot create video element for cancelled YouTube video " + video.toString());
-        }
+    public long getPk() {
+        return pk;
     }
+
+    public void setPk(long pk) {
+        this.pk = pk;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getRedirectedSpotifyId() {
+        return redirectedSpotifyId;
+    }
+
+    public void setRedirectedSpotifyId(String redirectedSpotifyId) {
+        this.redirectedSpotifyId = redirectedSpotifyId;
+    }
+
+    public String getSpotifyTrackName() {
+        return spotifyTrackName;
+    }
+
+    public void setSpotifyTrackName(String spotifyTrackName) {
+        this.spotifyTrackName = spotifyTrackName;
+    }
+
 }
