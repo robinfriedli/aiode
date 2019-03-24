@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 
@@ -124,24 +125,46 @@ public class AlertService {
         try {
             function.accept(channel);
         } catch (InsufficientPermissionException e) {
-            StringBuilder messageBuilder = new StringBuilder("Insufficient permissions to send messages to channel" + channel.getName());
-            if (channel instanceof TextChannel) {
-                messageBuilder.append(" on guild ").append(((TextChannel) channel).getGuild().getName());
+            if (channel instanceof TextChannel && canTalk(((TextChannel) channel).getGuild())) {
+                Guild guild = ((TextChannel) channel).getGuild();
+                send("I do not have permission to send any messages to channel " + channel.getName() + " so I'll send it here instead.", guild);
+                acceptForGuild(guild, function);
+            } else {
+                logger.warn("Unable to sent messages to " + channel);
             }
-            logger.warn(messageBuilder.toString(), e);
         }
     }
 
     private void acceptForGuild(Guild guild, Consumer<MessageChannel> function) {
+        boolean sent = false;
+
         TextChannel defaultChannel = guild.getDefaultChannel();
-        if (defaultChannel != null) {
-            accept(defaultChannel, function);
-        } else {
-            TextChannel systemChannel = guild.getSystemChannel();
-            if (systemChannel != null) {
-                accept(systemChannel, function);
+        try {
+            if (defaultChannel != null) {
+                function.accept(defaultChannel);
+                sent = true;
+            } else {
+                TextChannel systemChannel = guild.getSystemChannel();
+                if (systemChannel != null) {
+                    function.accept(systemChannel);
+                    sent = true;
+                }
+            }
+        } catch (InsufficientPermissionException ignored) {
+        }
+
+        if (!sent) {
+            List<TextChannel> availableChannels = guild.getTextChannels().stream().filter(TextChannel::canTalk).collect(Collectors.toList());
+            if (availableChannels.isEmpty()) {
+                logger.warn("Unable to send any messages to guild " + guild.getName() + " (" + guild.getId() + ")");
+            } else {
+                function.accept(availableChannels.get(0));
             }
         }
+    }
+
+    private boolean canTalk(Guild guild) {
+        return guild.getTextChannels().stream().anyMatch(TextChannel::canTalk);
     }
 
     private List<String> separateMessage(String message) {

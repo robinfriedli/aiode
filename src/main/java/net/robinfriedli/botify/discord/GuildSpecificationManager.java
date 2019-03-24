@@ -108,7 +108,7 @@ public class GuildSpecificationManager {
 
     private void alertNameChange(Guild guild) {
         AlertService alertService = new AlertService(LoggerFactory.getLogger(Launcher.class));
-        alertService.send("Give me a name! Type \"$botify rename Your Name\"", guild);
+        alertService.send("Give me a name! Type \"$botify rename Your Name\"" + System.lineSeparator() + "Hint: The name can be used as command prefix.", guild);
     }
 
 }

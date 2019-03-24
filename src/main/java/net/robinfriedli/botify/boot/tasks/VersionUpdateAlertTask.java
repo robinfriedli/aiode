@@ -60,7 +60,7 @@ public class VersionUpdateAlertTask implements StartupTask {
         String[] split2 = s2.split("\\.");
 
         for (int i = 0; i < split1.length; i++) {
-            if (i > s2.length() - 1) {
+            if (i > split2.length - 1) {
                 return 1;
             }
 

@@ -60,13 +60,13 @@ public class QueueViewHandler implements HttpHandler {
                             if (previous.size() > 20) {
                                 listBuilder.append("<a href=\"#current\">Jump to current track</a>").append(System.lineSeparator());
                             }
-                            appendList(listBuilder, previous, "Previous", true);
+                            appendList(listBuilder, previous, "Previous");
                         }
                         listBuilder.append("<div id=\"current\">").append(System.lineSeparator());
-                        appendList(listBuilder, Collections.singletonList(queue.getCurrent()), "Current", false);
+                        appendList(listBuilder, Collections.singletonList(queue.getCurrent()), "Current");
                         listBuilder.append("</div>").append(System.lineSeparator());
                         if (!next.isEmpty()) {
-                            appendList(listBuilder, next, "Next", true);
+                            appendList(listBuilder, next, "Next");
                         }
 
                         content = listBuilder.toString();
@@ -103,17 +103,9 @@ public class QueueViewHandler implements HttpHandler {
         }
     }
 
-    private void appendList(StringBuilder listBuilder, List<Playable> playables, String title, boolean showHead) {
+    private void appendList(StringBuilder listBuilder, List<Playable> playables, String title) {
         listBuilder.append("<h3>").append(title).append("</h3>").append(System.lineSeparator());
         listBuilder.append("<table class=\"content-table\">").append(System.lineSeparator());
-        if (showHead) {
-            listBuilder.append("<thead>").append(System.lineSeparator());
-            listBuilder.append("<tr>").append(System.lineSeparator());
-            listBuilder.append("<td>Track</td>").append(System.lineSeparator());
-            listBuilder.append("<td>Duration</td>").append(System.lineSeparator());
-            listBuilder.append("</tr>").append(System.lineSeparator());
-            listBuilder.append("</thead>").append(System.lineSeparator());
-        }
         listBuilder.append("<tbody>").append(System.lineSeparator());
         for (Playable playable : playables) {
             listBuilder.append("<tr>").append(System.lineSeparator());

@@ -8,7 +8,6 @@ import org.slf4j.Logger;
 
 import com.google.common.collect.Lists;
 import net.robinfriedli.botify.audio.AudioManager;
-import net.robinfriedli.botify.command.commands.AnswerCommand;
 import net.robinfriedli.botify.discord.DiscordListener;
 import net.robinfriedli.botify.discord.GuildSpecificationManager;
 import net.robinfriedli.botify.entities.CommandContribution;
@@ -73,11 +72,6 @@ public class CommandManager {
         String selectedCommand = commandContribution.getAttribute("identifier").getValue();
         String commandInput = command.substring(selectedCommand.length()).trim();
         AbstractCommand commandInstance = commandContribution.instantiate(this, context, commandInput);
-
-        if (!(commandInstance instanceof AnswerCommand)) {
-            // if the user has a pending question, destroy
-            getQuestion(context).ifPresent(ClientQuestionEvent::destroy);
-        }
 
         commandInterceptorContext.getInstancesOf(CommandInterceptorContribution.class)
             .stream()
