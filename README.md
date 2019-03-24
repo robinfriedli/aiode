@@ -30,7 +30,7 @@ router's public ip and setup port forwarding for your router.
 #### 3.1 Go to https://console.developers.google.com/ and create a project for the YouTube Data API and create and copy the credentials
 
 ### 4. Setup botify settings
-#### 4.1 Navigate to your cloned project and go to ./resources and open the settings.properties file and fille in the blanks, it should look like this:
+#### 4.1 Navigate to your cloned project and go to ./resources and open the settings.properties file and fill in the blanks, it should look like this:
 ```properties
 SERVER_PORT=8000
 BASE_URI=http://localhost:8000
