@@ -7,6 +7,7 @@ import java.util.concurrent.Callable;
 import org.apache.commons.validator.routines.UrlValidator;
 
 import com.wrapper.spotify.SpotifyApi;
+import com.wrapper.spotify.model_objects.specification.AlbumSimplified;
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
 import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
@@ -37,6 +38,7 @@ public class QueueCommand extends AbstractCommand {
     private Playlist queuedLocalList;
     private PlaylistSimplified queuedSpotifyPlaylist;
     private YouTubePlaylist queuedYouTubePlaylist;
+    private AlbumSimplified queuedAlbum;
     private int queuedAmount;
 
     public QueueCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
@@ -63,6 +65,8 @@ public class QueueCommand extends AbstractCommand {
             } else {
                 if (argumentSet("youtube")) {
                     queueYouTubeVideo(audioManager, playback);
+                } else if (argumentSet("album")) {
+                    queueSpotifyAlbum(audioManager, playback);
                 } else if (UrlValidator.getInstance().isValid(getCommandBody())) {
                     queuedUrlItems(audioManager, playback);
                 } else {
@@ -155,6 +159,23 @@ public class QueueCommand extends AbstractCommand {
         }
     }
 
+    private void queueSpotifyAlbum(AudioManager audioManager, AudioPlayback audioPlayback) throws Exception {
+        SpotifyApi spotifyApi = getContext().getSpotifyApi();
+        List<AlbumSimplified> albums = runWithCredentials(() -> SearchEngine.searchSpotifyAlbum(spotifyApi, getCommandBody()));
+
+        if (albums.size() == 1) {
+            AlbumSimplified album = albums.get(0);
+            List<Track> tracks = runWithCredentials(() -> SearchEngine.getAlbumTracks(spotifyApi, album.getId()));
+            List<Playable> playables = audioManager.createPlayables(!argumentSet("preview"), tracks, audioPlayback, false);
+            audioPlayback.getAudioQueue().add(playables);
+            queuedAlbum = album;
+        } else if (albums.isEmpty()) {
+            throw new NoResultsFoundException("No albums found for " + getCommandBody());
+        } else {
+            askQuestion(albums, AlbumSimplified::getName, album -> StringListImpl.create(album.getArtists(), ArtistSimplified::getName).toSeparatedString(", "));
+        }
+    }
+
     private void queueTrack(AudioManager audioManager, AudioPlayback playback) throws Exception {
         SpotifyApi spotifyApi = getContext().getSpotifyApi();
         List<Track> found;
@@ -169,8 +190,7 @@ public class QueueCommand extends AbstractCommand {
             playback.getAudioQueue().add(track);
             queuedTrack = track;
         } else if (found.isEmpty()) {
-            setFailed(true);
-            sendMessage(getContext().getChannel(), "No results found");
+            throw new NoResultsFoundException("No results found for " + getCommandBody());
         } else {
             askQuestion(found, track -> {
                 String artistString = StringListImpl.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", ");
@@ -304,6 +324,9 @@ public class QueueCommand extends AbstractCommand {
         if (queuedYouTubePlaylist != null) {
             sendMessage(getContext().getChannel(), "Queued playlist " + queuedYouTubePlaylist.getTitle());
         }
+        if (queuedAlbum != null) {
+            sendMessage(getContext().getChannel(), "Queued album " + queuedAlbum.getName());
+        }
         if (queuedAmount > 0) {
             String queuedString = queuedAmount > 1 ? "items" : "item";
             sendMessage(getContext().getChannel(), "Queued " + queuedAmount + " " + queuedString);
@@ -330,6 +353,13 @@ public class QueueCommand extends AbstractCommand {
             List<Playable> playables = audioManager.createPlayables(youTubePlaylist, playback, false);
             playback.getAudioQueue().add(playables);
             queuedYouTubePlaylist = youTubePlaylist;
+        } else if (chosenOption instanceof AlbumSimplified) {
+            AlbumSimplified album = (AlbumSimplified) chosenOption;
+            AudioPlayback playback = audioManager.getPlaybackForGuild(getContext().getGuild());
+            List<Track> tracks = runWithCredentials(() -> SearchEngine.getAlbumTracks(getContext().getSpotifyApi(), album.getId()));
+            List<Playable> playables = audioManager.createPlayables(!argumentSet("preview"), tracks, playback, false);
+            playback.getAudioQueue().add(playables);
+            queuedAlbum = album;
         }
     }
 
@@ -339,17 +369,19 @@ public class QueueCommand extends AbstractCommand {
         argumentContribution.map("preview").needsArguments("spotify").excludesArguments("youtube")
             .setDescription("Queue the preview mp3 directly from spotify rather than the full track from youtube");
         argumentContribution.map("youtube").setRequiresInput(true).excludesArguments("preview")
-            .setDescription("Queue a youtube video.");
+            .setDescription("Queue a youtube video. Note that this argument is only required when searching, not when entering a URL.");
         argumentContribution.map("list").setRequiresInput(true)
             .setDescription("Add the elements from a Spotify, YouTube or local Playlist to the current queue (local is default).");
         argumentContribution.map("spotify").setRequiresInput(true).excludesArguments("youtube")
-            .setDescription("Queue Spotify track or playlist.");
+            .setDescription("Queue Spotify track, playlist or album. Note that this argument is only required when searching, not when entering a URL.");
         argumentContribution.map("own").needsArguments("spotify")
             .setDescription("Limit search to Spotify tracks and playlists in the current users library.");
         argumentContribution.map("local").needsArguments("list")
             .setDescription("Queue local playlist.");
         argumentContribution.map("limit").needsArguments("youtube").setRequiresValue(true)
             .setDescription("Show a selection of youtube playlists or videos to chose from. Requires value from 1 to 10: $limit=5");
+        argumentContribution.map("album").needsArguments("spotify").excludesArguments("own").setRequiresInput(true)
+            .setDescription("Search for a Spotify album. Note that this argument is only required when searching, not when entering a URL.");
         return argumentContribution;
     }
 

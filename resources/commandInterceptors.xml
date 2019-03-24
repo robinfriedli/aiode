@@ -2,5 +2,6 @@
 <commandInterceptors xmlns="commandInterceptorSpace">
   <commandInterceptor order="1" implementation="net.robinfriedli.botify.command.interceptors.SecurityInterceptor"/>
   <commandInterceptor order="2" implementation="net.robinfriedli.botify.command.interceptors.CommandVerificationInterceptor"/>
-  <commandInterceptor order="3" implementation="net.robinfriedli.botify.command.interceptors.HistoryInterceptor"/>
+  <commandInterceptor order="3" implementation="net.robinfriedli.botify.command.interceptors.PendingQuestionRemovalInterceptor"/>
+  <commandInterceptor order="4" implementation="net.robinfriedli.botify.command.interceptors.HistoryInterceptor"/>
 </commandInterceptors>

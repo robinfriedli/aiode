@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import com.wrapper.spotify.SpotifyApi;
+import com.wrapper.spotify.model_objects.specification.AlbumSimplified;
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
 import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
@@ -44,6 +45,8 @@ public class SearchCommand extends AbstractCommand {
             } else {
                 listLocalList();
             }
+        } else if (argumentSet("album")) {
+            listSpotifyAlbum();
         } else {
             if (argumentSet("youtube")) {
                 searchYouTubeVideo();
@@ -86,7 +89,7 @@ public class SearchCommand extends AbstractCommand {
 
             sendMessage(getContext().getChannel(), embedBuilder.build());
         } else {
-            sendMessage(getContext().getChannel(), "No results found");
+            throw new NoResultsFoundException("No results found for " + getCommandBody());
         }
     }
 
@@ -254,25 +257,51 @@ public class SearchCommand extends AbstractCommand {
         if (playlists.size() == 1) {
             PlaylistSimplified playlist = playlists.get(0);
             List<Track> tracks = runWithCredentials(() -> SearchEngine.getPlaylistTracks(spotifyApi, playlist));
-            listTracks(playlist, tracks);
+            listTracks(tracks, playlist.getName(), playlist.getOwner().getDisplayName(), null, "playlist/" + playlist.getId());
         } else if (playlists.isEmpty()) {
-            sendMessage(getContext().getChannel(), "No Spotify playlist found for " + getCommandBody());
+            throw new NoResultsFoundException("No Spotify playlist found for " + getCommandBody());
         } else {
             askQuestion(playlists, PlaylistSimplified::getName, p -> p.getOwner().getDisplayName());
         }
     }
 
-    private void listTracks(PlaylistSimplified playlist, List<Track> tracks) {
+    private void listSpotifyAlbum() throws Exception {
+        SpotifyApi spotifyApi = getContext().getSpotifyApi();
+
+        List<AlbumSimplified> albums = runWithCredentials(() -> SearchEngine.searchSpotifyAlbum(spotifyApi, getCommandBody()));
+        if (albums.size() == 1) {
+            AlbumSimplified album = albums.get(0);
+            List<Track> tracks = runWithCredentials(() -> SearchEngine.getAlbumTracks(spotifyApi, album.getId()));
+            listTracks(
+                tracks,
+                album.getName(),
+                null,
+                StringListImpl.create(album.getArtists(), ArtistSimplified::getName).toSeparatedString(", "),
+                "album/" + album.getId()
+            );
+        } else if (albums.isEmpty()) {
+            throw new NoResultsFoundException("No album found for " + getCommandBody());
+        } else {
+            askQuestion(albums, AlbumSimplified::getName, album -> StringListImpl.create(album.getArtists(), ArtistSimplified::getName).toSeparatedString(", "));
+        }
+    }
+
+    private void listTracks(List<Track> tracks, String name, String owner, String artist, String path) {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         long totalDuration = tracks.stream().mapToLong(Track::getDurationMs).sum();
 
-        embedBuilder.addField("Name", playlist.getName(), true);
+        embedBuilder.addField("Name", name, true);
         embedBuilder.addField("Song count", String.valueOf(tracks.size()), true);
         embedBuilder.addField("Duration", Util.normalizeMillis(totalDuration), true);
-        embedBuilder.addField("Owner", playlist.getOwner().getDisplayName(), true);
+        if (owner != null) {
+            embedBuilder.addField("Owner", owner, true);
+        }
+        if (artist != null) {
+            embedBuilder.addField("Artist", artist, true);
+        }
 
         if (!tracks.isEmpty()) {
-            String url = "https://open.spotify.com/playlist/" + playlist.getId();
+            String url = "https://open.spotify.com/" + path;
             embedBuilder.addField("First tracks:", "[Full list](" + url + ")", false);
 
             StringBuilder trackListBuilder = new StringBuilder();
@@ -306,11 +335,20 @@ public class SearchCommand extends AbstractCommand {
             SpotifyApi spotifyApi = getContext().getSpotifyApi();
             PlaylistSimplified playlist = (PlaylistSimplified) chosenOption;
             List<Track> tracks = runWithCredentials(() -> SearchEngine.getPlaylistTracks(spotifyApi, playlist));
-            listTracks(playlist, tracks);
+            listTracks(tracks, playlist.getName(), playlist.getOwner().getDisplayName(), null, "playlist/" + playlist.getId());
         } else if (chosenOption instanceof YouTubePlaylist) {
             listYouTubePlaylist((YouTubePlaylist) chosenOption);
         } else if (chosenOption instanceof YouTubeVideo) {
             listYouTubeVideo((YouTubeVideo) chosenOption);
+        } else if (chosenOption instanceof AlbumSimplified) {
+            SpotifyApi spotifyApi = getContext().getSpotifyApi();
+            AlbumSimplified album = (AlbumSimplified) chosenOption;
+            List<Track> tracks = runWithCredentials(() -> SearchEngine.getAlbumTracks(spotifyApi, album.getId()));
+            listTracks(tracks,
+                album.getName(),
+                null,
+                StringListImpl.create(album.getArtists(), ArtistSimplified::getName).toSeparatedString(", "),
+                "album/" + album.getId());
         }
     }
 
@@ -329,6 +367,8 @@ public class SearchCommand extends AbstractCommand {
             .setDescription("Limit search to spotify tracks or playlists in the current user's library.");
         argumentContribution.map("limit").needsArguments("youtube").setRequiresValue(true)
             .setDescription("Show a selection of youtube playlists or videos to chose from. Requires value from 1 to 10: $limit=5");
+        argumentContribution.map("album").needsArguments("spotify").excludesArguments("own").setRequiresInput(true)
+            .setDescription("Search for a Spotify album. Note that this argument is only required when searching, not when entering a URL.");
         return argumentContribution;
     }
 

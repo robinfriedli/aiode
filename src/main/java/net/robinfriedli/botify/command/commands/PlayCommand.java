@@ -6,6 +6,7 @@ import java.util.concurrent.Callable;
 import org.apache.commons.validator.routines.UrlValidator;
 
 import com.wrapper.spotify.SpotifyApi;
+import com.wrapper.spotify.model_objects.specification.AlbumSimplified;
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
 import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
@@ -55,6 +56,8 @@ public class PlayCommand extends AbstractCommand {
             } else {
                 playLocalList(channel, audioManager, guild, playbackForGuild);
             }
+        } else if (argumentSet("album")) {
+            playSpotifyAlbum(channel, playbackForGuild);
         } else {
             if (getCommandBody().isBlank()) {
                 if (playbackForGuild.isPaused()) {
@@ -70,7 +73,7 @@ public class PlayCommand extends AbstractCommand {
                 } else if (!argumentSet("spotify") && UrlValidator.getInstance().isValid(getCommandBody())) {
                     playUrl(channel, audioManager, playbackForGuild, guild);
                 } else {
-                    playSpotifyTrack(channel, audioManager, guild, messageChannel);
+                    playSpotifyTrack(channel, audioManager, guild);
                 }
             }
         }
@@ -82,7 +85,7 @@ public class PlayCommand extends AbstractCommand {
         audioManager.playTrack(guild, channel);
     }
 
-    private void playSpotifyTrack(VoiceChannel channel, AudioManager audioManager, Guild guild, MessageChannel messageChannel) throws Exception {
+    private void playSpotifyTrack(VoiceChannel channel, AudioManager audioManager, Guild guild) throws Exception {
         List<Track> found;
         SpotifyApi spotifyApi = getContext().getSpotifyApi();
         if (argumentSet("own")) {
@@ -95,7 +98,7 @@ public class PlayCommand extends AbstractCommand {
             audioManager.getQueue(guild).set(audioManager.createPlayable(!argumentSet("preview"), found.get(0)));
             audioManager.playTrack(guild, channel);
         } else if (found.isEmpty()) {
-            throw new NoResultsFoundException("No results found");
+            throw new NoResultsFoundException("No results found for " + getCommandBody());
         } else {
             askQuestion(found, track -> {
                 String artistString = StringListImpl.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", ");
@@ -180,7 +183,6 @@ public class PlayCommand extends AbstractCommand {
     private void playSpotifyList(VoiceChannel channel, AudioPlayback audioPlayback) throws Exception {
         AudioManager audioManager = getManager().getAudioManager();
         Guild guild = getContext().getGuild();
-        MessageChannel communicationChannel = getContext().getChannel();
         SpotifyApi spotifyApi = getContext().getSpotifyApi();
 
         Callable<Void> callable = () -> {
@@ -199,10 +201,10 @@ public class PlayCommand extends AbstractCommand {
                     throw new NoResultsFoundException("Playlist " + playlist.getName() + " has no tracks");
                 }
 
-                audioPlayback.getAudioQueue().set(audioManager.createPlayables(!argumentSet("review"), tracks, audioPlayback));
+                audioPlayback.getAudioQueue().set(audioManager.createPlayables(!argumentSet("preview"), tracks, audioPlayback));
                 audioManager.playTrack(guild, channel);
             } else if (playlists.isEmpty()) {
-                sendMessage(communicationChannel, "No results found");
+                throw new NoResultsFoundException("No Spotify playlists found for " + getCommandBody());
             } else {
                 askQuestion(playlists, PlaylistSimplified::getName, p -> p.getOwner().getDisplayName());
             }
@@ -214,6 +216,30 @@ public class PlayCommand extends AbstractCommand {
             runWithLogin(getContext().getUser(), callable);
         } else {
             runWithCredentials(callable);
+        }
+    }
+
+    private void playSpotifyAlbum(VoiceChannel channel, AudioPlayback audioPlayback) throws Exception {
+        AudioManager audioManager = getManager().getAudioManager();
+        Guild guild = getContext().getGuild();
+        SpotifyApi spotifyApi = getContext().getSpotifyApi();
+
+        List<AlbumSimplified> albums = runWithCredentials(() -> SearchEngine.searchSpotifyAlbum(spotifyApi, getCommandBody()));
+        if (albums.size() == 1) {
+            AlbumSimplified album = albums.get(0);
+            List<Track> tracks = runWithCredentials(() -> SearchEngine.getAlbumTracks(spotifyApi, album.getId()));
+
+            if (tracks.isEmpty()) {
+                throw new NoResultsFoundException("Album " + album.getName() + " has no tracks");
+            }
+
+            List<Playable> playables = audioManager.createPlayables(!argumentSet("preview"), tracks, audioPlayback);
+            audioPlayback.getAudioQueue().set(playables);
+            audioManager.playTrack(guild, channel);
+        } else if (albums.isEmpty()) {
+            throw new NoResultsFoundException("No albums found for " + getCommandBody());
+        } else {
+            askQuestion(albums, AlbumSimplified::getName, album -> StringListImpl.create(album.getArtists(), ArtistSimplified::getName).toSeparatedString(", "));
         }
     }
 
@@ -239,6 +265,10 @@ public class PlayCommand extends AbstractCommand {
         } else if (chosenOption instanceof YouTubePlaylist) {
             YouTubePlaylist youTubePlaylist = (YouTubePlaylist) chosenOption;
             queue.set(audioManager.createPlayables(youTubePlaylist, playback));
+        } else if (chosenOption instanceof AlbumSimplified) {
+            SpotifyApi spotifyApi = getContext().getSpotifyApi();
+            List<Track> tracks = runWithCredentials(() -> SearchEngine.getAlbumTracks(spotifyApi, ((AlbumSimplified) chosenOption).getId()));
+            queue.set(audioManager.createPlayables(!argumentSet("preview"), tracks, playback));
         }
 
         Member member = guild.getMember(getContext().getUser());
@@ -254,15 +284,17 @@ public class PlayCommand extends AbstractCommand {
         argumentContribution.map("preview").excludesArguments("youtube")
             .setDescription("Play the short preview mp3 directly from spotify instead of the full track from youtube.");
         argumentContribution.map("spotify").setRequiresInput(true).excludesArguments("youtube")
-            .setDescription("Play a spotify track or list.");
+            .setDescription("Search for a spotify track or list. Note that this argument is only required when searching, not when entering a URL.");
         argumentContribution.map("youtube").setRequiresInput(true).excludesArguments("spotify")
-            .setDescription("Play a youtube video or playlist.");
+            .setDescription("Play a youtube video or playlist. Note that this argument is only required when searching, not when entering a URL.");
         argumentContribution.map("own").needsArguments("spotify")
             .setDescription("Limit search to spotify tracks or lists that are in the current user's library.");
         argumentContribution.map("local").needsArguments("list")
             .setDescription("Play a local list.");
         argumentContribution.map("limit").needsArguments("youtube").setRequiresValue(true)
             .setDescription("Show a selection of youtube playlists or videos to chose from. Requires value from 1 to 10: $limit=5");
+        argumentContribution.map("album").needsArguments("spotify").excludesArguments("own").setRequiresInput(true)
+            .setDescription("Search for a Spotify album. Note that this argument is only required when searching, not when entering a URL.");
         return argumentContribution;
     }
 }

@@ -110,12 +110,12 @@ public class AudioManager extends AudioEventAdapter {
     }
 
     private void createHistoryEntry(Playable playable, Guild guild) {
-        Session session = sessionFactory.openSession();
-        PlaybackHistory playbackHistory = new PlaybackHistory(new Date(), playable, guild, session);
-        session.beginTransaction();
-        session.persist(playbackHistory);
-        session.getTransaction().commit();
-        session.close();
+        try (Session session = sessionFactory.openSession()) {
+            PlaybackHistory playbackHistory = new PlaybackHistory(new Date(), playable, guild, session);
+            session.beginTransaction();
+            session.persist(playbackHistory);
+            session.getTransaction().commit();
+        }
     }
 
     public AudioPlayback getPlaybackForGuild(Guild guild) {
@@ -257,8 +257,24 @@ public class AudioManager extends AudioEventAdapter {
                 } finally {
                     spotifyApi.setAccessToken(null);
                 }
+            } else if (pathFragments.contains("album")) {
+                String albumId = pathFragments.tryGet(pathFragments.indexOf("album") + 1);
+                if (albumId == null) {
+                    throw new InvalidCommandException("No album id provided");
+                }
+
+                try {
+                    String accessToken = spotifyApi.clientCredentials().build().execute().getAccessToken();
+                    spotifyApi.setAccessToken(accessToken);
+                    List<Track> albumTracks = SearchEngine.getAlbumTracks(spotifyApi, albumId);
+                    return createPlayables(redirectSpotify, albumTracks, playback, mayInterrupt);
+                } catch (IOException | SpotifyWebApiException e) {
+                    throw new RuntimeException("Exception during Spotify request", e);
+                } finally {
+                    spotifyApi.setAccessToken(null);
+                }
             } else {
-                throw new InvalidCommandException("Detected Spotify URL but no track or playlist id provided.");
+                throw new InvalidCommandException("Detected Spotify URL but no track, playlist or album id provided.");
             }
         } else {
             Object result = loadUrl(uri.toString());
@@ -386,17 +402,20 @@ public class AudioManager extends AudioEventAdapter {
         if (!playback.isRepeatOne()) {
             if (audioQueue.hasNext()) {
                 audioQueue.next();
-                playTrack(playback.getGuild(), playback.getVoiceChannel());
+                playTrack(playback.getGuild(), null);
             } else {
                 audioQueue.reset();
                 if (!playback.isRepeatAll()) {
                     leaveChannel(playback);
                 } else {
-                    playTrack(playback.getGuild(), playback.getVoiceChannel());
+                    if (playback.isShuffle()) {
+                        audioQueue.randomize();
+                    }
+                    playTrack(playback.getGuild(), null);
                 }
             }
         } else {
-            playTrack(playback.getGuild(), playback.getVoiceChannel());
+            playTrack(playback.getGuild(), null);
         }
     }
 

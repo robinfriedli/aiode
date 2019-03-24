@@ -5,7 +5,7 @@
   <command identifier="answer" implementation="net.robinfriedli.botify.command.commands.AnswerCommand"
            description="Answer a question asked by the bot. Commands like the play command may ask you to specify what track you meant if several options where found."/>
   <command identifier="create" implementation="net.robinfriedli.botify.command.commands.CreateCommand"
-           description="Create an emtpy local playlist with the given name like $botify create my list"/>
+           description="Create an empty local playlist with the given name like $botify create my list"/>
   <command identifier="delete" implementation="net.robinfriedli.botify.command.commands.DeleteCommand"
            description="Delete the local playlist with the given name like $botify delete my list"/>
   <command identifier="export" implementation="net.robinfriedli.botify.command.commands.ExportCommand"

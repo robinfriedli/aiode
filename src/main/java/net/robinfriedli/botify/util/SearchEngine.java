@@ -19,10 +19,12 @@ import com.google.common.collect.Multimap;
 import com.neovisionaries.i18n.CountryCode;
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
+import com.wrapper.spotify.model_objects.specification.AlbumSimplified;
 import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
 import com.wrapper.spotify.model_objects.specification.PlaylistTrack;
 import com.wrapper.spotify.model_objects.specification.SavedTrack;
 import com.wrapper.spotify.model_objects.specification.Track;
+import com.wrapper.spotify.model_objects.specification.TrackSimplified;
 import net.robinfriedli.botify.audio.YouTubeService;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
@@ -39,19 +41,7 @@ public class SearchEngine {
 
     public static List<Track> searchTrack(SpotifyApi spotifyApi, String searchTerm) throws IOException, SpotifyWebApiException {
         Track[] tracks = spotifyApi.searchTracks(searchTerm).market(CountryCode.CH).build().execute().getItems();
-        if (tracks.length >= 1) {
-            LevenshteinDistance editDistance = new LevenshteinDistance();
-            Multimap<Integer, Track> tracksWithDistance = HashMultimap.create();
-            for (Track track : tracks) {
-                Integer distance = editDistance.apply(searchTerm.toLowerCase(), track.getName().toLowerCase());
-                tracksWithDistance.put(distance, track);
-            }
-
-            Integer bestMatch = Collections.min(tracksWithDistance.keySet());
-            return Lists.newArrayList(tracksWithDistance.get(bestMatch));
-        }
-
-        return Lists.newArrayList();
+        return getBestLevenshteinMatches(tracks, searchTerm.toLowerCase(), track -> track.getName().toLowerCase());
     }
 
     public static List<Track> searchOwnTrack(SpotifyApi spotifyApi, String searchTerm) throws IOException, SpotifyWebApiException {
@@ -66,7 +56,7 @@ public class SearchEngine {
                 break;
             }
         }
-        return getBestLevenshteinMatches(tracks, searchTerm, Track::getName);
+        return getBestLevenshteinMatches(tracks, searchTerm.toLowerCase(), track -> track.getName().toLowerCase());
     }
 
     @Nullable
@@ -90,19 +80,12 @@ public class SearchEngine {
 
     public static List<PlaylistSimplified> searchSpotifyPlaylist(SpotifyApi spotifyApi, String searchTerm) throws IOException, SpotifyWebApiException {
         PlaylistSimplified[] results = spotifyApi.searchPlaylists(searchTerm).build().execute().getItems();
-        if (results.length >= 1) {
-            LevenshteinDistance editDistance = LevenshteinDistance.getDefaultInstance();
-            Multimap<Integer, PlaylistSimplified> playlistsWithEditDistance = HashMultimap.create();
-            for (PlaylistSimplified playlist : results) {
-                Integer distance = editDistance.apply(searchTerm.toLowerCase(), playlist.getName().toLowerCase());
-                playlistsWithEditDistance.put(distance, playlist);
-            }
+        return getBestLevenshteinMatches(results, searchTerm.toLowerCase(), playlist -> playlist.getName().toLowerCase());
+    }
 
-            Integer bestMatch = Collections.min(playlistsWithEditDistance.keySet());
-            return Lists.newArrayList(playlistsWithEditDistance.get(bestMatch));
-        }
-
-        return Lists.newArrayList();
+    public static List<AlbumSimplified> searchSpotifyAlbum(SpotifyApi spotifyApi, String searchTerm) throws IOException, SpotifyWebApiException {
+        AlbumSimplified[] albums = spotifyApi.searchAlbums(searchTerm).build().execute().getItems();
+        return getBestLevenshteinMatches(albums, searchTerm.toLowerCase(), album -> album.getName().toLowerCase());
     }
 
     public static List<Track> getPlaylistTracks(SpotifyApi spotifyApi, String playlistId) throws IOException, SpotifyWebApiException {
@@ -115,6 +98,26 @@ public class SearchEngine {
             }
             tracks.addAll(Arrays.stream(items).map(PlaylistTrack::getTrack).collect(Collectors.toList()));
             if (items.length < 100) {
+                break;
+            }
+        }
+        return tracks;
+    }
+
+    public static List<Track> getAlbumTracks(SpotifyApi spotifyApi, String albumId) throws IOException, SpotifyWebApiException {
+        List<Track> tracks = Lists.newArrayList();
+        for (int i = 0; i < MAX_REQUESTS; i++) {
+            TrackSimplified[] items = spotifyApi.getAlbumsTracks(albumId).offset(i * 50).limit(50)
+                .build().execute().getItems();
+            if (items.length == 0) {
+                break;
+            }
+            Track[] albumTracks = spotifyApi
+                .getSeveralTracks(Arrays.stream(items).map(TrackSimplified::getId).toArray(String[]::new))
+                .build()
+                .execute();
+            tracks.addAll(Arrays.asList(albumTracks));
+            if (items.length < 50) {
                 break;
             }
         }

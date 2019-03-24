@@ -30,7 +30,7 @@ public class HelpCommand extends AbstractCommand {
             EmbedBuilder embedBuilder = new EmbedBuilder();
             embedBuilder.setColor(Color.decode("#1DB954"));
             embedBuilder.setTitle("Commands:");
-            embedBuilder.appendDescription("To get help with a specific command just enter the name of the command.");
+            embedBuilder.appendDescription("To get help with a specific command just enter the name of the command. E.g. $botify help play.");
 
             sendMessage(getContext().getChannel(), embedBuilder.build());
 

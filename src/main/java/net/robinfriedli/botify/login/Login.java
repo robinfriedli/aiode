@@ -4,10 +4,14 @@ import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
 import com.wrapper.spotify.model_objects.credentials.AuthorizationCodeCredentials;
 import net.dv8tion.jda.core.entities.User;
+import net.robinfriedli.botify.boot.Launcher;
 
 public class Login {
 
@@ -70,7 +74,8 @@ public class Login {
 
                 refreshTimer.schedule(new AutoRefreshTask(spotifyApi), refreshCredentials.getExpiresIn() * 1000);
             } catch (IOException | SpotifyWebApiException e) {
-                e.printStackTrace();
+                Logger logger = LoggerFactory.getLogger(Launcher.class);
+                logger.warn("Failed to refresh login for user " + user.getName(), e);
                 expire();
             }
         }

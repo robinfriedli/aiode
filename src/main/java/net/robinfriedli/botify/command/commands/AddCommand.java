@@ -8,6 +8,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.validator.routines.UrlValidator;
 
 import com.wrapper.spotify.SpotifyApi;
+import com.wrapper.spotify.model_objects.specification.AlbumSimplified;
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
 import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
@@ -73,6 +74,8 @@ public class AddCommand extends AbstractCommand {
             invoke(() -> {
                 if (argumentSet("list")) {
                     addList(playlist, pair.getLeft());
+                } else if (argumentSet("album")) {
+                    addSpotifyAlbum(playlist, pair.getLeft());
                 } else if (UrlValidator.getInstance().isValid(pair.getLeft())) {
                     addUrl(playlist, pair.getLeft());
                 } else {
@@ -182,6 +185,30 @@ public class AddCommand extends AbstractCommand {
 
     }
 
+    private void addSpotifyAlbum(Playlist playlist, String searchTerm) throws Exception {
+        SpotifyApi spotifyApi = getContext().getSpotifyApi();
+        List<AlbumSimplified> albums = runWithCredentials(() -> SearchEngine.searchSpotifyAlbum(spotifyApi, searchTerm));
+
+        if (albums.size() == 1) {
+            AlbumSimplified album = albums.get(0);
+            List<Track> tracks = runWithCredentials(() -> SearchEngine.getAlbumTracks(spotifyApi, album.getId()));
+            List<Song> songs = tracks
+                .stream()
+                .map(t -> new Song(t, getContext().getUser(), playlist, getContext().getSession()))
+                .collect(Collectors.toList());
+            checkSize(playlist, songs.size());
+            songs.forEach(s -> getContext().getSession().persist(s));
+        } else if (albums.isEmpty()) {
+            throw new NoResultsFoundException("No Spotify album found for " + searchTerm);
+        } else {
+            askQuestion(
+                albums,
+                AlbumSimplified::getName,
+                album -> String.valueOf(StringListImpl.create(album.getArtists(), ArtistSimplified::getName).toSeparatedString(", "))
+            );
+        }
+    }
+
     private void addSpecificTrack(Playlist playlist, String searchTerm) throws Exception {
         if (argumentSet("youtube")) {
             YouTubeService youTubeService = getManager().getAudioManager().getYouTubeService();
@@ -275,6 +302,12 @@ public class AddCommand extends AbstractCommand {
             } else if (option instanceof YouTubePlaylist) {
                 YouTubeService youTubeService = getManager().getAudioManager().getYouTubeService();
                 addYouTubeList((YouTubePlaylist) option, playlist, youTubeService, getManager().getAudioManager().getPlaybackForGuild(getContext().getGuild()));
+            } else if (option instanceof AlbumSimplified) {
+                SpotifyApi spotifyApi = getContext().getSpotifyApi();
+                List<Track> tracks = runWithCredentials(() -> SearchEngine.getAlbumTracks(spotifyApi, ((AlbumSimplified) option).getId()));
+                List<Song> songs = tracks.stream().map(t -> new Song(t, getContext().getUser(), playlist, session)).collect(Collectors.toList());
+                checkSize(playlist, songs.size());
+                songs.forEach(session::persist);
             }
         });
     }
@@ -283,9 +316,9 @@ public class AddCommand extends AbstractCommand {
     public ArgumentContribution setupArguments() {
         ArgumentContribution argumentContribution = new ArgumentContribution(this);
         argumentContribution.map("youtube").excludesArguments("spotify")
-            .setDescription("Add specific video from YouTube.");
+            .setDescription("Add specific video from YouTube. Note that this argument is only required when searching, not when entering a URL.");
         argumentContribution.map("spotify").excludesArguments("youtube")
-            .setDescription("Add specific spotify track.");
+            .setDescription("Add specific spotify track. Note that this argument is only required when searching, not when entering a URL.");
         argumentContribution.map("queue").excludesArguments("youtube", "spotify")
             .setDescription("Add items from the current queue.");
         argumentContribution.map("own").needsArguments("spotify")
@@ -296,6 +329,8 @@ public class AddCommand extends AbstractCommand {
             .setDescription("Add items from a local list. This is the default option when adding lists.");
         argumentContribution.map("limit").needsArguments("youtube").setRequiresValue(true)
             .setDescription("Show a selection of youtube playlists or videos to chose from. Requires value from 1 to 10: $limit=5");
+        argumentContribution.map("album").needsArguments("spotify").excludesArguments("own")
+            .setDescription("Search for a Spotify album. Note that this argument is only required when searching, not when entering a URL.");
         return argumentContribution;
     }
 }

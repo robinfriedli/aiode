@@ -115,7 +115,7 @@ public class AudioPlayback {
     public void load(Runnable r, boolean singleThread) {
         if (singleThread) {
             Thread thread = new Thread(r);
-            thread.setName("botify interruptable track loading thread");
+            thread.setName("botify interruptible track loading thread");
             thread.setUncaughtExceptionHandler(new TrackLoadingExceptionHandler(logger, communicationChannel));
             registerTrackLoading(thread);
             thread.start();

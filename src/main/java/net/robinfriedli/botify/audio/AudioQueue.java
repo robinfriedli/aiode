@@ -108,10 +108,8 @@ public class AudioQueue {
     }
 
     public void set(List<Playable> tracks) {
-        currentQueue.clear();
-        reset();
+        clear();
         currentQueue.addAll(tracks);
-        randomizedOrder.clear();
         if (isShuffle()) {
             List<Integer> indices = IntStream.range(0, currentQueue.size()).boxed().collect(Collectors.toList());
             Collections.shuffle(indices);
@@ -121,6 +119,7 @@ public class AudioQueue {
 
     public void clear() {
         currentQueue.clear();
+        randomizedOrder.clear();
         reset();
     }
 
@@ -138,7 +137,6 @@ public class AudioQueue {
 
     public void reset() {
         currentTrack = 0;
-        randomizedOrder.clear();
     }
 
     public void setShuffle(boolean isShuffle) {
@@ -158,7 +156,7 @@ public class AudioQueue {
         return isShuffle;
     }
 
-    private void randomize() {
+    public void randomize() {
         randomizedOrder.clear();
         if (currentTrack > 0) {
             List<Integer> indices = IntStream.range(0, currentTrack).boxed().collect(Collectors.toList());
