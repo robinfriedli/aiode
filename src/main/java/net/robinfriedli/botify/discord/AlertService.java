@@ -158,7 +158,11 @@ public class AlertService {
             if (availableChannels.isEmpty()) {
                 logger.warn("Unable to send any messages to guild " + guild.getName() + " (" + guild.getId() + ")");
             } else {
-                function.accept(availableChannels.get(0));
+                try {
+                    function.accept(availableChannels.get(0));
+                } catch (InsufficientPermissionException e) {
+                    logger.warn("Could not accept action for guild " + guild, e);
+                }
             }
         }
     }
