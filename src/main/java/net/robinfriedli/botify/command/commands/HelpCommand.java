@@ -5,8 +5,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.LinkedHashMultimap;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Role;
@@ -35,7 +34,7 @@ public class HelpCommand extends AbstractCommand {
             sendMessage(getContext().getChannel(), embedBuilder.build());
 
             List<AbstractCommand> commands = getManager().getAllCommands(getContext());
-            Multimap<Category, AbstractCommand> commandsByCategory = HashMultimap.create();
+            LinkedHashMultimap<Category, AbstractCommand> commandsByCategory = LinkedHashMultimap.create();
             for (AbstractCommand command : commands) {
                 commandsByCategory.put(command.getCategory(), command);
             }

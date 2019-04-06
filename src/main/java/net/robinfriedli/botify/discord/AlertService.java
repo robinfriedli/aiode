@@ -130,7 +130,7 @@ public class AlertService {
                 send("I do not have permission to send any messages to channel " + channel.getName() + " so I'll send it here instead.", guild);
                 acceptForGuild(guild, function);
             } else {
-                logger.warn("Unable to sent messages to " + channel);
+                logger.warn("Unable to sent messages to " + channel, e);
             }
         }
     }

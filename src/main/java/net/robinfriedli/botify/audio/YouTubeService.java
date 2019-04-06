@@ -151,7 +151,7 @@ public class YouTubeService {
         YouTube.Videos.List query = youTube.videos().list("snippet,contentDetails")
             .setKey(apiKey)
             .setId(String.join(",", videoIds))
-            .setFields("items(snippet/title,contentDetails/duration)")
+            .setFields("items(snippet/title,id,contentDetails/duration)")
             .setMaxResults(50L);
 
         String nextPageToken;
