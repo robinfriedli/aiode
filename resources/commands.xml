@@ -19,11 +19,11 @@
   <command identifier="play" implementation="net.robinfriedli.botify.command.commands.PlayCommand"
            description="Resume the paused playback, play the current track in the current queue or play the specified track, video or playlist. Can play any URL or search youtube and spotify tracks or lists and also local playlists. Local playlists, like the queue, can contain tracks from any source (YouTube, Spotify and URL). Usage examples (&quot;$botify&quot; can be replaced with the name of your bot):&#xA;$botify play&#xA;$botify play numb&#xA;$botify play someurl.com&#xA;$botify play $youtube youtube rewind 2018&#xA;$botify play $youtube $list important videos&#xA;$botify play $spotify $list $own goat"/>
   <command identifier="queue" implementation="net.robinfriedli.botify.command.commands.QueueCommand"
-           description="Add a youtube video or playlist, spotify track or playlist, local playlist or any URL to the current queue or simply list the current queue."/>
+           description="Display the current queue or add a youtube video or playlist, spotify track or playlist, local playlist or any URL to the current queue."/>
   <command identifier="remove" implementation="net.robinfriedli.botify.command.commands.RemoveCommand"
            description="Remove an item from a local playlist. Put either the full title of the YouTube video or the spotify track name. If it was a track added by URL from a different source you can either remove it via its title or URL"/>
   <command identifier="rename" implementation="net.robinfriedli.botify.command.commands.RenameCommand"
-           description="Change the name of the bot."/>
+           description="Change the name of the bot. This name will then be used as the bot's nickname (if the bot has the permission to change it) and can be used as command prefix instead of '$botify'"/>
   <command identifier="repeat" implementation="net.robinfriedli.botify.command.commands.RepeatCommand"
            description="Toggles repeat for either the entire queue or the current track."/>
   <command identifier="rewind" implementation="net.robinfriedli.botify.command.commands.RewindCommand"
@@ -44,4 +44,6 @@
            description="Log out from Spotify."/>
   <command identifier="analytics" implementation="net.robinfriedli.botify.command.commands.AnalyticsCommand"
            description="Show various analytics about this bot"/>
+  <command identifier="clear" implementation="net.robinfriedli.botify.command.commands.ClearCommand"
+           description="Clear the current queue of all tracks (except the currently playing track)"/>
 </commands>

@@ -118,9 +118,19 @@ public class AudioQueue {
     }
 
     public void clear() {
-        currentQueue.clear();
-        randomizedOrder.clear();
-        reset();
+        clear(false);
+    }
+
+    public void clear(boolean retainCurrent) {
+        if (!isEmpty() && retainCurrent) {
+            currentQueue.retainAll(Collections.singleton(getCurrent()));
+            reset();
+            randomize();
+        } else {
+            currentQueue.clear();
+            randomizedOrder.clear();
+            reset();
+        }
     }
 
     public boolean hasNext() {
