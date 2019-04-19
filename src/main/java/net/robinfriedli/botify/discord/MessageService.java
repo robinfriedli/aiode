@@ -156,8 +156,10 @@ public class MessageService {
                     Guild guild = ((TextChannel) channel).getGuild();
                     send("I do not have permission to send any messages to channel " + channel.getName() + " so I'll send it here instead.", guild);
                     acceptForGuild(guild, function);
+                } else if (channel instanceof TextChannel) {
+                    logger.warn("Unable to send messages to guild " + ((TextChannel) channel).getGuild());
                 } else {
-                    logger.warn("Unable to sent messages to " + channel, e);
+                    logger.warn("Unable to send messages to " + channel);
                 }
             } else {
                 send("Bot is missing permission: " + permission.getName(), channel);

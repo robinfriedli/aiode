@@ -46,9 +46,17 @@ public class HollowYouTubeVideo implements YouTubeVideo {
         return getCompleted(title);
     }
 
+    public void setTitle(String title) {
+        this.title.complete(title);
+    }
+
     @Override
     public String getId() throws InterruptedException {
         return getCompleted(id);
+    }
+
+    public void setId(String id) {
+        this.id.complete(id);
     }
 
     @Override
@@ -56,22 +64,14 @@ public class HollowYouTubeVideo implements YouTubeVideo {
         return getCompleted(duration);
     }
 
+    public void setDuration(long duration) {
+        this.duration.complete(duration);
+    }
+
     @Nullable
     @Override
     public Track getRedirectedSpotifyTrack() {
         return redirectedSpotifyTrack;
-    }
-
-    public void setTitle(String title) {
-        this.title.complete(title);
-    }
-
-    public void setId(String id) {
-        this.id.complete(id);
-    }
-
-    public void setDuration(long duration) {
-        this.duration.complete(duration);
     }
 
     public void cancel() {

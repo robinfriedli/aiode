@@ -27,7 +27,7 @@ public class PermissionCommand extends AbstractCommand {
     private StringBuilder successMessageBuilder = new StringBuilder();
 
     public PermissionCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(context, commandManager, commandString, true, identifier, description, Category.GENERAL);
+        super(context, commandManager, commandString, false, identifier, description, Category.GENERAL);
     }
 
     @Override
