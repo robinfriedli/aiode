@@ -10,7 +10,7 @@
 
 ## Invite it to your guild
 
-https://discordapp.com/oauth2/authorize?client_id=483377420494176258&permissions=3180544&scope=bot
+https://discordapp.com/api/oauth2/authorize?client_id=483377420494176258&permissions=70315072&scope=bot
 
 ## Host it yourself
 
@@ -92,6 +92,10 @@ database botify_playlists you can leave it like this:
     <property name="hibernate.dialect">org.hibernate.dialect.PostgreSQL94Dialect</property>
     <property name="show_sql">false</property>
     <property name="hibernate.hbm2ddl.auto">update</property>
+    <property name="hibernate.c3p0.min_size">5</property>
+    <property name="hibernate.c3p0.max_size">20</property>
+    <property name="hibernate.c3p0.timeout">1800</property>
+    <property name="hibernate.c3p0.max_statements">50</property>
   </session-factory>
 </hibernate-configuration>
 ```
