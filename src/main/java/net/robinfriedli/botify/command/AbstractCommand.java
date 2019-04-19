@@ -101,11 +101,11 @@ public abstract class AbstractCommand {
     }
 
     public void invoke(CheckedRunnable runnable) {
-        getManager().getCommandExecutor().invoke(getContext().getSession(), runnable);
+        getManager().getCommandExecutor().invoke(getContext().getSession(), getContext().getGuild(), runnable);
     }
 
     public <E> E invoke(Callable<E> callable) {
-        return getManager().getCommandExecutor().invoke(getContext().getSession(), callable);
+        return getManager().getCommandExecutor().invoke(getContext().getSession(), getContext().getGuild(), callable);
     }
 
     public CommandContext getContext() {

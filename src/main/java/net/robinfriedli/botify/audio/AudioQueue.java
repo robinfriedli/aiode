@@ -213,6 +213,10 @@ public class AudioQueue {
         currentTrack = 0;
     }
 
+    public boolean isShuffle() {
+        return isShuffle;
+    }
+
     public void setShuffle(boolean isShuffle) {
         if (!isEmpty()) {
             if (isShuffle) {
@@ -224,10 +228,6 @@ public class AudioQueue {
             }
         }
         this.isShuffle = isShuffle;
-    }
-
-    public boolean isShuffle() {
-        return isShuffle;
     }
 
     public void randomize() {

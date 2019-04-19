@@ -8,6 +8,7 @@ import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.detailed.TooManyRequestsException;
 import com.wrapper.spotify.exceptions.detailed.UnauthorizedException;
 import com.wrapper.spotify.model_objects.credentials.ClientCredentials;
+import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.MessageChannel;
 import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.discord.MessageService;
@@ -19,6 +20,7 @@ import net.robinfriedli.botify.login.Login;
 import net.robinfriedli.botify.login.LoginManager;
 import net.robinfriedli.botify.util.CheckedRunnable;
 import org.hibernate.Session;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * responsible for executing a command based
@@ -109,56 +111,62 @@ public class CommandExecutor {
             history.setErrorMessage(errorMessage);
 
             Session session = context.getSession();
-            invoke(session, () -> session.persist(history));
+            invoke(session, command.getContext().getGuild(),() -> session.persist(history));
         } else {
             logger.warn("Command " + command + " has not history");
         }
 
     }
 
-    public void invoke(Session session, CheckedRunnable runnable) {
-        invoke(session, () -> {
+    public void invoke(Session session, Guild guild, CheckedRunnable runnable) {
+        invoke(session, guild, () -> {
             runnable.run();
             return null;
         });
     }
 
     /**
-     * Invoke a callable in a hibernate transaction.
+     * Invoke a callable in a hibernate transaction. The code of this method is synchronised on the guild object
+     * that calls it, making sure the same guild can not run this method concurrently. This is to counteract the
+     * spamming of a command that uses this method, e.g. spamming the add command concurrently could evade the playlist
+     * size limit.
      *
      * @param session the target hibernate session, individual for each command execution
      * @param callable tho callable to run
      * @param <E> the return type
      * @return the value the callable returns, often void
      */
-    public <E> E invoke(Session session, Callable<E> callable) {
-        boolean isNested = false;
-        if (session.getTransaction() == null || !session.getTransaction().isActive()) {
-            session.beginTransaction();
-        } else {
-            isNested = true;
-        }
-        if (isNested) {
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    public <E> E invoke(Session session, @NotNull final Guild guild, Callable<E> callable) {
+        synchronized (guild) {
+            boolean isNested = false;
+            if (session.getTransaction() == null || !session.getTransaction().isActive()) {
+                session.beginTransaction();
+            } else {
+                isNested = true;
+            }
+            if (isNested) {
+                try {
+                    return callable.call();
+                } catch (RuntimeException e) {
+                    throw e;
+                } catch (Exception e) {
+                    throw new CommandRuntimeException(e);
+                }
+            }
+            E retVal;
             try {
-                return callable.call();
-            } catch (RuntimeException e) {
+                retVal = callable.call();
+                session.getTransaction().commit();
+            } catch (UserException e) {
+                session.getTransaction().rollback();
                 throw e;
             } catch (Exception e) {
-                throw new CommandRuntimeException(e);
+                session.getTransaction().rollback();
+                throw new RuntimeException("Exception in invoked callable. Transaction rolled back.", e);
             }
+            return retVal;
         }
-        E retVal;
-        try {
-            retVal = callable.call();
-            session.getTransaction().commit();
-        } catch (UserException e) {
-            session.getTransaction().rollback();
-            throw e;
-        } catch (Exception e) {
-            session.getTransaction().rollback();
-            throw new RuntimeException("Exception in invoked callable. Transaction rolled back.", e);
-        }
-        return retVal;
     }
 
     public <E> E runForUser(User user, SpotifyApi spotifyApi, Callable<E> callable) throws Exception {

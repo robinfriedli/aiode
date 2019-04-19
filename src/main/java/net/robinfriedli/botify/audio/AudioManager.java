@@ -59,9 +59,9 @@ public class AudioManager extends AudioEventAdapter {
     private final AudioPlayerManager playerManager = new DefaultAudioPlayerManager();
     private final YouTubeService youTubeService;
     private final Logger logger;
-    private List<AudioPlayback> audioPlaybacks = Lists.newArrayList();
     private final SessionFactory sessionFactory;
     private final CommandManager commandManager;
+    private List<AudioPlayback> audioPlaybacks = Lists.newArrayList();
 
     public AudioManager(YouTubeService youTubeService, Logger logger, SessionFactory sessionFactory, CommandManager commandManager) {
         this.youTubeService = youTubeService;

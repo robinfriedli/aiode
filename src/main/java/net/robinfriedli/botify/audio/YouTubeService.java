@@ -15,6 +15,7 @@ import com.google.api.services.youtube.model.PlaylistItem;
 import com.google.api.services.youtube.model.PlaylistItemListResponse;
 import com.google.api.services.youtube.model.SearchResult;
 import com.google.api.services.youtube.model.Video;
+import com.google.api.services.youtube.model.VideoContentDetails;
 import com.google.api.services.youtube.model.VideoListResponse;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
@@ -507,9 +508,14 @@ public class YouTubeService {
 
         Map<String, Long> durationMap = new HashMap<>();
         for (Video video : videos) {
-            String iso8601Duration = video.getContentDetails().getDuration();
+            VideoContentDetails contentDetails = video.getContentDetails();
             String id = video.getId();
-            durationMap.put(id, Duration.parse(iso8601Duration).get(ChronoUnit.SECONDS) * 1000);
+            if (contentDetails != null) {
+                String iso8601Duration = contentDetails.getDuration();
+                durationMap.put(id, Duration.parse(iso8601Duration).get(ChronoUnit.SECONDS) * 1000);
+            } else {
+                durationMap.put(id, 0L);
+            }
         }
 
         return durationMap;
