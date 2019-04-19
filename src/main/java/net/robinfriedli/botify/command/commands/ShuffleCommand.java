@@ -20,6 +20,6 @@ public class ShuffleCommand extends AbstractCommand {
     @Override
     public void onSuccess() {
         AudioPlayback playbackForGuild = getManager().getAudioManager().getPlaybackForGuild(getContext().getGuild());
-        sendMessage(getContext().getChannel(), "Set shuffle to " + playbackForGuild.isShuffle());
+        sendSuccess(getContext().getChannel(), "Set shuffle to " + playbackForGuild.isShuffle());
     }
 }

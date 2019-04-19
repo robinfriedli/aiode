@@ -8,8 +8,14 @@
     </xs:sequence>
   </xs:complexType>
   <xs:complexType name="commandInterceptor">
+    <xs:sequence>
+      <xs:element name ="interruptingException" type="interruptingException"/>
+    </xs:sequence>
     <xs:attribute name="order" type="xs:int"/>
     <xs:attribute name="implementation" type="xs:string"/>
+  </xs:complexType>
+  <xs:complexType name="interruptingException">
+    <xs:attribute name="class" type="xs:string"/>
   </xs:complexType>
 
 </xs:schema>

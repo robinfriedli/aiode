@@ -72,23 +72,25 @@ public class AddCommand extends AbstractCommand {
             }
 
             invoke(() -> {
-                if (argumentSet("list")) {
-                    addList(playlist, pair.getLeft());
-                } else if (argumentSet("album")) {
-                    addSpotifyAlbum(playlist, pair.getLeft());
-                } else if (UrlValidator.getInstance().isValid(pair.getLeft())) {
+                if (UrlValidator.getInstance().isValid(pair.getLeft())) {
                     addUrl(playlist, pair.getLeft());
                 } else {
-                    addSpecificTrack(playlist, pair.getLeft());
+                    if (argumentSet("list")) {
+                        addList(playlist, pair.getLeft());
+                    } else if (argumentSet("album")) {
+                        addSpotifyAlbum(playlist, pair.getLeft());
+                    } else {
+                        addSpecificTrack(playlist, pair.getLeft());
+                    }
                 }
             });
         }
     }
 
-    private void addUrl(Playlist playlist, String searchTerm) {
+    private void addUrl(Playlist playlist, String url) {
         AudioManager audioManager = getManager().getAudioManager();
         AudioPlayback playback = audioManager.getPlaybackForGuild(getContext().getGuild());
-        List<Playable> playables = audioManager.createPlayables(searchTerm, playback, getContext().getSpotifyApi(), false, false);
+        List<Playable> playables = audioManager.createPlayables(url, playback, getContext().getSpotifyApi(), false, false);
         Session session = getContext().getSession();
 
         checkSize(playlist, playables.size());
@@ -318,11 +320,11 @@ public class AddCommand extends AbstractCommand {
         argumentContribution.map("youtube").excludesArguments("spotify")
             .setDescription("Add specific video from YouTube. Note that this argument is only required when searching, not when entering a URL.");
         argumentContribution.map("spotify").excludesArguments("youtube")
-            .setDescription("Add specific spotify track. Note that this argument is only required when searching, not when entering a URL.");
+            .setDescription("Add specific Spotify track. This supports Spotify query syntax (i.e. the filters \"artist:\", \"album:\", etc.). Note that this argument is only required when searching, not when entering a URL.");
         argumentContribution.map("queue").excludesArguments("youtube", "spotify")
             .setDescription("Add items from the current queue.");
         argumentContribution.map("own").needsArguments("spotify")
-            .setDescription("Limit search to tracks in your library. This requires a spotify login.");
+            .setDescription("Limit search to tracks in your library. This requires a Spotify login. Spotify search filters (\"artist:\", \"album:\" etc.) are not supported with this argument.");
         argumentContribution.map("list")
             .setDescription("Add tracks from a Spotify, YouTube or local list to a list.");
         argumentContribution.map("local").needsArguments("list")

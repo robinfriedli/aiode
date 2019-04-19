@@ -10,7 +10,7 @@ import com.wrapper.spotify.exceptions.detailed.UnauthorizedException;
 import com.wrapper.spotify.model_objects.credentials.ClientCredentials;
 import net.dv8tion.jda.core.entities.MessageChannel;
 import net.dv8tion.jda.core.entities.User;
-import net.robinfriedli.botify.discord.AlertService;
+import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.CommandHistory;
 import net.robinfriedli.botify.exceptions.CommandRuntimeException;
 import net.robinfriedli.botify.exceptions.NoLoginException;
@@ -47,27 +47,27 @@ public class CommandExecutor {
                 failedManually = true;
             }
         } catch (NoLoginException e) {
-            AlertService alertService = new AlertService(logger);
+            MessageService messageService = new MessageService();
             MessageChannel channel = command.getContext().getChannel();
             User user = command.getContext().getUser();
             String message = "User " + user.getName() + " is not logged in to Spotify";
-            alertService.send(message, channel);
+            messageService.sendError(message, channel);
             errorMessage = message;
         } catch (UserException e) {
-            AlertService alertService = new AlertService(logger);
-            alertService.send(e.getMessage(), command.getContext().getChannel());
+            MessageService messageService = new MessageService();
+            messageService.sendError(e.getMessage(), command.getContext().getChannel());
             errorMessage = e.getMessage();
         } catch (UnauthorizedException e) {
-            AlertService alertService = new AlertService(logger);
+            MessageService messageService = new MessageService();
             String message = "Unauthorized: " + e.getMessage();
-            alertService.send(message, command.getContext().getChannel());
+            messageService.sendException(message, command.getContext().getChannel());
             logger.warn("Unauthorized Spotify API operation", e);
             errorMessage = message;
             unexpectedException = true;
         } catch (TooManyRequestsException e) {
-            AlertService alertService = new AlertService(logger);
+            MessageService messageService = new MessageService();
             String message = "Executing too many Spotify requests at the moment, please try again later.";
-            alertService.send(message,
+            messageService.sendException(message,
                 command.getContext().getChannel());
             logger.warn("Executing too many Spotify requests", e);
             errorMessage = message;
@@ -124,15 +124,14 @@ public class CommandExecutor {
     }
 
     /**
-     * Invoke a callable in a hibernate transaction. This method is synchronised since the concurrent creation of
-     * entities might lead to clashing primary keys.
+     * Invoke a callable in a hibernate transaction.
      *
      * @param session the target hibernate session, individual for each command execution
      * @param callable tho callable to run
      * @param <E> the return type
      * @return the value the callable returns, often void
      */
-    public synchronized <E> E invoke(Session session, Callable<E> callable) {
+    public <E> E invoke(Session session, Callable<E> callable) {
         boolean isNested = false;
         if (session.getTransaction() == null || !session.getTransaction().isActive()) {
             session.beginTransaction();

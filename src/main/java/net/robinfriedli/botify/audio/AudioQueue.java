@@ -1,5 +1,6 @@
 package net.robinfriedli.botify.audio;
 
+import java.awt.Color;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -7,6 +8,10 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import com.google.common.collect.Lists;
+import net.dv8tion.jda.core.EmbedBuilder;
+import net.dv8tion.jda.core.entities.Guild;
+import net.robinfriedli.botify.util.PropertiesLoadingService;
+import net.robinfriedli.botify.util.Util;
 
 public class AudioQueue {
 
@@ -46,6 +51,65 @@ public class AudioQueue {
     public Playable getNext() {
         next();
         return getCurrent();
+    }
+
+    public EmbedBuilder buildMessageEmbed(AudioPlayback playback, Guild guild) {
+        Playable current = getCurrent();
+        int position = getPosition();
+        List<Playable> tracks = getTracks();
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        String baseUri = PropertiesLoadingService.requireProperty("BASE_URI");
+
+        embedBuilder.addField("Paused", boolToString(playback.isPaused()), true);
+        embedBuilder.addField("Shuffle", boolToString(playback.isShuffle()), true);
+        embedBuilder.addField("Repeat all", boolToString(playback.isRepeatAll()), true);
+        embedBuilder.addField("Repeat one", boolToString(playback.isRepeatOne()), true);
+        String url = baseUri + String.format("/queue?guildId=%s", guild.getId());
+        embedBuilder.addField("", "[Full list](" + url + ")", false);
+
+        StringBuilder prevBuilder = new StringBuilder();
+        StringBuilder nextBuilder = new StringBuilder();
+
+        if (position > 0) {
+            List<Playable> previous;
+            if (position > 5) {
+                prevBuilder.append("...").append(System.lineSeparator());
+            }
+            previous = listPrevious(5);
+            for (Playable prev : previous) {
+                appendPlayable(prevBuilder, prev);
+            }
+        }
+
+        if (!prevBuilder.toString().isEmpty()) {
+            embedBuilder.addField("Previous", prevBuilder.toString(), false);
+        }
+
+        String currentPosition = Util.normalizeMillis(playback.getCurrentPositionMs());
+        String duration = Util.normalizeMillis(current.getDurationMsInterruptible());
+        embedBuilder.addField(
+            "Current",
+            "| " + current.getDisplayInterruptible() + " - " + currentPosition + " / " + duration,
+            false
+        );
+
+        if (position < tracks.size() - 1) {
+            List<Playable> next;
+            next = listNext(5);
+            for (Playable n : next) {
+                appendPlayable(nextBuilder, n);
+            }
+            if (tracks.size() > position + 6) {
+                nextBuilder.append("...");
+            }
+        }
+
+        if (!nextBuilder.toString().isEmpty()) {
+            embedBuilder.addField("Next", nextBuilder.toString(), false);
+        }
+
+        embedBuilder.setColor(Color.decode("#1DB954"));
+        return embedBuilder;
     }
 
     public List<Playable> listNext(int max) {
@@ -186,6 +250,16 @@ public class AudioQueue {
         List<Integer> indices = IntStream.range(current, current + playables.size()).boxed().collect(Collectors.toList());
         Collections.shuffle(indices);
         randomizedOrder.addAll(indices);
+    }
+
+    private String boolToString(boolean bool) {
+        return bool ? "On" : "Off";
+    }
+
+    private void appendPlayable(StringBuilder trackListBuilder, Playable playable) {
+        String display = playable.getDisplayInterruptible();
+        long durationMs = playable.getDurationMsInterruptible();
+        trackListBuilder.append("| ").append(display).append(" - ").append(Util.normalizeMillis(durationMs)).append(System.lineSeparator());
     }
 
 }

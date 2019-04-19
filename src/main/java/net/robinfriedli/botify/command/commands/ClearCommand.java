@@ -21,6 +21,6 @@ public class ClearCommand extends AbstractCommand {
 
     @Override
     public void onSuccess() {
-        sendMessage(getContext().getChannel(), "Cleared queue");
+        sendSuccess(getContext().getChannel(), "Cleared queue");
     }
 }

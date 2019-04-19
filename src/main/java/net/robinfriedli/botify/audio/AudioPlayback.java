@@ -7,9 +7,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.MessageChannel;
 import net.dv8tion.jda.core.entities.VoiceChannel;
+import net.dv8tion.jda.core.exceptions.InsufficientPermissionException;
 import net.robinfriedli.botify.boot.Launcher;
 import net.robinfriedli.botify.exceptions.TrackLoadingExceptionHandler;
 
@@ -26,6 +29,7 @@ public class AudioPlayback {
     private boolean repeatAll;
     // register Track loading Threads here so that they can be interrupted when a different playlist is being played
     private Thread trackLoadingThread;
+    private Message lastPlaybackNotification;
 
     public AudioPlayback(AudioPlayer player, Guild guild, Logger logger) {
         this.guild = guild;
@@ -112,6 +116,15 @@ public class AudioPlayback {
         audioQueue.setShuffle(isShuffle);
     }
 
+    public long getCurrentPositionMs() {
+        AudioTrack playingTrack = audioPlayer.getPlayingTrack();
+        return playingTrack != null ? playingTrack.getPosition() : 0;
+    }
+
+    public void setPosition(long ms) {
+        audioPlayer.getPlayingTrack().setPosition(ms);
+    }
+
     public void load(Runnable r, boolean singleThread) {
         if (singleThread) {
             Thread thread = new Thread(r);
@@ -128,6 +141,17 @@ public class AudioPlayback {
         if (trackLoadingThread != null && trackLoadingThread.isAlive()) {
             trackLoadingThread.interrupt();
         }
+    }
+
+    public void setLastPlaybackNotification(Message message) {
+        if (lastPlaybackNotification != null) {
+            try {
+                lastPlaybackNotification.delete().queue();
+            } catch (InsufficientPermissionException e) {
+                logger.warn("Cannot delete playback notification message for channel " + communicationChannel, e);
+            }
+        }
+        this.lastPlaybackNotification = message;
     }
 
     private void registerTrackLoading(Thread thread) {

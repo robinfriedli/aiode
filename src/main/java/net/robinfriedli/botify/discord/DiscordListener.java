@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 
@@ -12,19 +13,24 @@ import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Message;
+import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.core.events.guild.GuildLeaveEvent;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.core.events.message.guild.react.GuildMessageReactionAddEvent;
 import net.dv8tion.jda.core.hooks.ListenerAdapter;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.YouTubeService;
+import net.robinfriedli.botify.command.AbstractWidget;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandExecutor;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
 import net.robinfriedli.botify.exceptions.CommandExceptionHandler;
+import net.robinfriedli.botify.exceptions.CommandRuntimeException;
 import net.robinfriedli.botify.exceptions.UserException;
+import net.robinfriedli.botify.exceptions.WidgetExceptionHandler;
 import net.robinfriedli.botify.listener.InterceptorChain;
 import net.robinfriedli.botify.listener.PlaylistItemTimestampListener;
 import net.robinfriedli.botify.login.LoginManager;
@@ -33,6 +39,7 @@ import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.SearchEngine;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.persist.Context;
+import org.discordbots.api.client.DiscordBotListAPI;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
@@ -44,6 +51,7 @@ public class DiscordListener extends ListenerAdapter {
     private final SessionFactory sessionFactory;
     private final CommandManager commandManager;
     private final GuildSpecificationManager guildSpecificationManager;
+    private final DiscordBotListAPI discordBotListAPI;
     private final Logger logger;
     private Mode mode;
 
@@ -52,16 +60,18 @@ public class DiscordListener extends ListenerAdapter {
                            SessionFactory sessionFactory,
                            LoginManager loginManager,
                            YouTubeService youTubeService,
-                           Logger logger) {
-        audioManager = new AudioManager(youTubeService, logger, sessionFactory);
+                           Logger logger,
+                           DiscordBotListAPI discordBotListAPI) {
         this.jxpBackend = jxpBackend;
         this.spotfiyApiBuilder = spotfiyApiBuilder;
         this.sessionFactory = sessionFactory;
+        this.discordBotListAPI = discordBotListAPI;
         Context guildSpecificationContext = jxpBackend.getContext(PropertiesLoadingService.requireProperty("GUILD_SPECIFICATION_PATH"));
         guildSpecificationManager = new GuildSpecificationManager(guildSpecificationContext);
         Context commandContributionContext = jxpBackend.getContext(PropertiesLoadingService.requireProperty("COMMANDS_PATH"));
         Context commandInterceptorContext = jxpBackend.getContext(PropertiesLoadingService.requireProperty("COMMAND_INTERCEPTORS_PATH"));
         commandManager = new CommandManager(new CommandExecutor(loginManager, logger), this, loginManager, commandContributionContext, commandInterceptorContext, logger);
+        audioManager = new AudioManager(youTubeService, logger, sessionFactory, commandManager);
         this.logger = logger;
     }
 
@@ -91,13 +101,13 @@ public class DiscordListener extends ListenerAdapter {
                     namePrefix = botName;
                 }
 
-                AlertService alertService = new AlertService(logger);
+                MessageService messageService = new MessageService();
                 CommandContext commandContext = new CommandContext(namePrefix, message, sessionFactory, spotfiyApiBuilder.build());
                 Thread commandExecutionThread = new Thread(() -> {
                     try {
                         commandManager.runCommand(commandContext);
                     } catch (UserException e) {
-                        alertService.send(e.getMessage(), message.getChannel());
+                        messageService.sendError(e.getMessage(), message.getChannel());
                     } finally {
                         commandContext.closeSession();
                     }
@@ -114,7 +124,7 @@ public class DiscordListener extends ListenerAdapter {
                         return;
                     }
                     if (commandExecutionThread.isAlive()) {
-                        alertService.send("Still loading...", message.getChannel());
+                        messageService.send("Still loading...", message.getChannel());
                     }
                 });
 
@@ -129,6 +139,10 @@ public class DiscordListener extends ListenerAdapter {
         Guild guild = event.getGuild();
         guildSpecificationManager.addGuild(guild);
         audioManager.addGuild(guild);
+
+        if (discordBotListAPI != null) {
+            discordBotListAPI.setStats(event.getJDA().getGuilds().size());
+        }
 
         try (Session session = sessionFactory.withOptions().interceptor(InterceptorChain.of(PlaylistItemTimestampListener.class)).openSession()) {
             String playlistsPath = PropertiesLoadingService.requireProperty("PLAYLISTS_PATH");
@@ -162,6 +176,34 @@ public class DiscordListener extends ListenerAdapter {
     public void onGuildLeave(GuildLeaveEvent event) {
         Guild guild = event.getGuild();
         audioManager.removeGuild(guild);
+
+        if (discordBotListAPI != null) {
+            discordBotListAPI.setStats(event.getJDA().getGuilds().size());
+        }
+    }
+
+    @Override
+    public void onGuildMessageReactionAdd(GuildMessageReactionAddEvent event) {
+        if (!event.getUser().isBot()) {
+            String messageId = event.getMessageId();
+
+            Optional<AbstractWidget> activeWidget = commandManager.getActiveWidget(messageId);
+            if (activeWidget.isPresent()) {
+                TextChannel channel = event.getChannel();
+                Thread widgetExecutionThread = new Thread(() -> {
+                    try {
+                        activeWidget.get().handleReaction(event);
+                    } catch (UserException e) {
+                        new MessageService().send(e.getMessage(), channel);
+                    } catch (Exception e) {
+                        throw new CommandRuntimeException(e);
+                    }
+                });
+                widgetExecutionThread.setName("Widget execution thread " + messageId);
+                widgetExecutionThread.setUncaughtExceptionHandler(new WidgetExceptionHandler(channel, logger));
+                widgetExecutionThread.start();
+            }
+        }
     }
 
     public GuildSpecificationManager getGuildSpecificationManager() {

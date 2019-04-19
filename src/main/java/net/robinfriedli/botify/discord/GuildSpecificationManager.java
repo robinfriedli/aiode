@@ -6,15 +6,12 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-import org.slf4j.LoggerFactory;
-
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.Role;
 import net.dv8tion.jda.core.exceptions.InsufficientPermissionException;
-import net.robinfriedli.botify.boot.Launcher;
 import net.robinfriedli.botify.entities.AccessConfiguration;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.jxp.api.XmlElement;
@@ -107,8 +104,8 @@ public class GuildSpecificationManager {
     }
 
     private void alertNameChange(Guild guild) {
-        AlertService alertService = new AlertService(LoggerFactory.getLogger(Launcher.class));
-        alertService.send("Give me a name! Type \"$botify rename Your Name\"" + System.lineSeparator() + "Hint: The name can be used as command prefix.", guild);
+        MessageService messageService = new MessageService();
+        messageService.send("Give me a name! Type \"$botify rename Your Name\"" + System.lineSeparator() + "Hint: The name can be used as command prefix.", guild);
     }
 
 }

@@ -23,9 +23,9 @@ public class RenameCommand extends AbstractCommand {
     public void onSuccess() {
         String name = getManager().getGuildManager().getNameForGuild(getContext().getGuild());
         if (couldChangeNickname) {
-            sendMessage(getContext().getChannel(), "You can now call me " + name);
+            sendSuccess(getContext().getChannel(), "You can now call me " + name);
         } else {
-            sendMessage(getContext().getChannel(), "I do not have permission to change my nickname, but you can still call me " + getCommandBody());
+            sendSuccess(getContext().getChannel(), "I do not have permission to change my nickname, but you can still call me " + getCommandBody());
         }
     }
 

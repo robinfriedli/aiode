@@ -53,6 +53,6 @@ public class UploadCommand extends AbstractCommand {
 
     @Override
     public void onSuccess() {
-        sendMessage(getContext().getChannel(), "Created Spotify playlist " + getCommandBody());
+        sendSuccess(getContext().getChannel(), "Created Spotify playlist " + getCommandBody());
     }
 }

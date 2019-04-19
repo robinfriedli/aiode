@@ -26,9 +26,9 @@ public class RepeatCommand extends AbstractCommand {
     public void onSuccess() {
         AudioPlayback playback = getManager().getAudioManager().getPlaybackForGuild(getContext().getGuild());
         if (argumentSet("one")) {
-            sendMessage(getContext().getChannel(), "Repeat one set to " + playback.isRepeatOne());
+            sendSuccess(getContext().getChannel(), "Repeat one set to " + playback.isRepeatOne());
         } else {
-            sendMessage(getContext().getChannel(), "Repeat all set to " + playback.isRepeatAll());
+            sendSuccess(getContext().getChannel(), "Repeat all set to " + playback.isRepeatAll());
         }
     }
 

@@ -14,7 +14,7 @@ import net.dv8tion.jda.core.entities.Guild;
 import net.robinfriedli.botify.audio.YouTubeService;
 import net.robinfriedli.botify.boot.Launcher;
 import net.robinfriedli.botify.boot.StartupTask;
-import net.robinfriedli.botify.discord.AlertService;
+import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
@@ -36,14 +36,14 @@ public class VersionUpdateAlertTask implements StartupTask {
                         && versionCompare(currentVersion, xmlElement.getAttribute("version").getValue()) == 1
                         && xmlElement.getAttribute("launched").getBool()).collect();
                     if (!lowerLaunchedVersions.isEmpty()) {
-                        AlertService alertService = new AlertService(logger);
+                        MessageService messageService = new MessageService();
                         String message = "Botify has been updated to " + currentVersion + ". [Check the releases here]("
                             + "https://github.com/robinfriedli/botify/releases)";
                         EmbedBuilder embedBuilder = new EmbedBuilder();
                         embedBuilder.setTitle("Update");
                         embedBuilder.setDescription(message);
                         for (Guild guild : jda.getGuilds()) {
-                            alertService.sendWithLogo(embedBuilder, guild);
+                            messageService.sendWithLogo(embedBuilder, guild);
                         }
                     }
 

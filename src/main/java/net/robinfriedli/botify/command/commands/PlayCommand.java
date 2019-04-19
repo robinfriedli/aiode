@@ -48,30 +48,30 @@ public class PlayCommand extends AbstractCommand {
         AudioPlayback playbackForGuild = audioManager.getPlaybackForGuild(guild);
         playbackForGuild.setCommunicationChannel(messageChannel);
 
-        if (argumentSet("list")) {
-            if (argumentSet("spotify")) {
-                playSpotifyList(channel, playbackForGuild);
-            } else if (argumentSet("youtube")) {
-                playYouTubePlaylist(channel, audioManager, guild, playbackForGuild);
+        if (getCommandBody().isBlank()) {
+            if (playbackForGuild.isPaused()) {
+                playbackForGuild.unpause();
+            } else if (!audioManager.getQueue(guild).isEmpty()) {
+                audioManager.playTrack(guild, channel);
             } else {
-                playLocalList(channel, audioManager, guild, playbackForGuild);
+                throw new InvalidCommandException("Queue is empty. Specify a song you want to play.");
             }
-        } else if (argumentSet("album")) {
-            playSpotifyAlbum(channel, playbackForGuild);
+        } else if (UrlValidator.getInstance().isValid(getCommandBody())) {
+            playUrl(channel, audioManager, playbackForGuild, guild);
         } else {
-            if (getCommandBody().isBlank()) {
-                if (playbackForGuild.isPaused()) {
-                    playbackForGuild.unpause();
-                } else if (!audioManager.getQueue(guild).isEmpty()) {
-                    audioManager.playTrack(guild, channel);
+            if (argumentSet("list")) {
+                if (argumentSet("spotify")) {
+                    playSpotifyList(channel, playbackForGuild);
+                } else if (argumentSet("youtube")) {
+                    playYouTubePlaylist(channel, audioManager, guild, playbackForGuild);
                 } else {
-                    throw new InvalidCommandException("Queue is empty. Specify a song you want to play.");
+                    playLocalList(channel, audioManager, guild, playbackForGuild);
                 }
+            } else if (argumentSet("album")) {
+                playSpotifyAlbum(channel, playbackForGuild);
             } else {
                 if (argumentSet("youtube")) {
                     playYouTubeVideo(channel, audioManager, guild);
-                } else if (!argumentSet("spotify") && UrlValidator.getInstance().isValid(getCommandBody())) {
-                    playUrl(channel, audioManager, playbackForGuild, guild);
                 } else {
                     playSpotifyTrack(channel, audioManager, guild);
                 }
@@ -282,17 +282,17 @@ public class PlayCommand extends AbstractCommand {
         argumentContribution.map("list").setRequiresInput(true)
             .setDescription("Search for a list.");
         argumentContribution.map("preview").excludesArguments("youtube")
-            .setDescription("Play the short preview mp3 directly from spotify instead of the full track from youtube.");
+            .setDescription("Play the short preview mp3 directly from Spotify instead of the full track from YouTube.");
         argumentContribution.map("spotify").setRequiresInput(true).excludesArguments("youtube")
-            .setDescription("Search for a spotify track or list. Note that this argument is only required when searching, not when entering a URL.");
+            .setDescription("Search for a Spotify track or list. This supports Spotify query syntax (i.e. the filters \"artist:\", \"album:\", etc.). Note that this argument is only required when searching, not when entering a URL.");
         argumentContribution.map("youtube").setRequiresInput(true).excludesArguments("spotify")
-            .setDescription("Play a youtube video or playlist. Note that this argument is only required when searching, not when entering a URL.");
+            .setDescription("Play a YouTube video or playlist. Note that this argument is only required when searching, not when entering a URL.");
         argumentContribution.map("own").needsArguments("spotify")
-            .setDescription("Limit search to spotify tracks or lists that are in the current user's library.");
+            .setDescription("Limit search to Spotify tracks or lists that are in the current user's library. This requires a Spotify login. Spotify search filters (\"artist:\", \"album:\" etc.) are not supported with this argument.");
         argumentContribution.map("local").needsArguments("list")
             .setDescription("Play a local list.");
         argumentContribution.map("limit").needsArguments("youtube").setRequiresValue(true)
-            .setDescription("Show a selection of youtube playlists or videos to chose from. Requires value from 1 to 10: $limit=5");
+            .setDescription("Show a selection of YouTube playlists or videos to chose from. Requires value from 1 to 10: $limit=5");
         argumentContribution.map("album").needsArguments("spotify").excludesArguments("own").setRequiresInput(true)
             .setDescription("Search for a Spotify album. Note that this argument is only required when searching, not when entering a URL.");
         return argumentContribution;

@@ -1,5 +1,5 @@
 ![# botify](https://raw.githubusercontent.com/robinfriedli/botify/master/resources-public/img/botify-logo-wide.png)
- Discord bot that plays Spotify tracks and YouTube videos or any URL including Soundcloud links.
+ Discord bot that plays Spotify tracks and YouTube videos or any URL including Soundcloud links and Twitch streams.
 
 * Play and search Spotify tracks and YouTube videos or playlists or any URL including Soundcloud links
 * Create local playlists with tracks from any source
@@ -32,13 +32,22 @@ router's public ip and setup port forwarding for your router.
 ### 4. Setup botify settings
 #### 4.1 Navigate to your cloned project and go to ./resources and open the settings.properties file and fill in the blanks, it should look like this:
 ```properties
+###################
+# server settings #
+###################
 SERVER_PORT=8000
 BASE_URI=http://localhost:8000
 REDIRECT_URI=http://localhost:8000/login
+##########
+# tokens #
+##########
 DISCORD_TOKEN=#copy your discord token here
 SPOTIFY_CLIENT_ID=#copy your spotify client id here
 SPOTIFY_CLIENT_SECRET=#copy your spotify client secret here
 YOUTUBE_CREDENTIALS=#copy your youtube credentials here
+#################
+# contributions #
+#################
 PLAYLISTS_PATH=./resources/playlists.xml
 GUILD_PLAYLISTS_PATH=./resources/%splaylists.xml
 GUILD_SPECIFICATION_PATH=./resources/guildSpecifications.xml
@@ -50,9 +59,18 @@ LOGIN_PAGE_PATH=./resources/login.html
 LIST_PAGE_PATH=./resources/playlist_view.html
 ERROR_PAGE_PATH=./resources/default_error_page.html
 QUEUE_PAGE_PATH=./resources/queue_view.html
+###############
+# preferences #
+###############
 MODE_PARTITIONED=true
+# playlists per guild (if mode_partitioned = true, else playlist total)
 PLAYLIST_COUNT_MAX=50
 PLAYLIST_SIZE_MAX=5000
+#######################################
+# discordbots.org settings (optional) #
+#######################################
+DISCORD_BOT_ID=#copy your discord client id here
+DISCORDBOTS_TOKEN=#copy your discordbots.org token here
 ```
 
 ### 5. Setup database

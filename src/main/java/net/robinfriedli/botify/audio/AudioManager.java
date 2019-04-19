@@ -1,5 +1,6 @@
 package net.robinfriedli.botify.audio;
 
+import java.awt.Color;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.Charset;
@@ -34,14 +35,19 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
 import com.wrapper.spotify.model_objects.specification.Track;
+import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.VoiceChannel;
 import net.dv8tion.jda.core.exceptions.InsufficientPermissionException;
-import net.robinfriedli.botify.discord.AlertService;
+import net.robinfriedli.botify.command.CommandManager;
+import net.robinfriedli.botify.command.widgets.NowPlayingWidget;
+import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.PlaybackHistory;
 import net.robinfriedli.botify.entities.UrlTrack;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
+import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.SearchEngine;
 import net.robinfriedli.stringlist.StringList;
 import net.robinfriedli.stringlist.StringListImpl;
@@ -55,11 +61,13 @@ public class AudioManager extends AudioEventAdapter {
     private final Logger logger;
     private List<AudioPlayback> audioPlaybacks = Lists.newArrayList();
     private final SessionFactory sessionFactory;
+    private final CommandManager commandManager;
 
-    public AudioManager(YouTubeService youTubeService, Logger logger, SessionFactory sessionFactory) {
+    public AudioManager(YouTubeService youTubeService, Logger logger, SessionFactory sessionFactory, CommandManager commandManager) {
         this.youTubeService = youTubeService;
         this.logger = logger;
         this.sessionFactory = sessionFactory;
+        this.commandManager = commandManager;
         AudioSourceManagers.registerRemoteSources(playerManager);
     }
 
@@ -90,10 +98,10 @@ public class AudioManager extends AudioEventAdapter {
             return;
         }
 
-        Object audioTrack = loadUrl(playbackUrl);
-        if (audioTrack != null) {
-            if (audioTrack instanceof AudioTrack) {
-                play((AudioTrack) audioTrack, audioPlayback);
+        Object result = loadUrl(playbackUrl);
+        if (result != null) {
+            if (result instanceof AudioTrack) {
+                play((AudioTrack) result, audioPlayback);
                 new Thread(() -> {
                     try {
                         createHistoryEntry(track, guild);
@@ -101,6 +109,14 @@ public class AudioManager extends AudioEventAdapter {
                         logger.error("Exception while creating playback history entry", e);
                     }
                 }).start();
+            } else if (result instanceof Throwable) {
+                EmbedBuilder embedBuilder = new EmbedBuilder();
+                embedBuilder.setTitle("Could not load track");
+                embedBuilder.setDescription(((Throwable) result).getMessage());
+                embedBuilder.setColor(Color.RED);
+
+                new MessageService().send(embedBuilder.build(), audioPlayback.getCommunicationChannel());
+                iterateQueue(audioPlayback, audioQueue);
             } else {
                 throw new UnsupportedOperationException("Expected an AudioTrack");
             }
@@ -223,6 +239,10 @@ public class AudioManager extends AudioEventAdapter {
             } else {
                 throw new InvalidCommandException("Detected YouTube URL but no video or playlist id provided.");
             }
+        } else if (uri.getHost().equals("youtu.be")) {
+            String[] parts = uri.getPath().split("/");
+            YouTubeVideo youTubeVideo = youTubeService.videoForId(parts[parts.length - 1]);
+            playables = Lists.newArrayList(createPlayable(false, youTubeVideo));
         } else if (uri.getHost().equals("open.spotify.com")) {
             StringList pathFragments = StringListImpl.create(uri.getPath(), "/");
             if (pathFragments.contains("playlist")) {
@@ -279,8 +299,14 @@ public class AudioManager extends AudioEventAdapter {
         } else {
             Object result = loadUrl(uri.toString());
 
-            if (result == null) {
-                throw new NoResultsFoundException("Could not load audio for provided URL");
+            if (result == null || result instanceof Throwable) {
+                String errorMessage = "Could not load audio for provided URL.";
+
+                if (result != null) {
+                    errorMessage = errorMessage + " " + ((Throwable) result).getMessage();
+                }
+
+                throw new NoResultsFoundException(errorMessage);
             }
 
             if (result instanceof AudioTrack) {
@@ -322,7 +348,7 @@ public class AudioManager extends AudioEventAdapter {
     }
 
     @Nullable
-    Object loadUrl(String playbackUrl) {
+    private Object loadUrl(String playbackUrl) {
         CompletableFuture<Object> result = new CompletableFuture<>();
         playerManager.loadItem(playbackUrl, new AudioLoadResultHandler() {
             @Override
@@ -342,9 +368,11 @@ public class AudioManager extends AudioEventAdapter {
 
             @Override
             public void loadFailed(FriendlyException e) {
-                result.cancel(false);
+                result.complete(e);
                 if (e.severity != FriendlyException.Severity.COMMON) {
                     logger.error("lavaplayer threw an exception while loading track " + playbackUrl, e);
+                } else {
+                    logger.warn("lavaplayer could not load track " + playbackUrl, e);
                 }
             }
         });
@@ -373,29 +401,23 @@ public class AudioManager extends AudioEventAdapter {
         AudioPlayer audioPlayer = playback.getAudioPlayer();
         audioPlayer.playTrack(track);
 
-        Playable currentTrack = playback.getAudioQueue().getCurrent();
-        StringBuilder messageBuilder = new StringBuilder();
-        try {
-            messageBuilder.append("Now playing ").append(currentTrack.getDisplay());
-        } catch (InterruptedException e) {
-            // never reached since the track has been loaded, this it had been completed
-            return;
-        }
-        if (playback.isPaused()) {
-            messageBuilder.append(" (paused)");
-        }
-        if (playback.isRepeatAll()) {
-            messageBuilder.append(" (repeat all)");
-        }
-        if (playback.isRepeatOne()) {
-            messageBuilder.append(" (repeat one)");
-        }
-        if (playback.isShuffle()) {
-            messageBuilder.append(" (shuffle)");
+        AudioQueue audioQueue = playback.getAudioQueue();
+        Playable currentTrack = audioQueue.getCurrent();
+
+        MessageService messageService = new MessageService();
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setColor(Color.decode("#1DB954"));
+        embedBuilder.addField("Now playing", currentTrack.getDisplayInterruptible(), false);
+
+        if (audioQueue.hasNext()) {
+            embedBuilder.addField("Next", audioQueue.listNext(1).get(0).getDisplayInterruptible(), false);
         }
 
-        AlertService alertService = new AlertService(logger);
-        alertService.send(messageBuilder.toString(), playback.getCommunicationChannel());
+        String baseUri = PropertiesLoadingService.requireProperty("BASE_URI");
+        embedBuilder.setFooter("View the queue using the queue command", baseUri + "/resources-public/img/botify-logo-small.png");
+        CompletableFuture<Message> futureMessage = messageService.send(embedBuilder.build(), playback.getCommunicationChannel());
+        futureMessage.thenAccept(playback::setLastPlaybackNotification);
+        futureMessage.thenAccept(message -> commandManager.registerWidget(new NowPlayingWidget(commandManager, message, playback, this)));
     }
 
     private void iterateQueue(AudioPlayback playback, AudioQueue audioQueue) {

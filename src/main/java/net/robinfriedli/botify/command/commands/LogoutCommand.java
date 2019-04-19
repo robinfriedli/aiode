@@ -22,6 +22,6 @@ public class LogoutCommand extends AbstractCommand {
 
     @Override
     public void onSuccess() {
-        sendMessage(getContext().getChannel(), "User " + getContext().getUser().getName() + " logged out from Spotify.");
+        sendSuccess(getContext().getChannel(), "User " + getContext().getUser().getName() + " logged out from Spotify.");
     }
 }

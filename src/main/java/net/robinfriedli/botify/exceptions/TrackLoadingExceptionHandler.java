@@ -7,7 +7,7 @@ import org.slf4j.Logger;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.entities.MessageChannel;
-import net.robinfriedli.botify.discord.AlertService;
+import net.robinfriedli.botify.discord.MessageService;
 
 public class TrackLoadingExceptionHandler implements Thread.UncaughtExceptionHandler {
 
@@ -28,8 +28,8 @@ public class TrackLoadingExceptionHandler implements Thread.UncaughtExceptionHan
         recursiveCause(embedBuilder, e);
         logger.error("Exception while loading tracks", e);
 
-        AlertService alertService = new AlertService(logger);
-        alertService.send(embedBuilder.build(), channel);
+        MessageService messageService = new MessageService();
+        messageService.send(embedBuilder.build(), channel);
     }
 
     private void recursiveCause(EmbedBuilder embedBuilder, Throwable e) {

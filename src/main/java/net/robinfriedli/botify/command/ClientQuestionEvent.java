@@ -9,8 +9,9 @@ import java.util.TimerTask;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.User;
-import net.robinfriedli.botify.discord.AlertService;
+import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
+import net.robinfriedli.botify.util.Util;
 
 /**
  * represents a two sided conversation between user and bot triggered when a user enters an ambiguous command
@@ -51,24 +52,20 @@ public class ClientQuestionEvent {
         return target.cast(get(key));
     }
 
-    public void ask(AlertService alertService) {
+    public void ask() {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle("Several options found");
         embedBuilder.setDescription("Choose an option using the answer command: $botify answer KEY");
-
-        StringBuilder keyListBuilder = new StringBuilder();
-        StringBuilder optionListBuilder = new StringBuilder();
-
-        for (String optionKey : options.keySet()) {
-            keyListBuilder.append(optionKey).append(System.lineSeparator());
-            optionListBuilder.append(options.get(optionKey).getDisplay()).append(System.lineSeparator());
-        }
-
-        embedBuilder.addField("Key", keyListBuilder.toString(), true);
-        embedBuilder.addField("Option", optionListBuilder.toString(), true);
         embedBuilder.setColor(Color.decode("#1DB954"));
 
-        alertService.send(embedBuilder.build(), sourceCommand.getContext().getChannel());
+        Util.appendEmbedList(
+            embedBuilder,
+            options.keySet(),
+            optionKey -> optionKey + " - " + options.get(optionKey).getDisplay(),
+            "Key - Option"
+        );
+
+        new MessageService().send(embedBuilder.build(), sourceCommand.getContext().getChannel());
     }
 
     public void destroy() {

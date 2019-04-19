@@ -1,8 +1,8 @@
 package net.robinfriedli.botify.command.commands;
 
-import java.awt.Color;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.commons.validator.routines.UrlValidator;
 
@@ -11,8 +11,8 @@ import com.wrapper.spotify.model_objects.specification.AlbumSimplified;
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
 import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
-import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.core.entities.Message;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.audio.AudioQueue;
@@ -24,12 +24,11 @@ import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
+import net.robinfriedli.botify.command.widgets.QueueWidget;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
-import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.SearchEngine;
-import net.robinfriedli.botify.util.Util;
 import net.robinfriedli.stringlist.StringListImpl;
 
 public class QueueCommand extends AbstractCommand {
@@ -54,7 +53,9 @@ public class QueueCommand extends AbstractCommand {
             AudioPlayback playback = audioManager.getPlaybackForGuild(getContext().getGuild());
             playback.setCommunicationChannel(getContext().getChannel());
 
-            if (argumentSet("list")) {
+            if (UrlValidator.getInstance().isValid(getCommandBody())) {
+                queueUrlItems(audioManager, playback);
+            } else if (argumentSet("list")) {
                 if (argumentSet("spotify")) {
                     queueSpotifyList(audioManager, playback);
                 } else if (argumentSet("youtube")) {
@@ -68,7 +69,7 @@ public class QueueCommand extends AbstractCommand {
                 } else if (argumentSet("album")) {
                     queueSpotifyAlbum(audioManager, playback);
                 } else if (UrlValidator.getInstance().isValid(getCommandBody())) {
-                    queuedUrlItems(audioManager, playback);
+                    queueUrlItems(audioManager, playback);
                 } else {
                     queueTrack(audioManager, playback);
                 }
@@ -76,7 +77,7 @@ public class QueueCommand extends AbstractCommand {
         }
     }
 
-    private void queuedUrlItems(AudioManager audioManager, AudioPlayback playback) {
+    private void queueUrlItems(AudioManager audioManager, AudioPlayback playback) {
         List<Playable> playables = audioManager.createPlayables(getCommandBody(), playback, getContext().getSpotifyApi(), !argumentSet("preview"), false);
         playback.getAudioQueue().add(playables);
         queuedAmount = playables.size();
@@ -232,104 +233,40 @@ public class QueueCommand extends AbstractCommand {
         }
     }
 
-    private void listQueue() {
+    private void listQueue() throws Exception {
         Guild guild = getContext().getGuild();
-        AudioPlayback playback = getManager().getAudioManager().getPlaybackForGuild(guild);
+        AudioManager audioManager = getManager().getAudioManager();
+        AudioPlayback playback = audioManager.getPlaybackForGuild(guild);
         AudioQueue audioQueue = playback.getAudioQueue();
 
         if (audioQueue.isEmpty()) {
             sendMessage(getContext().getChannel(), "Queue is empty");
         } else {
-            Playable current = audioQueue.getCurrent();
-            int position = audioQueue.getPosition();
-            List<Playable> tracks = audioQueue.getTracks();
-            EmbedBuilder embedBuilder = new EmbedBuilder();
-            String baseUri = PropertiesLoadingService.requireProperty("BASE_URI");
-
-            embedBuilder.addField("Paused", boolToString(playback.isPaused()), true);
-            embedBuilder.addField("Shuffle", boolToString(playback.isShuffle()), true);
-            embedBuilder.addField("Repeat all", boolToString(playback.isRepeatAll()), true);
-            embedBuilder.addField("Repeat one", boolToString(playback.isRepeatOne()), true);
-            String url = baseUri + String.format("/queue?guildId=%s", guild.getId());
-            embedBuilder.addField("", "[Full list](" + url + ")", false);
-
-            StringBuilder trackListBuilder = new StringBuilder();
-            StringBuilder durationListBuilder = new StringBuilder();
-
-            if (position > 0) {
-                trackListBuilder.append("**Previous**").append(System.lineSeparator());
-                durationListBuilder.append("_ _").append(System.lineSeparator());
-                List<Playable> previous;
-                if (position > 5) {
-                    trackListBuilder.append("...").append(System.lineSeparator());
-                    durationListBuilder.append("...").append(System.lineSeparator());
-                }
-                previous = audioQueue.listPrevious(5);
-                for (Playable prev : previous) {
-                    appendPlayable(trackListBuilder, durationListBuilder, prev);
-                }
-            }
-            trackListBuilder.append("**Current**").append(System.lineSeparator());
-            durationListBuilder.append("_ _").append(System.lineSeparator());
-            appendPlayable(trackListBuilder, durationListBuilder, current);
-            if (position < tracks.size() - 1) {
-                trackListBuilder.append("**Next**").append(System.lineSeparator());
-                durationListBuilder.append("_ _").append(System.lineSeparator());
-                List<Playable> next;
-                next = audioQueue.listNext(5);
-                for (Playable n : next) {
-                    appendPlayable(trackListBuilder, durationListBuilder, n);
-                }
-                if (tracks.size() > position + 6) {
-                    trackListBuilder.append("...");
-                    durationListBuilder.append("...");
-                }
-            }
-
-            embedBuilder.addField("Track", trackListBuilder.toString(), true);
-            embedBuilder.addField("Duration", durationListBuilder.toString(), true);
-            embedBuilder.setColor(Color.decode("#1DB954"));
-
-            sendMessage(getContext().getChannel(), embedBuilder.build());
+            CompletableFuture<Message> futureMessage = sendWithLogo(getContext().getChannel(), audioQueue.buildMessageEmbed(playback, guild));
+            getManager().registerWidget(new QueueWidget(getManager(), futureMessage.get(), audioManager, playback));
         }
-    }
-
-    private void appendPlayable(StringBuilder trackListBuilder, StringBuilder durationListBuilder, Playable playable) {
-        String display = playable.getDisplayInterruptible();
-        long durationMs = playable.getDurationMsInterruptible();
-        trackListBuilder.append(display).append(System.lineSeparator());
-        durationListBuilder.append(Util.normalizeMillis(durationMs)).append(System.lineSeparator());
-    }
-
-    private String boolToString(boolean bool) {
-        return bool ? "On" : "Off";
     }
 
     @Override
     public void onSuccess() {
         if (queuedTrack != null) {
-            try {
-                sendMessage(getContext().getChannel(), "Queued " + queuedTrack.getDisplay());
-            } catch (InterruptedException e) {
-                // Unreachable since track has been loaded completely
-                return;
-            }
+            sendSuccess(getContext().getChannel(), "Queued " + queuedTrack.getDisplayInterruptible());
         }
         if (queuedLocalList != null) {
-            sendMessage(getContext().getChannel(), "Queued playlist " + queuedLocalList.getName());
+            sendSuccess(getContext().getChannel(), "Queued playlist " + queuedLocalList.getName());
         }
         if (queuedSpotifyPlaylist != null) {
-            sendMessage(getContext().getChannel(), "Queued playlist " + queuedSpotifyPlaylist.getName());
+            sendSuccess(getContext().getChannel(), "Queued playlist " + queuedSpotifyPlaylist.getName());
         }
         if (queuedYouTubePlaylist != null) {
-            sendMessage(getContext().getChannel(), "Queued playlist " + queuedYouTubePlaylist.getTitle());
+            sendSuccess(getContext().getChannel(), "Queued playlist " + queuedYouTubePlaylist.getTitle());
         }
         if (queuedAlbum != null) {
-            sendMessage(getContext().getChannel(), "Queued album " + queuedAlbum.getName());
+            sendSuccess(getContext().getChannel(), "Queued album " + queuedAlbum.getName());
         }
         if (queuedAmount > 0) {
             String queuedString = queuedAmount > 1 ? "items" : "item";
-            sendMessage(getContext().getChannel(), "Queued " + queuedAmount + " " + queuedString);
+            sendSuccess(getContext().getChannel(), "Queued " + queuedAmount + " " + queuedString);
         }
     }
 
@@ -367,19 +304,19 @@ public class QueueCommand extends AbstractCommand {
     public ArgumentContribution setupArguments() {
         ArgumentContribution argumentContribution = new ArgumentContribution(this);
         argumentContribution.map("preview").needsArguments("spotify").excludesArguments("youtube")
-            .setDescription("Queue the preview mp3 directly from spotify rather than the full track from youtube");
+            .setDescription("Queue the preview mp3 directly from Spotify rather than the full track from YouTube");
         argumentContribution.map("youtube").setRequiresInput(true).excludesArguments("preview")
-            .setDescription("Queue a youtube video. Note that this argument is only required when searching, not when entering a URL.");
+            .setDescription("Queue a YouTube video. Note that this argument is only required when searching, not when entering a URL.");
         argumentContribution.map("list").setRequiresInput(true)
             .setDescription("Add the elements from a Spotify, YouTube or local Playlist to the current queue (local is default).");
         argumentContribution.map("spotify").setRequiresInput(true).excludesArguments("youtube")
-            .setDescription("Queue Spotify track, playlist or album. Note that this argument is only required when searching, not when entering a URL.");
+            .setDescription("Queue Spotify track, playlist or album. This supports Spotify query syntax (i.e. the filters \"artist:\", \"album:\", etc.). Note that this argument is only required when searching, not when entering a URL.");
         argumentContribution.map("own").needsArguments("spotify")
-            .setDescription("Limit search to Spotify tracks and playlists in the current users library.");
+            .setDescription("Limit search to Spotify tracks and playlists in the current users library. This requires a Spotify login. Spotify search filters (\"artist:\", \"album:\" etc.) are not supported with this argument.");
         argumentContribution.map("local").needsArguments("list")
             .setDescription("Queue local playlist.");
         argumentContribution.map("limit").needsArguments("youtube").setRequiresValue(true)
-            .setDescription("Show a selection of youtube playlists or videos to chose from. Requires value from 1 to 10: $limit=5");
+            .setDescription("Show a selection of YouTube playlists or videos to chose from. Requires value from 1 to 10: $limit=5");
         argumentContribution.map("album").needsArguments("spotify").excludesArguments("own").setRequiresInput(true)
             .setDescription("Search for a Spotify album. Note that this argument is only required when searching, not when entering a URL.");
         return argumentContribution;

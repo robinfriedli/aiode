@@ -20,6 +20,7 @@ import com.neovisionaries.i18n.CountryCode;
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
 import com.wrapper.spotify.model_objects.specification.AlbumSimplified;
+import com.wrapper.spotify.model_objects.specification.Paging;
 import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
 import com.wrapper.spotify.model_objects.specification.PlaylistTrack;
 import com.wrapper.spotify.model_objects.specification.SavedTrack;
@@ -37,25 +38,24 @@ import org.hibernate.Session;
 public class SearchEngine {
 
     private static final int MAX_LEVENSHTEIN_DISTANCE = 4;
-    private static final int MAX_REQUESTS = 100;
 
     public static List<Track> searchTrack(SpotifyApi spotifyApi, String searchTerm) throws IOException, SpotifyWebApiException {
         Track[] tracks = spotifyApi.searchTracks(searchTerm).market(CountryCode.CH).build().execute().getItems();
-        return getBestLevenshteinMatches(tracks, searchTerm.toLowerCase(), track -> track.getName().toLowerCase());
+        return Lists.newArrayList(tracks);
     }
 
     public static List<Track> searchOwnTrack(SpotifyApi spotifyApi, String searchTerm) throws IOException, SpotifyWebApiException {
         List<Track> tracks = Lists.newArrayList();
-        for (int i = 0; i < MAX_REQUESTS; i++) {
-            SavedTrack[] part = spotifyApi.getUsersSavedTracks().offset(i * 50).limit(50).build().execute().getItems();
-            if (part.length == 0) {
-                break;
-            }
+        int limit = 50;
+        int offset = 0;
+        String nextPage;
+        do {
+            Paging<SavedTrack> paging = spotifyApi.getUsersSavedTracks().offset(offset).limit(limit).build().execute();
+            SavedTrack[] part = paging.getItems();
             tracks.addAll(Arrays.stream(part).map(SavedTrack::getTrack).collect(Collectors.toList()));
-            if (part.length < 50) {
-                break;
-            }
-        }
+            nextPage = paging.getNext();
+            offset = offset + limit;
+        } while (nextPage != null);
         return getBestLevenshteinMatches(tracks, searchTerm.toLowerCase(), track -> track.getName().toLowerCase());
     }
 
@@ -90,37 +90,35 @@ public class SearchEngine {
 
     public static List<Track> getPlaylistTracks(SpotifyApi spotifyApi, String playlistId) throws IOException, SpotifyWebApiException {
         List<Track> tracks = Lists.newArrayList();
-        for (int i = 0; i < MAX_REQUESTS; i++) {
-            PlaylistTrack[] items = spotifyApi.getPlaylistsTracks(playlistId).offset(i * 100).limit(100)
-                .build().execute().getItems();
-            if (items.length == 0) {
-                break;
-            }
+        int limit = 100;
+        int offset = 0;
+        String nextPage;
+        do {
+            Paging<PlaylistTrack> paging = spotifyApi.getPlaylistsTracks(playlistId).offset(offset).limit(limit).build().execute();
+            PlaylistTrack[] items = paging.getItems();
             tracks.addAll(Arrays.stream(items).map(PlaylistTrack::getTrack).collect(Collectors.toList()));
-            if (items.length < 100) {
-                break;
-            }
-        }
+            offset = offset + limit;
+            nextPage = paging.getNext();
+        } while (nextPage != null);
         return tracks;
     }
 
     public static List<Track> getAlbumTracks(SpotifyApi spotifyApi, String albumId) throws IOException, SpotifyWebApiException {
         List<Track> tracks = Lists.newArrayList();
-        for (int i = 0; i < MAX_REQUESTS; i++) {
-            TrackSimplified[] items = spotifyApi.getAlbumsTracks(albumId).offset(i * 50).limit(50)
-                .build().execute().getItems();
-            if (items.length == 0) {
-                break;
-            }
+        int limit = 50;
+        int offset = 0;
+        String nextPage;
+        do {
+            Paging<TrackSimplified> paging = spotifyApi.getAlbumsTracks(albumId).offset(offset).limit(limit).build().execute();
+            TrackSimplified[] items = paging.getItems();
             Track[] albumTracks = spotifyApi
                 .getSeveralTracks(Arrays.stream(items).map(TrackSimplified::getId).toArray(String[]::new))
                 .build()
                 .execute();
             tracks.addAll(Arrays.asList(albumTracks));
-            if (items.length < 50) {
-                break;
-            }
-        }
+            offset = offset + limit;
+            nextPage = paging.getNext();
+        } while (nextPage != null);
         return tracks;
     }
 
@@ -129,8 +127,17 @@ public class SearchEngine {
     }
 
     public static List<PlaylistSimplified> searchOwnPlaylist(SpotifyApi spotifyApi, String searchTerm) throws IOException, SpotifyWebApiException {
-        PlaylistSimplified[] ownPlaylists = spotifyApi.getListOfCurrentUsersPlaylists().build().execute().getItems();
-        return getBestLevenshteinMatches(ownPlaylists, searchTerm, PlaylistSimplified::getName);
+        List<PlaylistSimplified> playlists = Lists.newArrayList();
+        int limit = 50;
+        int offset = 0;
+        String nextPage;
+        do {
+            Paging<PlaylistSimplified> paging = spotifyApi.getListOfCurrentUsersPlaylists().offset(offset).limit(limit).build().execute();
+            playlists.addAll(Arrays.asList(paging.getItems()));
+            offset = offset + limit;
+            nextPage = paging.getNext();
+        } while (nextPage != null);
+        return getBestLevenshteinMatches(playlists, searchTerm, PlaylistSimplified::getName);
     }
 
     public static Predicate<XmlElement> editDistanceAttributeCondition(String attribute, String searchTerm) {

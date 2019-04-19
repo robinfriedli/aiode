@@ -1,5 +1,6 @@
 package net.robinfriedli.botify.command.commands;
 
+import java.awt.Color;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -8,6 +9,7 @@ import javax.annotation.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.google.common.collect.Lists;
+import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Role;
 import net.robinfriedli.botify.command.AbstractCommand;
@@ -87,7 +89,29 @@ public class PermissionCommand extends AbstractCommand {
             accessConfiguration.getContext().invoke(accessConfiguration::delete);
             successMessageBuilder.append("Command ").append(getCommandBody()).append(" is now available to everybody");
         } else {
-            throw new InvalidCommandException("Either argument grant, deny or clear has to be set");
+            EmbedBuilder embedBuilder = new EmbedBuilder();
+            embedBuilder.setColor(Color.decode("#1DB954"));
+
+            getManager().getGuildManager();
+            List<CommandContribution> commandContributions = getManager().getAllCommandContributions();
+            for (CommandContribution commandContribution : commandContributions) {
+                String s;
+                String identifier = commandContribution.getAttribute("identifier").getValue();
+                AccessConfiguration accessConfiguration = guildManager.getAccessConfiguration(identifier, guild);
+                if (accessConfiguration == null) {
+                    s = "Available to everyone";
+                } else {
+                    List<Role> roles = accessConfiguration.getRoles(guild);
+                    if (roles.isEmpty()) {
+                        s = "Available to guild owner only";
+                    } else {
+                        s = "Available to roles: " + StringListImpl.create(roles, Role::getName).toSeparatedString(", ");
+                    }
+                }
+                embedBuilder.addField(identifier, s, false);
+            }
+
+            sendMessage(getContext().getChannel(), embedBuilder.build());
         }
     }
 
@@ -115,7 +139,7 @@ public class PermissionCommand extends AbstractCommand {
     public void onSuccess() {
         String message = successMessageBuilder.toString();
         if (!message.isEmpty()) {
-            sendMessage(getContext().getChannel(), message);
+            sendSuccess(getContext().getChannel(), message);
         }
     }
 

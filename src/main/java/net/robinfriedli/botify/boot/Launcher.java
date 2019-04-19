@@ -9,6 +9,7 @@ import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.youtube.YouTube;
+import com.google.common.base.Strings;
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.SpotifyHttpManager;
 import net.dv8tion.jda.core.AccountType;
@@ -39,6 +40,7 @@ import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.api.JxpBuilder;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
+import org.discordbots.api.client.DiscordBotListAPI;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
@@ -60,6 +62,8 @@ public class Launcher {
             String startupTasksPath = PropertiesLoadingService.requireProperty("STARTUP_TASKS_PATH");
             boolean modePartitioned = PropertiesLoadingService.loadBoolProperty("MODE_PARTITIONED");
             String httpHandlersPath = PropertiesLoadingService.requireProperty("HTTP_HANDLERS_PATH");
+            String discordBotId = PropertiesLoadingService.loadProperty("DISCORD_BOT_ID");
+            String discordbotsToken = PropertiesLoadingService.loadProperty("DISCORDBOTS_TOKEN");
             // setup persistence
             JxpBackend jxpBackend = new JxpBuilder()
                 .mapClass("guildSpecification", GuildSpecification.class)
@@ -87,6 +91,7 @@ public class Launcher {
                 .setClientId(clientId)
                 .setClientSecret(clientSecret)
                 .setRedirectUri(SpotifyHttpManager.makeUri(redirectUri));
+
             // setup YouTube API
             NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
             JacksonFactory jacksonFactory = JacksonFactory.getDefaultInstance();
@@ -94,13 +99,29 @@ public class Launcher {
                 // no-op
             }).setApplicationName("botify-youtube-search").build();
             YouTubeService youTubeService = new YouTubeService(youTube, youTubeCredentials);
-            // setup JDA and DiscordListener
-            LoginManager loginManager = new LoginManager();
-            DiscordListener discordListener = new DiscordListener(jxpBackend, spotifyApiBuilder, sessionFactory, loginManager, youTubeService, logger);
+
+            // setup JDA
             JDA jda = new JDABuilder(AccountType.BOT)
                 .setToken(discordToken)
                 .build()
                 .awaitReady();
+
+            // setup discordbots.org
+            DiscordBotListAPI discordBotListAPI;
+            if (!Strings.isNullOrEmpty(discordBotId) && !Strings.isNullOrEmpty(discordbotsToken)) {
+                discordBotListAPI = new DiscordBotListAPI.Builder()
+                    .botId(discordBotId)
+                    .token(discordbotsToken)
+                    .build();
+                discordBotListAPI.setStats(jda.getGuilds().size());
+            } else {
+                logger.warn("discordbots.org api not set up, missing properties");
+                discordBotListAPI = null;
+            }
+
+            // setup DiscordListener
+            LoginManager loginManager = new LoginManager();
+            DiscordListener discordListener = new DiscordListener(jxpBackend, spotifyApiBuilder, sessionFactory, loginManager, youTubeService, logger, discordBotListAPI);
 
             // start servers
             Context httpHanldersContext = jxpBackend.getContext(httpHandlersPath);
@@ -112,6 +133,7 @@ public class Launcher {
             Context context = jxpBackend.getContext(startupTasksPath);
             Session session = sessionFactory.withOptions().interceptor(InterceptorChain.of(PlaylistItemTimestampListener.class)).openSession();
             for (XmlElement element : context.getElements()) {
+                @SuppressWarnings("unchecked")
                 Class<StartupTask> task = (Class<StartupTask>) Class.forName(element.getAttribute("implementation").getValue());
                 task.getConstructor().newInstance().perform(jxpBackend, jda, spotifyApiBuilder.build(), youTubeService, session);
             }

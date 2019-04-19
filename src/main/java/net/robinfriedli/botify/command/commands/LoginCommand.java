@@ -53,7 +53,7 @@ public class LoginCommand extends AbstractCommand {
 
     @Override
     public void onSuccess() {
-        sendMessage(getContext().getChannel(), "User " + getContext().getUser().getName() + " logged in to Spotify");
+        sendSuccess(getContext().getChannel(), "User " + getContext().getUser().getName() + " logged in to Spotify");
     }
 
 }

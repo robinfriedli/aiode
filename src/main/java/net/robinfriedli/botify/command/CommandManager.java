@@ -3,6 +3,7 @@ package net.robinfriedli.botify.command;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 
@@ -12,11 +13,11 @@ import net.robinfriedli.botify.discord.DiscordListener;
 import net.robinfriedli.botify.discord.GuildSpecificationManager;
 import net.robinfriedli.botify.entities.CommandContribution;
 import net.robinfriedli.botify.entities.CommandInterceptorContribution;
-import net.robinfriedli.botify.exceptions.ForbiddenCommandException;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.login.LoginManager;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.persist.Context;
+import net.robinfriedli.jxp.queries.Query;
 
 import static net.robinfriedli.jxp.queries.Conditions.*;
 
@@ -39,6 +40,11 @@ public class CommandManager {
      */
     private List<ClientQuestionEvent> pendingQuestions;
 
+    /**
+     * all widgets that currently listen for reactions. Only one widget of the same type per guild may be active.
+     */
+    private List<AbstractWidget> activeWidgets;
+
     public CommandManager(CommandExecutor commandExecutor,
                           DiscordListener discordListener,
                           LoginManager loginManager,
@@ -51,8 +57,10 @@ public class CommandManager {
         this.commandInterceptorContext = commandInterceptorContext;
         this.logger = logger;
         pendingQuestions = Lists.newArrayList();
+        activeWidgets = Lists.newArrayList();
     }
 
+    @SuppressWarnings({"SuspiciousMethodCalls", "unchecked"})
     public void runCommand(CommandContext context) {
         String command = context.getCommandBody();
 
@@ -80,10 +88,34 @@ public class CommandManager {
                 try {
                     CommandInterceptor interceptor = commandInterceptorContribution.instantiate();
                     interceptor.intercept(commandInstance);
-                } catch (InvalidCommandException | ForbiddenCommandException e) {
-                    throw e;
                 } catch (Throwable e) {
-                    logger.error("Exception in interceptor", e);
+                    boolean interruptCommandExecution = false;
+                    try {
+                        List<Class<Throwable>> interruptingExceptions = Query
+                            .evaluate(xmlElement -> xmlElement.getTagName().equals("interruptingException"))
+                            .execute(commandInterceptorContribution.getSubElements())
+                            .collect()
+                            .stream()
+                            .map(xmlElement -> {
+                                try {
+                                    return (Class<Throwable>) Class.forName(xmlElement.getAttribute("class").getValue());
+                                } catch (ClassNotFoundException e1) {
+                                    throw new RuntimeException(e1);
+                                }
+                            })
+                            .collect(Collectors.toList());
+                        if (interruptingExceptions.contains(e.getClass())) {
+                            interruptCommandExecution = true;
+                        } else {
+                            logger.error("Unexpected exception in interceptor", e);
+                        }
+                    } catch (Throwable e2) {
+                        logger.error("Exception while handling interceptor exception", e2);
+                    }
+
+                    if (interruptCommandExecution) {
+                        throw e;
+                    }
                 }
             });
 
@@ -109,6 +141,10 @@ public class CommandManager {
         return commands;
     }
 
+    public List<CommandContribution> getAllCommandContributions() {
+        return commandContributionContext.getInstancesOf(CommandContribution.class);
+    }
+
     public CommandContribution getCommandContribution(String name) {
         return (CommandContribution) commandContributionContext.query(and(
             attribute("identifier").is(name),
@@ -130,6 +166,21 @@ public class CommandManager {
             .filter(question -> question.getUser().getId().equals(commandContext.getUser().getId())
                 && question.getGuild().getId().equals(commandContext.getGuild().getId()))
             .findFirst();
+    }
+
+    public void registerWidget(AbstractWidget widget) {
+        List<AbstractWidget> toRemove = Lists.newArrayList();
+        activeWidgets.stream()
+            .filter(w -> widget.getMessage().getGuild().getId().equals(w.getMessage().getGuild().getId()))
+            .filter(w -> w.getClass().equals(widget.getClass()))
+            .forEach(toRemove::add);
+        activeWidgets.removeAll(toRemove);
+        widget.setup();
+        activeWidgets.add(widget);
+    }
+
+    public Optional<AbstractWidget> getActiveWidget(String messageId) {
+        return activeWidgets.stream().filter(widget -> widget.getMessage().getId().equals(messageId)).findAny();
     }
 
     public CommandExecutor getCommandExecutor() {

@@ -11,7 +11,7 @@ public class InvalidCommandException extends UserException {
     }
 
     public InvalidCommandException(String errorMessage) {
-        super(errorMessage);
+        super(enhanceMessage(errorMessage));
     }
 
     public InvalidCommandException(Throwable cause) {
@@ -19,7 +19,11 @@ public class InvalidCommandException extends UserException {
     }
 
     public InvalidCommandException(String errorMessage, Throwable cause) {
-        super(errorMessage, cause);
+        super(enhanceMessage(errorMessage), cause);
+    }
+
+    private static String enhanceMessage(String message) {
+        return message + System.lineSeparator() + "If you need help with a command you can use the help command. E.g. $botify help play";
     }
 
 }

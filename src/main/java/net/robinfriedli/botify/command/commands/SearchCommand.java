@@ -189,17 +189,13 @@ public class SearchCommand extends AbstractCommand {
                 String.format("/list?name=%s&guildId=%s", URLEncoder.encode(playlist.getName(), StandardCharsets.UTF_8), playlist.getGuildId());
             embedBuilder.addField("First tracks:", "[Full list](" + url + ")", false);
 
-            StringBuilder trackListBuilder = new StringBuilder();
-            StringBuilder durationListBuilder = new StringBuilder();
             List<PlaylistItem> items = playlist.getPlaylistItems();
-            for (int i = 0; i < 5 && i < items.size(); i++) {
-                PlaylistItem item = items.get(i);
-                trackListBuilder.append(item.display()).append(System.lineSeparator());
-                durationListBuilder.append(Util.normalizeMillis(item.getDuration())).append(System.lineSeparator());
-            }
-
-            embedBuilder.addField("Track", trackListBuilder.toString(), true);
-            embedBuilder.addField("Duration", durationListBuilder.toString(), true);
+            Util.appendEmbedList(
+                embedBuilder,
+                items.subList(0, 5),
+                item -> item.display() + " - " + Util.normalizeMillis(item.getDuration()),
+                "Track - Duration"
+            );
 
             sendWithLogo(getContext().getChannel(), embedBuilder);
         }
@@ -356,17 +352,17 @@ public class SearchCommand extends AbstractCommand {
     public ArgumentContribution setupArguments() {
         ArgumentContribution argumentContribution = new ArgumentContribution(this);
         argumentContribution.map("spotify").excludesArguments("youtube").setRequiresInput(true)
-            .setDescription("Search for spotify track or playlist. This is the default option when searching for tracks.");
+            .setDescription("Search for Spotify track or playlist. This supports Spotify query syntax (i.e. the filters \"artist:\", \"album:\", etc.). This is the default option when searching for tracks.");
         argumentContribution.map("youtube").excludesArguments("spotify").setRequiresInput(true)
-            .setDescription("Search for youtube video or playlist.");
+            .setDescription("Search for YouTube video or playlist.");
         argumentContribution.map("list")
             .setDescription("Search for a playlist.");
         argumentContribution.map("local").needsArguments("list")
             .setDescription("Search for a local playlist or list all of them. This is default when searching for lists.");
         argumentContribution.map("own").needsArguments("spotify")
-            .setDescription("Limit search to spotify tracks or playlists in the current user's library.");
+            .setDescription("Limit search to Spotify tracks or playlists in the current user's library. This requires a Spotify login. Spotify search filters (\"artist:\", \"album:\" etc.) are not supported with this argument.");
         argumentContribution.map("limit").needsArguments("youtube").setRequiresValue(true)
-            .setDescription("Show a selection of youtube playlists or videos to chose from. Requires value from 1 to 10: $limit=5");
+            .setDescription("Show a selection of YouTube playlists or videos to chose from. Requires value from 1 to 10: $limit=5");
         argumentContribution.map("album").needsArguments("spotify").excludesArguments("own").setRequiresInput(true)
             .setDescription("Search for a Spotify album. Note that this argument is only required when searching, not when entering a URL.");
         return argumentContribution;

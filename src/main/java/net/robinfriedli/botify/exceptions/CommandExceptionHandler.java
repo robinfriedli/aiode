@@ -1,13 +1,11 @@
 package net.robinfriedli.botify.exceptions;
 
-import java.awt.Color;
-
 import org.slf4j.Logger;
 
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.entities.MessageChannel;
 import net.robinfriedli.botify.command.CommandContext;
-import net.robinfriedli.botify.discord.AlertService;
+import net.robinfriedli.botify.discord.MessageService;
 
 public class CommandExceptionHandler implements Thread.UncaughtExceptionHandler {
 
@@ -23,22 +21,11 @@ public class CommandExceptionHandler implements Thread.UncaughtExceptionHandler 
     public void uncaughtException(Thread t, Throwable e) {
         MessageChannel channel = commandContext.getChannel();
         String command = commandContext.getMessage().getContentDisplay();
-        AlertService alertService = new AlertService(logger);
+        MessageService messageService = new MessageService();
 
-        Throwable exception = e instanceof CommandRuntimeException ? e.getCause() : e;
-        EmbedBuilder embedBuilder = new EmbedBuilder();
-        embedBuilder.setColor(Color.RED);
-        embedBuilder.addField("Error", String.format("%s: %s", exception.getClass().getSimpleName(), exception.getMessage()), false);
-        recursiveCause(embedBuilder, exception);
-        alertService.send(embedBuilder.build(), channel);
-        logger.error(String.format("Exception while handling command %s on guild %s", command, commandContext.getGuild().getName()), exception);
+        EmbedBuilder embedBuilder = ExceptionUtils.buildErrorEmbed(e);
+        messageService.send(embedBuilder.build(), channel);
+        logger.error(String.format("Exception while handling command %s on guild %s", command, commandContext.getGuild().getName()), e);
     }
 
-    private void recursiveCause(EmbedBuilder embedBuilder, Throwable exception) {
-        Throwable cause = exception.getCause();
-        if (cause != null) {
-            embedBuilder.addField("Caused by", String.format("%s: %s", cause.getClass().getSimpleName(), cause.getMessage()), false);
-            recursiveCause(embedBuilder, cause);
-        }
-    }
 }

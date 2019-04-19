@@ -5,40 +5,43 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.MessageBuilder;
+import net.dv8tion.jda.core.Permission;
 import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.MessageChannel;
 import net.dv8tion.jda.core.entities.MessageEmbed;
 import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.exceptions.InsufficientPermissionException;
+import net.dv8tion.jda.core.requests.restaction.MessageAction;
+import net.robinfriedli.botify.boot.Launcher;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.stringlist.StringList;
 import net.robinfriedli.stringlist.StringListImpl;
 
-/**
- * TODO replace with Message class that allows wrapped blocks inside of message
- */
-public class AlertService {
+public class MessageService {
 
     private final int limit;
     private final Logger logger;
 
-    public AlertService(Logger logger) {
-        this.logger = logger;
+    public MessageService() {
+        this.logger = LoggerFactory.getLogger(MessageService.class);
         limit = 1000;
     }
 
-    public AlertService(int limit, Logger logger) {
+    public MessageService(int limit) {
         this.limit = limit;
-        this.logger = logger;
+        this.logger = LoggerFactory.getLogger(Launcher.class);
     }
 
     public void send(String message, MessageChannel channel) {
@@ -59,22 +62,22 @@ public class AlertService {
         }
     }
 
-    public void send(String message, Guild guild) {
-        acceptForGuild(guild, messageChannel -> messageChannel.sendMessage(message).queue());
+    public CompletableFuture<Message> send(String message, Guild guild) {
+        return acceptForGuild(guild, messageChannel -> messageChannel.sendMessage(message));
     }
 
-    public void send(MessageEmbed messageEmbed, MessageChannel messageChannel) {
-        sendInternal(messageChannel, messageEmbed);
+    public CompletableFuture<Message> send(MessageEmbed messageEmbed, MessageChannel messageChannel) {
+        return sendInternal(messageChannel, messageEmbed);
     }
 
-    public void sendWithLogo(EmbedBuilder embedBuilder, MessageChannel channel) throws IOException {
+    public CompletableFuture<Message> sendWithLogo(EmbedBuilder embedBuilder, MessageChannel channel) throws IOException {
         MessageBuilder messageBuilder = new MessageBuilder();
         String baseUri = PropertiesLoadingService.requireProperty("BASE_URI");
-        InputStream file = new URL(baseUri + "/resources-public/img/botify-logo.png").openStream();
+        InputStream file = new URL(baseUri + "/resources-public/img/botify-logo-small.png").openStream();
         embedBuilder.setThumbnail("attachment://logo.png");
         embedBuilder.setColor(Color.decode("#1DB954"));
         messageBuilder.setEmbed(embedBuilder.build());
-        send(messageBuilder, file, "logo.png", channel);
+        return send(messageBuilder, file, "logo.png", channel);
     }
 
     public void sendWithLogo(EmbedBuilder embedBuilder, Guild guild) throws IOException {
@@ -87,12 +90,32 @@ public class AlertService {
         send(messageBuilder, file, "logo.png", guild);
     }
 
-    public void send(MessageBuilder messageBuilder, InputStream file, String fileName, MessageChannel messageChannel) {
-        accept(messageChannel, c -> c.sendFile(file, fileName, messageBuilder.build()).queue());
+    public CompletableFuture<Message> send(MessageBuilder messageBuilder, InputStream file, String fileName, MessageChannel messageChannel) {
+        return accept(messageChannel, c -> c.sendFile(file, fileName, messageBuilder.build()));
     }
 
-    public void send(MessageBuilder messageBuilder, InputStream file, String fileName, Guild guild) {
-        acceptForGuild(guild, c -> c.sendFile(file, fileName, messageBuilder.build()).queue());
+    public CompletableFuture<Message> send(MessageBuilder messageBuilder, InputStream file, String fileName, Guild guild) {
+        return acceptForGuild(guild, c -> c.sendFile(file, fileName, messageBuilder.build()));
+    }
+
+    public CompletableFuture<Message> sendSuccess(String message, MessageChannel channel) {
+        return sendBoxed("Success", message, Color.GREEN, channel);
+    }
+
+    public CompletableFuture<Message> sendError(String message, MessageChannel channel) {
+        return sendBoxed("Error", message, Color.RED, channel);
+    }
+
+    public CompletableFuture<Message> sendException(String message, MessageChannel channel) {
+        return sendBoxed("Exception", message, Color.RED, channel);
+    }
+
+    public CompletableFuture<Message> sendBoxed(String title, String message, Color color, MessageChannel channel) {
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setColor(color);
+        embedBuilder.setTitle(title);
+        embedBuilder.setDescription(message);
+        return send(embedBuilder.build(), channel);
     }
 
     public void sendWrapped(String message, String wrapper, MessageChannel channel) {
@@ -113,57 +136,54 @@ public class AlertService {
         }
     }
 
-    private void sendInternal(MessageChannel channel, String text) {
-        accept(channel, c -> c.sendMessage(text).queue());
+    private CompletableFuture<Message> sendInternal(MessageChannel channel, String text) {
+        return accept(channel, c -> c.sendMessage(text));
     }
 
-    private void sendInternal(MessageChannel channel, MessageEmbed messageEmbed) {
-        accept(channel, c -> c.sendMessage(messageEmbed).queue());
+    private CompletableFuture<Message> sendInternal(MessageChannel channel, MessageEmbed messageEmbed) {
+        return accept(channel, c -> c.sendMessage(messageEmbed));
     }
 
-    private void accept(MessageChannel channel, Consumer<MessageChannel> function) {
+    private CompletableFuture<Message> accept(MessageChannel channel, Function<MessageChannel, MessageAction> function) {
+        CompletableFuture<Message> futureMessage = new CompletableFuture<>();
         try {
-            function.accept(channel);
+            MessageAction messageAction = function.apply(channel);
+            messageAction.queue(futureMessage::complete, e -> logger.error("Error sending message", e));
         } catch (InsufficientPermissionException e) {
-            if (channel instanceof TextChannel && canTalk(((TextChannel) channel).getGuild())) {
-                Guild guild = ((TextChannel) channel).getGuild();
-                send("I do not have permission to send any messages to channel " + channel.getName() + " so I'll send it here instead.", guild);
-                acceptForGuild(guild, function);
+            Permission permission = e.getPermission();
+            if (permission == Permission.MESSAGE_WRITE) {
+                if (channel instanceof TextChannel && canTalk(((TextChannel) channel).getGuild())) {
+                    Guild guild = ((TextChannel) channel).getGuild();
+                    send("I do not have permission to send any messages to channel " + channel.getName() + " so I'll send it here instead.", guild);
+                    acceptForGuild(guild, function);
+                } else {
+                    logger.warn("Unable to sent messages to " + channel, e);
+                }
             } else {
-                logger.warn("Unable to sent messages to " + channel, e);
+                send("Bot is missing permission: " + permission.getName(), channel);
             }
         }
+
+        return futureMessage;
     }
 
-    private void acceptForGuild(Guild guild, Consumer<MessageChannel> function) {
-        boolean sent = false;
-
+    private CompletableFuture<Message> acceptForGuild(Guild guild, Function<MessageChannel, MessageAction> function) {
         TextChannel defaultChannel = guild.getDefaultChannel();
-        try {
-            if (defaultChannel != null) {
-                function.accept(defaultChannel);
-                sent = true;
-            } else {
-                TextChannel systemChannel = guild.getSystemChannel();
-                if (systemChannel != null) {
-                    function.accept(systemChannel);
-                    sent = true;
-                }
+        if (defaultChannel != null && defaultChannel.canTalk()) {
+            return accept(defaultChannel, function);
+        } else {
+            TextChannel systemChannel = guild.getSystemChannel();
+            if (systemChannel != null && systemChannel.canTalk()) {
+                return accept(systemChannel, function);
             }
-        } catch (InsufficientPermissionException ignored) {
         }
 
-        if (!sent) {
-            List<TextChannel> availableChannels = guild.getTextChannels().stream().filter(TextChannel::canTalk).collect(Collectors.toList());
-            if (availableChannels.isEmpty()) {
-                logger.warn("Unable to send any messages to guild " + guild.getName() + " (" + guild.getId() + ")");
-            } else {
-                try {
-                    function.accept(availableChannels.get(0));
-                } catch (InsufficientPermissionException e) {
-                    logger.warn("Could not accept action for guild " + guild, e);
-                }
-            }
+        List<TextChannel> availableChannels = guild.getTextChannels().stream().filter(TextChannel::canTalk).collect(Collectors.toList());
+        if (availableChannels.isEmpty()) {
+            logger.warn("Unable to send any messages to guild " + guild.getName() + " (" + guild.getId() + ")");
+            return CompletableFuture.completedFuture(null);
+        } else {
+            return accept(availableChannels.get(0), function);
         }
     }
 

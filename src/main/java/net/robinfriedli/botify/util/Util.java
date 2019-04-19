@@ -1,9 +1,15 @@
 package net.robinfriedli.botify.util;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import com.google.common.collect.Lists;
+import net.dv8tion.jda.core.EmbedBuilder;
 
 /**
  * various static utility methods
@@ -36,6 +42,24 @@ public class Util {
             return String.format("%s:%s:%s", hours, minuteString, secondString);
         } else {
             return String.format("%s:%s", minuteString, secondString);
+        }
+    }
+
+    public static <E> void appendEmbedList(EmbedBuilder embedBuilder, Collection<E> elements, Function<E, String> stringFunc, String title) {
+        List<StringBuilder> parts = Lists.newArrayList(new StringBuilder());
+
+        for (E element : elements) {
+            StringBuilder currentPart = parts.get(parts.size() - 1);
+            String toAppend = stringFunc.apply(element);
+            if (currentPart.length() + toAppend.length() < 1000) {
+                currentPart.append(toAppend).append(System.lineSeparator());
+            } else {
+                parts.add(new StringBuilder().append(toAppend).append(System.lineSeparator()));
+            }
+        }
+
+        for (int i = 0; i < parts.size(); i++) {
+            embedBuilder.addField(i == 0 ? title : "", parts.get(i).toString(), false);
         }
     }
 

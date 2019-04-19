@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -14,12 +15,13 @@ import org.apache.commons.lang3.tuple.Pair;
 import com.google.api.client.util.Sets;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.MessageBuilder;
+import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.MessageChannel;
 import net.dv8tion.jda.core.entities.MessageEmbed;
 import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.command.commands.AnswerCommand;
-import net.robinfriedli.botify.discord.AlertService;
 import net.robinfriedli.botify.discord.DiscordListener;
+import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.util.CheckedRunnable;
 import net.robinfriedli.botify.util.Util;
@@ -35,7 +37,7 @@ public abstract class AbstractCommand {
     private final CommandContext context;
     private final CommandManager commandManager;
     private final ArgumentContribution argumentContribution;
-    private final AlertService alertService;
+    private final MessageService messageService;
     private final String identifier;
     private final String description;
     private final Category category;
@@ -58,7 +60,7 @@ public abstract class AbstractCommand {
         this.description = description;
         this.category = category;
         this.argumentContribution = setupArguments();
-        this.alertService = new AlertService(commandManager.getLogger());
+        this.messageService = new MessageService();
 
         processCommand(commandString);
     }
@@ -191,31 +193,35 @@ public abstract class AbstractCommand {
     protected void askQuestion(ClientQuestionEvent question) {
         setFailed(true);
         commandManager.addQuestion(question);
-        question.ask(alertService);
+        question.ask();
     }
 
     protected void sendMessage(MessageChannel channel, String message) {
-        alertService.send(message, channel);
+        messageService.send(message, channel);
     }
 
     protected void sendMessage(MessageChannel channel, MessageEmbed message) {
-        alertService.send(message, channel);
+        messageService.send(message, channel);
     }
 
     protected void sendMessage(User user, String message) {
-        alertService.send(message, user);
+        messageService.send(message, user);
     }
 
     protected void sendWrapped(String message, String wrapper, MessageChannel channel) {
-        alertService.sendWrapped(message, wrapper, channel);
+        messageService.sendWrapped(message, wrapper, channel);
     }
 
-    protected void sendMessage(MessageChannel channel, InputStream file, String fileName, MessageBuilder messageBuilder) {
-        alertService.send(messageBuilder, file, fileName, channel);
+    protected CompletableFuture<Message> sendMessage(MessageChannel channel, InputStream file, String fileName, MessageBuilder messageBuilder) {
+        return messageService.send(messageBuilder, file, fileName, channel);
     }
 
-    protected void sendWithLogo(MessageChannel channel, EmbedBuilder embedBuilder) throws IOException {
-        alertService.sendWithLogo(embedBuilder, channel);
+    protected CompletableFuture<Message> sendWithLogo(MessageChannel channel, EmbedBuilder embedBuilder) throws IOException {
+        return messageService.sendWithLogo(embedBuilder, channel);
+    }
+
+    protected CompletableFuture<Message> sendSuccess(MessageChannel channel, String message) {
+        return messageService.sendSuccess(message, channel);
     }
 
     /**
@@ -244,7 +250,7 @@ public abstract class AbstractCommand {
             throw new InvalidCommandException("No input before or after inline argument: " + argument);
         }
 
-        return Pair.of(left, right);
+        return Pair.of(left.trim(), right.trim());
     }
 
     /**

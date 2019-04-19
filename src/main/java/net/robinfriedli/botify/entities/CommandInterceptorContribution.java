@@ -24,6 +24,12 @@ public class CommandInterceptorContribution extends AbstractXmlElement {
         super(element, context);
     }
 
+    // invoked by JXP
+    @SuppressWarnings("unused")
+    public CommandInterceptorContribution(Element element, List<XmlElement> subElements, Context context) {
+        super(element, subElements, context);
+    }
+
     @Nullable
     @Override
     public String getId() {
