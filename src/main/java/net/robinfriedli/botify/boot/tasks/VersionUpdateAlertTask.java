@@ -12,20 +12,20 @@ import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.JDA;
 import net.dv8tion.jda.core.entities.Guild;
 import net.robinfriedli.botify.audio.YouTubeService;
-import net.robinfriedli.botify.boot.Launcher;
 import net.robinfriedli.botify.boot.StartupTask;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
 import net.robinfriedli.jxp.queries.Conditions;
+import net.robinfriedli.jxp.queries.Query;
 import org.hibernate.Session;
 
 public class VersionUpdateAlertTask implements StartupTask {
 
     @Override
     public void perform(JxpBackend jxpBackend, JDA jda, SpotifyApi spotifyApi, YouTubeService youTubeService, Session session) throws Exception {
-        Logger logger = LoggerFactory.getLogger(Launcher.class);
+        Logger logger = LoggerFactory.getLogger(getClass());
         try (Context context = jxpBackend.getContext("./resources/versions.xml")) {
             BufferedReader bufferedReader = new BufferedReader(new FileReader("./resources/current-version.txt"));
             String currentVersion = bufferedReader.readLine();
@@ -42,6 +42,19 @@ public class VersionUpdateAlertTask implements StartupTask {
                         EmbedBuilder embedBuilder = new EmbedBuilder();
                         embedBuilder.setTitle("Update");
                         embedBuilder.setDescription(message);
+
+                        List<XmlElement> features = Query
+                            .evaluate(xmlElement -> xmlElement.getTagName().equals("feature"))
+                            .execute(versionElem.getSubElements())
+                            .collect();
+                        if (!features.isEmpty()) {
+                            StringBuilder featuresBuilder = new StringBuilder();
+                            for (XmlElement feature : features) {
+                                featuresBuilder.append("-\t").append(feature.getTextContent()).append(System.lineSeparator());
+                            }
+                            embedBuilder.addField("Features", featuresBuilder.toString(), false);
+                        }
+
                         for (Guild guild : jda.getGuilds()) {
                             messageService.sendWithLogo(embedBuilder, guild);
                         }

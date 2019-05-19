@@ -3,16 +3,13 @@ package net.robinfriedli.botify.command;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-
-import org.slf4j.LoggerFactory;
+import java.util.concurrent.TimeUnit;
 
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.MessageReaction;
 import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.events.message.guild.react.GuildMessageReactionAddEvent;
 import net.dv8tion.jda.core.exceptions.InsufficientPermissionException;
-import net.robinfriedli.botify.boot.Launcher;
 import net.robinfriedli.botify.command.widgets.ActionRunable;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.exceptions.UserException;
@@ -55,21 +52,31 @@ public abstract class AbstractWidget {
             for (int i = 0; i < actions.size(); i++) {
                 WidgetAction action = actions.get(i);
                 int finalI = i;
-                message.addReaction(action.getUnicode()).queue(aVoid -> {
+                message.addReaction(action.getUnicode()).queueAfter(100, TimeUnit.MILLISECONDS, aVoid -> {
                     if (finalI == actions.size() - 1 && !failed.isDone()) {
                         failed.complete(false);
                     }
                 }, throwable -> failed.complete(true));
             }
 
-            if (failed.get()) {
-                new MessageService().sendError("Bot is missing permission to add reactions", message.getTextChannel());
-            }
+            failed.thenAccept(completedFailed -> {
+                if (completedFailed) {
+                    new MessageService().sendError("Bot is missing permission to add reactions", message.getTextChannel());
+                }
+            });
         } catch (InsufficientPermissionException e) {
             // exception is actually never thrown when it should be, remove completable future hack if this ever changes
             throw new UserException("Bot is missing permission: " + e.getPermission().getName(), e);
-        } catch (InterruptedException | ExecutionException e) {
-            LoggerFactory.getLogger(Launcher.class).error("Exception in completable future", e);
+        }
+    }
+
+    public void destroy() {
+        commandManager.removeWidget(this);
+        try {
+            if (!isMessageDeleted()) {
+                message.clearReactions().queueAfter(3, TimeUnit.SECONDS);
+            }
+        } catch (Throwable ignored) {
         }
     }
 

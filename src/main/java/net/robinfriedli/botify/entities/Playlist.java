@@ -1,10 +1,11 @@
 package net.robinfriedli.botify.entities;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -132,25 +133,30 @@ public class Playlist {
      * Spotify track for a Song requires this method to be invoked with client credentials
      */
     public List<Object> getItems(SpotifyApi spotifyApi) throws IOException, SpotifyWebApiException {
-        List<Object> items = Lists.newArrayList();
-        List<String> trackIds = Lists.newArrayList();
-        for (PlaylistItem item : getPlaylistItems()) {
+        List<PlaylistItem> playlistItems = getPlaylistItems();
+
+        Map<Object, Integer> itemsWithIndex = new HashMap<>();
+        Map<String, Integer> trackIdsWithIndex = new HashMap<>();
+        for (int i = 0; i < playlistItems.size(); i++) {
+            PlaylistItem item = playlistItems.get(i);
             if (item instanceof Song) {
-                trackIds.add(((Song) item).getId());
+                trackIdsWithIndex.put(((Song) item).getId(), i);
             } else if (item instanceof Video) {
-                items.add(((Video) item).asYouTubeVideo());
+                itemsWithIndex.put(((Video) item).asYouTubeVideo(), i);
             } else if (item instanceof UrlTrack) {
-                items.add(item);
+                itemsWithIndex.put(item, i);
             }
         }
 
-        List<List<String>> batches = Lists.partition(trackIds, 50);
+        List<List<String>> batches = Lists.partition(Lists.newArrayList(trackIdsWithIndex.keySet()), 50);
         for (List<String> batch : batches) {
             Track[] tracks = spotifyApi.getSeveralTracks(batch.toArray(new String[0])).build().execute();
-            items.addAll(Arrays.asList(tracks));
+            for (Track track : tracks) {
+                itemsWithIndex.put(track, trackIdsWithIndex.get(track.getId()));
+            }
         }
 
-        return items;
+        return itemsWithIndex.keySet().stream().sorted(Comparator.comparing(itemsWithIndex::get)).collect(Collectors.toList());
     }
 
     /**

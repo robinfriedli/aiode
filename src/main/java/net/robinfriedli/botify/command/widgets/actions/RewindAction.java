@@ -21,10 +21,8 @@ public class RewindAction implements ActionRunable {
     @Override
     public void run(GuildMessageReactionAddEvent event) {
         AudioQueue queue = audioPlayback.getAudioQueue();
-        if (audioPlayback.isRepeatAll() && !queue.hasPrevious()) {
-            queue.setPosition(queue.getTracks().size() - 1);
-        } else if (queue.hasPrevious()) {
-            queue.previous();
+        if (queue.hasPrevious()) {
+            queue.reverse();
         }
 
         User user = event.getUser();

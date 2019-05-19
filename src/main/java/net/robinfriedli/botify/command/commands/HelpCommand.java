@@ -14,13 +14,16 @@ import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.AccessConfiguration;
+import net.robinfriedli.botify.entities.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
+import net.robinfriedli.jxp.api.XmlElement;
+import net.robinfriedli.jxp.queries.Query;
 import net.robinfriedli.stringlist.StringListImpl;
 
 public class HelpCommand extends AbstractCommand {
 
-    public HelpCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(context, commandManager, commandString, false, identifier, description, Category.GENERAL);
+    public HelpCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
+        super(commandContribution, context, commandManager, commandString, false, identifier, description, Category.GENERAL);
     }
 
     @Override
@@ -28,7 +31,7 @@ public class HelpCommand extends AbstractCommand {
         if (getCommandBody().isBlank()) {
             EmbedBuilder embedBuilder = new EmbedBuilder();
             embedBuilder.setColor(Color.decode("#1DB954"));
-            embedBuilder.setTitle("Commands:");
+            embedBuilder.setTitle("**Commands:**");
             embedBuilder.appendDescription("To get help with a specific command just enter the name of the command. E.g. $botify help play.");
 
             sendMessage(getContext().getChannel(), embedBuilder.build());
@@ -73,12 +76,23 @@ public class HelpCommand extends AbstractCommand {
                 }
                 ArgumentContribution argumentContribution = command.setupArguments();
                 if (!argumentContribution.isEmpty()) {
-                    embedBuilder.addField("__Arguments__", "", false);
+                    embedBuilder.addField("__Arguments__", "Keywords that alter the command behavior or define a search scope", false);
 
                     for (ArgumentContribution.Argument argument : argumentContribution.getArguments()) {
                         embedBuilder.addField("$" + argument.getArgument(), argument.getDescription(), false);
                     }
 
+                }
+
+                List<XmlElement> examples = Query
+                    .evaluate(xmlElement -> xmlElement.getTagName().equals("example"))
+                    .execute(command.getCommandContribution().getSubElements())
+                    .collect();
+                if (!examples.isEmpty()) {
+                    embedBuilder.addField("__Examples__", "Practical usage examples for this command", false);
+                    for (XmlElement example : examples) {
+                        embedBuilder.addField(example.getAttribute("title").getValue(), example.getTextContent(), false);
+                    }
                 }
 
                 sendMessage(getContext().getChannel(), embedBuilder.build());

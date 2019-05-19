@@ -10,6 +10,7 @@ import java.util.stream.IntStream;
 import com.google.common.collect.Lists;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.entities.Guild;
+import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.Util;
 
@@ -19,6 +20,8 @@ public class AudioQueue {
     private int currentTrack = 0;
     private boolean isShuffle = false;
     private List<Integer> randomizedOrder = Lists.newArrayList();
+    private boolean repeatOne;
+    private boolean repeatAll;
 
     public List<Playable> getTracks() {
         return currentQueue;
@@ -41,20 +44,55 @@ public class AudioQueue {
     }
 
     public Playable getCurrent() {
-        if (isShuffle) {
+        if (isShuffle()) {
             return currentQueue.get(randomizedOrder.get(currentTrack));
         } else {
             return currentQueue.get(currentTrack);
         }
     }
 
+    /**
+     * iterate the queue to the next item
+     */
+    public void iterate() {
+        if (!hasNext()) {
+            throw new NoResultsFoundException("No next item in queue");
+        }
+
+        currentTrack = nextPosition();
+    }
+
+    /**
+     * reverse the queue to the previous item
+     */
+    public void reverse() {
+        if (!hasPrevious()) {
+            throw new NoResultsFoundException("No previous item in queue");
+        }
+
+        currentTrack = previousPosition();
+    }
+
+    /**
+     * @return the next item to play in the queue without iterating the queue
+     */
     public Playable getNext() {
-        next();
-        return getCurrent();
+        if (!hasNext()) {
+            return null;
+        }
+
+        if (isRepeatOne()) {
+            return getCurrent();
+        }
+
+        if (isShuffle()) {
+            return currentQueue.get(randomizedOrder.get(nextPosition()));
+        } else {
+            return currentQueue.get(nextPosition());
+        }
     }
 
     public EmbedBuilder buildMessageEmbed(AudioPlayback playback, Guild guild) {
-        Playable current = getCurrent();
         int position = getPosition();
         List<Playable> tracks = getTracks();
         EmbedBuilder embedBuilder = new EmbedBuilder();
@@ -64,48 +102,54 @@ public class AudioQueue {
         embedBuilder.addField("Shuffle", boolToString(playback.isShuffle()), true);
         embedBuilder.addField("Repeat all", boolToString(playback.isRepeatAll()), true);
         embedBuilder.addField("Repeat one", boolToString(playback.isRepeatOne()), true);
+        embedBuilder.addField("Volume", String.valueOf(playback.getVolume()), true);
         String url = baseUri + String.format("/queue?guildId=%s", guild.getId());
         embedBuilder.addField("", "[Full list](" + url + ")", false);
 
-        StringBuilder prevBuilder = new StringBuilder();
-        StringBuilder nextBuilder = new StringBuilder();
+        if (isEmpty()) {
+            embedBuilder.addField("", "(emtpy)", false);
+        } else {
+            StringBuilder prevBuilder = new StringBuilder();
+            StringBuilder nextBuilder = new StringBuilder();
 
-        if (position > 0) {
-            List<Playable> previous;
-            if (position > 5) {
-                prevBuilder.append("...").append(System.lineSeparator());
+            if (position > 0) {
+                List<Playable> previous;
+                if (position > 5) {
+                    prevBuilder.append("...").append(System.lineSeparator());
+                }
+                previous = listPrevious(5);
+                for (Playable prev : previous) {
+                    appendPlayable(prevBuilder, prev);
+                }
             }
-            previous = listPrevious(5);
-            for (Playable prev : previous) {
-                appendPlayable(prevBuilder, prev);
+
+            if (!prevBuilder.toString().isEmpty()) {
+                embedBuilder.addField("Previous", prevBuilder.toString(), false);
             }
-        }
 
-        if (!prevBuilder.toString().isEmpty()) {
-            embedBuilder.addField("Previous", prevBuilder.toString(), false);
-        }
+            String currentPosition = Util.normalizeMillis(playback.getCurrentPositionMs());
+            Playable current = getCurrent();
+            String duration = Util.normalizeMillis(current.getDurationMsInterruptible());
+            embedBuilder.addField(
+                "Current",
+                "| " + current.getDisplayInterruptible() + " - " + currentPosition + " / " + duration,
+                false
+            );
 
-        String currentPosition = Util.normalizeMillis(playback.getCurrentPositionMs());
-        String duration = Util.normalizeMillis(current.getDurationMsInterruptible());
-        embedBuilder.addField(
-            "Current",
-            "| " + current.getDisplayInterruptible() + " - " + currentPosition + " / " + duration,
-            false
-        );
-
-        if (position < tracks.size() - 1) {
-            List<Playable> next;
-            next = listNext(5);
-            for (Playable n : next) {
-                appendPlayable(nextBuilder, n);
+            if (position < tracks.size() - 1) {
+                List<Playable> next;
+                next = listNext(5);
+                for (Playable n : next) {
+                    appendPlayable(nextBuilder, n);
+                }
+                if (tracks.size() > position + 6) {
+                    nextBuilder.append("...");
+                }
             }
-            if (tracks.size() > position + 6) {
-                nextBuilder.append("...");
-            }
-        }
 
-        if (!nextBuilder.toString().isEmpty()) {
-            embedBuilder.addField("Next", nextBuilder.toString(), false);
+            if (!nextBuilder.toString().isEmpty()) {
+                embedBuilder.addField("Next", nextBuilder.toString(), false);
+            }
         }
 
         embedBuilder.setColor(Color.decode("#1DB954"));
@@ -127,15 +171,6 @@ public class AudioQueue {
         return next;
     }
 
-    public void next() {
-        ++currentTrack;
-    }
-
-    public Playable getPrevious() {
-        previous();
-        return getCurrent();
-    }
-
     public List<Playable> listPrevious(int max) {
         List<Playable> previous = Lists.newArrayList();
         int count = 0;
@@ -150,10 +185,6 @@ public class AudioQueue {
 
         Collections.reverse(previous);
         return previous;
-    }
-
-    public void previous() {
-        --currentTrack;
     }
 
     public void add(Playable... tracks) {
@@ -198,11 +229,27 @@ public class AudioQueue {
     }
 
     public boolean hasNext() {
-        return currentTrack < currentQueue.size() - 1;
+        return hasNext(false);
+    }
+
+    public boolean hasNext(boolean ignoreRepeat) {
+        if (isEmpty()) {
+            return false;
+        }
+        boolean inBound = currentTrack < currentQueue.size() - 1;
+        return ignoreRepeat ? inBound : inBound || isRepeatOne() || isRepeatAll();
     }
 
     public boolean hasPrevious() {
-        return currentTrack > 0;
+        return hasPrevious(false);
+    }
+
+    public boolean hasPrevious(boolean ignoreRepeat) {
+        if (isEmpty()) {
+            return false;
+        }
+        boolean inBound = currentTrack > 0;
+        return ignoreRepeat ? inBound : inBound || isRepeatOne() || isRepeatAll();
     }
 
     public boolean isEmpty() {
@@ -231,15 +278,25 @@ public class AudioQueue {
     }
 
     public void randomize() {
+        randomize(true);
+    }
+
+    public void randomize(boolean protectCurrent) {
         randomizedOrder.clear();
-        if (currentTrack > 0) {
-            List<Integer> indices = IntStream.range(0, currentTrack).boxed().collect(Collectors.toList());
-            Collections.shuffle(indices);
-            randomizedOrder.addAll(indices);
-        }
-        randomizedOrder.add(currentTrack);
-        if (currentTrack < currentQueue.size() - 1) {
-            List<Integer> indices = IntStream.range(currentTrack + 1, currentQueue.size()).boxed().collect(Collectors.toList());
+        if (protectCurrent) {
+            if (currentTrack > 0) {
+                List<Integer> indices = IntStream.range(0, currentTrack).boxed().collect(Collectors.toList());
+                Collections.shuffle(indices);
+                randomizedOrder.addAll(indices);
+            }
+            randomizedOrder.add(currentTrack);
+            if (currentTrack < currentQueue.size() - 1) {
+                List<Integer> indices = IntStream.range(currentTrack + 1, currentQueue.size()).boxed().collect(Collectors.toList());
+                Collections.shuffle(indices);
+                randomizedOrder.addAll(indices);
+            }
+        } else {
+            List<Integer> indices = IntStream.range(0, currentQueue.size()).boxed().collect(Collectors.toList());
             Collections.shuffle(indices);
             randomizedOrder.addAll(indices);
         }
@@ -252,6 +309,22 @@ public class AudioQueue {
         randomizedOrder.addAll(indices);
     }
 
+    private int nextPosition() {
+        if (currentTrack < currentQueue.size() - 1) {
+            return currentTrack + 1;
+        } else {
+            return 0;
+        }
+    }
+
+    private int previousPosition() {
+        if (currentTrack > 0) {
+            return currentTrack - 1;
+        } else {
+            return isRepeatAll() ? getTracks().size() - 1 : 0;
+        }
+    }
+
     private String boolToString(boolean bool) {
         return bool ? "On" : "Off";
     }
@@ -262,4 +335,19 @@ public class AudioQueue {
         trackListBuilder.append("| ").append(display).append(" - ").append(Util.normalizeMillis(durationMs)).append(System.lineSeparator());
     }
 
+    public boolean isRepeatOne() {
+        return repeatOne;
+    }
+
+    public void setRepeatOne(boolean repeatOne) {
+        this.repeatOne = repeatOne;
+    }
+
+    public boolean isRepeatAll() {
+        return repeatAll;
+    }
+
+    public void setRepeatAll(boolean repeatAll) {
+        this.repeatAll = repeatAll;
+    }
 }

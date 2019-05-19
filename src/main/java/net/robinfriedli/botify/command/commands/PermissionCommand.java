@@ -16,7 +16,7 @@ import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.discord.GuildSpecificationManager;
+import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.entities.AccessConfiguration;
 import net.robinfriedli.botify.entities.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
@@ -26,14 +26,14 @@ public class PermissionCommand extends AbstractCommand {
 
     private StringBuilder successMessageBuilder = new StringBuilder();
 
-    public PermissionCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(context, commandManager, commandString, false, identifier, description, Category.GENERAL);
+    public PermissionCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
+        super(commandContribution, context, commandManager, commandString, false, identifier, description, Category.GENERAL);
     }
 
     @Override
     public void doRun() {
         Guild guild = getContext().getGuild();
-        GuildSpecificationManager guildManager = getManager().getGuildManager();
+        GuildManager guildManager = getManager().getGuildManager();
         if (argumentSet("grant")) {
             Pair<String, String> pair = splitInlineArgument("to");
             String commandIdentifier = pair.getLeft();

@@ -1,6 +1,19 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <versions xmlns="versionSpace">
-  <version launched="false" version="1.5.0.1"/>
+  <version launched="false" version="1.5.1">
+    <feature>command presets</feature>
+    <feature>volume command</feature>
+    <feature>customisable command prefix separate from bot name</feature>
+    <feature>update notifications now show new features</feature>
+    <feature>send a getting started message when a new guild joins</feature>
+    <feature>add examples section to help command</feature>
+    <feature>fix an issue where playlist tracks do not get played in the correct order</feature>
+    <feature>fix an issue where the search command fails when displaying a short local playlist</feature>
+    <feature>the "Now playing..." widget now shows the next track considering the repeat settings</feature>
+    <feature>the queue command now shows the playback settings even when the queue is empty</feature>
+    <feature>automatically unpause playback when playing a different track</feature>
+  </version>
+  <version launched="true" version="1.5.0.1"/>
   <version launched="true" version="1.5"/>
   <version launched="true" version="1.4.2"/>
   <version launched="true" version="1.4.1"/>

@@ -24,7 +24,6 @@ import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.core.requests.restaction.MessageAction;
-import net.robinfriedli.botify.boot.Launcher;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.stringlist.StringList;
 import net.robinfriedli.stringlist.StringListImpl;
@@ -35,13 +34,13 @@ public class MessageService {
     private final Logger logger;
 
     public MessageService() {
-        this.logger = LoggerFactory.getLogger(MessageService.class);
+        this.logger = LoggerFactory.getLogger(getClass());
         limit = 1000;
     }
 
     public MessageService(int limit) {
         this.limit = limit;
-        this.logger = LoggerFactory.getLogger(Launcher.class);
+        this.logger = LoggerFactory.getLogger(getClass());
     }
 
     public void send(String message, MessageChannel channel) {
@@ -68,6 +67,10 @@ public class MessageService {
 
     public CompletableFuture<Message> send(MessageEmbed messageEmbed, MessageChannel messageChannel) {
         return sendInternal(messageChannel, messageEmbed);
+    }
+
+    public CompletableFuture<Message> send(MessageEmbed messageEmbed, Guild guild) {
+        return acceptForGuild(guild, channel -> channel.sendMessage(messageEmbed));
     }
 
     public CompletableFuture<Message> sendWithLogo(EmbedBuilder embedBuilder, MessageChannel channel) throws IOException {

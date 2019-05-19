@@ -31,8 +31,8 @@ public class CreatePermissionAccessConfigurationTask implements StartupTask {
         context.invoke(() -> {
             for (GuildSpecification guildSpecification : guildSpecifications) {
                 XmlElement existingConfiguration = Query.evaluate(and(
-                    attribute("commandIdentifier").fuzzyIs("permission"),
-                    instanceOf(AccessConfiguration.class)
+                    instanceOf(AccessConfiguration.class),
+                    attribute("commandIdentifier").fuzzyIs("permission")
                 )).execute(guildSpecification.getSubElements()).getOnlyResult();
 
                 if (existingConfiguration == null) {

@@ -8,12 +8,13 @@ import net.robinfriedli.botify.audio.AudioQueue;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
+import net.robinfriedli.botify.entities.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 
 public class RewindCommand extends AbstractCommand {
 
-    public RewindCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(context, commandManager, commandString, false, identifier, description, Category.PLAYBACK);
+    public RewindCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
+        super(commandContribution, context, commandManager, commandString, false, identifier, description, Category.PLAYBACK);
     }
 
     @Override
@@ -24,17 +25,13 @@ public class RewindCommand extends AbstractCommand {
         AudioQueue queue = playback.getAudioQueue();
         VoiceChannel channel = guild.getMember(getContext().getUser()).getVoiceState().getChannel();
 
-        if (!(queue.hasPrevious() || playback.isRepeatAll())) {
+        if (!queue.hasPrevious()) {
             throw new InvalidCommandException("No previous item in queue");
         }
 
         int queueSize = queue.getTracks().size();
         if (getCommandBody().isBlank()) {
-            if (playback.isRepeatAll() && !queue.hasPrevious()) {
-                queue.setPosition(queueSize - 1);
-            } else {
-                queue.previous();
-            }
+            queue.reverse();
         } else {
             int offset;
             try {

@@ -21,15 +21,10 @@ public class SkipAction implements ActionRunable {
     @Override
     public void run(GuildMessageReactionAddEvent event) {
         AudioQueue queue = audioPlayback.getAudioQueue();
-        if (!queue.hasNext()) {
-            queue.reset();
-        } else {
-            queue.next();
-        }
-
         User user = event.getUser();
         Guild guild = event.getGuild();
-        if (queue.hasNext() || audioPlayback.isRepeatAll()) {
+        if (queue.hasNext()) {
+            queue.iterate();
             audioManager.playTrack(guild, guild.getMember(user).getVoiceState().getChannel());
         } else {
             audioPlayback.stop();

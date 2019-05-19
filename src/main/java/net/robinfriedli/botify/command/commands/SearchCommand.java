@@ -19,20 +19,22 @@ import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
+import net.robinfriedli.botify.entities.CommandContribution;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.SearchEngine;
+import net.robinfriedli.botify.util.Table2;
 import net.robinfriedli.botify.util.Util;
 import net.robinfriedli.stringlist.StringListImpl;
 import org.hibernate.Session;
 
 public class SearchCommand extends AbstractCommand {
 
-    public SearchCommand(CommandContext commandContext, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContext, commandManager, commandString, false, identifier, description, Category.SEARCH);
+    public SearchCommand(CommandContribution commandContribution, CommandContext commandContext, CommandManager commandManager, String commandString, String identifier, String description) {
+        super(commandContribution, commandContext, commandManager, commandString, false, identifier, description, Category.SEARCH);
     }
 
     @Override
@@ -71,20 +73,13 @@ public class SearchCommand extends AbstractCommand {
         if (!found.isEmpty()) {
             EmbedBuilder embedBuilder = new EmbedBuilder();
 
-            StringBuilder trackListBuilder = new StringBuilder();
-            StringBuilder albumListBuilder = new StringBuilder();
-            StringBuilder artistListBuilder = new StringBuilder();
-
-            for (Track track : found) {
-                trackListBuilder.append(track.getName()).append(System.lineSeparator());
-                albumListBuilder.append(track.getAlbum().getName()).append(System.lineSeparator());
-                String artist = StringListImpl.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", ");
-                artistListBuilder.append(artist).append(System.lineSeparator());
-            }
-
-            embedBuilder.addField("Track", trackListBuilder.toString(), true);
-            embedBuilder.addField("Album", albumListBuilder.toString(), true);
-            embedBuilder.addField("Artist", artistListBuilder.toString(), true);
+            Util.appendEmbedList(
+                embedBuilder,
+                found,
+                track -> track.getName() + " - " + track.getAlbum().getName() + " - " +
+                    StringListImpl.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", "),
+                "Track - Album - Artist"
+            );
             embedBuilder.setColor(Color.decode("#1DB954"));
 
             sendMessage(getContext().getChannel(), embedBuilder.build());
@@ -147,19 +142,11 @@ public class SearchCommand extends AbstractCommand {
             EmbedBuilder embedBuilder = new EmbedBuilder();
             embedBuilder.setColor(Color.decode("#1DB954"));
 
-            StringBuilder listBuilder = new StringBuilder();
-            StringBuilder durationBuilder = new StringBuilder();
-            StringBuilder itemBuilder = new StringBuilder();
-
-            for (Playlist playlist : playlists) {
-                listBuilder.append(playlist.getName()).append(System.lineSeparator());
-                durationBuilder.append(Util.normalizeMillis(playlist.getDuration())).append(System.lineSeparator());
-                itemBuilder.append(playlist.getSongCount()).append(System.lineSeparator());
-            }
-
-            embedBuilder.addField("Playlist", listBuilder.toString(), true);
-            embedBuilder.addField("Duration", durationBuilder.toString(), true);
-            embedBuilder.addField("Items", itemBuilder.toString(), true);
+            Table2 table = new Table2(embedBuilder);
+            table.addColumn("Playlist", playlists, Playlist::getName);
+            table.addColumn("Duration", playlists, playlist -> Util.normalizeMillis(playlist.getDuration()));
+            table.addColumn("Items", playlists, playlist -> String.valueOf(playlist.getSongCount()));
+            table.build();
 
             sendMessage(getContext().getChannel(), embedBuilder.build());
         } else {
@@ -192,7 +179,7 @@ public class SearchCommand extends AbstractCommand {
             List<PlaylistItem> items = playlist.getPlaylistItems();
             Util.appendEmbedList(
                 embedBuilder,
-                items.subList(0, 5),
+                items.size() > 5 ? items.subList(0, 5) : items,
                 item -> item.display() + " - " + Util.normalizeMillis(item.getDuration()),
                 "Track - Duration"
             );
@@ -238,7 +225,7 @@ public class SearchCommand extends AbstractCommand {
 
     private void listSpotifyList() throws Exception {
         SpotifyApi spotifyApi = getContext().getSpotifyApi();
-        String commandBody = getContext().getCommandBody();
+        String commandBody = getCommandBody();
 
         if (commandBody.isBlank()) {
             throw new InvalidCommandException("Command may not be empty when searching spotify lists");
@@ -300,21 +287,14 @@ public class SearchCommand extends AbstractCommand {
             String url = "https://open.spotify.com/" + path;
             embedBuilder.addField("First tracks:", "[Full list](" + url + ")", false);
 
-            StringBuilder trackListBuilder = new StringBuilder();
-            StringBuilder artistListBuilder = new StringBuilder();
-            StringBuilder durationListBuilder = new StringBuilder();
-
-            for (int i = 0; i < 5 && i < tracks.size(); i++) {
-                Track track = tracks.get(i);
-                trackListBuilder.append(track.getName()).append(System.lineSeparator());
-                String artists = StringListImpl.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", ");
-                artistListBuilder.append(artists).append(System.lineSeparator());
-                durationListBuilder.append(Util.normalizeMillis(track.getDurationMs())).append(System.lineSeparator());
-            }
-
-            embedBuilder.addField("Track", trackListBuilder.toString(), true);
-            embedBuilder.addField("Artist", artistListBuilder.toString(), true);
-            embedBuilder.addField("Duration", durationListBuilder.toString(), true);
+            Util.appendEmbedList(
+                embedBuilder,
+                tracks.subList(0, 5),
+                track -> track.getName() + " - " +
+                    StringListImpl.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", ") + " - " +
+                    Util.normalizeMillis(track.getDurationMs()),
+                "Track - Artist - Duration"
+            );
         }
 
         embedBuilder.setColor(Color.decode("#1DB954"));

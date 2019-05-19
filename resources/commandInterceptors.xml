@@ -8,4 +8,7 @@
   </commandInterceptor>
   <commandInterceptor order="3" implementation="net.robinfriedli.botify.command.interceptors.PendingQuestionRemovalInterceptor"/>
   <commandInterceptor order="4" implementation="net.robinfriedli.botify.command.interceptors.HistoryInterceptor"/>
+  <commandInterceptor order="5" implementation="net.robinfriedli.botify.command.interceptors.CommandExecutionInterceptor">
+    <interruptingException class="java.lang.Throwable"/>
+  </commandInterceptor>
 </commandInterceptors>

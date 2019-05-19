@@ -36,7 +36,13 @@ public class NowPlayingWidget extends AbstractWidget {
 
     @Override
     public void reset() {
+        setMessageDeleted(true);
         // if a different track is played after using the skip or rewind action, the old "now playing" message will get
         // deleted by the AudioPlayback anyway
+    }
+
+    @Override
+    public void destroy() {
+        getCommandManager().removeWidget(this);
     }
 }

@@ -13,7 +13,6 @@ import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.MessageChannel;
 import net.dv8tion.jda.core.entities.VoiceChannel;
 import net.dv8tion.jda.core.exceptions.InsufficientPermissionException;
-import net.robinfriedli.botify.boot.Launcher;
 import net.robinfriedli.botify.exceptions.TrackLoadingExceptionHandler;
 
 public class AudioPlayback {
@@ -25,21 +24,19 @@ public class AudioPlayback {
     private final ExecutorService executorService;
     private VoiceChannel voiceChannel;
     private MessageChannel communicationChannel;
-    private boolean repeatOne;
-    private boolean repeatAll;
     // register Track loading Threads here so that they can be interrupted when a different playlist is being played
     private Thread trackLoadingThread;
     private Message lastPlaybackNotification;
 
-    public AudioPlayback(AudioPlayer player, Guild guild, Logger logger) {
+    public AudioPlayback(AudioPlayer player, Guild guild) {
         this.guild = guild;
         audioPlayer = player;
-        this.logger = logger;
+        this.logger = LoggerFactory.getLogger(getClass());
         audioQueue = new AudioQueue();
         executorService = Executors.newFixedThreadPool(3, r -> {
             Thread thread = new Thread(r);
             thread.setName("botify track loading thread");
-            thread.setUncaughtExceptionHandler(new TrackLoadingExceptionHandler(LoggerFactory.getLogger(Launcher.class), communicationChannel));
+            thread.setUncaughtExceptionHandler(new TrackLoadingExceptionHandler(LoggerFactory.getLogger(getClass()), communicationChannel));
             return thread;
         });
     }
@@ -93,19 +90,19 @@ public class AudioPlayback {
     }
 
     public boolean isRepeatOne() {
-        return repeatOne;
+        return audioQueue.isRepeatOne();
     }
 
     public void setRepeatOne(boolean repeatOne) {
-        this.repeatOne = repeatOne;
+        audioQueue.setRepeatOne(repeatOne);
     }
 
     public boolean isRepeatAll() {
-        return repeatAll;
+        return audioQueue.isRepeatAll();
     }
 
     public void setRepeatAll(boolean repeatAll) {
-        this.repeatAll = repeatAll;
+        audioQueue.setRepeatAll(repeatAll);
     }
 
     public boolean isShuffle() {
@@ -123,6 +120,14 @@ public class AudioPlayback {
 
     public void setPosition(long ms) {
         audioPlayer.getPlayingTrack().setPosition(ms);
+    }
+
+    public int getVolume() {
+        return audioPlayer.getVolume();
+    }
+
+    public void setVolume(int volume) {
+        audioPlayer.setVolume(volume);
     }
 
     public void load(Runnable r, boolean singleThread) {

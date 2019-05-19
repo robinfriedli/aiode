@@ -44,9 +44,9 @@ public class QueueWidget extends AbstractWidget {
 
     @Override
     public void reset() throws Exception {
+        setMessageDeleted(true);
         try {
             getMessage().delete().queue();
-            setMessageDeleted(true);
         } catch (InsufficientPermissionException e) {
             throw new UserException("Bot is missing permission: " + e.getPermission().getName(), e);
         }
