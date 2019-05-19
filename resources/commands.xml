@@ -133,6 +133,6 @@
   </command>
   <command identifier="prefix" implementation="net.robinfriedli.botify.command.commands.PrefixCommand"
            description="Set a custom command prefix. Can be used instead of &quot;$botify&quot; or the bot name to start a command.">
-    <example title="Set the command prefix to &quot;.&quot; to start a command lik this: .play numb">$botify prefix .</example>
+    <example title="Set the command prefix to &quot;.&quot; to start a command like this: .play numb">$botify prefix .</example>
   </command>
 </commands>

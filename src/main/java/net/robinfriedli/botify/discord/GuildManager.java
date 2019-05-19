@@ -125,10 +125,6 @@ public class GuildManager {
         ).getOnlyResult();
 
         if (existingSpecification != null) {
-            if (Strings.isNullOrEmpty(existingSpecification.getAttribute("botifyName").getValue())) {
-                alertNameChange(guild);
-            }
-
             GuildContext guildContext = new GuildContext(new AudioPlayback(player, guild), (GuildSpecification) existingSpecification);
             guildContexts.put(guild, guildContext);
             return guildContext;

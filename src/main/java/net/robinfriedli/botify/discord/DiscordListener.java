@@ -118,6 +118,10 @@ public class DiscordListener extends ListenerAdapter {
                 }
 
                 MessageService messageService = new MessageService();
+                if (namePrefix == null) {
+                    messageService.sendException("Something went wrong parsing your command, try starting with \"$botify\" instead.", message.getChannel());
+                    logger.error("Name prefix null for input " + msg + ". Bot name: " + botName + "; Prefix: " + prefix);
+                }
                 assert namePrefix != null;
                 CommandContext commandContext = new CommandContext(namePrefix, message, sessionFactory, spotfiyApiBuilder.build(), guildContext);
                 Thread commandExecutionThread = new Thread(() -> {
