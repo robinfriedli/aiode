@@ -10,14 +10,15 @@ import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
+import net.robinfriedli.botify.entities.CommandContribution;
 import net.robinfriedli.botify.exceptions.CommandRuntimeException;
 import net.robinfriedli.botify.login.Login;
 import net.robinfriedli.botify.login.LoginManager;
 
 public class LoginCommand extends AbstractCommand {
 
-    public LoginCommand(CommandContext commandContext, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContext, commandManager, commandString, false, identifier, description, Category.SPOTIFY);
+    public LoginCommand(CommandContribution commandContribution, CommandContext commandContext, CommandManager commandManager, String commandString, String identifier, String description) {
+        super(commandContribution, commandContext, commandManager, commandString, false, identifier, description, Category.SPOTIFY);
     }
 
     @Override

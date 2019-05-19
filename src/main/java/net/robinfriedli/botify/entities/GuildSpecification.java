@@ -61,6 +61,15 @@ public class GuildSpecification extends AbstractXmlElement {
         return getAttribute("botifyName").getValue();
     }
 
+    @Nullable
+    public String getPrefix() {
+        if (hasAttribute("prefix")) {
+            return getAttribute("prefix").getValue();
+        }
+
+        return null;
+    }
+
     public String getGuildName() {
         return getAttribute("guildName").getValue();
     }

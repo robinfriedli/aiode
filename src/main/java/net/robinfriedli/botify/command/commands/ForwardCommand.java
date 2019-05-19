@@ -6,13 +6,14 @@ import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
+import net.robinfriedli.botify.entities.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.util.Util;
 
 public class ForwardCommand extends AbstractCommand {
 
-    public ForwardCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(context, commandManager, commandString, true, identifier, description, Category.PLAYBACK);
+    public ForwardCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
+        super(commandContribution, context, commandManager, commandString, true, identifier, description, Category.PLAYBACK);
     }
 
     @Override

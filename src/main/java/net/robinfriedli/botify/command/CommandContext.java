@@ -8,7 +8,7 @@ import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.MessageChannel;
 import net.dv8tion.jda.core.entities.User;
-import net.robinfriedli.botify.boot.Launcher;
+import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.entities.CommandHistory;
 import net.robinfriedli.botify.listener.AlertEventListener;
 import net.robinfriedli.botify.listener.InterceptorChain;
@@ -23,13 +23,15 @@ public class CommandContext {
     private final Message message;
     private final SessionFactory sessionFactory;
     private final SpotifyApi spotifyApi;
+    private final GuildContext guildContext;
     private Session session;
     private CommandHistory commandHistory;
     private Thread monitoringThread;
 
-    public CommandContext(String namePrefix, Message message, SessionFactory sessionFactory, SpotifyApi spotifyApi) {
+    public CommandContext(String namePrefix, Message message, SessionFactory sessionFactory, SpotifyApi spotifyApi, GuildContext guildContext) {
         this.sessionFactory = sessionFactory;
         this.spotifyApi = spotifyApi;
+        this.guildContext = guildContext;
         this.commandBody = message.getContentDisplay().substring(namePrefix.length()).trim();
         this.message = message;
     }
@@ -70,7 +72,7 @@ public class CommandContext {
         if (session != null && session.isOpen()) {
             return session;
         } else {
-            ParameterContainer parameterContainer = new ParameterContainer(getChannel(), LoggerFactory.getLogger(Launcher.class));
+            ParameterContainer parameterContainer = new ParameterContainer(getChannel(), LoggerFactory.getLogger("Hibernate Interceptors"));
             Session session = sessionFactory
                 .withOptions()
                 .interceptor(InterceptorChain.of(parameterContainer, PlaylistItemTimestampListener.class, AlertEventListener.class))
@@ -96,5 +98,9 @@ public class CommandContext {
 
     public void setCommandHistory(CommandHistory commandHistory) {
         this.commandHistory = commandHistory;
+    }
+
+    public GuildContext getGuildContext() {
+        return guildContext;
     }
 }

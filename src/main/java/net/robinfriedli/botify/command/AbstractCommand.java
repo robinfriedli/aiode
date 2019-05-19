@@ -22,8 +22,11 @@ import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.command.commands.AnswerCommand;
 import net.robinfriedli.botify.discord.DiscordListener;
 import net.robinfriedli.botify.discord.MessageService;
+import net.robinfriedli.botify.entities.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
+import net.robinfriedli.botify.login.Login;
 import net.robinfriedli.botify.util.CheckedRunnable;
+import net.robinfriedli.botify.util.Invoker;
 import net.robinfriedli.botify.util.Util;
 import net.robinfriedli.stringlist.StringList;
 import net.robinfriedli.stringlist.StringListImpl;
@@ -34,6 +37,7 @@ import net.robinfriedli.stringlist.StringListImpl;
  */
 public abstract class AbstractCommand {
 
+    private final CommandContribution commandContribution;
     private final CommandContext context;
     private final CommandManager commandManager;
     private final ArgumentContribution argumentContribution;
@@ -46,13 +50,15 @@ public abstract class AbstractCommand {
     // used to prevent onSuccess being called when no exception has been thrown but the command failed anyway
     private boolean isFailed;
 
-    public AbstractCommand(CommandContext context,
+    public AbstractCommand(CommandContribution commandContribution,
+                           CommandContext context,
                            CommandManager commandManager,
                            String commandString,
                            boolean requiresInput,
                            String identifier,
                            String description,
                            Category category) {
+        this.commandContribution = commandContribution;
         this.context = context;
         this.commandManager = commandManager;
         this.requiresInput = requiresInput;
@@ -87,6 +93,14 @@ public abstract class AbstractCommand {
     public void withUserResponse(Object chosenOption) throws Exception {
     }
 
+    public void verify() {
+        if (requiresInput() && getCommandBody().isBlank()) {
+            throw new InvalidCommandException("That command requires more input!");
+        }
+
+        getArgumentContribution().complete();
+    }
+
     /**
      * define the arguments that this command accepts
      *
@@ -101,11 +115,13 @@ public abstract class AbstractCommand {
     }
 
     public void invoke(CheckedRunnable runnable) {
-        getManager().getCommandExecutor().invoke(getContext().getSession(), getContext().getGuild(), runnable);
+        Invoker invoker = getContext().getGuildContext().getInvoker();
+        invoker.invoke(getContext().getSession(), runnable);
     }
 
     public <E> E invoke(Callable<E> callable) {
-        return getManager().getCommandExecutor().invoke(getContext().getSession(), getContext().getGuild(), callable);
+        Invoker invoker = getContext().getGuildContext().getInvoker();
+        return invoker.invoke(getContext().getSession(), callable);
     }
 
     public CommandContext getContext() {
@@ -121,7 +137,9 @@ public abstract class AbstractCommand {
      * @param callable the code to run
      */
     protected <E> E runWithLogin(User user, Callable<E> callable) throws Exception {
-        return getManager().getCommandExecutor().runForUser(user, getContext().getSpotifyApi(), callable);
+        Invoker invoker = getContext().getGuildContext().getInvoker();
+        Login login = getManager().getLoginManager().requireLoginForUser(user);
+        return invoker.runForUser(login, getContext().getSpotifyApi(), callable);
     }
 
     /**
@@ -129,7 +147,8 @@ public abstract class AbstractCommand {
      * requiresCredentials is false.
      */
     protected <E> E runWithCredentials(Callable<E> callable) throws Exception {
-        return getManager().getCommandExecutor().runWithCredentials(getContext().getSpotifyApi(), callable);
+        Invoker invoker = getContext().getGuildContext().getInvoker();
+        return invoker.runWithCredentials(getContext().getSpotifyApi(), callable);
     }
 
     protected boolean argumentSet(String argument) {
@@ -314,6 +333,10 @@ public abstract class AbstractCommand {
         }
 
         commandBody = words.toString().substring(commandBodyIndex).trim();
+    }
+
+    public CommandContribution getCommandContribution() {
+        return commandContribution;
     }
 
     public enum Category {

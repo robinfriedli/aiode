@@ -4,12 +4,13 @@ import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
+import net.robinfriedli.botify.entities.CommandContribution;
 import net.robinfriedli.botify.login.LoginManager;
 
 public class LogoutCommand extends AbstractCommand {
 
-    public LogoutCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(context, commandManager, commandString, false, identifier, description, Category.SPOTIFY);
+    public LogoutCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
+        super(commandContribution, context, commandManager, commandString, false, identifier, description, Category.SPOTIFY);
     }
 
     @Override

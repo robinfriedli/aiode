@@ -1,41 +1,32 @@
-package net.robinfriedli.botify.command;
-
-import java.util.concurrent.Callable;
+package net.robinfriedli.botify.command.interceptors;
 
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.detailed.TooManyRequestsException;
 import com.wrapper.spotify.exceptions.detailed.UnauthorizedException;
-import com.wrapper.spotify.model_objects.credentials.ClientCredentials;
-import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.MessageChannel;
 import net.dv8tion.jda.core.entities.User;
+import net.robinfriedli.botify.command.AbstractCommand;
+import net.robinfriedli.botify.command.CommandContext;
+import net.robinfriedli.botify.command.CommandInterceptor;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.CommandHistory;
 import net.robinfriedli.botify.exceptions.CommandRuntimeException;
 import net.robinfriedli.botify.exceptions.NoLoginException;
 import net.robinfriedli.botify.exceptions.UserException;
-import net.robinfriedli.botify.login.Login;
-import net.robinfriedli.botify.login.LoginManager;
-import net.robinfriedli.botify.util.CheckedRunnable;
 import org.hibernate.Session;
-import org.jetbrains.annotations.NotNull;
 
-/**
- * responsible for executing a command based
- */
-public class CommandExecutor {
+public class CommandExecutionInterceptor implements CommandInterceptor {
 
-    private final LoginManager loginManager;
     private final Logger logger;
 
-    public CommandExecutor(LoginManager loginManager, Logger logger) {
-        this.loginManager = loginManager;
-        this.logger = logger;
+    public CommandExecutionInterceptor() {
+        this.logger = LoggerFactory.getLogger(getClass());
     }
 
-    public void runCommand(AbstractCommand command) {
+    @Override
+    public void intercept(AbstractCommand command) {
         boolean completedSuccessfully = false;
         boolean failedManually = false;
         String errorMessage = null;
@@ -111,83 +102,11 @@ public class CommandExecutor {
             history.setErrorMessage(errorMessage);
 
             Session session = context.getSession();
-            invoke(session, command.getContext().getGuild(),() -> session.persist(history));
+            context.getGuildContext().getInvoker().invoke(session, () -> session.persist(history));
         } else {
             logger.warn("Command " + command + " has not history");
         }
 
-    }
-
-    public void invoke(Session session, Guild guild, CheckedRunnable runnable) {
-        invoke(session, guild, () -> {
-            runnable.run();
-            return null;
-        });
-    }
-
-    /**
-     * Invoke a callable in a hibernate transaction. The code of this method is synchronised on the guild object
-     * that calls it, making sure the same guild can not run this method concurrently. This is to counteract the
-     * spamming of a command that uses this method, e.g. spamming the add command concurrently could evade the playlist
-     * size limit.
-     *
-     * @param session the target hibernate session, individual for each command execution
-     * @param callable tho callable to run
-     * @param <E> the return type
-     * @return the value the callable returns, often void
-     */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    public <E> E invoke(Session session, @NotNull final Guild guild, Callable<E> callable) {
-        synchronized (guild) {
-            boolean isNested = false;
-            if (session.getTransaction() == null || !session.getTransaction().isActive()) {
-                session.beginTransaction();
-            } else {
-                isNested = true;
-            }
-            if (isNested) {
-                try {
-                    return callable.call();
-                } catch (RuntimeException e) {
-                    throw e;
-                } catch (Exception e) {
-                    throw new CommandRuntimeException(e);
-                }
-            }
-            E retVal;
-            try {
-                retVal = callable.call();
-                session.getTransaction().commit();
-            } catch (UserException e) {
-                session.getTransaction().rollback();
-                throw e;
-            } catch (Exception e) {
-                session.getTransaction().rollback();
-                throw new RuntimeException("Exception in invoked callable. Transaction rolled back.", e);
-            }
-            return retVal;
-        }
-    }
-
-    public <E> E runForUser(User user, SpotifyApi spotifyApi, Callable<E> callable) throws Exception {
-        try {
-            Login loginForUser = loginManager.requireLoginForUser(user);
-            spotifyApi.setAccessToken(loginForUser.getAccessToken());
-            return callable.call();
-        } finally {
-            spotifyApi.setAccessToken(null);
-        }
-    }
-
-    public <E> E runWithCredentials(SpotifyApi spotifyApi, Callable<E> callable) throws Exception {
-        try {
-            ClientCredentials credentials = spotifyApi.clientCredentials().build().execute();
-            spotifyApi.setAccessToken(credentials.getAccessToken());
-
-            return callable.call();
-        } finally {
-            spotifyApi.setAccessToken(null);
-        }
     }
 
 }

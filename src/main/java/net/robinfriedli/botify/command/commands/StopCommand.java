@@ -6,11 +6,12 @@ import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
+import net.robinfriedli.botify.entities.CommandContribution;
 
 public class StopCommand extends AbstractCommand {
 
-    public StopCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(context, commandManager, commandString, false, identifier, description, Category.PLAYBACK);
+    public StopCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
+        super(commandContribution, context, commandManager, commandString, false, identifier, description, Category.PLAYBACK);
     }
 
     @Override

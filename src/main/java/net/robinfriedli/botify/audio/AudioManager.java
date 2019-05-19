@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 
@@ -42,6 +43,8 @@ import net.dv8tion.jda.core.entities.VoiceChannel;
 import net.dv8tion.jda.core.exceptions.InsufficientPermissionException;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.command.widgets.NowPlayingWidget;
+import net.robinfriedli.botify.discord.GuildContext;
+import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.PlaybackHistory;
 import net.robinfriedli.botify.entities.UrlTrack;
@@ -61,14 +64,16 @@ public class AudioManager extends AudioEventAdapter {
     private final Logger logger;
     private final SessionFactory sessionFactory;
     private final CommandManager commandManager;
-    private List<AudioPlayback> audioPlaybacks = Lists.newArrayList();
+    private final GuildManager guildManager;
 
-    public AudioManager(YouTubeService youTubeService, Logger logger, SessionFactory sessionFactory, CommandManager commandManager) {
+    public AudioManager(YouTubeService youTubeService, SessionFactory sessionFactory, CommandManager commandManager, GuildManager guildManager) {
         this.youTubeService = youTubeService;
-        this.logger = logger;
+        this.guildManager = guildManager;
+        this.logger = LoggerFactory.getLogger(getClass());
         this.sessionFactory = sessionFactory;
         this.commandManager = commandManager;
         AudioSourceManagers.registerRemoteSources(playerManager);
+        guildManager.setAudioManager(this);
     }
 
     @Override
@@ -102,6 +107,9 @@ public class AudioManager extends AudioEventAdapter {
         if (result != null) {
             if (result instanceof AudioTrack) {
                 play((AudioTrack) result, audioPlayback);
+                if (audioPlayback.isPaused()) {
+                    audioPlayback.unpause();
+                }
                 new Thread(() -> {
                     try {
                         createHistoryEntry(track, guild);
@@ -135,15 +143,7 @@ public class AudioManager extends AudioEventAdapter {
     }
 
     public AudioPlayback getPlaybackForGuild(Guild guild) {
-        List<AudioPlayback> found = audioPlaybacks.stream().filter(p -> p.getGuild().equals(guild)).collect(Collectors.toList());
-
-        if (found.size() == 1) {
-            return found.get(0);
-        } else if (found.size() > 1) {
-            throw new IllegalStateException("Several playbacks for guild " + guild);
-        } else {
-            throw new IllegalStateException("No AudioPlayback for guild " + guild);
-        }
+        return guildManager.getContextForGuild(guild).getPlayback();
     }
 
     public Playable createPlayable(boolean redirectSpotify, Object objectToWrap) {
@@ -329,15 +329,6 @@ public class AudioManager extends AudioEventAdapter {
         return getPlaybackForGuild(guild).getAudioQueue();
     }
 
-    public void addGuild(Guild guild) {
-        initializeGuild(guild);
-    }
-
-    public void removeGuild(Guild guild) {
-        AudioPlayback playbackForGuild = getPlaybackForGuild(guild);
-        audioPlaybacks.remove(playbackForGuild);
-    }
-
     public YouTubeService getYouTubeService() {
         return youTubeService;
     }
@@ -345,6 +336,10 @@ public class AudioManager extends AudioEventAdapter {
     public void leaveChannel(AudioPlayback playback) {
         playback.getGuild().getAudioManager().closeAudioConnection();
         playback.setVoiceChannel(null);
+    }
+
+    public AudioPlayerManager getPlayerManager() {
+        return playerManager;
     }
 
     @Nullable
@@ -410,7 +405,7 @@ public class AudioManager extends AudioEventAdapter {
         embedBuilder.addField("Now playing", currentTrack.getDisplayInterruptible(), false);
 
         if (audioQueue.hasNext()) {
-            embedBuilder.addField("Next", audioQueue.listNext(1).get(0).getDisplayInterruptible(), false);
+            embedBuilder.addField("Next", audioQueue.getNext().getDisplayInterruptible(), false);
         }
 
         String baseUri = PropertiesLoadingService.requireProperty("BASE_URI");
@@ -420,42 +415,36 @@ public class AudioManager extends AudioEventAdapter {
         futureMessage.thenAccept(message -> commandManager.registerWidget(new NowPlayingWidget(commandManager, message, playback, this)));
     }
 
-    private void iterateQueue(AudioPlayback playback, AudioQueue audioQueue) {
+    private void iterateQueue(AudioPlayback playback, AudioQueue queue) {
         if (!playback.isRepeatOne()) {
-            if (audioQueue.hasNext()) {
-                audioQueue.next();
+            if (queue.hasNext()) {
+                queue.iterate();
+                if (!queue.hasNext(true) && playback.isRepeatAll() && playback.isShuffle()) {
+                    queue.randomize();
+                }
                 playTrack(playback.getGuild(), null);
             } else {
-                audioQueue.reset();
-                if (!playback.isRepeatAll()) {
-                    leaveChannel(playback);
-                } else {
-                    if (playback.isShuffle()) {
-                        audioQueue.randomize();
-                    }
-                    playTrack(playback.getGuild(), null);
-                }
+                leaveChannel(playback);
             }
         } else {
             playTrack(playback.getGuild(), null);
         }
     }
 
-    private void initializeGuild(Guild guild) {
-        AudioPlayer player = playerManager.createPlayer();
-        player.addListener(this);
-        audioPlaybacks.add(new AudioPlayback(player, guild, logger));
-    }
-
     private AudioPlayback getPlaybackForPlayer(AudioPlayer player) {
-        List<AudioPlayback> found = audioPlaybacks.stream().filter(p -> p.getAudioPlayer().equals(player)).collect(Collectors.toList());
+        List<AudioPlayback> collect = guildManager
+            .getGuildContexts()
+            .stream()
+            .map(GuildContext::getPlayback)
+            .filter(playback -> playback.getAudioPlayer().equals(player))
+            .collect(Collectors.toList());
 
-        if (found.size() == 1) {
-            return found.get(0);
-        } else if (found.size() > 1) {
-            throw new IllegalStateException("Several playbacks for player " + player);
+        if (collect.size() == 1) {
+            return collect.get(0);
+        } else if (collect.isEmpty()) {
+            throw new IllegalStateException("No playbacks for player" + player);
         } else {
-            throw new IllegalStateException("No AudioPlayback for player" + player);
+            throw new IllegalStateException("Several playbacks for player " + player);
         }
     }
 

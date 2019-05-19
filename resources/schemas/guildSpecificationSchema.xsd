@@ -15,6 +15,7 @@
     <xs:attribute name="guildName" type="xs:string"/>
     <xs:attribute name="guildId" type="xs:string"/>
     <xs:attribute name="botifyName" type="xs:string"/>
+    <xs:attribute name="prefix" type="xs:string"/>
   </xs:complexType>
 
   <xs:complexType name="accessConfiguration">

@@ -27,6 +27,7 @@ import net.robinfriedli.botify.entities.HttpHandlerContribution;
 import net.robinfriedli.botify.entities.PlaybackHistory;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
+import net.robinfriedli.botify.entities.Preset;
 import net.robinfriedli.botify.entities.Song;
 import net.robinfriedli.botify.entities.UrlTrack;
 import net.robinfriedli.botify.entities.Video;
@@ -83,6 +84,7 @@ public class Launcher {
             configuration.addAnnotatedClass(PlaylistItem.class);
             configuration.addAnnotatedClass(CommandHistory.class);
             configuration.addAnnotatedClass(PlaybackHistory.class);
+            configuration.addAnnotatedClass(Preset.class);
             StandardServiceRegistryBuilder serviceBuilder = new StandardServiceRegistryBuilder().applySettings(configuration.getProperties());
             SessionFactory sessionFactory = configuration.buildSessionFactory(serviceBuilder.build());
 
@@ -121,7 +123,7 @@ public class Launcher {
 
             // setup DiscordListener
             LoginManager loginManager = new LoginManager();
-            DiscordListener discordListener = new DiscordListener(jxpBackend, spotifyApiBuilder, sessionFactory, loginManager, youTubeService, logger, discordBotListAPI);
+            DiscordListener discordListener = new DiscordListener(jxpBackend, spotifyApiBuilder, sessionFactory, loginManager, youTubeService, discordBotListAPI);
 
             // start servers
             Context httpHanldersContext = jxpBackend.getContext(httpHandlersPath);

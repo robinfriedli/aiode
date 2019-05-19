@@ -6,7 +6,7 @@ import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandInterceptor;
-import net.robinfriedli.botify.discord.GuildSpecificationManager;
+import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.entities.AccessConfiguration;
 import net.robinfriedli.botify.exceptions.ForbiddenCommandException;
 
@@ -14,7 +14,7 @@ public class SecurityInterceptor implements CommandInterceptor {
 
     @Override
     public void intercept(AbstractCommand command) {
-        GuildSpecificationManager guildManager = command.getManager().getGuildManager();
+        GuildManager guildManager = command.getManager().getGuildManager();
         CommandContext context = command.getContext();
         User user = context.getUser();
         Guild guild = context.getGuild();

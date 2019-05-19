@@ -29,6 +29,7 @@ import com.wrapper.spotify.model_objects.specification.TrackSimplified;
 import net.robinfriedli.botify.audio.YouTubeService;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
+import net.robinfriedli.botify.entities.Preset;
 import net.robinfriedli.jxp.api.XmlElement;
 import org.hibernate.Session;
 
@@ -146,6 +147,15 @@ public class SearchEngine {
             return xmlElement.hasAttribute(attribute)
                 && editDistance.apply(xmlElement.getAttribute(attribute).getValue().toLowerCase(), searchTerm.toLowerCase()) < MAX_LEVENSHTEIN_DISTANCE;
         };
+    }
+
+    @Nullable
+    public static Preset searchPreset(Session session, String name, String guildId) {
+        Optional<Preset> optionalPreset = session
+            .createQuery("from " + Preset.class.getName() + " where guild_id = '" + guildId + "' and name = '" + name + "'", Preset.class)
+            .uniqueResultOptional();
+
+        return optionalPreset.orElse(null);
     }
 
     private static <E> List<E> getBestLevenshteinMatches(E[] objects, String searchTerm, Function<E, String> compareFunc) {

@@ -25,6 +25,7 @@ import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.command.widgets.QueueWidget;
+import net.robinfriedli.botify.entities.CommandContribution;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
@@ -40,8 +41,8 @@ public class QueueCommand extends AbstractCommand {
     private AlbumSimplified queuedAlbum;
     private int queuedAmount;
 
-    public QueueCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(context, commandManager, commandString, false, identifier, description, Category.PLAYBACK);
+    public QueueCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
+        super(commandContribution, context, commandManager, commandString, false, identifier, description, Category.PLAYBACK);
     }
 
     @Override
@@ -239,12 +240,8 @@ public class QueueCommand extends AbstractCommand {
         AudioPlayback playback = audioManager.getPlaybackForGuild(guild);
         AudioQueue audioQueue = playback.getAudioQueue();
 
-        if (audioQueue.isEmpty()) {
-            sendMessage(getContext().getChannel(), "Queue is empty");
-        } else {
-            CompletableFuture<Message> futureMessage = sendWithLogo(getContext().getChannel(), audioQueue.buildMessageEmbed(playback, guild));
-            getManager().registerWidget(new QueueWidget(getManager(), futureMessage.get(), audioManager, playback));
-        }
+        CompletableFuture<Message> futureMessage = sendWithLogo(getContext().getChannel(), audioQueue.buildMessageEmbed(playback, guild));
+        getManager().registerWidget(new QueueWidget(getManager(), futureMessage.get(), audioManager, playback));
     }
 
     @Override

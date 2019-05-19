@@ -8,6 +8,9 @@
     </xs:sequence>
   </xs:complexType>
   <xs:complexType name="version">
+    <xs:sequence>
+      <xs:element name="feature"/>
+    </xs:sequence>
     <xs:attribute name="version" type="xs:string"/>
     <xs:attribute name="launched" type="xs:boolean"/>
   </xs:complexType>

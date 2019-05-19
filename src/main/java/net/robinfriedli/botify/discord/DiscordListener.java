@@ -7,23 +7,25 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Strings;
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
+import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.core.events.guild.GuildLeaveEvent;
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.core.events.message.guild.GuildMessageDeleteEvent;
 import net.dv8tion.jda.core.events.message.guild.react.GuildMessageReactionAddEvent;
 import net.dv8tion.jda.core.hooks.ListenerAdapter;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.YouTubeService;
 import net.robinfriedli.botify.command.AbstractWidget;
 import net.robinfriedli.botify.command.CommandContext;
-import net.robinfriedli.botify.command.CommandExecutor;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
@@ -50,7 +52,7 @@ public class DiscordListener extends ListenerAdapter {
     private final SpotifyApi.Builder spotfiyApiBuilder;
     private final SessionFactory sessionFactory;
     private final CommandManager commandManager;
-    private final GuildSpecificationManager guildSpecificationManager;
+    private final GuildManager guildManager;
     private final DiscordBotListAPI discordBotListAPI;
     private final Logger logger;
     private Mode mode;
@@ -60,26 +62,24 @@ public class DiscordListener extends ListenerAdapter {
                            SessionFactory sessionFactory,
                            LoginManager loginManager,
                            YouTubeService youTubeService,
-                           Logger logger,
                            DiscordBotListAPI discordBotListAPI) {
         this.jxpBackend = jxpBackend;
         this.spotfiyApiBuilder = spotfiyApiBuilder;
         this.sessionFactory = sessionFactory;
         this.discordBotListAPI = discordBotListAPI;
         Context guildSpecificationContext = jxpBackend.getContext(PropertiesLoadingService.requireProperty("GUILD_SPECIFICATION_PATH"));
-        guildSpecificationManager = new GuildSpecificationManager(guildSpecificationContext);
+        guildManager = new GuildManager(guildSpecificationContext);
         Context commandContributionContext = jxpBackend.getContext(PropertiesLoadingService.requireProperty("COMMANDS_PATH"));
         Context commandInterceptorContext = jxpBackend.getContext(PropertiesLoadingService.requireProperty("COMMAND_INTERCEPTORS_PATH"));
-        commandManager = new CommandManager(new CommandExecutor(loginManager, logger), this, loginManager, commandContributionContext, commandInterceptorContext, logger);
-        audioManager = new AudioManager(youTubeService, logger, sessionFactory, commandManager);
-        this.logger = logger;
+        commandManager = new CommandManager(this, loginManager, commandContributionContext, commandInterceptorContext, sessionFactory);
+        audioManager = new AudioManager(youTubeService, sessionFactory, commandManager, guildManager);
+        this.logger = LoggerFactory.getLogger(getClass());
     }
 
     public void setupGuilds(Mode mode, List<Guild> guilds) {
         this.mode = mode;
         for (Guild guild : guilds) {
-            guildSpecificationManager.addGuild(guild);
-            audioManager.addGuild(guild);
+            guildManager.addGuild(guild);
         }
     }
 
@@ -89,20 +89,37 @@ public class DiscordListener extends ListenerAdapter {
             Guild guild = event.getGuild();
             Message message = event.getMessage();
             String msg = message.getContentDisplay();
-            String botName = guildSpecificationManager.getNameForGuild(guild);
+            GuildContext guildContext = guildManager.getContextForGuild(guild);
+            String botName = guildContext.getSpecification().getName();
+            String prefix = guildContext.getSpecification().getPrefix();
 
             if ((!Strings.isNullOrEmpty(botName) && msg.toLowerCase().startsWith(botName.toLowerCase()))
+                || (!Strings.isNullOrEmpty(prefix) && msg.toLowerCase().startsWith(prefix))
                 || msg.startsWith("$botify")) {
                 // specify with which part of the input string the bot was referenced, this helps trimming the command later
                 String namePrefix;
                 if (msg.startsWith("$botify")) {
                     namePrefix = "$botify";
                 } else {
-                    namePrefix = botName;
+                    boolean startsWithPrefix = prefix != null && msg.startsWith(prefix);
+                    boolean startsWithName = botName != null && msg.startsWith(botName);
+
+                    if (startsWithName && startsWithPrefix) {
+                        if (prefix.equals(botName) || prefix.length() > botName.length()) {
+                            namePrefix = prefix;
+                        } else {
+                            namePrefix = botName;
+                        }
+                    } else if (startsWithName) {
+                        namePrefix = botName;
+                    } else {
+                        namePrefix = prefix;
+                    }
                 }
 
                 MessageService messageService = new MessageService();
-                CommandContext commandContext = new CommandContext(namePrefix, message, sessionFactory, spotfiyApiBuilder.build());
+                assert namePrefix != null;
+                CommandContext commandContext = new CommandContext(namePrefix, message, sessionFactory, spotfiyApiBuilder.build(), guildContext);
                 Thread commandExecutionThread = new Thread(() -> {
                     try {
                         commandManager.runCommand(commandContext);
@@ -137,8 +154,35 @@ public class DiscordListener extends ListenerAdapter {
     @Override
     public void onGuildJoin(GuildJoinEvent event) {
         Guild guild = event.getGuild();
-        guildSpecificationManager.addGuild(guild);
-        audioManager.addGuild(guild);
+        MessageService messageService = new MessageService();
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setTitle("**Getting started**");
+        embedBuilder.setDescription("A brief introduction to Botify and the most important commands.");
+        embedBuilder.addField("Commands: The principle", "All commands follow the same structure: " +
+            "[bot name, custom prefix or $botify] [arguments (start with $)] [input text]. " +
+            "E.g. mybot play $spotify $album meteora.", false);
+        embedBuilder.addField("Commands: The essentials", "The most essential command is the play command. " +
+            "With the $spotify or $youtube arguments you can search a track or video from the corresponding platform or " +
+            "you can simply paste a link." + System.lineSeparator() + "The queue command displays the current tracks or " +
+            "adds elements to the queue." + System.lineSeparator() + "Also crucial to know is the answer command. " +
+            "Commands like the play or queue command might find several results when searching for tracks on Spotify, " +
+            "in which case the bot displays a list of options. Each option is usually mapped to a number. " +
+            "An option can be chosen like this: mybot answer 2.", false);
+        embedBuilder.addField("Playback management", "The playback can be managed by using the controls shown " +
+            "by the queue command or \"Now playing...\" messages in the form of reactions or by using the commands in " +
+            "the playback management category (stop / pause / skip / forward)", false);
+        embedBuilder.addField("Playlist management", "Create cross-platform playlists with tracks from any " +
+            "source using the create command and add tracks using the add command or export the current queue to a new" +
+            "playlist using the export command. For more info see the commands in the playlist management category.", false);
+        embedBuilder.addField("Getting help", "The help command shows all available commands or provides help " +
+            "with a specific command (e.g. mybot help play).", false);
+        try {
+            messageService.sendWithLogo(embedBuilder, guild);
+        } catch (Throwable e) {
+            logger.error("Error sending getting started message", e);
+        }
+
+        guildManager.addGuild(guild);
 
         if (discordBotListAPI != null) {
             discordBotListAPI.setStats(event.getJDA().getGuilds().size());
@@ -174,9 +218,6 @@ public class DiscordListener extends ListenerAdapter {
 
     @Override
     public void onGuildLeave(GuildLeaveEvent event) {
-        Guild guild = event.getGuild();
-        audioManager.removeGuild(guild);
-
         if (discordBotListAPI != null) {
             discordBotListAPI.setStats(event.getJDA().getGuilds().size());
         }
@@ -194,7 +235,7 @@ public class DiscordListener extends ListenerAdapter {
                     try {
                         activeWidget.get().handleReaction(event);
                     } catch (UserException e) {
-                        new MessageService().send(e.getMessage(), channel);
+                        new MessageService().sendError(e.getMessage(), channel);
                     } catch (Exception e) {
                         throw new CommandRuntimeException(e);
                     }
@@ -206,8 +247,13 @@ public class DiscordListener extends ListenerAdapter {
         }
     }
 
-    public GuildSpecificationManager getGuildSpecificationManager() {
-        return guildSpecificationManager;
+    @Override
+    public void onGuildMessageDelete(GuildMessageDeleteEvent event) {
+        commandManager.getActiveWidget(event.getMessageId()).ifPresent(widget -> widget.setMessageDeleted(true));
+    }
+
+    public GuildManager getGuildManager() {
+        return guildManager;
     }
 
     public AudioManager getAudioManager() {
@@ -220,10 +266,6 @@ public class DiscordListener extends ListenerAdapter {
 
     public Mode getMode() {
         return mode;
-    }
-
-    public Logger getLogger() {
-        return logger;
     }
 
     public enum Mode {

@@ -8,9 +8,15 @@
     </xs:sequence>
   </xs:complexType>
   <xs:complexType name="command">
+    <xs:sequence>
+      <xs:element name="example" type="example"/>
+    </xs:sequence>
     <xs:attribute name="identifier" type="xs:string"/>
     <xs:attribute name="implementation" type="xs:string"/>
     <xs:attribute name="description" type="xs:string"/>
+  </xs:complexType>
+  <xs:complexType name="example">
+    <xs:attribute name="title" type="xs:string"/>
   </xs:complexType>
 
 </xs:schema>

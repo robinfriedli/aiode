@@ -2,8 +2,9 @@
  Discord bot that plays Spotify tracks and YouTube videos or any URL including Soundcloud links and Twitch streams.
 
 * Play and search Spotify tracks and YouTube videos or playlists or any URL including Soundcloud links
-* Create local playlists with tracks from any source
+* Create cross-platform playlists with tracks from any source
 * Simple player commands
+* customise your commands using command presets
 * Sign in to Spotify to play your own playlists or upload botify playlists
 * Manage what roles can access which commands
 * Give your bot a name

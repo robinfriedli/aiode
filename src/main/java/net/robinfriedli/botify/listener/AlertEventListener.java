@@ -10,6 +10,7 @@ import net.dv8tion.jda.core.entities.MessageChannel;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
+import net.robinfriedli.botify.entities.Preset;
 import net.robinfriedli.stringlist.StringListImpl;
 import org.hibernate.Interceptor;
 import org.hibernate.Transaction;
@@ -23,6 +24,8 @@ public class AlertEventListener extends ChainableInterceptor {
     private List<Playlist> deletedPlaylists = Lists.newArrayList();
     private List<PlaylistItem> addedItems = Lists.newArrayList();
     private List<PlaylistItem> removedItems = Lists.newArrayList();
+    private Preset createdPreset;
+    private Preset deletedPreset;
 
     public AlertEventListener(MessageChannel channel, Interceptor next) {
         super(next);
@@ -36,6 +39,8 @@ public class AlertEventListener extends ChainableInterceptor {
             createdPlaylists.add(playlist);
         } else if (entity instanceof PlaylistItem) {
             addedItems.add((PlaylistItem) entity);
+        } else if (entity instanceof Preset) {
+            createdPreset = (Preset) entity;
         }
         return next().onSave(entity, id, state, propertyNames, types);
     }
@@ -47,6 +52,8 @@ public class AlertEventListener extends ChainableInterceptor {
             deletedPlaylists.add(playlist);
         } else if (entity instanceof PlaylistItem) {
             removedItems.add((PlaylistItem) entity);
+        } else if (entity instanceof Preset) {
+            deletedPreset = (Preset) entity;
         }
         next().onDelete(entity, id, state, propertyNames, types);
     }
@@ -102,10 +109,20 @@ public class AlertEventListener extends ChainableInterceptor {
             messageService.sendSuccess(s + StringListImpl.create(deletedPlaylists, Playlist::getName).toSeparatedString(", "), channel);
         }
 
+        if (createdPreset != null) {
+            messageService.sendSuccess("Saved preset " + createdPreset.getName(), channel);
+        }
+
+        if (deletedPreset != null) {
+            messageService.sendSuccess("Deleted preset " + deletedPreset.getName(), channel);
+        }
+
         addedItems.clear();
         removedItems.clear();
         createdPlaylists.clear();
         deletedPlaylists.clear();
+        createdPreset = null;
+        deletedPreset = null;
 
         next().afterTransactionCompletion(tx);
     }

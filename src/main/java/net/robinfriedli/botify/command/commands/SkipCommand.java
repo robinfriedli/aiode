@@ -8,12 +8,13 @@ import net.robinfriedli.botify.audio.AudioQueue;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
+import net.robinfriedli.botify.entities.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 
 public class SkipCommand extends AbstractCommand {
 
-    public SkipCommand(CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(context, commandManager, commandString, false, identifier, description, Category.PLAYBACK);
+    public SkipCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
+        super(commandContribution, context, commandManager, commandString, false, identifier, description, Category.PLAYBACK);
     }
 
     @Override
@@ -24,16 +25,12 @@ public class SkipCommand extends AbstractCommand {
         AudioQueue queue = playback.getAudioQueue();
         VoiceChannel channel = guild.getMember(getContext().getUser()).getVoiceState().getChannel();
 
-        if (!(queue.hasNext() || playback.isRepeatAll())) {
+        if (!queue.hasNext()) {
             throw new InvalidCommandException("No next item in queue");
         }
 
         if (getCommandBody().isBlank()) {
-            if (playback.isRepeatAll() && !queue.hasNext()) {
-                queue.reset();
-            } else {
-                queue.next();
-            }
+            queue.iterate();
         } else {
             int offset;
             try {
