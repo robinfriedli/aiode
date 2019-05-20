@@ -289,7 +289,7 @@ public class SearchCommand extends AbstractCommand {
 
             Util.appendEmbedList(
                 embedBuilder,
-                tracks.subList(0, 5),
+                tracks.size() > 5 ? tracks.subList(0, 5) : tracks,
                 track -> track.getName() + " - " +
                     StringListImpl.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", ") + " - " +
                     Util.normalizeMillis(track.getDurationMs()),
