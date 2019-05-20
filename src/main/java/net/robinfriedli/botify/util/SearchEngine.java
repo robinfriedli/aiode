@@ -152,7 +152,7 @@ public class SearchEngine {
     @Nullable
     public static Preset searchPreset(Session session, String name, String guildId) {
         Optional<Preset> optionalPreset = session
-            .createQuery("from " + Preset.class.getName() + " where guild_id = '" + guildId + "' and name = '" + name + "'", Preset.class)
+            .createQuery("from " + Preset.class.getName() + " where guild_id = '" + guildId + "' and name = '" + name.replaceAll("'", "''") + "'", Preset.class)
             .uniqueResultOptional();
 
         return optionalPreset.orElse(null);
