@@ -83,7 +83,10 @@ public class CommandManager {
             try (Session session = sessionFactory.openSession()) {
                 // find a preset where the preset name matches the beginning of the command, find the longest matching preset name
                 Optional<Preset> optionalPreset = session
-                    .createQuery("from " + Preset.class.getName() + " where guild_id = '" + context.getGuild().getId() + "' and lower(name) = substring(lower('" + command + "'), 0, length(name) + 1) order by length(name) desc", Preset.class)
+                    .createQuery("from " + Preset.class.getName()
+                        + " where guild_id = '" + context.getGuild().getId()
+                        + "' and lower(name) = substring(lower('" + command.replaceAll("'", "''") + "'), 0, length(name) + 1) " +
+                        "order by length(name) desc", Preset.class)
                     .setMaxResults(1)
                     .uniqueResultOptional();
                 if (optionalPreset.isPresent()) {
