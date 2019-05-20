@@ -93,17 +93,15 @@ public class DiscordListener extends ListenerAdapter {
             String botName = guildContext.getSpecification().getName();
             String prefix = guildContext.getSpecification().getPrefix();
 
-            if ((!Strings.isNullOrEmpty(botName) && msg.toLowerCase().startsWith(botName.toLowerCase()))
-                || (!Strings.isNullOrEmpty(prefix) && msg.toLowerCase().startsWith(prefix))
-                || msg.startsWith("$botify")) {
+            String lowerCaseMsg = msg.toLowerCase();
+            boolean startsWithPrefix = !Strings.isNullOrEmpty(prefix) && lowerCaseMsg.startsWith(prefix.toLowerCase());
+            boolean startsWithName = !Strings.isNullOrEmpty(botName) && lowerCaseMsg.startsWith(botName.toLowerCase());
+            if (startsWithPrefix || startsWithName || lowerCaseMsg.startsWith("$botify")) {
                 // specify with which part of the input string the bot was referenced, this helps trimming the command later
                 String namePrefix;
-                if (msg.startsWith("$botify")) {
+                if (lowerCaseMsg.startsWith("$botify")) {
                     namePrefix = "$botify";
                 } else {
-                    boolean startsWithPrefix = prefix != null && msg.startsWith(prefix);
-                    boolean startsWithName = botName != null && msg.startsWith(botName);
-
                     if (startsWithName && startsWithPrefix) {
                         if (prefix.equals(botName) || prefix.length() > botName.length()) {
                             namePrefix = prefix;

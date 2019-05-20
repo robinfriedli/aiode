@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <versions xmlns="versionSpace">
-  <version launched="false" version="1.5.1">
+  <version launched="false" version="1.5.1.1">
+    <feature>make preset search case insensitive</feature>
+    <feature>fix commands not being parsed correctly due to case sensitivity</feature>
+    <feature>fix bug in search command when searching for Spotify albums / playlists with less than 5 tracks</feature>
+    <feature>correct some typos</feature>
+  </version>
+  <version launched="true" version="1.5.1">
     <feature>command presets</feature>
     <feature>volume command</feature>
     <feature>customisable command prefix separate from bot name</feature>
