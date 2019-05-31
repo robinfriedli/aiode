@@ -24,6 +24,7 @@ import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
+import net.robinfriedli.botify.exceptions.NoSpotifyResultsFoundException;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.SearchEngine;
 import net.robinfriedli.botify.util.Table2;
@@ -84,7 +85,7 @@ public class SearchCommand extends AbstractCommand {
 
             sendMessage(getContext().getChannel(), embedBuilder.build());
         } else {
-            throw new NoResultsFoundException("No results found for " + getCommandBody());
+            throw new NoSpotifyResultsFoundException("No Spotify track found for " + getCommandBody());
         }
     }
 
@@ -145,7 +146,7 @@ public class SearchCommand extends AbstractCommand {
             Table2 table = new Table2(embedBuilder);
             table.addColumn("Playlist", playlists, Playlist::getName);
             table.addColumn("Duration", playlists, playlist -> Util.normalizeMillis(playlist.getDuration()));
-            table.addColumn("Items", playlists, playlist -> String.valueOf(playlist.getSongCount()));
+            table.addColumn("Items", playlists, playlist -> String.valueOf(playlist.getSize()));
             table.build();
 
             sendMessage(getContext().getChannel(), embedBuilder.build());
@@ -169,14 +170,14 @@ public class SearchCommand extends AbstractCommand {
             embedBuilder.addField("Name", playlist.getName(), true);
             embedBuilder.addField("Duration", Util.normalizeMillis(playlist.getDuration()), true);
             embedBuilder.addField("Created by", createdUser, true);
-            embedBuilder.addField("Tracks", String.valueOf(playlist.getSongCount()), true);
+            embedBuilder.addField("Tracks", String.valueOf(playlist.getSize()), true);
             embedBuilder.addBlankField(false);
 
             String url = baseUri +
                 String.format("/list?name=%s&guildId=%s", URLEncoder.encode(playlist.getName(), StandardCharsets.UTF_8), playlist.getGuildId());
             embedBuilder.addField("First tracks:", "[Full list](" + url + ")", false);
 
-            List<PlaylistItem> items = playlist.getPlaylistItems();
+            List<PlaylistItem> items = playlist.getItemsSorted();
             Util.appendEmbedList(
                 embedBuilder,
                 items.size() > 5 ? items.subList(0, 5) : items,
@@ -242,7 +243,7 @@ public class SearchCommand extends AbstractCommand {
             List<Track> tracks = runWithCredentials(() -> SearchEngine.getPlaylistTracks(spotifyApi, playlist));
             listTracks(tracks, playlist.getName(), playlist.getOwner().getDisplayName(), null, "playlist/" + playlist.getId());
         } else if (playlists.isEmpty()) {
-            throw new NoResultsFoundException("No Spotify playlist found for " + getCommandBody());
+            throw new NoSpotifyResultsFoundException("No Spotify playlist found for " + getCommandBody());
         } else {
             askQuestion(playlists, PlaylistSimplified::getName, p -> p.getOwner().getDisplayName());
         }
@@ -263,7 +264,7 @@ public class SearchCommand extends AbstractCommand {
                 "album/" + album.getId()
             );
         } else if (albums.isEmpty()) {
-            throw new NoResultsFoundException("No album found for " + getCommandBody());
+            throw new NoSpotifyResultsFoundException("No album found for " + getCommandBody());
         } else {
             askQuestion(albums, AlbumSimplified::getName, album -> StringListImpl.create(album.getArtists(), ArtistSimplified::getName).toSeparatedString(", "));
         }

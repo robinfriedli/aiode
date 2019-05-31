@@ -29,6 +29,7 @@ import net.robinfriedli.botify.entities.CommandContribution;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
+import net.robinfriedli.botify.exceptions.NoSpotifyResultsFoundException;
 import net.robinfriedli.botify.util.SearchEngine;
 import net.robinfriedli.stringlist.StringListImpl;
 
@@ -90,7 +91,7 @@ public class QueueCommand extends AbstractCommand {
             throw new NoResultsFoundException("No local playlist found for " + getCommandBody());
         }
 
-        List<Object> items = runWithCredentials(() -> playlist.getItems(getContext().getSpotifyApi()));
+        List<Object> items = runWithCredentials(() -> playlist.getTracks(getContext().getSpotifyApi()));
 
         if (items.isEmpty()) {
             throw new NoResultsFoundException("Playlist is empty");
@@ -146,7 +147,7 @@ public class QueueCommand extends AbstractCommand {
                 playback.getAudioQueue().add(playables);
                 queuedSpotifyPlaylist = playlist;
             } else if (found.isEmpty()) {
-                throw new NoResultsFoundException("No playlist found for " + getCommandBody());
+                throw new NoSpotifyResultsFoundException("No playlist found for " + getCommandBody());
             } else {
                 askQuestion(found, PlaylistSimplified::getName, p -> p.getOwner().getDisplayName());
             }
@@ -172,7 +173,7 @@ public class QueueCommand extends AbstractCommand {
             audioPlayback.getAudioQueue().add(playables);
             queuedAlbum = album;
         } else if (albums.isEmpty()) {
-            throw new NoResultsFoundException("No albums found for " + getCommandBody());
+            throw new NoSpotifyResultsFoundException("No albums found for " + getCommandBody());
         } else {
             askQuestion(albums, AlbumSimplified::getName, album -> StringListImpl.create(album.getArtists(), ArtistSimplified::getName).toSeparatedString(", "));
         }
@@ -192,7 +193,7 @@ public class QueueCommand extends AbstractCommand {
             playback.getAudioQueue().add(track);
             queuedTrack = track;
         } else if (found.isEmpty()) {
-            throw new NoResultsFoundException("No results found for " + getCommandBody());
+            throw new NoSpotifyResultsFoundException("No Spotify track found for " + getCommandBody());
         } else {
             askQuestion(found, track -> {
                 String artistString = StringListImpl.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", ");

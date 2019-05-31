@@ -60,7 +60,6 @@ public class Song extends PlaylistItem {
             }
         }
         this.duration = track.getDurationMs();
-        playlist.getSongs().add(this);
     }
 
     @Override
@@ -85,6 +84,11 @@ public class Song extends PlaylistItem {
     public String display() {
         String artistString = StringListImpl.create(artists, Artist::getName).toSeparatedString(", ");
         return name + " by " + artistString;
+    }
+
+    @Override
+    public void add() {
+        getPlaylist().getSongs().add(this);
     }
 
     public Track asTrack(SpotifyApi spotifyApi) throws IOException, SpotifyWebApiException {

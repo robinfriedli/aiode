@@ -13,6 +13,7 @@ import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.CommandContribution;
 import net.robinfriedli.botify.entities.Playlist;
+import net.robinfriedli.botify.entities.PlaylistItem;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.SearchEngine;
@@ -70,7 +71,9 @@ public class ExportCommand extends AbstractCommand {
                         continue;
                     }
                 }
-                session.persist(track.export(playlist, getContext().getUser(), session));
+                PlaylistItem export = track.export(playlist, getContext().getUser(), session);
+                export.add();
+                session.persist(export);
             }
 
             session.persist(playlist);

@@ -3,15 +3,18 @@ package net.robinfriedli.botify.command;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutionException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.MessageReaction;
 import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.events.message.guild.react.GuildMessageReactionAddEvent;
+import net.dv8tion.jda.core.exceptions.ErrorResponseException;
 import net.dv8tion.jda.core.exceptions.InsufficientPermissionException;
 import net.robinfriedli.botify.command.widgets.ActionRunable;
-import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.exceptions.UserException;
 
 /**
@@ -22,6 +25,8 @@ public abstract class AbstractWidget {
 
     private final CommandManager commandManager;
     private final Message message;
+    private final String guildId;
+    private final Logger logger;
     private List<WidgetAction> actions;
     // if the message has been deleted by a widget action that does not always require a reset
     private boolean messageDeleted;
@@ -29,6 +34,8 @@ public abstract class AbstractWidget {
     protected AbstractWidget(CommandManager commandManager, Message message) {
         this.commandManager = commandManager;
         this.message = message;
+        this.guildId = message.getGuild().getId();
+        logger = LoggerFactory.getLogger(getClass());
     }
 
     public abstract List<WidgetAction> setupActions();
@@ -48,35 +55,54 @@ public abstract class AbstractWidget {
     public void setup() {
         this.actions = setupActions();
         try {
-            CompletableFuture<Boolean> failed = new CompletableFuture<>();
+            CompletableFuture<RuntimeException> futureException = new CompletableFuture<>();
             for (int i = 0; i < actions.size(); i++) {
                 WidgetAction action = actions.get(i);
                 int finalI = i;
-                message.addReaction(action.getUnicode()).queueAfter(100, TimeUnit.MILLISECONDS, aVoid -> {
-                    if (finalI == actions.size() - 1 && !failed.isDone()) {
-                        failed.complete(false);
+                message.addReaction(action.getUnicode()).queue(aVoid -> {
+                    if (finalI == actions.size() - 1 && !futureException.isDone()) {
+                        futureException.complete(null);
                     }
-                }, throwable -> failed.complete(true));
+                }, throwable -> {
+                    if (throwable instanceof InsufficientPermissionException || throwable instanceof ErrorResponseException) {
+                        if (!futureException.isDone()) {
+                            futureException.complete((RuntimeException) throwable);
+                        }
+                    } else {
+                        logger.warn("Unexpected exception while adding reaction", throwable);
+                    }
+                });
             }
 
-            failed.thenAccept(completedFailed -> {
-                if (completedFailed) {
-                    new MessageService().sendError("Bot is missing permission to add reactions", message.getTextChannel());
-                }
-            });
+            RuntimeException e = futureException.get();
+            if (e != null) {
+                throw e;
+            }
         } catch (InsufficientPermissionException e) {
             // exception is actually never thrown when it should be, remove completable future hack if this ever changes
             throw new UserException("Bot is missing permission: " + e.getPermission().getName(), e);
+        } catch (ErrorResponseException e) {
+            if (e.getErrorCode() == 50013) {
+                throw new UserException("Bot is missing permission to add reactions");
+            } else {
+                logger.warn("Could not add reaction to message " + message, e);
+            }
+        } catch (InterruptedException | ExecutionException e) {
+            logger.warn("Unexpected exception while adding reaction", e);
         }
     }
 
     public void destroy() {
         commandManager.removeWidget(this);
-        try {
-            if (!isMessageDeleted()) {
-                message.clearReactions().queueAfter(3, TimeUnit.SECONDS);
+        if (!isMessageDeleted()) {
+            try {
+                try {
+                    message.delete().queue();
+                } catch (InsufficientPermissionException ignored) {
+                    message.clearReactions().queue();
+                }
+            } catch (Throwable ignored) {
             }
-        } catch (Throwable ignored) {
         }
     }
 
@@ -111,6 +137,10 @@ public abstract class AbstractWidget {
 
     public void setMessageDeleted(boolean messageDeleted) {
         this.messageDeleted = messageDeleted;
+    }
+
+    public String getGuildId() {
+        return guildId;
     }
 
     public class WidgetAction {

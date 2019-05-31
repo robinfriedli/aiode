@@ -1,5 +1,7 @@
 package net.robinfriedli.botify.entities;
 
+import java.io.Serializable;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -9,7 +11,7 @@ import javax.persistence.Table;
 
 @Entity
 @Table(name = "artist")
-public class Artist {
+public class Artist implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

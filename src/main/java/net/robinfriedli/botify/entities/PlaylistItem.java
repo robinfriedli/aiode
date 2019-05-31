@@ -1,5 +1,6 @@
 package net.robinfriedli.botify.entities;
 
+import java.io.Serializable;
 import java.util.Date;
 
 import javax.persistence.Column;
@@ -9,7 +10,7 @@ import javax.persistence.MappedSuperclass;
 import net.dv8tion.jda.core.entities.User;
 
 @MappedSuperclass
-public abstract class PlaylistItem {
+public abstract class PlaylistItem implements Serializable {
 
     @Column(name = "duration")
     long duration;
@@ -21,6 +22,8 @@ public abstract class PlaylistItem {
     private Playlist playlist;
     @Column(name = "created_timestamp")
     private Date createdTimestamp;
+    @Column(name = "item_index")
+    private Integer index;
 
     public PlaylistItem() {
     }
@@ -36,6 +39,8 @@ public abstract class PlaylistItem {
     public abstract boolean matches(String searchTerm);
 
     public abstract String display();
+
+    public abstract void add();
 
     public long getDuration() {
         return duration;
@@ -75,5 +80,13 @@ public abstract class PlaylistItem {
 
     public void setCreatedTimestamp(Date createdTimestamp) {
         this.createdTimestamp = createdTimestamp;
+    }
+
+    public Integer getIndex() {
+        return index;
+    }
+
+    public void setIndex(Integer index) {
+        this.index = index;
     }
 }

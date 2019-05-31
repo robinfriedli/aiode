@@ -1,5 +1,7 @@
 package net.robinfriedli.botify.entities;
 
+import java.io.Serializable;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -16,7 +18,7 @@ import net.robinfriedli.botify.exceptions.InvalidCommandException;
 
 @Entity
 @Table(name = "preset")
-public class Preset {
+public class Preset implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

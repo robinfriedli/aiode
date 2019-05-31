@@ -89,7 +89,7 @@ public class HelpCommand extends AbstractCommand {
                     .execute(command.getCommandContribution().getSubElements())
                     .collect();
                 if (!examples.isEmpty()) {
-                    embedBuilder.addField("__Examples__", "Practical usage examples for this command", false);
+                    embedBuilder.addField("__Examples__", "Practical usage examples for this command. Note that '$botify' can be exchanged for your custom prefix or bot name.", false);
                     for (XmlElement example : examples) {
                         embedBuilder.addField(example.getAttribute("title").getValue(), example.getTextContent(), false);
                     }

@@ -1,8 +1,10 @@
 package net.robinfriedli.botify.discord;
 
+import javax.annotation.Nullable;
+
 import net.robinfriedli.botify.audio.AudioPlayback;
+import net.robinfriedli.botify.concurrent.Invoker;
 import net.robinfriedli.botify.entities.GuildSpecification;
-import net.robinfriedli.botify.util.Invoker;
 
 public class GuildContext {
 
@@ -10,10 +12,10 @@ public class GuildContext {
     private final Invoker invoker;
     private final GuildSpecification specification;
 
-    public GuildContext(AudioPlayback playback, GuildSpecification specification) {
+    public GuildContext(AudioPlayback playback, GuildSpecification specification, @Nullable Invoker sharedInvoker) {
         this.playback = playback;
         this.specification = specification;
-        invoker = new Invoker();
+        invoker = sharedInvoker == null ? new Invoker() : sharedInvoker;
     }
 
     public AudioPlayback getPlayback() {

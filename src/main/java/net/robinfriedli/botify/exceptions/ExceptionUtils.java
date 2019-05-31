@@ -4,13 +4,13 @@ import java.awt.Color;
 
 import net.dv8tion.jda.core.EmbedBuilder;
 
-public class ExceptionUtils {
+class ExceptionUtils {
 
-    public static EmbedBuilder buildErrorEmbed(Throwable e) {
+    static EmbedBuilder buildErrorEmbed(Throwable e) {
         Throwable exception = e instanceof CommandRuntimeException ? e.getCause() : e;
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setColor(Color.RED);
-        embedBuilder.addField("Error", String.format("%s: %s", exception.getClass().getSimpleName(), exception.getMessage()), false);
+        embedBuilder.addField("Exception", String.format("%s: %s", exception.getClass().getSimpleName(), exception.getMessage()), false);
         recursiveCause(embedBuilder, exception);
         return embedBuilder;
     }

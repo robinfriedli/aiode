@@ -1,4 +1,4 @@
-package net.robinfriedli.botify.util;
+package net.robinfriedli.botify.tasks;
 
 import java.io.IOException;
 import java.util.Comparator;
@@ -22,9 +22,22 @@ import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
 import org.hibernate.Session;
 
-public class HibernatePlaylistMigrator {
+public class HibernatePlaylistMigrator implements PersistTask<Map<Playlist, List<PlaylistItem>>> {
 
-    public Map<Playlist, List<PlaylistItem>> doMigrate(Context context, Guild guild, Session session, SpotifyApi spotifyApi) throws IOException, SpotifyWebApiException {
+    private final Context context;
+    private final Guild guild;
+    private final SpotifyApi spotifyApi;
+    private final Session session;
+
+    public HibernatePlaylistMigrator(Context context, Guild guild, SpotifyApi spotifyApi, Session session) {
+        this.context = context;
+        this.guild = guild;
+        this.spotifyApi = spotifyApi;
+        this.session = session;
+    }
+
+    @Override
+    public Map<Playlist, List<PlaylistItem>> perform() throws IOException, SpotifyWebApiException {
         List<XmlElement> playlists = context.query(xmlElement -> xmlElement.getTagName().equals("playlist")).collect();
         Map<Playlist, List<PlaylistItem>> playlistMap = new HashMap<>();
         for (XmlElement playlist : playlists) {
@@ -101,5 +114,4 @@ public class HibernatePlaylistMigrator {
 
         return playlistMap;
     }
-
 }

@@ -6,7 +6,6 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import net.dv8tion.jda.core.EmbedBuilder;
@@ -16,6 +15,7 @@ import net.dv8tion.jda.core.entities.Role;
 import net.dv8tion.jda.core.exceptions.InsufficientPermissionException;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
+import net.robinfriedli.botify.concurrent.Invoker;
 import net.robinfriedli.botify.entities.AccessConfiguration;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.util.ISnowflakeMap;
@@ -29,10 +29,18 @@ public class GuildManager {
 
     private final Context specificationContext;
     private final ISnowflakeMap<GuildContext> guildContexts = new ISnowflakeMap<>();
+    // invoker used in mode shared, so that all guilds are synchronised
+    @Nullable
+    private final Invoker sharedInvoker;
     private AudioManager audioManager;
 
-    public GuildManager(Context specificationContext) {
+    public GuildManager(Context specificationContext, DiscordListener.Mode mode) {
         this.specificationContext = specificationContext;
+        if (mode == DiscordListener.Mode.SHARED) {
+            sharedInvoker = new Invoker();
+        } else {
+            sharedInvoker = null;
+        }
     }
 
     public void addGuild(Guild guild) {
@@ -125,7 +133,7 @@ public class GuildManager {
         ).getOnlyResult();
 
         if (existingSpecification != null) {
-            GuildContext guildContext = new GuildContext(new AudioPlayback(player, guild), (GuildSpecification) existingSpecification);
+            GuildContext guildContext = new GuildContext(new AudioPlayback(player, guild), (GuildSpecification) existingSpecification, sharedInvoker);
             guildContexts.put(guild, guildContext);
             return guildContext;
         } else {
@@ -137,7 +145,7 @@ public class GuildManager {
                 return guildSpecification;
             });
 
-            GuildContext guildContext = new GuildContext(new AudioPlayback(player, guild), newSpecification);
+            GuildContext guildContext = new GuildContext(new AudioPlayback(player, guild), newSpecification, sharedInvoker);
             guildContexts.put(guild, guildContext);
 
             alertNameChange(guild);

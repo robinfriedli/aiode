@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,7 @@ import com.wrapper.spotify.model_objects.specification.Track;
 import net.robinfriedli.botify.command.commands.PlayCommand;
 import net.robinfriedli.botify.command.commands.QueueCommand;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
+import net.robinfriedli.botify.util.SearchEngine;
 import net.robinfriedli.stringlist.StringList;
 import net.robinfriedli.stringlist.StringListImpl;
 
@@ -62,21 +64,47 @@ public class YouTubeService {
             search.setKey(apiKey);
 
             StringList artists = StringListImpl.create(spotifyTrack.getArtists(), ArtistSimplified::getName);
-            String searchTerm = spotifyTrack.getName() + " " + artists.toSeparatedString(" ");
+            String searchTerm = artists.toSeparatedString(" ") + " - " + spotifyTrack.getName();
             search.setQ(searchTerm);
             // set topic to filter results to music video
             search.setTopicId("/m/04rlf");
             search.setType("video");
             search.setFields("items(snippet/title,id/videoId)");
-            search.setMaxResults(1L);
+            search.setMaxResults(3L);
 
             List<SearchResult> items = search.execute().getItems();
             if (items.isEmpty()) {
                 youTubeVideo.cancel();
                 return;
             }
-            SearchResult searchResult = items.get(0);
-            String videoId = searchResult.getId().getVideoId();
+
+            List<Video> videos = getAllVideos(items.stream().map(item -> item.getId().getVideoId()).collect(Collectors.toList()));
+            if (videos.isEmpty()) {
+                youTubeVideo.cancel();
+                return;
+            } else if (videos.size() > 1) {
+                List<Video> artistMatches = videos
+                    .stream()
+                    .filter(video -> artists.stream().anyMatch(artist -> video.getSnippet().getChannelTitle().toLowerCase().contains(artist.toLowerCase())
+                        || artist.toLowerCase().contains(video.getSnippet().getChannelTitle().toLowerCase())))
+                    .collect(Collectors.toList());
+                if (!artistMatches.isEmpty()) {
+                    videos = artistMatches;
+                }
+            }
+
+            Video video;
+            if (videos.size() == 1) {
+                video = videos.get(0);
+            } else {
+                //noinspection OptionalGetWithoutIsPresent
+                video = SearchEngine
+                    .getBestLevenshteinMatches(false, videos, searchTerm, v -> v.getSnippet().getTitle())
+                    .stream()
+                    .max(Comparator.comparing(o -> o.getStatistics().getViewCount()))
+                    .get();
+            }
+            String videoId = video.getId();
             long durationMillis = getDurationMillis(videoId);
 
             String artistString = artists.toSeparatedString(", ");
@@ -149,10 +177,10 @@ public class YouTubeService {
 
     private List<Video> getAllVideos(List<String> videoIds) throws IOException {
         List<Video> videos = Lists.newArrayList();
-        YouTube.Videos.List query = youTube.videos().list("snippet,contentDetails")
+        YouTube.Videos.List query = youTube.videos().list("snippet,contentDetails,statistics")
             .setKey(apiKey)
             .setId(String.join(",", videoIds))
-            .setFields("items(snippet/title,id,contentDetails/duration)")
+            .setFields("items(snippet/title,snippet/channelTitle,id,contentDetails/duration,statistics/viewCount)")
             .setMaxResults(50L);
 
         String nextPageToken;
@@ -357,7 +385,7 @@ public class YouTubeService {
             }
         });
         durationLoadingThread.setUncaughtExceptionHandler(uncaughtExceptionHandler);
-        durationLoadingThread.setName("Botify duration loading");
+        durationLoadingThread.setName(Thread.currentThread().getName() + " (durations)");
         durationLoadingThread.start();
     }
 

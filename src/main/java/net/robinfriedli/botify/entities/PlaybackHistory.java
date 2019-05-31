@@ -1,5 +1,6 @@
 package net.robinfriedli.botify.entities;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -26,7 +27,7 @@ import org.hibernate.query.Query;
 
 @Entity
 @Table(name = "playback_history")
-public class PlaybackHistory {
+public class PlaybackHistory implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

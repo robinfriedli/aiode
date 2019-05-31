@@ -1,6 +1,7 @@
 package net.robinfriedli.botify.entities;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -17,6 +18,8 @@ import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
+import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
@@ -27,7 +30,7 @@ import net.robinfriedli.botify.audio.PlayableImpl;
 
 @Entity
 @Table(name = "playlist")
-public class Playlist {
+public class Playlist implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -54,11 +57,20 @@ public class Playlist {
     }
 
     public Playlist(String name, User user, Guild guild) {
-        this.name = name;
+        setName(name);
         createdUser = user.getName();
         createdUserId = user.getId();
         this.guild = guild.getName();
         this.guildId = guild.getId();
+    }
+
+    public static String sanatizeName(String name) {
+        if (name.contains(" ")) {
+            Splitter splitter = Splitter.on(" ").trimResults().omitEmptyStrings();
+            return Joiner.on(" ").join(splitter.split(name));
+        }
+
+        return name;
     }
 
     public long getPk() {
@@ -78,10 +90,10 @@ public class Playlist {
     }
 
     public long getDuration() {
-        return getPlaylistItems().stream().mapToLong(PlaylistItem::getDuration).sum();
+        return getItems().stream().mapToLong(PlaylistItem::getDuration).sum();
     }
 
-    public int getSongCount() {
+    public int getSize() {
         return songs.size() + videos.size() + urlTracks.size();
     }
 
@@ -117,10 +129,27 @@ public class Playlist {
         this.guildId = guildId;
     }
 
-    public List<PlaylistItem> getPlaylistItems() {
+    public List<PlaylistItem> getItems() {
         return Stream.of(getSongs(), getVideos(), getUrlTracks())
             .flatMap(Collection::stream)
-            .sorted(Comparator.comparing(PlaylistItem::getCreatedTimestamp))
+            .collect(Collectors.toList());
+    }
+
+    public List<PlaylistItem> getItemsSorted() {
+        return getItemsSorted(false);
+    }
+
+    public List<PlaylistItem> getItemsSorted(boolean ignoreNullIndex) {
+        return Stream.of(getSongs(), getVideos(), getUrlTracks())
+            .flatMap(Collection::stream)
+            .filter(item -> {
+                if (ignoreNullIndex) {
+                    return item.getIndex() != null;
+                } else {
+                    return true;
+                }
+            })
+            .sorted(Comparator.comparing(PlaylistItem::getIndex))
             .collect(Collectors.toList());
     }
 
@@ -132,8 +161,8 @@ public class Playlist {
      * Returns the items in this playlist as objects supported by the {@link PlayableImpl} class. Note that getting the
      * Spotify track for a Song requires this method to be invoked with client credentials
      */
-    public List<Object> getItems(SpotifyApi spotifyApi) throws IOException, SpotifyWebApiException {
-        List<PlaylistItem> playlistItems = getPlaylistItems();
+    public List<Object> getTracks(SpotifyApi spotifyApi) throws IOException, SpotifyWebApiException {
+        List<PlaylistItem> playlistItems = getItemsSorted();
 
         Map<Object, Integer> itemsWithIndex = new HashMap<>();
         Map<String, Integer> trackIdsWithIndex = new HashMap<>();
@@ -165,7 +194,7 @@ public class Playlist {
      */
     public List<Track> asTrackList(SpotifyApi spotifyApi) throws IOException, SpotifyWebApiException {
         List<Track> tracks = Lists.newArrayList();
-        for (PlaylistItem item : getPlaylistItems()) {
+        for (PlaylistItem item : getItemsSorted()) {
             if (item instanceof Song) {
                 tracks.add(spotifyApi.getTrack(((Song) item).getId()).build().execute());
             } else if (item instanceof Video && ((Video) item).getRedirectedSpotifyId() != null) {
@@ -199,4 +228,9 @@ public class Playlist {
     public void setUrlTracks(List<UrlTrack> urlTracks) {
         this.urlTracks = urlTracks;
     }
+
+    public boolean isEmpty() {
+        return songs.isEmpty() && videos.isEmpty() && urlTracks.isEmpty();
+    }
+
 }

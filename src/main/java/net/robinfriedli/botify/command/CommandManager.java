@@ -12,10 +12,12 @@ import com.google.common.collect.Lists;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.discord.DiscordListener;
 import net.robinfriedli.botify.discord.GuildManager;
+import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.CommandContribution;
 import net.robinfriedli.botify.entities.CommandInterceptorContribution;
 import net.robinfriedli.botify.entities.Preset;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
+import net.robinfriedli.botify.exceptions.UserException;
 import net.robinfriedli.botify.login.LoginManager;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.persist.Context;
@@ -73,29 +75,36 @@ public class CommandManager {
         }
 
         CommandContribution commandContribution = getCommandContributionForInput(command);
-
+        Optional<Preset> optionalPreset;
         AbstractCommand commandInstance;
-        if (commandContribution != null) {
+        try (Session session = sessionFactory.openSession()) {
+            // find a preset where the preset name matches the beginning of the command, find the longest matching preset name
+            optionalPreset = session
+                .createQuery("from " + Preset.class.getName()
+                    + " where guild_id = '" + context.getGuild().getId()
+                    + "' and lower(name) = substring(lower('" + command.replaceAll("'", "''") + "'), 0, length(name) + 1) " +
+                    "order by length(name) desc", Preset.class)
+                .setMaxResults(1)
+                .uniqueResultOptional();
+        }
+
+        if (commandContribution != null && optionalPreset.isPresent()) {
+            Preset preset = optionalPreset.get();
+            String identifier = commandContribution.getIdentifier();
+            if (preset.getName().length() > identifier.length()) {
+                commandInstance = preset.instantiateCommand(this, context, command);
+            } else {
+                String commandInput = command.substring(identifier.length()).trim();
+                commandInstance = commandContribution.instantiate(this, context, commandInput);
+            }
+        } else if (commandContribution != null) {
             String selectedCommand = commandContribution.getAttribute("identifier").getValue();
             String commandInput = command.substring(selectedCommand.length()).trim();
             commandInstance = commandContribution.instantiate(this, context, commandInput);
+        } else if (optionalPreset.isPresent()) {
+            commandInstance = optionalPreset.get().instantiateCommand(this, context, command);
         } else {
-            try (Session session = sessionFactory.openSession()) {
-                // find a preset where the preset name matches the beginning of the command, find the longest matching preset name
-                Optional<Preset> optionalPreset = session
-                    .createQuery("from " + Preset.class.getName()
-                        + " where guild_id = '" + context.getGuild().getId()
-                        + "' and lower(name) = substring(lower('" + command.replaceAll("'", "''") + "'), 0, length(name) + 1) " +
-                        "order by length(name) desc", Preset.class)
-                    .setMaxResults(1)
-                    .uniqueResultOptional();
-                if (optionalPreset.isPresent()) {
-                    Preset preset = optionalPreset.get();
-                    commandInstance = preset.instantiateCommand(this, context, command);
-                } else {
-                    throw new InvalidCommandException("No command or preset found");
-                }
-            }
+            throw new InvalidCommandException("No command or preset found.");
         }
 
         commandInterceptorContext.getInstancesOf(CommandInterceptorContribution.class)
@@ -194,16 +203,20 @@ public class CommandManager {
         List<AbstractWidget> toRemove = Lists.newArrayList();
         try {
             activeWidgets.stream()
-                .filter(w -> widget.getMessage().getGuild().getId().equals(w.getMessage().getGuild().getId()))
+                .filter(w -> widget.getGuildId().equals(w.getGuildId()))
                 .filter(w -> w.getClass().equals(widget.getClass()))
                 .forEach(toRemove::add);
         } catch (Throwable e) {
             // JDA weak reference might cause garbage collection issues when getting guild of message
             logger.warn("Exception while removing existing widget", e);
         }
-        widget.setup();
-        activeWidgets.add(widget);
-        toRemove.forEach(AbstractWidget::destroy);
+        try {
+            widget.setup();
+            activeWidgets.add(widget);
+            toRemove.forEach(AbstractWidget::destroy);
+        } catch (UserException e) {
+            new MessageService().sendError(e.getMessage(), widget.getMessage().getChannel());
+        }
     }
 
     public Optional<AbstractWidget> getActiveWidget(String messageId) {

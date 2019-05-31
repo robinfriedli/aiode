@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.LoggerFactory;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 
@@ -93,13 +94,14 @@ public class QueueViewHandler implements HttpHandler {
                 throw new IllegalArgumentException("No guild provided");
             }
         } catch (Throwable e) {
-            String loginPagePath = PropertiesLoadingService.requireProperty("ERROR_PAGE_PATH");
-            String html = Files.readString(Path.of(loginPagePath));
+            String errorPagePath = PropertiesLoadingService.requireProperty("ERROR_PAGE_PATH");
+            String html = Files.readString(Path.of(errorPagePath));
             String response = String.format(html, e.getMessage());
             exchange.sendResponseHeaders(200, response.getBytes().length);
             OutputStream responseBody = exchange.getResponseBody();
             responseBody.write(response.getBytes());
             responseBody.close();
+            LoggerFactory.getLogger(getClass()).error("Error in HttpHandler", e);
         }
     }
 

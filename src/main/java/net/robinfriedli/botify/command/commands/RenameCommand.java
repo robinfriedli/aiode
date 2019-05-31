@@ -19,8 +19,8 @@ public class RenameCommand extends AbstractCommand {
     public void doRun() {
         GuildManager guildManager = getManager().getGuildManager();
 
-        if (getCommandBody().length() < 1 || getCommandBody().length() > 10) {
-            throw new InvalidCommandException("Length should be 1 - 10 characters");
+        if (getCommandBody().length() < 1 || getCommandBody().length() > 20) {
+            throw new InvalidCommandException("Length should be 1 - 20 characters");
         }
 
         couldChangeNickname = guildManager.setName(getContext().getGuild(), getCommandBody());

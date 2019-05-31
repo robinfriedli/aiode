@@ -123,7 +123,8 @@
   <command identifier="volume" implementation="net.robinfriedli.botify.command.commands.VolumeCommand"
            description="Change the music volume. Enter a value between 1 and 200."/>
   <command identifier="preset" implementation="net.robinfriedli.botify.command.commands.PresetCommand"
-           description="Create or delete a command preset or show all saved presets. Command presets can be used as shortcuts for lengthy commands or creating an alias for a command. Presets han hold one variable marked by &quot;%s&quot; that may be assigned a value when using the preset.">
+           description="Create or delete a command preset or show all saved presets. Command presets can be used as shortcuts for lengthy commands or creating an alias for a command. Presets han hold one variable marked by &quot;%s&quot; that may be assigned a value when using the preset. Syntax to create a preset: [preset] $as [name].">
+    <example title="Create a preset to add a track to your favourite list like: $botify fav numb">$botify preset add %s $to favs $as fav</example>
     <example title="Create a preset to play a local list like: $botify pl my list">$botify preset play $list %s $as pl</example>
     <example title="Create an alias for command forward: $botify ff 20">$botify preset forward %s $as ff</example>
     <example title="List all local playlist with one word: $botify list">$botify preset search $list $as list</example>
@@ -134,5 +135,16 @@
   <command identifier="prefix" implementation="net.robinfriedli.botify.command.commands.PrefixCommand"
            description="Set a custom command prefix. Can be used instead of &quot;$botify&quot; or the bot name to start a command.">
     <example title="Set the command prefix to &quot;.&quot; to start a command like this: .play numb">$botify prefix .</example>
+  </command>
+  <command identifier="move" implementation="net.robinfriedli.botify.command.commands.MoveCommand"
+           description="Move one or several items in a botify playlist to a different index. When moving items down the playlist the items will end up behind the track that is currently at the target index or before when moving items upwards. When entering an index range to move it includes the start and end index. Indices are human, meaning they start at 1. To view full playlists with all indices search the list ($botify search $list my list) and then click the view full list link.">
+    <example title="Move the item that is currently at index 5 to index 10">$botify move 5 $to 10 $on my list</example>
+    <example title="Move the items that are currently in range 4 - 6 (including start &amp; end) down between the items that are currently at index 10 and 11.">$botify move 4-6 $to 10 $on my list</example>
+    <example title="Move the items that are currently in range 14 - 16 (including start &amp; end) up between the items that are currently at index 9 and 10.">$botify move 14-16 $to 10 $on my list</example>
+  </command>
+  <command identifier="insert" implementation="net.robinfriedli.botify.command.commands.InsertCommand"
+           description="Add a track to a botify playlist. This command is an extension to the add command that inserts the tracks at a specific index rather than adding them to the end of the list.">
+    <example title="Add tracks to the start of a playlist">$botify insert $spotify $own $list goat $to my list $at 1</example>
+    <example title="Insert tracks at index 10">$botify insert $youtube $list favs $to my list $at 10</example>
   </command>
 </commands>

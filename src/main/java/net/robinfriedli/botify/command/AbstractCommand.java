@@ -20,13 +20,13 @@ import net.dv8tion.jda.core.entities.MessageChannel;
 import net.dv8tion.jda.core.entities.MessageEmbed;
 import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.command.commands.AnswerCommand;
+import net.robinfriedli.botify.concurrent.CheckedRunnable;
+import net.robinfriedli.botify.concurrent.Invoker;
 import net.robinfriedli.botify.discord.DiscordListener;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.login.Login;
-import net.robinfriedli.botify.util.CheckedRunnable;
-import net.robinfriedli.botify.util.Invoker;
 import net.robinfriedli.botify.util.Util;
 import net.robinfriedli.stringlist.StringList;
 import net.robinfriedli.stringlist.StringListImpl;
@@ -244,13 +244,16 @@ public abstract class AbstractCommand {
     }
 
     /**
-     * Used for any command with an A $to B syntax. Requires the command body to have exactly one argument preceded by
-     * $.
+     * Used for any command with an A $to B syntax.
      *
      * @return both halves of the logical two sided statement
      */
     protected Pair<String, String> splitInlineArgument(String argument) {
-        StringList words = StringListImpl.create(getCommandBody(), " ");
+        return splitInlineArgument(getCommandBody(), argument);
+    }
+
+    protected Pair<String, String> splitInlineArgument(String part, String argument) {
+        StringList words = StringListImpl.create(part, " ");
 
         List<Integer> positions = words.findPositionsOf("$" + argument, true);
         if (positions.isEmpty()) {

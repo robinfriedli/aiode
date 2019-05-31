@@ -1,4 +1,4 @@
-package net.robinfriedli.botify.util;
+package net.robinfriedli.botify.concurrent;
 
 import java.util.concurrent.Callable;
 

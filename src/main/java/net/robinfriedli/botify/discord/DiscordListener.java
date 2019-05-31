@@ -27,6 +27,8 @@ import net.robinfriedli.botify.audio.YouTubeService;
 import net.robinfriedli.botify.command.AbstractWidget;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
+import net.robinfriedli.botify.concurrent.CommandExecutionThread;
+import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
 import net.robinfriedli.botify.exceptions.CommandExceptionHandler;
@@ -35,8 +37,11 @@ import net.robinfriedli.botify.exceptions.UserException;
 import net.robinfriedli.botify.exceptions.WidgetExceptionHandler;
 import net.robinfriedli.botify.listener.InterceptorChain;
 import net.robinfriedli.botify.listener.PlaylistItemTimestampListener;
+import net.robinfriedli.botify.listener.VerifyPlaylistListener;
 import net.robinfriedli.botify.login.LoginManager;
-import net.robinfriedli.botify.util.HibernatePlaylistMigrator;
+import net.robinfriedli.botify.tasks.HibernatePlaylistMigrator;
+import net.robinfriedli.botify.util.ISnowflakeMap;
+import net.robinfriedli.botify.util.ParameterContainer;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.SearchEngine;
 import net.robinfriedli.jxp.api.JxpBackend;
@@ -55,31 +60,35 @@ public class DiscordListener extends ListenerAdapter {
     private final GuildManager guildManager;
     private final DiscordBotListAPI discordBotListAPI;
     private final Logger logger;
-    private Mode mode;
+    private final ISnowflakeMap<ThreadExecutionQueue> guildExecutionQueues;
+    private final Mode mode;
 
     public DiscordListener(JxpBackend jxpBackend,
                            SpotifyApi.Builder spotfiyApiBuilder,
                            SessionFactory sessionFactory,
                            LoginManager loginManager,
                            YouTubeService youTubeService,
-                           DiscordBotListAPI discordBotListAPI) {
+                           DiscordBotListAPI discordBotListAPI,
+                           Mode mode) {
         this.jxpBackend = jxpBackend;
         this.spotfiyApiBuilder = spotfiyApiBuilder;
         this.sessionFactory = sessionFactory;
         this.discordBotListAPI = discordBotListAPI;
+        this.mode = mode;
         Context guildSpecificationContext = jxpBackend.getContext(PropertiesLoadingService.requireProperty("GUILD_SPECIFICATION_PATH"));
-        guildManager = new GuildManager(guildSpecificationContext);
+        guildManager = new GuildManager(guildSpecificationContext, mode);
         Context commandContributionContext = jxpBackend.getContext(PropertiesLoadingService.requireProperty("COMMANDS_PATH"));
         Context commandInterceptorContext = jxpBackend.getContext(PropertiesLoadingService.requireProperty("COMMAND_INTERCEPTORS_PATH"));
         commandManager = new CommandManager(this, loginManager, commandContributionContext, commandInterceptorContext, sessionFactory);
         audioManager = new AudioManager(youTubeService, sessionFactory, commandManager, guildManager);
         this.logger = LoggerFactory.getLogger(getClass());
+        this.guildExecutionQueues = new ISnowflakeMap<>();
     }
 
-    public void setupGuilds(Mode mode, List<Guild> guilds) {
-        this.mode = mode;
+    public void setupGuilds(List<Guild> guilds) {
         for (Guild guild : guilds) {
             guildManager.addGuild(guild);
+            guildExecutionQueues.put(guild, new ThreadExecutionQueue(3));
         }
     }
 
@@ -121,8 +130,15 @@ public class DiscordListener extends ListenerAdapter {
                     logger.error("Name prefix null for input " + msg + ". Bot name: " + botName + "; Prefix: " + prefix);
                 }
                 assert namePrefix != null;
+
+                ThreadExecutionQueue queue = guildExecutionQueues.get(guild);
+                if (queue == null) {
+                    ThreadExecutionQueue newQueue = new ThreadExecutionQueue(3);
+                    guildExecutionQueues.put(guild, newQueue);
+                    queue = newQueue;
+                }
                 CommandContext commandContext = new CommandContext(namePrefix, message, sessionFactory, spotfiyApiBuilder.build(), guildContext);
-                Thread commandExecutionThread = new Thread(() -> {
+                CommandExecutionThread commandExecutionThread = new CommandExecutionThread(commandContext, queue, () -> {
                     try {
                         commandManager.runCommand(commandContext);
                     } catch (UserException e) {
@@ -132,11 +148,7 @@ public class DiscordListener extends ListenerAdapter {
                     }
                 });
 
-                commandExecutionThread.setUncaughtExceptionHandler(new CommandExceptionHandler(commandContext, logger));
-                commandExecutionThread.setName("botify command execution: " + commandContext);
-                commandExecutionThread.start();
-
-                Thread monitoringThread = new Thread(() -> {
+                commandContext.registerMonitoring(new Thread(() -> {
                     try {
                         commandExecutionThread.join(5000);
                     } catch (InterruptedException e) {
@@ -145,10 +157,15 @@ public class DiscordListener extends ListenerAdapter {
                     if (commandExecutionThread.isAlive()) {
                         messageService.send("Still loading...", message.getChannel());
                     }
-                });
+                }));
 
-                commandContext.registerMonitoring(monitoringThread);
-                monitoringThread.start();
+                commandExecutionThread.setUncaughtExceptionHandler(new CommandExceptionHandler(commandContext, logger));
+                commandExecutionThread.setName("botify command execution: " + commandContext);
+                boolean queued = !queue.add(commandExecutionThread);
+
+                if (queued) {
+                    messageService.sendError("Executing too many commands concurrently. This command will be executed after one has finished.", message.getChannel());
+                }
             }
         }
     }
@@ -185,20 +202,23 @@ public class DiscordListener extends ListenerAdapter {
         }
 
         guildManager.addGuild(guild);
+        guildExecutionQueues.put(guild, new ThreadExecutionQueue(3));
 
         if (discordBotListAPI != null) {
             discordBotListAPI.setStats(event.getJDA().getGuilds().size());
         }
 
-        try (Session session = sessionFactory.withOptions().interceptor(InterceptorChain.of(PlaylistItemTimestampListener.class)).openSession()) {
+        ParameterContainer parameterContainer = new ParameterContainer(sessionFactory);
+        try (Session session = sessionFactory.withOptions().interceptor(InterceptorChain.of(parameterContainer,
+            PlaylistItemTimestampListener.class, VerifyPlaylistListener.class)).openSession()) {
             String playlistsPath = PropertiesLoadingService.requireProperty("PLAYLISTS_PATH");
             File file = new File(playlistsPath);
             if (file.exists()) {
                 Context context = jxpBackend.getContext(file);
-                HibernatePlaylistMigrator hibernatePlaylistMigrator = new HibernatePlaylistMigrator();
+                HibernatePlaylistMigrator hibernatePlaylistMigrator = new HibernatePlaylistMigrator(context, guild, spotfiyApiBuilder.build(), session);
                 Map<Playlist, List<PlaylistItem>> playlistMap;
                 try {
-                    playlistMap = hibernatePlaylistMigrator.doMigrate(context, guild, session, spotfiyApiBuilder.build());
+                    playlistMap = hibernatePlaylistMigrator.perform();
                 } catch (IOException | SpotifyWebApiException e) {
                     logger.error("Exception while migrating hibernate playlists", e);
                     session.close();
@@ -209,8 +229,11 @@ public class DiscordListener extends ListenerAdapter {
                 for (Playlist playlist : playlistMap.keySet()) {
                     Playlist existingList = SearchEngine.searchLocalList(session, playlist.getName(), mode == Mode.PARTITIONED, guild.getId());
                     if (existingList == null) {
+                        playlistMap.get(playlist).forEach(item -> {
+                            item.add();
+                            session.persist(item);
+                        });
                         session.persist(playlist);
-                        playlistMap.get(playlist).forEach(session::persist);
                     }
                 }
                 session.getTransaction().commit();
@@ -251,7 +274,10 @@ public class DiscordListener extends ListenerAdapter {
 
     @Override
     public void onGuildMessageDelete(GuildMessageDeleteEvent event) {
-        commandManager.getActiveWidget(event.getMessageId()).ifPresent(widget -> widget.setMessageDeleted(true));
+        commandManager.getActiveWidget(event.getMessageId()).ifPresent(widget -> {
+            widget.setMessageDeleted(true);
+            widget.destroy();
+        });
     }
 
     public GuildManager getGuildManager() {

@@ -25,7 +25,7 @@ public class DeleteCommand extends AbstractCommand {
         }
 
         invoke(() -> {
-            playlist.getPlaylistItems().forEach(session::delete);
+            playlist.getItemsSorted().forEach(session::delete);
             session.delete(playlist);
         });
     }

@@ -1,6 +1,16 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <versions xmlns="versionSpace">
-  <version launched="false" version="1.5.1.2">
+  <version launched="false" version="1.5.2">
+    <feature>add new commands to manage playlists: move and insert</feature>
+    <feature>make Spotify to YouTube redirect smarter</feature>
+    <feature>allow preset names to start with command names without conflict</feature>
+    <feature>improve traffic handling and limit how many commands can run concurrently per guild</feature>
+    <feature>prevent spam of "Could not load track" messages</feature>
+    <feature>spawning a new queue widget now deletes the old one</feature>
+    <feature>fix old widget messages not being deleted</feature>
+    <feature>raise bot name length limit to 20</feature>
+  </version>
+  <version launched="true" version="1.5.1.2">
     <feature>fix presets containing a single quote</feature>
   </version>
   <version launched="true" version="1.5.1.1">

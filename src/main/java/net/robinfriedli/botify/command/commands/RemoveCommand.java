@@ -34,6 +34,8 @@ public class RemoveCommand extends AbstractCommand {
 
         if (playlist == null) {
             throw new NoResultsFoundException("No local list found for " + pair.getRight());
+        } else if (playlist.isEmpty()) {
+            throw new InvalidCommandException("Playlist is empty");
         }
 
         if (argumentSet("index")) {
@@ -42,11 +44,18 @@ public class RemoveCommand extends AbstractCommand {
                 indices.applyForEach(String::trim);
                 if (indices.size() == 1) {
                     int index = parse(indices.get(0)) - 1;
-                    invoke(() -> session.delete(playlist.getPlaylistItems().get(index)));
+                    checkIndex(index, playlist);
+                    invoke(() -> session.delete(playlist.getItemsSorted().get(index)));
                 } else {
-                    int start = parse(indices.get(0)) - 1;
+                    int start = parse(indices.get(0));
                     int end = parse(indices.get(1));
-                    invoke(() -> playlist.getPlaylistItems().subList(start, end).forEach(session::delete));
+                    checkIndex(start, playlist);
+                    checkIndex(end, playlist);
+                    if (end <= start) {
+                        throw new InvalidCommandException("End index needs to be greater than start.");
+                    }
+
+                    invoke(() -> playlist.getItemsSorted().subList(start - 1, end).forEach(session::delete));
                 }
             } else {
                 throw new InvalidCommandException("Expected one or two indices but found " + indices.size());
@@ -74,6 +83,12 @@ public class RemoveCommand extends AbstractCommand {
             return Integer.parseInt(s);
         } catch (NumberFormatException e) {
             throw new InvalidCommandException(s + " is not an integer");
+        }
+    }
+
+    private void checkIndex(int index, Playlist playlist) {
+        if (!(index > 0 && index <= playlist.getSize())) {
+            throw new InvalidCommandException(String.format("Invalid index '%s'. Needs to in range 1 - %s", index, playlist.getSize()));
         }
     }
 

@@ -4,4 +4,5 @@
   <startupTask implementation="net.robinfriedli.botify.boot.tasks.SetRedirectedSpotifyTrackNameTask"/>
   <startupTask implementation="net.robinfriedli.botify.boot.tasks.MigratePlaylistsTask"/>
   <startupTask implementation="net.robinfriedli.botify.boot.tasks.VersionUpdateAlertTask"/>
+  <startupTask implementation="net.robinfriedli.botify.boot.tasks.SetPlaylistItemIndexTask"/>
 </startupTasks>
