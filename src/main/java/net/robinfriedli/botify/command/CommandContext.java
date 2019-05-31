@@ -1,5 +1,7 @@
 package net.robinfriedli.botify.command;
 
+import java.util.UUID;
+
 import org.slf4j.LoggerFactory;
 
 import com.wrapper.spotify.SpotifyApi;
@@ -13,6 +15,7 @@ import net.robinfriedli.botify.entities.CommandHistory;
 import net.robinfriedli.botify.listener.AlertEventListener;
 import net.robinfriedli.botify.listener.InterceptorChain;
 import net.robinfriedli.botify.listener.PlaylistItemTimestampListener;
+import net.robinfriedli.botify.listener.VerifyPlaylistListener;
 import net.robinfriedli.botify.util.ParameterContainer;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -24,6 +27,7 @@ public class CommandContext {
     private final SessionFactory sessionFactory;
     private final SpotifyApi spotifyApi;
     private final GuildContext guildContext;
+    private final String id;
     private Session session;
     private CommandHistory commandHistory;
     private Thread monitoringThread;
@@ -34,6 +38,7 @@ public class CommandContext {
         this.guildContext = guildContext;
         this.commandBody = message.getContentDisplay().substring(namePrefix.length()).trim();
         this.message = message;
+        id = UUID.randomUUID().toString();
     }
 
     public Message getMessage() {
@@ -64,6 +69,10 @@ public class CommandContext {
         this.monitoringThread = monitoringThread;
     }
 
+    public void startMonitoring() {
+        monitoringThread.start();
+    }
+
     public void interruptMonitoring() {
         monitoringThread.interrupt();
     }
@@ -72,10 +81,10 @@ public class CommandContext {
         if (session != null && session.isOpen()) {
             return session;
         } else {
-            ParameterContainer parameterContainer = new ParameterContainer(getChannel(), LoggerFactory.getLogger("Hibernate Interceptors"));
+            ParameterContainer parameterContainer = new ParameterContainer(sessionFactory, getChannel(), LoggerFactory.getLogger("Hibernate Interceptors"));
             Session session = sessionFactory
                 .withOptions()
-                .interceptor(InterceptorChain.of(parameterContainer, PlaylistItemTimestampListener.class, AlertEventListener.class))
+                .interceptor(InterceptorChain.of(parameterContainer, PlaylistItemTimestampListener.class, VerifyPlaylistListener.class, AlertEventListener.class))
                 .openSession();
             this.session = session;
             return session;
@@ -102,5 +111,13 @@ public class CommandContext {
 
     public GuildContext getGuildContext() {
         return guildContext;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public String toString() {
+        return "CommandContext@" + id;
     }
 }

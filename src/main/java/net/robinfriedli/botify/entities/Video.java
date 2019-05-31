@@ -7,6 +7,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
+import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.audio.YouTubeVideo;
 import net.robinfriedli.botify.audio.YouTubeVideoImpl;
@@ -37,7 +38,12 @@ public class Video extends PlaylistItem {
             id = video.getId();
             title = video.getTitle();
             duration = video.getDuration();
-            playlist.getVideos().add(this);
+
+            Track redirectedSpotifyTrack = video.getRedirectedSpotifyTrack();
+            if (redirectedSpotifyTrack != null) {
+                redirectedSpotifyId = redirectedSpotifyTrack.getId();
+                spotifyTrackName = redirectedSpotifyTrack.getName();
+            }
         } catch (InterruptedException e) {
             throw new RuntimeException("Cannot create video element for cancelled YouTube video " + video.toString(), e);
         }
@@ -65,6 +71,11 @@ public class Video extends PlaylistItem {
     @Override
     public String display() {
         return title;
+    }
+
+    @Override
+    public void add() {
+        getPlaylist().getVideos().add(this);
     }
 
     public YouTubeVideo asYouTubeVideo() {

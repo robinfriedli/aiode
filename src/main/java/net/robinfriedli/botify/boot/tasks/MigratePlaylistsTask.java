@@ -15,7 +15,7 @@ import net.robinfriedli.botify.audio.YouTubeService;
 import net.robinfriedli.botify.boot.StartupTask;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
-import net.robinfriedli.botify.util.HibernatePlaylistMigrator;
+import net.robinfriedli.botify.tasks.HibernatePlaylistMigrator;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.persist.Context;
@@ -42,11 +42,14 @@ public class MigratePlaylistsTask implements StartupTask {
     }
 
     private void migrateFile(Session session, Context context, Guild guild, SpotifyApi spotifyApi) throws IOException, SpotifyWebApiException {
-        HibernatePlaylistMigrator hibernatePlaylistMigrator = new HibernatePlaylistMigrator();
-        Map<Playlist, List<PlaylistItem>> playlistMap = hibernatePlaylistMigrator.doMigrate(context, guild, session, spotifyApi);
+        HibernatePlaylistMigrator hibernatePlaylistMigrator = new HibernatePlaylistMigrator(context, guild, spotifyApi, session);
+        Map<Playlist, List<PlaylistItem>> playlistMap = hibernatePlaylistMigrator.perform();
         for (Playlist playlist : playlistMap.keySet()) {
+            playlistMap.get(playlist).forEach(item -> {
+                item.add();
+                session.persist(item);
+            });
             session.persist(playlist);
-            playlistMap.get(playlist).forEach(session::persist);
         }
         File directory = new File("./resources/archive");
         if (!directory.exists()) {

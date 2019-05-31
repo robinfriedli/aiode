@@ -33,6 +33,7 @@ import net.robinfriedli.botify.entities.UrlTrack;
 import net.robinfriedli.botify.entities.Video;
 import net.robinfriedli.botify.listener.InterceptorChain;
 import net.robinfriedli.botify.listener.PlaylistItemTimestampListener;
+import net.robinfriedli.botify.listener.VerifyPlaylistListener;
 import net.robinfriedli.botify.login.LoginManager;
 import net.robinfriedli.botify.servers.HttpServerStarter;
 import net.robinfriedli.botify.util.ParameterContainer;
@@ -63,6 +64,7 @@ public class Launcher {
             String startupTasksPath = PropertiesLoadingService.requireProperty("STARTUP_TASKS_PATH");
             boolean modePartitioned = PropertiesLoadingService.loadBoolProperty("MODE_PARTITIONED");
             String httpHandlersPath = PropertiesLoadingService.requireProperty("HTTP_HANDLERS_PATH");
+            String hibernateConfigurationPath = PropertiesLoadingService.requireProperty("HIBERNATE_CONFIGURATION");
             String discordBotId = PropertiesLoadingService.loadProperty("DISCORD_BOT_ID");
             String discordbotsToken = PropertiesLoadingService.loadProperty("DISCORDBOTS_TOKEN");
             // setup persistence
@@ -75,7 +77,7 @@ public class Launcher {
                 .build();
 
             Configuration configuration = new Configuration();
-            configuration.configure(new File("./resources/hibernate.cfg.xml"));
+            configuration.configure(new File(hibernateConfigurationPath));
             configuration.addAnnotatedClass(Playlist.class);
             configuration.addAnnotatedClass(Song.class);
             configuration.addAnnotatedClass(Video.class);
@@ -123,7 +125,8 @@ public class Launcher {
 
             // setup DiscordListener
             LoginManager loginManager = new LoginManager();
-            DiscordListener discordListener = new DiscordListener(jxpBackend, spotifyApiBuilder, sessionFactory, loginManager, youTubeService, discordBotListAPI);
+            DiscordListener.Mode mode = modePartitioned ? DiscordListener.Mode.PARTITIONED : DiscordListener.Mode.SHARED;
+            DiscordListener discordListener = new DiscordListener(jxpBackend, spotifyApiBuilder, sessionFactory, loginManager, youTubeService, discordBotListAPI, mode);
 
             // start servers
             Context httpHanldersContext = jxpBackend.getContext(httpHandlersPath);
@@ -133,7 +136,8 @@ public class Launcher {
 
             // run startup tasks
             Context context = jxpBackend.getContext(startupTasksPath);
-            Session session = sessionFactory.withOptions().interceptor(InterceptorChain.of(PlaylistItemTimestampListener.class)).openSession();
+            Session session = sessionFactory.withOptions().interceptor(InterceptorChain.of(parameterContainer,
+                PlaylistItemTimestampListener.class, VerifyPlaylistListener.class)).openSession();
             for (XmlElement element : context.getElements()) {
                 @SuppressWarnings("unchecked")
                 Class<StartupTask> task = (Class<StartupTask>) Class.forName(element.getAttribute("implementation").getValue());
@@ -141,11 +145,8 @@ public class Launcher {
             }
             session.close();
 
-            if (modePartitioned) {
-                discordListener.setupGuilds(DiscordListener.Mode.PARTITIONED, jda.getGuilds());
-            } else {
-                discordListener.setupGuilds(DiscordListener.Mode.SHARED, jda.getGuilds());
-            }
+            // setup guilds
+            discordListener.setupGuilds(jda.getGuilds());
 
             jda.addEventListener(discordListener);
             logger.info("All starters done");

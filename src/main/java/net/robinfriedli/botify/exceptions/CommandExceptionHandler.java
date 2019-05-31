@@ -24,6 +24,7 @@ public class CommandExceptionHandler implements Thread.UncaughtExceptionHandler 
         MessageService messageService = new MessageService();
 
         EmbedBuilder embedBuilder = ExceptionUtils.buildErrorEmbed(e);
+        embedBuilder.addField("CommandContext ID", commandContext.getId(), false);
         messageService.send(embedBuilder.build(), channel);
         logger.error(String.format("Exception while handling command %s on guild %s", command, commandContext.getGuild().getName()), e);
     }

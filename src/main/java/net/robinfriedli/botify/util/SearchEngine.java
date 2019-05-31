@@ -63,7 +63,8 @@ public class SearchEngine {
     @Nullable
     public static Playlist searchLocalList(Session session, String searchTerm, boolean isPartitioned, String guildId) {
         Optional<Playlist> playlist;
-        String baseQuery = "from " + Playlist.class.getName() + " where lower(name) like lower('" + searchTerm.replaceAll("'", "''") + "')";
+        String searchName = Playlist.sanatizeName(searchTerm).replaceAll("'", "''");
+        String baseQuery = "from " + Playlist.class.getName() + " where lower(name) like lower('" + searchName + "')";
         if (isPartitioned) {
             playlist = session
                 .createQuery(baseQuery + " and guild_id = '" + guildId + "'", Playlist.class)
@@ -76,7 +77,7 @@ public class SearchEngine {
     }
 
     public static List<PlaylistItem> searchPlaylistItems(Playlist playlist, String searchTerm) {
-        return playlist.getPlaylistItems().stream().filter(item -> item.matches(searchTerm)).collect(Collectors.toList());
+        return playlist.getItemsSorted().stream().filter(item -> item.matches(searchTerm)).collect(Collectors.toList());
     }
 
     public static List<PlaylistSimplified> searchSpotifyPlaylist(SpotifyApi spotifyApi, String searchTerm) throws IOException, SpotifyWebApiException {
@@ -158,17 +159,25 @@ public class SearchEngine {
         return optionalPreset.orElse(null);
     }
 
-    private static <E> List<E> getBestLevenshteinMatches(E[] objects, String searchTerm, Function<E, String> compareFunc) {
-        return getBestLevenshteinMatches(Arrays.asList(objects), searchTerm, compareFunc);
+    public static <E> List<E> getBestLevenshteinMatches(E[] objects, String searchTerm, Function<E, String> compareFunc) {
+        return getBestLevenshteinMatches(true, objects, searchTerm, compareFunc);
     }
 
-    private static <E> List<E> getBestLevenshteinMatches(List<E> objects, String searchTerm, Function<E, String> compareFunc) {
+    public static <E> List<E> getBestLevenshteinMatches(boolean limitDistance, E[] objects, String searchTerm, Function<E, String> compareFunc) {
+        return getBestLevenshteinMatches(limitDistance, Arrays.asList(objects), searchTerm, compareFunc);
+    }
+
+    public static <E> List<E> getBestLevenshteinMatches(List<E> objects, String searchTerm, Function<E, String> compareFunc) {
+        return getBestLevenshteinMatches(true, objects, searchTerm, compareFunc);
+    }
+
+    public static <E> List<E> getBestLevenshteinMatches(boolean limitDistance, List<E> objects, String searchTerm, Function<E, String> compareFunc) {
         LevenshteinDistance levenshteinDistance = new LevenshteinDistance();
         Multimap<Integer, E> objectsWithDistance = HashMultimap.create();
 
         for (E object : objects) {
             Integer editDistance = levenshteinDistance.apply(searchTerm.toLowerCase(), compareFunc.apply(object).toLowerCase());
-            if (editDistance < MAX_LEVENSHTEIN_DISTANCE) {
+            if (!limitDistance || editDistance < MAX_LEVENSHTEIN_DISTANCE) {
                 objectsWithDistance.put(editDistance, object);
             }
         }

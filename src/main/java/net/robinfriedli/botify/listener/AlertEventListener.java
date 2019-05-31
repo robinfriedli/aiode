@@ -3,6 +3,8 @@ package net.robinfriedli.botify.listener;
 import java.io.Serializable;
 import java.util.List;
 
+import org.slf4j.Logger;
+
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
@@ -27,13 +29,13 @@ public class AlertEventListener extends ChainableInterceptor {
     private Preset createdPreset;
     private Preset deletedPreset;
 
-    public AlertEventListener(MessageChannel channel, Interceptor next) {
-        super(next);
+    public AlertEventListener(MessageChannel channel, Interceptor next, Logger logger) {
+        super(next, logger);
         this.channel = channel;
     }
 
     @Override
-    public boolean onSave(Object entity, Serializable id, Object[] state, String[] propertyNames, Type[] types) {
+    public void onSaveChained(Object entity, Serializable id, Object[] state, String[] propertyNames, Type[] types) {
         if (entity instanceof Playlist) {
             Playlist playlist = (Playlist) entity;
             createdPlaylists.add(playlist);
@@ -42,11 +44,10 @@ public class AlertEventListener extends ChainableInterceptor {
         } else if (entity instanceof Preset) {
             createdPreset = (Preset) entity;
         }
-        return next().onSave(entity, id, state, propertyNames, types);
     }
 
     @Override
-    public void onDelete(Object entity, Serializable id, Object[] state, String[] propertyNames, Type[] types) {
+    public void onDeleteChained(Object entity, Serializable id, Object[] state, String[] propertyNames, Type[] types) {
         if (entity instanceof Playlist) {
             Playlist playlist = (Playlist) entity;
             deletedPlaylists.add(playlist);
@@ -55,11 +56,10 @@ public class AlertEventListener extends ChainableInterceptor {
         } else if (entity instanceof Preset) {
             deletedPreset = (Preset) entity;
         }
-        next().onDelete(entity, id, state, propertyNames, types);
     }
 
     @Override
-    public void afterTransactionCompletion(Transaction tx) {
+    public void afterTransactionCompletionChained(Transaction tx) {
         MessageService messageService = new MessageService();
         if (!addedItems.isEmpty()) {
             if (addedItems.size() == 1) {
@@ -123,8 +123,6 @@ public class AlertEventListener extends ChainableInterceptor {
         deletedPlaylists.clear();
         createdPreset = null;
         deletedPreset = null;
-
-        next().afterTransactionCompletion(tx);
     }
 
 }

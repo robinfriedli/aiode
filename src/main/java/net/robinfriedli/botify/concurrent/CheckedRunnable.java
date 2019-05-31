@@ -1,4 +1,4 @@
-package net.robinfriedli.botify.util;
+package net.robinfriedli.botify.concurrent;
 
 /**
  * Runnable that allows checked exceptions like a Callable

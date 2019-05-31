@@ -31,7 +31,6 @@ public class UrlTrack extends PlaylistItem {
         this.url = playable.getPlaybackUrl();
         this.title = playable.getDisplay();
         this.duration = playable.getDurationMs();
-        playlist.getUrlTracks().add(this);
     }
 
     @Override
@@ -54,6 +53,11 @@ public class UrlTrack extends PlaylistItem {
     @Override
     public String display() {
         return title;
+    }
+
+    @Override
+    public void add() {
+        getPlaylist().getUrlTracks().add(this);
     }
 
     public UrlPlayable asPlayable() {

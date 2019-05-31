@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.LoggerFactory;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 
@@ -65,7 +66,7 @@ public class PlaylistViewHandler implements HttpHandler {
                         playlist.getName(),
                         Util.normalizeMillis(playlist.getDuration()),
                         createdUser,
-                        playlist.getSongCount(),
+                        playlist.getSize(),
                         getList(playlist));
 
                     byte[] bytes = htmlString.getBytes();
@@ -87,6 +88,7 @@ public class PlaylistViewHandler implements HttpHandler {
             OutputStream responseBody = exchange.getResponseBody();
             responseBody.write(response.getBytes());
             responseBody.close();
+            LoggerFactory.getLogger(getClass()).error("Error in HttpHandler", e);
         } finally {
             if (session != null) {
                 session.close();
@@ -96,7 +98,7 @@ public class PlaylistViewHandler implements HttpHandler {
 
     private String getList(Playlist playlist) {
         StringBuilder listBuilder = new StringBuilder();
-        List<PlaylistItem> playlistItems = playlist.getPlaylistItems();
+        List<PlaylistItem> playlistItems = playlist.getItemsSorted();
         for (int i = 0; i < playlistItems.size(); i++) {
             PlaylistItem item = playlistItems.get(i);
             listBuilder.append("<tr>").append(System.lineSeparator())

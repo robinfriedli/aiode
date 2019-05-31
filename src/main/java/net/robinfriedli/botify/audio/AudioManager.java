@@ -119,12 +119,16 @@ public class AudioManager extends AudioEventAdapter {
                 }).start();
             } else if (result instanceof Throwable) {
                 EmbedBuilder embedBuilder = new EmbedBuilder();
-                embedBuilder.setTitle("Could not load track");
+                embedBuilder.setTitle("Could not load track " + track.getDisplayInterruptible());
                 embedBuilder.setDescription(((Throwable) result).getMessage());
                 embedBuilder.setColor(Color.RED);
 
-                new MessageService().send(embedBuilder.build(), audioPlayback.getCommunicationChannel());
-                iterateQueue(audioPlayback, audioQueue);
+                CompletableFuture<Message> message = new MessageService().send(embedBuilder.build(), audioPlayback.getCommunicationChannel());
+                message.thenAccept(audioPlayback::setLastErrorNotification);
+
+                if (audioQueue.hasNext(true)) {
+                    iterateQueue(audioPlayback, audioQueue);
+                }
             } else {
                 throw new UnsupportedOperationException("Expected an AudioTrack");
             }
@@ -366,8 +370,6 @@ public class AudioManager extends AudioEventAdapter {
                 result.complete(e);
                 if (e.severity != FriendlyException.Severity.COMMON) {
                     logger.error("lavaplayer threw an exception while loading track " + playbackUrl, e);
-                } else {
-                    logger.warn("lavaplayer could not load track " + playbackUrl, e);
                 }
             }
         });
