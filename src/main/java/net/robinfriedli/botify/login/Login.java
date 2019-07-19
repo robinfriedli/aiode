@@ -56,6 +56,11 @@ public class Login {
         expired = true;
     }
 
+    public void cancel() {
+        refreshTimer.cancel();
+        expire();
+    }
+
     private class AutoRefreshTask extends TimerTask {
 
         private final SpotifyApi spotifyApi;

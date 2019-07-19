@@ -9,8 +9,8 @@ import com.wrapper.spotify.model_objects.specification.Track;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.entities.CommandContribution;
 import net.robinfriedli.botify.entities.Playlist;
+import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.util.SearchEngine;
 
@@ -29,7 +29,7 @@ public class UploadCommand extends AbstractCommand {
             throw new InvalidCommandException("No local list found for " + getCommandBody());
         }
 
-        runWithLogin(getContext().getUser(), () -> {
+        runWithLogin(() -> {
             List<Track> tracks = playlist.asTrackList(spotifyApi);
             String name = playlist.getName();
 
@@ -54,6 +54,6 @@ public class UploadCommand extends AbstractCommand {
 
     @Override
     public void onSuccess() {
-        sendSuccess(getContext().getChannel(), "Created Spotify playlist " + getCommandBody());
+        sendSuccess("Created Spotify playlist " + getCommandBody());
     }
 }

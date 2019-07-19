@@ -12,6 +12,7 @@ public class ThreadExecutionQueue {
     private final ConcurrentLinkedQueue<QueuedThread> queue;
     private final Set<QueuedThread> currentPool;
     private final int size;
+    private boolean closed;
 
     public ThreadExecutionQueue(int size) {
         this.queue = new ConcurrentLinkedQueue<>();
@@ -24,18 +25,37 @@ public class ThreadExecutionQueue {
      * @return true if the currentPool has free space, false if the thread was queued instead
      */
     public boolean add(QueuedThread thread) {
-        queue.add(thread);
-        if (currentPool.size() < size) {
-            runNext();
-            return true;
-        }
+        if (!closed) {
+            queue.add(thread);
+            if (currentPool.size() < size) {
+                runNext();
+                return true;
+            }
 
-        return false;
+            return false;
+        } else {
+            throw new IllegalStateException("This " + getClass().getSimpleName() + " has been closed");
+        }
     }
 
-    public synchronized void freeSlot(QueuedThread thread) {
+    public void close() {
+        closed = true;
+    }
+
+    public void join() throws InterruptedException {
+        if (!currentPool.isEmpty()) {
+            QueuedThread[] queuedThreads = currentPool.toArray(new QueuedThread[0]);
+            for (QueuedThread queuedThread : queuedThreads) {
+                queuedThread.join();
+            }
+        }
+    }
+
+    synchronized void freeSlot(QueuedThread thread) {
         currentPool.remove(thread);
-        runNext();
+        if (!closed) {
+            runNext();
+        }
     }
 
     private synchronized void runNext() {

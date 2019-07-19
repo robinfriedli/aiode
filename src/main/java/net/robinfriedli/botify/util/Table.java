@@ -14,6 +14,8 @@ import net.dv8tion.jda.core.EmbedBuilder;
  * snippet to make sure all characters are the same size.
  *
  * As of botify 1.4 the table class has been replaced by the usage of {@link EmbedBuilder}
+ *
+ * See {@link Table2} to create tables for the EmbedBuilder (since v1.5.1)
  */
 public class Table {
 

@@ -3,7 +3,11 @@ package net.robinfriedli.botify.discord;
 import java.awt.Color;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -14,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 import net.dv8tion.jda.core.EmbedBuilder;
+import net.dv8tion.jda.core.JDA;
 import net.dv8tion.jda.core.MessageBuilder;
 import net.dv8tion.jda.core.Permission;
 import net.dv8tion.jda.core.entities.Guild;
@@ -22,11 +27,18 @@ import net.dv8tion.jda.core.entities.MessageChannel;
 import net.dv8tion.jda.core.entities.MessageEmbed;
 import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.entities.User;
+import net.dv8tion.jda.core.exceptions.ErrorResponseException;
 import net.dv8tion.jda.core.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.core.requests.restaction.MessageAction;
+import net.robinfriedli.botify.audio.AudioManager;
+import net.robinfriedli.botify.audio.AudioPlayback;
+import net.robinfriedli.botify.discord.properties.ColorSchemeProperty;
+import net.robinfriedli.botify.entities.CommandHistory;
+import net.robinfriedli.botify.entities.PlaybackHistory;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.stringlist.StringList;
 import net.robinfriedli.stringlist.StringListImpl;
+import org.hibernate.Session;
 
 public class MessageService {
 
@@ -43,22 +55,37 @@ public class MessageService {
         this.logger = LoggerFactory.getLogger(getClass());
     }
 
-    public void send(String message, MessageChannel channel) {
+    public CompletableFuture<Message> send(String message, MessageChannel channel) {
         if (message.length() < limit) {
-            sendInternal(channel, message);
+            return sendInternal(channel, message);
         } else {
             List<String> outputParts = separateMessage(message);
             outputParts.forEach(part -> sendInternal(channel, part));
+            CompletableFuture<Message> canceledFuture = new CompletableFuture<>();
+            canceledFuture.cancel(true);
+            return canceledFuture;
         }
     }
 
-    public void send(String message, User user) {
+    public CompletableFuture<Message> send(String message, User user) {
+        CompletableFuture<Message> futureMessage = new CompletableFuture<>();
         if (message.length() < limit) {
-            user.openPrivateChannel().queue(channel -> sendInternal(channel, message));
+            user.openPrivateChannel().queue(channel -> {
+                CompletableFuture<Message> future = sendInternal(channel, message);
+                future.whenComplete((msg, e) -> {
+                    if (msg != null) {
+                        futureMessage.complete(msg);
+                    } else {
+                        futureMessage.completeExceptionally(e);
+                    }
+                });
+            });
         } else {
             List<String> outputParts = separateMessage(message);
             outputParts.forEach(part -> user.openPrivateChannel().queue(channel -> sendInternal(channel, part)));
+            futureMessage.cancel(false);
         }
+        return futureMessage;
     }
 
     public CompletableFuture<Message> send(String message, Guild guild) {
@@ -73,12 +100,22 @@ public class MessageService {
         return acceptForGuild(guild, channel -> channel.sendMessage(messageEmbed));
     }
 
+    public CompletableFuture<Message> send(EmbedBuilder embedBuilder, MessageChannel channel) {
+        embedBuilder.setColor(ColorSchemeProperty.getColor());
+        return send(embedBuilder.build(), channel);
+    }
+
+    public CompletableFuture<Message> send(EmbedBuilder embedBuilder, Guild guild) {
+        embedBuilder.setColor(ColorSchemeProperty.getColor());
+        return send(embedBuilder.build(), guild);
+    }
+
     public CompletableFuture<Message> sendWithLogo(EmbedBuilder embedBuilder, MessageChannel channel) throws IOException {
         MessageBuilder messageBuilder = new MessageBuilder();
         String baseUri = PropertiesLoadingService.requireProperty("BASE_URI");
         InputStream file = new URL(baseUri + "/resources-public/img/botify-logo-small.png").openStream();
         embedBuilder.setThumbnail("attachment://logo.png");
-        embedBuilder.setColor(Color.decode("#1DB954"));
+        embedBuilder.setColor(ColorSchemeProperty.getColor());
         messageBuilder.setEmbed(embedBuilder.build());
         return send(messageBuilder, file, "logo.png", channel);
     }
@@ -88,7 +125,7 @@ public class MessageService {
         String baseUri = PropertiesLoadingService.requireProperty("BASE_URI");
         InputStream file = new URL(baseUri + "/resources-public/img/botify-logo.png").openStream();
         embedBuilder.setThumbnail("attachment://logo.png");
-        embedBuilder.setColor(Color.decode("#1DB954"));
+        embedBuilder.setColor(ColorSchemeProperty.getColor());
         messageBuilder.setEmbed(embedBuilder.build());
         send(messageBuilder, file, "logo.png", guild);
     }
@@ -139,6 +176,42 @@ public class MessageService {
         }
     }
 
+    public void sendToActiveGuilds(MessageEmbed message, JDA jda, AudioManager audioManager, Session session) {
+        List<Guild> activeGuilds = Lists.newArrayList();
+
+        for (Guild guild : jda.getGuilds()) {
+            // consider all guilds that are playing music right now to be active
+            AudioPlayback playback = audioManager.getPlaybackForGuild(guild);
+            if (playback.isPlaying()) {
+                activeGuilds.add(guild);
+                // continue to next guild, as this has already been determined to be active and query execution is unnecessary
+                continue;
+            }
+
+            // consider all guilds that issued a command within the last 10 minutes to be active
+            long millis10MinutesAgo = System.currentTimeMillis() - 600000;
+            Long recentCommands = session.createQuery("select count(*) from " + CommandHistory.class.getName()
+                + " where guild_id = '" + guild.getId() + "' and start_millis > " + millis10MinutesAgo, Long.class).uniqueResult();
+            if (recentCommands > 0) {
+                activeGuilds.add(guild);
+                continue;
+            }
+
+            // consider all guilds that played a track withing the last 10 minutes to be active
+            LocalDateTime dateTime10MinutesAgo = LocalDateTime.ofInstant(Instant.ofEpochMilli(millis10MinutesAgo), ZoneId.systemDefault());
+            Long recentPlaybacks = session.createQuery("select count(*) from " + PlaybackHistory.class.getName()
+                + " where guild_id = '" + guild.getId() + "' and timestamp > '" + dateTime10MinutesAgo + "'", Long.class).uniqueResult();
+            if (recentPlaybacks > 0) {
+                activeGuilds.add(guild);
+            }
+        }
+
+        logger.info("Sending message to " + activeGuilds.size() + " active guilds.");
+        for (Guild activeGuild : activeGuilds) {
+            send(message, activeGuild);
+        }
+    }
+
     private CompletableFuture<Message> sendInternal(MessageChannel channel, String text) {
         return accept(channel, c -> c.sendMessage(text));
     }
@@ -151,21 +224,31 @@ public class MessageService {
         CompletableFuture<Message> futureMessage = new CompletableFuture<>();
         try {
             MessageAction messageAction = function.apply(channel);
-            messageAction.queue(futureMessage::complete, e -> logger.error("Error sending message", e));
+            messageAction.queue(futureMessage::complete, e -> {
+                handleError(e, channel);
+                futureMessage.completeExceptionally(e);
+            });
         } catch (InsufficientPermissionException e) {
             Permission permission = e.getPermission();
             if (permission == Permission.MESSAGE_WRITE) {
                 if (channel instanceof TextChannel && canTalk(((TextChannel) channel).getGuild())) {
                     Guild guild = ((TextChannel) channel).getGuild();
                     send("I do not have permission to send any messages to channel " + channel.getName() + " so I'll send it here instead.", guild);
-                    acceptForGuild(guild, function);
+                    acceptForGuild(guild, function).thenAccept(message -> {
+                        if (futureMessage.isDone()) {
+                            futureMessage.complete(message);
+                        }
+                    });
                 } else if (channel instanceof TextChannel) {
                     logger.warn("Unable to send messages to guild " + ((TextChannel) channel).getGuild());
+                    futureMessage.completeExceptionally(e);
                 } else {
                     logger.warn("Unable to send messages to " + channel);
+                    futureMessage.completeExceptionally(e);
                 }
             } else {
-                send("Bot is missing permission: " + permission.getName(), channel);
+                logger.warn("Bot is missing unexpected permission " + permission, e);
+                futureMessage.completeExceptionally(e);
             }
         }
 
@@ -194,6 +277,22 @@ public class MessageService {
 
     private boolean canTalk(Guild guild) {
         return guild.getTextChannels().stream().anyMatch(TextChannel::canTalk);
+    }
+
+    private void handleError(Throwable e, MessageChannel channel) {
+        if (e instanceof ErrorResponseException) {
+            if (e.getCause() instanceof SocketTimeoutException) {
+                logger.warn("Timeout sending message to channel " + channel);
+            } else {
+                logger.warn(String.format("Error response msg: %s cause: %s: %s sending message to channel %s",
+                    e.getMessage(),
+                    e.getCause(),
+                    e.getCause() != null ? e.getCause().getMessage() : "null",
+                    channel));
+            }
+        } else {
+            logger.error("Unexpected exception sending message to channel " + channel, e);
+        }
     }
 
     private List<String> separateMessage(String message) {

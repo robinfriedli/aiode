@@ -1,10 +1,10 @@
 package net.robinfriedli.botify.command.commands;
 
-import java.awt.Color;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.model_objects.specification.AlbumSimplified;
@@ -12,16 +12,17 @@ import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
 import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.core.EmbedBuilder;
-import net.robinfriedli.botify.audio.YouTubePlaylist;
-import net.robinfriedli.botify.audio.YouTubeService;
-import net.robinfriedli.botify.audio.YouTubeVideo;
+import net.robinfriedli.botify.Botify;
+import net.robinfriedli.botify.audio.youtube.YouTubePlaylist;
+import net.robinfriedli.botify.audio.youtube.YouTubeService;
+import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.entities.CommandContribution;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
+import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 import net.robinfriedli.botify.exceptions.NoSpotifyResultsFoundException;
@@ -64,12 +65,12 @@ public class SearchCommand extends AbstractCommand {
             throw new InvalidCommandException("No search term entered");
         }
 
-        SpotifyApi spotifyApi = getContext().getSpotifyApi();
+        Callable<List<Track>> loadTrackCallable = () -> getSpotifyService().searchTrack(getCommandBody(), argumentSet("own"));
         List<Track> found;
         if (argumentSet("own")) {
-            found = runWithLogin(getContext().getUser(), () -> SearchEngine.searchOwnTrack(spotifyApi, getCommandBody()));
+            found = runWithLogin(loadTrackCallable);
         } else {
-            found = runWithCredentials(() -> SearchEngine.searchTrack(spotifyApi, getCommandBody()));
+            found = runWithCredentials(loadTrackCallable);
         }
         if (!found.isEmpty()) {
             EmbedBuilder embedBuilder = new EmbedBuilder();
@@ -81,16 +82,15 @@ public class SearchCommand extends AbstractCommand {
                     StringListImpl.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", "),
                 "Track - Album - Artist"
             );
-            embedBuilder.setColor(Color.decode("#1DB954"));
 
-            sendMessage(getContext().getChannel(), embedBuilder.build());
+            sendMessage(embedBuilder);
         } else {
             throw new NoSpotifyResultsFoundException("No Spotify track found for " + getCommandBody());
         }
     }
 
     private void searchYouTubeVideo() throws InterruptedException {
-        YouTubeService youTubeService = getManager().getAudioManager().getYouTubeService();
+        YouTubeService youTubeService = Botify.get().getAudioManager().getYouTubeService();
         if (argumentSet("limit")) {
             int limit = getArgumentValue("limit", Integer.class);
             if (!(limit > 0 && limit <= 10)) {
@@ -124,7 +124,7 @@ public class SearchCommand extends AbstractCommand {
         responseBuilder.append("Link: ").append("https://www.youtube.com/watch?v=").append(youTubeVideo.getId()).append(System.lineSeparator());
         responseBuilder.append("Duration: ").append(Util.normalizeMillis(youTubeVideo.getDuration()));
 
-        sendMessage(getContext().getChannel(), responseBuilder.toString());
+        sendMessage(responseBuilder.toString());
     }
 
     private void listLocalList() throws IOException {
@@ -136,20 +136,20 @@ public class SearchCommand extends AbstractCommand {
             } else {
                 playlists = session.createQuery("from " + Playlist.class.getName(), Playlist.class).getResultList();
             }
-            if (playlists.isEmpty()) {
-                throw new NoResultsFoundException("No playlists");
-            }
 
             EmbedBuilder embedBuilder = new EmbedBuilder();
-            embedBuilder.setColor(Color.decode("#1DB954"));
 
-            Table2 table = new Table2(embedBuilder);
-            table.addColumn("Playlist", playlists, Playlist::getName);
-            table.addColumn("Duration", playlists, playlist -> Util.normalizeMillis(playlist.getDuration()));
-            table.addColumn("Items", playlists, playlist -> String.valueOf(playlist.getSize()));
-            table.build();
+            if (playlists.isEmpty()) {
+                embedBuilder.setDescription("No playlists");
+            } else {
+                Table2 table = new Table2(embedBuilder);
+                table.addColumn("Playlist", playlists, Playlist::getName);
+                table.addColumn("Duration", playlists, playlist -> Util.normalizeMillis(playlist.getDuration()));
+                table.addColumn("Items", playlists, playlist -> String.valueOf(playlist.getSize()));
+                table.build();
+            }
 
-            sendMessage(getContext().getChannel(), embedBuilder.build());
+            sendMessage(embedBuilder);
         } else {
             Playlist playlist = SearchEngine.searchLocalList(getContext().getSession(), getCommandBody(), isPartitioned(), getContext().getGuild().getId());
             if (playlist == null) {
@@ -185,12 +185,12 @@ public class SearchCommand extends AbstractCommand {
                 "Track - Duration"
             );
 
-            sendWithLogo(getContext().getChannel(), embedBuilder);
+            sendWithLogo(embedBuilder);
         }
     }
 
     private void listYouTubePlaylists() {
-        YouTubeService youTubeService = getManager().getAudioManager().getYouTubeService();
+        YouTubeService youTubeService = Botify.get().getAudioManager().getYouTubeService();
         if (argumentSet("limit")) {
             int limit = getArgumentValue("limit", Integer.class);
             if (!(limit > 0 && limit <= 10)) {
@@ -221,11 +221,10 @@ public class SearchCommand extends AbstractCommand {
         responseBuilder.append("Videos: ").append(youTubePlaylist.getVideos().size()).append(System.lineSeparator());
         responseBuilder.append("Owner: ").append(youTubePlaylist.getChannelTitle());
 
-        sendMessage(getContext().getChannel(), responseBuilder.toString());
+        sendMessage(responseBuilder.toString());
     }
 
     private void listSpotifyList() throws Exception {
-        SpotifyApi spotifyApi = getContext().getSpotifyApi();
         String commandBody = getCommandBody();
 
         if (commandBody.isBlank()) {
@@ -234,13 +233,13 @@ public class SearchCommand extends AbstractCommand {
 
         List<PlaylistSimplified> playlists;
         if (argumentSet("own")) {
-            playlists = runWithLogin(getContext().getUser(), () -> SearchEngine.searchOwnPlaylist(spotifyApi, getCommandBody()));
+            playlists = runWithLogin(() -> getSpotifyService().searchOwnPlaylist(getCommandBody()));
         } else {
-            playlists = runWithCredentials(() -> SearchEngine.searchSpotifyPlaylist(spotifyApi, getCommandBody()));
+            playlists = runWithCredentials(() -> getSpotifyService().searchPlaylist(getCommandBody()));
         }
         if (playlists.size() == 1) {
             PlaylistSimplified playlist = playlists.get(0);
-            List<Track> tracks = runWithCredentials(() -> SearchEngine.getPlaylistTracks(spotifyApi, playlist));
+            List<Track> tracks = runWithCredentials(() -> getSpotifyService().getPlaylistTracks(playlist));
             listTracks(tracks, playlist.getName(), playlist.getOwner().getDisplayName(), null, "playlist/" + playlist.getId());
         } else if (playlists.isEmpty()) {
             throw new NoSpotifyResultsFoundException("No Spotify playlist found for " + getCommandBody());
@@ -250,12 +249,17 @@ public class SearchCommand extends AbstractCommand {
     }
 
     private void listSpotifyAlbum() throws Exception {
-        SpotifyApi spotifyApi = getContext().getSpotifyApi();
+        Callable<List<AlbumSimplified>> loadAlbumsCallable = () -> getSpotifyService().searchAlbum(getCommandBody(), argumentSet("own"));
+        List<AlbumSimplified> albums;
+        if (argumentSet("own")) {
+            albums = runWithLogin(loadAlbumsCallable);
+        } else {
+            albums = runWithCredentials(loadAlbumsCallable);
+        }
 
-        List<AlbumSimplified> albums = runWithCredentials(() -> SearchEngine.searchSpotifyAlbum(spotifyApi, getCommandBody()));
         if (albums.size() == 1) {
             AlbumSimplified album = albums.get(0);
-            List<Track> tracks = runWithCredentials(() -> SearchEngine.getAlbumTracks(spotifyApi, album.getId()));
+            List<Track> tracks = runWithCredentials(() -> getSpotifyService().getAlbumTracks(album.getId()));
             listTracks(
                 tracks,
                 album.getName(),
@@ -298,8 +302,7 @@ public class SearchCommand extends AbstractCommand {
             );
         }
 
-        embedBuilder.setColor(Color.decode("#1DB954"));
-        sendMessage(getContext().getChannel(), embedBuilder.build());
+        sendMessage(embedBuilder);
     }
 
     @Override
@@ -311,7 +314,7 @@ public class SearchCommand extends AbstractCommand {
         if (chosenOption instanceof PlaylistSimplified) {
             SpotifyApi spotifyApi = getContext().getSpotifyApi();
             PlaylistSimplified playlist = (PlaylistSimplified) chosenOption;
-            List<Track> tracks = runWithCredentials(() -> SearchEngine.getPlaylistTracks(spotifyApi, playlist));
+            List<Track> tracks = runWithCredentials(() -> getSpotifyService().getPlaylistTracks(playlist));
             listTracks(tracks, playlist.getName(), playlist.getOwner().getDisplayName(), null, "playlist/" + playlist.getId());
         } else if (chosenOption instanceof YouTubePlaylist) {
             listYouTubePlaylist((YouTubePlaylist) chosenOption);
@@ -320,7 +323,7 @@ public class SearchCommand extends AbstractCommand {
         } else if (chosenOption instanceof AlbumSimplified) {
             SpotifyApi spotifyApi = getContext().getSpotifyApi();
             AlbumSimplified album = (AlbumSimplified) chosenOption;
-            List<Track> tracks = runWithCredentials(() -> SearchEngine.getAlbumTracks(spotifyApi, album.getId()));
+            List<Track> tracks = runWithCredentials(() -> getSpotifyService().getAlbumTracks(album.getId()));
             listTracks(tracks,
                 album.getName(),
                 null,
@@ -341,10 +344,10 @@ public class SearchCommand extends AbstractCommand {
         argumentContribution.map("local").needsArguments("list")
             .setDescription("Search for a local playlist or list all of them. This is default when searching for lists.");
         argumentContribution.map("own").needsArguments("spotify")
-            .setDescription("Limit search to Spotify tracks or playlists in the current user's library. This requires a Spotify login. Spotify search filters (\"artist:\", \"album:\" etc.) are not supported with this argument.");
+            .setDescription("Limit search to Spotify tracks or playlists in the current user's library. This requires a Spotify login.");
         argumentContribution.map("limit").needsArguments("youtube").setRequiresValue(true)
             .setDescription("Show a selection of YouTube playlists or videos to chose from. Requires value from 1 to 10: $limit=5");
-        argumentContribution.map("album").needsArguments("spotify").excludesArguments("own").setRequiresInput(true)
+        argumentContribution.map("album").needsArguments("spotify").excludesArguments("list").setRequiresInput(true)
             .setDescription("Search for a Spotify album. Note that this argument is only required when searching, not when entering a URL.");
         return argumentContribution;
     }

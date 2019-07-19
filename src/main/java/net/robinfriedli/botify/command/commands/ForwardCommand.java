@@ -1,12 +1,13 @@
 package net.robinfriedli.botify.command.commands;
 
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.entities.CommandContribution;
+import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.util.Util;
 
@@ -18,7 +19,7 @@ public class ForwardCommand extends AbstractCommand {
 
     @Override
     public void doRun() {
-        AudioPlayback playback = getManager().getAudioManager().getPlaybackForGuild(getContext().getGuild());
+        AudioPlayback playback = Botify.get().getAudioManager().getPlaybackForGuild(getContext().getGuild());
         AudioTrack playingTrack = playback.getAudioPlayer().getPlayingTrack();
 
         if (playingTrack == null) {
@@ -52,9 +53,9 @@ public class ForwardCommand extends AbstractCommand {
 
     @Override
     public void onSuccess() {
-        AudioPlayback playback = getManager().getAudioManager().getPlaybackForGuild(getContext().getGuild());
+        AudioPlayback playback = Botify.get().getAudioManager().getPlaybackForGuild(getContext().getGuild());
         long currentPositionMs = playback.getCurrentPositionMs();
-        sendSuccess(getContext().getChannel(), "Set position to " + Util.normalizeMillis(currentPositionMs));
+        sendSuccess("Set position to " + Util.normalizeMillis(currentPositionMs));
     }
 
     @Override

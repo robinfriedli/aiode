@@ -2,17 +2,14 @@ package net.robinfriedli.botify.servers;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.LoggerFactory;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.utils.URLEncodedUtils;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -22,6 +19,7 @@ import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.audio.AudioQueue;
 import net.robinfriedli.botify.audio.Playable;
+import net.robinfriedli.botify.exceptions.InvalidRequestException;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.Util;
 
@@ -40,9 +38,7 @@ public class QueueViewHandler implements HttpHandler {
         try {
             String queuePagePath = PropertiesLoadingService.requireProperty("QUEUE_PAGE_PATH");
             String html = Files.readString(Path.of(queuePagePath));
-            List<NameValuePair> parameters = URLEncodedUtils.parse(exchange.getRequestURI(), Charset.forName("UTF-8"));
-            Map<String, String> parameterMap = new HashMap<>();
-            parameters.forEach(param -> parameterMap.put(param.getName(), param.getValue()));
+            Map<String, String> parameterMap = ServerUtil.getParameters(exchange);
             String guildId = parameterMap.get("guildId");
 
             if (guildId != null) {
@@ -88,19 +84,15 @@ public class QueueViewHandler implements HttpHandler {
                     outputStream.write(bytes);
                     outputStream.close();
                 } else {
-                    throw new IllegalStateException("Guild " + guildId + " not found");
+                    throw new InvalidRequestException("Guild " + guildId + " not found");
                 }
             } else {
-                throw new IllegalArgumentException("No guild provided");
+                throw new InvalidRequestException("No guild provided");
             }
+        } catch (InvalidRequestException e) {
+            ServerUtil.handleError(exchange, e);
         } catch (Throwable e) {
-            String errorPagePath = PropertiesLoadingService.requireProperty("ERROR_PAGE_PATH");
-            String html = Files.readString(Path.of(errorPagePath));
-            String response = String.format(html, e.getMessage());
-            exchange.sendResponseHeaders(200, response.getBytes().length);
-            OutputStream responseBody = exchange.getResponseBody();
-            responseBody.write(response.getBytes());
-            responseBody.close();
+            ServerUtil.handleError(exchange, e);
             LoggerFactory.getLogger(getClass()).error("Error in HttpHandler", e);
         }
     }
@@ -111,8 +103,8 @@ public class QueueViewHandler implements HttpHandler {
         listBuilder.append("<tbody>").append(System.lineSeparator());
         for (Playable playable : playables) {
             listBuilder.append("<tr>").append(System.lineSeparator());
-            listBuilder.append("<td>").append(playable.getDisplayInterruptible()).append("</td>").append(System.lineSeparator());
-            listBuilder.append("<td>").append(Util.normalizeMillis(playable.getDurationMsInterruptible())).append("</td>").append(System.lineSeparator());
+            listBuilder.append("<td>").append(playable.getDisplayInterruptible(10, TimeUnit.MILLISECONDS)).append("</td>").append(System.lineSeparator());
+            listBuilder.append("<td>").append(Util.normalizeMillis(playable.getDurationMsInterruptible(10, TimeUnit.MILLISECONDS))).append("</td>").append(System.lineSeparator());
             listBuilder.append("</tr>").append(System.lineSeparator());
         }
         listBuilder.append("</tbody>").append(System.lineSeparator());

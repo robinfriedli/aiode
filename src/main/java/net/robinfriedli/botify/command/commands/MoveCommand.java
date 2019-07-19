@@ -9,9 +9,9 @@ import net.dv8tion.jda.core.entities.Guild;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.entities.CommandContribution;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
+import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 import net.robinfriedli.botify.util.SearchEngine;
@@ -175,7 +175,7 @@ public class MoveCommand extends AbstractCommand {
     @Override
     public void onSuccess() {
         if (successMessageBuilder.length() != 0) {
-            sendSuccess(getContext().getChannel(), successMessageBuilder.toString());
+            sendSuccess(successMessageBuilder.toString());
         }
     }
 }

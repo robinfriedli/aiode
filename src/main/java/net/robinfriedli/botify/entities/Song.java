@@ -1,8 +1,8 @@
 package net.robinfriedli.botify.entities;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -14,7 +14,7 @@ import javax.persistence.Id;
 import javax.persistence.ManyToMany;
 import javax.persistence.Table;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
@@ -37,7 +37,7 @@ public class Song extends PlaylistItem {
     @Column(name = "name")
     private String name;
     @ManyToMany(fetch = FetchType.EAGER)
-    private List<Artist> artists = Lists.newArrayList();
+    private Set<Artist> artists = Sets.newHashSet();
 
     public Song() {
     }
@@ -67,7 +67,7 @@ public class Song extends PlaylistItem {
         Song song = new Song();
         song.setId(getId());
         song.setName(getName());
-        song.setArtists(Lists.newArrayList(getArtists()));
+        song.setArtists(Sets.newHashSet(getArtists()));
         song.setDuration(getDuration());
         song.setAddedUser(getAddedUser());
         song.setAddedUserId(getAddedUserId());
@@ -119,11 +119,11 @@ public class Song extends PlaylistItem {
         this.name = name;
     }
 
-    public List<Artist> getArtists() {
+    public Set<Artist> getArtists() {
         return artists;
     }
 
-    public void setArtists(List<Artist> artists) {
+    public void setArtists(Set<Artist> artists) {
         this.artists = artists;
     }
 

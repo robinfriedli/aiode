@@ -1,10 +1,11 @@
 package net.robinfriedli.botify.command.commands;
 
+import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.discord.GuildManager;
-import net.robinfriedli.botify.entities.CommandContribution;
+import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 
 public class RenameCommand extends AbstractCommand {
@@ -12,12 +13,12 @@ public class RenameCommand extends AbstractCommand {
     private boolean couldChangeNickname;
 
     public RenameCommand(CommandContribution commandContribution, CommandContext commandContext, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContribution, commandContext, commandManager, commandString, true, identifier, description, Category.GENERAL);
+        super(commandContribution, commandContext, commandManager, commandString, true, identifier, description, Category.CUSTOMISATION);
     }
 
     @Override
     public void doRun() {
-        GuildManager guildManager = getManager().getGuildManager();
+        GuildManager guildManager = Botify.get().getGuildManager();
 
         if (getCommandBody().length() < 1 || getCommandBody().length() > 20) {
             throw new InvalidCommandException("Length should be 1 - 20 characters");
@@ -28,11 +29,11 @@ public class RenameCommand extends AbstractCommand {
 
     @Override
     public void onSuccess() {
-        String name = getManager().getGuildManager().getNameForGuild(getContext().getGuild());
+        String name = getContext().getGuildContext().getSpecification().getBotName();
         if (couldChangeNickname) {
-            sendSuccess(getContext().getChannel(), "You can now call me " + name);
+            // notification sent by GuildPropertyInterceptor
         } else {
-            sendSuccess(getContext().getChannel(), "I do not have permission to change my nickname, but you can still call me " + getCommandBody());
+            sendError("I do not have permission to change my nickname, but you can still call me " + name);
         }
     }
 

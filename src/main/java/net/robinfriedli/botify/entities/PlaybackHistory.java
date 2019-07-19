@@ -1,9 +1,9 @@
 package net.robinfriedli.botify.entities;
 
 import java.io.Serializable;
-import java.util.Date;
-import java.util.List;
+import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -15,13 +15,13 @@ import javax.persistence.Id;
 import javax.persistence.ManyToMany;
 import javax.persistence.Table;
 
-import com.google.common.collect.Lists;
+import com.google.api.client.util.Sets;
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.core.entities.Guild;
 import net.robinfriedli.botify.audio.Playable;
-import net.robinfriedli.botify.audio.PlayableImpl;
-import net.robinfriedli.botify.audio.YouTubeVideo;
+import net.robinfriedli.botify.audio.spotify.TrackWrapper;
+import net.robinfriedli.botify.audio.youtube.HollowYouTubeVideo;
 import org.hibernate.Session;
 import org.hibernate.query.Query;
 
@@ -34,53 +34,59 @@ public class PlaybackHistory implements Serializable {
     @Column(name = "pk")
     private long pk;
     @Column(name = "timestamp")
-    private Date timestamp;
+    private LocalDateTime timestamp;
     @Column(name = "title")
     private String title;
     @Column(name = "source")
     private String source;
+    @Column(name = "track_id")
+    private String trackId;
     @Column(name = "guild")
     private String guild;
     @Column(name = "guild_id")
     private String guildId;
     @ManyToMany(fetch = FetchType.EAGER)
-    private List<Artist> artists = Lists.newArrayList();
+    private Set<Artist> artists = Sets.newHashSet();
 
     public PlaybackHistory() {
     }
 
-    public PlaybackHistory(Date timestamp, Playable playable, Guild guild, Session session) {
-        this.timestamp = timestamp;
-        Track track = null;
-        if (playable instanceof PlayableImpl) {
-            Object delegate = ((PlayableImpl) playable).delegate();
-            if (delegate instanceof Track) {
-                track = (Track) delegate;
-            } else if (delegate instanceof YouTubeVideo) {
-                track = ((YouTubeVideo) delegate).getRedirectedSpotifyTrack();
+    public PlaybackHistory(LocalDateTime timestamp, Playable playable, Guild guild, Session session) {
+        try {
+            this.timestamp = timestamp;
+            Track track = null;
+            if (playable instanceof TrackWrapper) {
+                track = ((TrackWrapper) playable).getTrack();
             }
-        }
-        if (track != null) {
-            title = track.getName();
-            for (ArtistSimplified artist : track.getArtists()) {
-                Query<Artist> query = session
-                    .createQuery(" from " + Artist.class.getName() + " where id = '" + artist.getId() + "'", Artist.class);
-                query.setFlushMode(FlushModeType.AUTO);
-                Optional<Artist> optionalArtist = query.uniqueResultOptional();
-                if (optionalArtist.isPresent()) {
-                    artists.add(optionalArtist.get());
-                } else {
-                    Artist newArtist = new Artist(artist.getId(), artist.getName());
-                    session.persist(newArtist);
-                    artists.add(newArtist);
+            if (playable instanceof HollowYouTubeVideo) {
+                track = ((HollowYouTubeVideo) playable).getRedirectedSpotifyTrack();
+            }
+            if (track != null) {
+                title = track.getName();
+                for (ArtistSimplified artist : track.getArtists()) {
+                    Query<Artist> query = session
+                        .createQuery(" from " + Artist.class.getName() + " where id = '" + artist.getId() + "'", Artist.class);
+                    query.setFlushMode(FlushModeType.AUTO);
+                    Optional<Artist> optionalArtist = query.uniqueResultOptional();
+                    if (optionalArtist.isPresent()) {
+                        artists.add(optionalArtist.get());
+                    } else {
+                        Artist newArtist = new Artist(artist.getId(), artist.getName());
+                        session.persist(newArtist);
+                        artists.add(newArtist);
+                    }
                 }
+            } else {
+                title = playable.getDisplay();
             }
-        } else {
-            title = playable.getDisplayInterruptible();
+            this.source = playable.getSource();
+            this.trackId = playable.getId();
+            this.guild = guild.getName();
+            this.guildId = guild.getId();
+        } catch (InterruptedException e) {
+            // should never happen since when a track is being played that obviously means it was loaded
+            throw new RuntimeException("trying to create a history for a track that didn't load successfully");
         }
-        this.source = playable.getSource();
-        this.guild = guild.getName();
-        this.guildId = guild.getId();
     }
 
     public long getPk() {
@@ -91,11 +97,11 @@ public class PlaybackHistory implements Serializable {
         this.pk = pk;
     }
 
-    public Date getTimestamp() {
+    public LocalDateTime getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(Date timestamp) {
+    public void setTimestamp(LocalDateTime timestamp) {
         this.timestamp = timestamp;
     }
 
@@ -115,6 +121,14 @@ public class PlaybackHistory implements Serializable {
         this.source = source;
     }
 
+    public String getTrackId() {
+        return trackId;
+    }
+
+    public void setTrackId(String trackId) {
+        this.trackId = trackId;
+    }
+
     public String getGuild() {
         return guild;
     }
@@ -131,11 +145,11 @@ public class PlaybackHistory implements Serializable {
         this.guildId = guildId;
     }
 
-    public List<Artist> getArtists() {
+    public Set<Artist> getArtists() {
         return artists;
     }
 
-    public void setArtists(List<Artist> artists) {
+    public void setArtists(Set<Artist> artists) {
         this.artists = artists;
     }
 }

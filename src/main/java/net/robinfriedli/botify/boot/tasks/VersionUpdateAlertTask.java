@@ -7,24 +7,30 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.wrapper.spotify.SpotifyApi;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.JDA;
 import net.dv8tion.jda.core.entities.Guild;
-import net.robinfriedli.botify.audio.YouTubeService;
 import net.robinfriedli.botify.boot.StartupTask;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
 import net.robinfriedli.jxp.queries.Conditions;
-import net.robinfriedli.jxp.queries.Query;
-import org.hibernate.Session;
+
+import static net.robinfriedli.jxp.queries.Conditions.*;
 
 public class VersionUpdateAlertTask implements StartupTask {
 
+    private final JDA jda;
+    private final JxpBackend jxpBackend;
+
+    public VersionUpdateAlertTask(JDA jda, JxpBackend jxpBackend) {
+        this.jda = jda;
+        this.jxpBackend = jxpBackend;
+    }
+
     @Override
-    public void perform(JxpBackend jxpBackend, JDA jda, SpotifyApi spotifyApi, YouTubeService youTubeService, Session session) throws Exception {
+    public void perform() throws Exception {
         Logger logger = LoggerFactory.getLogger(getClass());
         try (Context context = jxpBackend.getContext("./resources/versions.xml")) {
             BufferedReader bufferedReader = new BufferedReader(new FileReader("./resources/current-version.txt"));
@@ -43,10 +49,7 @@ public class VersionUpdateAlertTask implements StartupTask {
                         embedBuilder.setTitle("Update");
                         embedBuilder.setDescription(message);
 
-                        List<XmlElement> features = Query
-                            .evaluate(xmlElement -> xmlElement.getTagName().equals("feature"))
-                            .execute(versionElem.getSubElements())
-                            .collect();
+                        List<XmlElement> features = versionElem.query(tagName("feature")).collect();
                         if (!features.isEmpty()) {
                             StringBuilder featuresBuilder = new StringBuilder();
                             for (XmlElement feature : features) {

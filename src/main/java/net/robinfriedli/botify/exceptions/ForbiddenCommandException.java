@@ -21,4 +21,9 @@ public class ForbiddenCommandException extends UserException {
                 : "Required roles: " + StringListImpl.create(roles, Role::getName).toSeparatedString(", ")));
     }
 
+    public ForbiddenCommandException(User user, String commandIdentifier, String availableTo) {
+        super(String.format("User %s is not allowed to use command %s. Only available to %s.",
+            user.getName(), commandIdentifier, availableTo));
+    }
+
 }

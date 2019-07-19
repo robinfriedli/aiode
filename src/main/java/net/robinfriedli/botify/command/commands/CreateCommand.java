@@ -1,10 +1,11 @@
 package net.robinfriedli.botify.command.commands;
 
+import com.google.common.base.Strings;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.entities.CommandContribution;
 import net.robinfriedli.botify.entities.Playlist;
+import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.SearchEngine;
@@ -26,7 +27,7 @@ public class CreateCommand extends AbstractCommand {
         }
 
         String playlistCountMax = PropertiesLoadingService.loadProperty("PLAYLIST_COUNT_MAX");
-        if (playlistCountMax != null) {
+        if (!Strings.isNullOrEmpty(playlistCountMax)) {
             int maxPlaylists = Integer.parseInt(playlistCountMax);
             String query = "select count(*) from " + Playlist.class.getName();
             Long playlistCount = (Long) session.createQuery(isPartitioned() ? query + " where guild_id = '" + getContext().getGuild().getId() + "'" : query).uniqueResult();
@@ -41,6 +42,6 @@ public class CreateCommand extends AbstractCommand {
 
     @Override
     public void onSuccess() {
-        // notification sent by AlertEventListener
+        // notification sent by interceptor
     }
 }

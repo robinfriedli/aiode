@@ -1,6 +1,5 @@
 package net.robinfriedli.botify.audio;
 
-import java.awt.Color;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -10,7 +9,11 @@ import java.util.stream.IntStream;
 import com.google.common.collect.Lists;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.entities.Guild;
+import net.robinfriedli.botify.Botify;
+import net.robinfriedli.botify.discord.GuildContext;
+import net.robinfriedli.botify.discord.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
+import net.robinfriedli.botify.util.EmojiConstants;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.Util;
 
@@ -44,6 +47,10 @@ public class AudioQueue {
     }
 
     public Playable getCurrent() {
+        if (isEmpty()) {
+            throw new NoResultsFoundException("Queue is empty");
+        }
+
         if (isShuffle()) {
             return currentQueue.get(randomizedOrder.get(currentTrack));
         } else {
@@ -98,11 +105,15 @@ public class AudioQueue {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         String baseUri = PropertiesLoadingService.requireProperty("BASE_URI");
 
-        embedBuilder.addField("Paused", boolToString(playback.isPaused()), true);
-        embedBuilder.addField("Shuffle", boolToString(playback.isShuffle()), true);
-        embedBuilder.addField("Repeat all", boolToString(playback.isRepeatAll()), true);
-        embedBuilder.addField("Repeat one", boolToString(playback.isRepeatOne()), true);
-        embedBuilder.addField("Volume", String.valueOf(playback.getVolume()), true);
+        StringBuilder optionBuilder = new StringBuilder();
+        appendIcon(optionBuilder, EmojiConstants.PLAY, playback.isPlaying());
+        appendIcon(optionBuilder, EmojiConstants.PAUSE, playback.isPaused());
+        appendIcon(optionBuilder, EmojiConstants.SHUFFLE, playback.isShuffle());
+        appendIcon(optionBuilder, EmojiConstants.REPEAT, playback.isRepeatAll());
+        appendIcon(optionBuilder, EmojiConstants.REPEAT_ONE, playback.isRepeatOne());
+        optionBuilder.append(EmojiConstants.VOLUME).append(playback.getVolume());
+        embedBuilder.setDescription(optionBuilder.toString());
+
         String url = baseUri + String.format("/queue?guildId=%s", guild.getId());
         embedBuilder.addField("", "[Full list](" + url + ")", false);
 
@@ -152,7 +163,8 @@ public class AudioQueue {
             }
         }
 
-        embedBuilder.setColor(Color.decode("#1DB954"));
+        GuildContext guildContext = Botify.get().getGuildManager().getContextForGuild(guild);
+        embedBuilder.setColor(ColorSchemeProperty.getColor(guildContext));
         return embedBuilder;
     }
 
@@ -325,8 +337,10 @@ public class AudioQueue {
         }
     }
 
-    private String boolToString(boolean bool) {
-        return bool ? "On" : "Off";
+    private void appendIcon(StringBuilder builder, String unicode, boolean enabled) {
+        if (enabled) {
+            builder.append(unicode);
+        }
     }
 
     private void appendPlayable(StringBuilder trackListBuilder, Playable playable) {

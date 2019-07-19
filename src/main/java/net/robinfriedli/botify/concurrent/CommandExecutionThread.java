@@ -13,6 +13,7 @@ public class CommandExecutionThread extends QueuedThread {
 
     @Override
     public void run() {
+        CommandContext.Current.set(getCommandContext());
         commandContext.startMonitoring();
         super.run();
     }

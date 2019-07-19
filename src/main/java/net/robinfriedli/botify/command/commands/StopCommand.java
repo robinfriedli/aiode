@@ -1,12 +1,13 @@
 package net.robinfriedli.botify.command.commands;
 
 import net.dv8tion.jda.core.entities.Guild;
+import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.entities.CommandContribution;
+import net.robinfriedli.botify.entities.xml.CommandContribution;
 
 public class StopCommand extends AbstractCommand {
 
@@ -17,11 +18,12 @@ public class StopCommand extends AbstractCommand {
     @Override
     public void doRun() {
         Guild guild = getContext().getGuild();
-        AudioManager audioManager = getManager().getAudioManager();
+        AudioManager audioManager = Botify.get().getAudioManager();
         AudioPlayback playback = audioManager.getPlaybackForGuild(guild);
-        playback.interruptTrackLoading();
+        getContext().getGuildContext().getTrackLoadingExecutor().interruptTrackLoading();
         playback.stop();
         playback.getAudioQueue().clear();
+        playback.setLastPlaybackNotification(null);
         audioManager.leaveChannel(playback);
     }
 

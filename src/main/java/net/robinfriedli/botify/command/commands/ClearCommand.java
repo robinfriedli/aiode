@@ -1,11 +1,12 @@
 package net.robinfriedli.botify.command.commands;
 
+import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.audio.AudioQueue;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.entities.CommandContribution;
+import net.robinfriedli.botify.entities.xml.CommandContribution;
 
 public class ClearCommand extends AbstractCommand {
 
@@ -15,13 +16,13 @@ public class ClearCommand extends AbstractCommand {
 
     @Override
     public void doRun() {
-        AudioPlayback playback = getManager().getAudioManager().getPlaybackForGuild(getContext().getGuild());
+        AudioPlayback playback = Botify.get().getAudioManager().getPlaybackForGuild(getContext().getGuild());
         AudioQueue audioQueue = playback.getAudioQueue();
         audioQueue.clear(playback.isPlaying());
     }
 
     @Override
     public void onSuccess() {
-        sendSuccess(getContext().getChannel(), "Cleared queue");
+        sendSuccess("Cleared queue");
     }
 }

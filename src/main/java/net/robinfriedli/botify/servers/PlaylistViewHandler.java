@@ -2,23 +2,21 @@ package net.robinfriedli.botify.servers;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.slf4j.LoggerFactory;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.utils.URLEncodedUtils;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import net.dv8tion.jda.core.JDA;
-import net.robinfriedli.botify.discord.DiscordListener;
+import net.robinfriedli.botify.Botify;
+import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
+import net.robinfriedli.botify.exceptions.InvalidRequestException;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.SearchEngine;
 import net.robinfriedli.botify.util.Util;
@@ -29,12 +27,10 @@ public class PlaylistViewHandler implements HttpHandler {
 
     private final JDA jda;
     private final SessionFactory sessionFactory;
-    private final DiscordListener discordListener;
 
-    public PlaylistViewHandler(JDA jda, SessionFactory sessionFactory, DiscordListener discordListener) {
+    public PlaylistViewHandler(JDA jda, SessionFactory sessionFactory) {
         this.jda = jda;
         this.sessionFactory = sessionFactory;
-        this.discordListener = discordListener;
     }
 
     @Override
@@ -43,13 +39,11 @@ public class PlaylistViewHandler implements HttpHandler {
         try {
             String listPagePath = PropertiesLoadingService.requireProperty("LIST_PAGE_PATH");
             String html = Files.readString(Path.of(listPagePath));
-            List<NameValuePair> parameters = URLEncodedUtils.parse(exchange.getRequestURI(), Charset.forName("UTF-8"));
-            Map<String, String> parameterMap = new HashMap<>();
-            parameters.forEach(param -> parameterMap.put(param.getName(), param.getValue()));
+            Map<String, String> parameterMap = ServerUtil.getParameters(exchange);
             String guildId = parameterMap.get("guildId");
             String name = parameterMap.get("name");
 
-            boolean isPartitioned = discordListener.getMode() == DiscordListener.Mode.PARTITIONED;
+            boolean isPartitioned = Botify.get().getGuildManager().getMode() == GuildManager.Mode.PARTITIONED;
             if (name != null && (guildId != null || !isPartitioned)) {
                 session = sessionFactory.openSession();
                 Playlist playlist = SearchEngine.searchLocalList(session, name, isPartitioned, guildId);
@@ -75,19 +69,15 @@ public class PlaylistViewHandler implements HttpHandler {
                     os.write(bytes);
                     os.close();
                 } else {
-                    throw new IllegalStateException("No playlist found");
+                    throw new InvalidRequestException("No playlist found");
                 }
             } else {
-                throw new IllegalArgumentException("Insufficient request parameters");
+                throw new InvalidRequestException("Insufficient request parameters");
             }
+        } catch (InvalidRequestException e) {
+            ServerUtil.handleError(exchange, e);
         } catch (Throwable e) {
-            String loginPagePath = PropertiesLoadingService.requireProperty("ERROR_PAGE_PATH");
-            String html = Files.readString(Path.of(loginPagePath));
-            String response = String.format(html, e.getMessage());
-            exchange.sendResponseHeaders(200, response.getBytes().length);
-            OutputStream responseBody = exchange.getResponseBody();
-            responseBody.write(response.getBytes());
-            responseBody.close();
+            ServerUtil.handleError(exchange, e);
             LoggerFactory.getLogger(getClass()).error("Error in HttpHandler", e);
         } finally {
             if (session != null) {

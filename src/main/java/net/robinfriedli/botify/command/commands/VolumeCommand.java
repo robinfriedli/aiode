@@ -1,10 +1,11 @@
 package net.robinfriedli.botify.command.commands;
 
+import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.entities.CommandContribution;
+import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 
 public class VolumeCommand extends AbstractCommand {
@@ -15,7 +16,7 @@ public class VolumeCommand extends AbstractCommand {
 
     @Override
     public void doRun() {
-        AudioPlayback playback = getManager().getAudioManager().getPlaybackForGuild(getContext().getGuild());
+        AudioPlayback playback = Botify.get().getAudioManager().getPlaybackForGuild(getContext().getGuild());
 
         int volume;
         try {
@@ -33,7 +34,7 @@ public class VolumeCommand extends AbstractCommand {
 
     @Override
     public void onSuccess() {
-        AudioPlayback playback = getManager().getAudioManager().getPlaybackForGuild(getContext().getGuild());
-        sendSuccess(getContext().getChannel(), "Volume set to: " + playback.getVolume());
+        AudioPlayback playback = Botify.get().getAudioManager().getPlaybackForGuild(getContext().getGuild());
+        sendSuccess("Volume set to: " + playback.getVolume());
     }
 }

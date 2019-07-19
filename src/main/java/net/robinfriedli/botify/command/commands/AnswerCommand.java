@@ -3,7 +3,7 @@ package net.robinfriedli.botify.command.commands;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.entities.CommandContribution;
+import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.CommandRuntimeException;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 
@@ -17,7 +17,7 @@ public class AnswerCommand extends AbstractCommand {
 
     @Override
     public void doRun() {
-        getManager().getQuestion(getContext()).ifPresentOrElse(question -> {
+        getContext().getGuildContext().getQuestion(getContext()).ifPresentOrElse(question -> {
             sourceCommand = question.getSourceCommand();
 
             Object option = question.get(getCommandBody());

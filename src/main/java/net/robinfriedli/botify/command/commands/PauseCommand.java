@@ -1,11 +1,12 @@
 package net.robinfriedli.botify.command.commands;
 
 import net.dv8tion.jda.core.entities.Guild;
+import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.entities.CommandContribution;
+import net.robinfriedli.botify.entities.xml.CommandContribution;
 
 public class PauseCommand extends AbstractCommand {
 
@@ -16,7 +17,7 @@ public class PauseCommand extends AbstractCommand {
     @Override
     public void doRun() {
         Guild guild = getContext().getGuild();
-        AudioPlayback playback = getManager().getAudioManager().getPlaybackForGuild(guild);
+        AudioPlayback playback = Botify.get().getAudioManager().getPlaybackForGuild(guild);
         playback.pause();
     }
 

@@ -23,7 +23,8 @@ public class InvalidCommandException extends UserException {
     }
 
     private static String enhanceMessage(String message) {
-        return message + System.lineSeparator() + "If you need help with a command you can use the help command. E.g. $botify help play";
+        return message + System.lineSeparator() + System.lineSeparator()
+            + "_If you need help with a command you can use the help command. E.g. $botify help play_";
     }
 
 }

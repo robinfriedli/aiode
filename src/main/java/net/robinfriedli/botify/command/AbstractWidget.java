@@ -14,7 +14,7 @@ import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.events.message.guild.react.GuildMessageReactionAddEvent;
 import net.dv8tion.jda.core.exceptions.ErrorResponseException;
 import net.dv8tion.jda.core.exceptions.InsufficientPermissionException;
-import net.robinfriedli.botify.command.widgets.ActionRunable;
+import net.robinfriedli.botify.command.widgets.AbstractWidgetAction;
 import net.robinfriedli.botify.exceptions.UserException;
 
 /**
@@ -27,7 +27,7 @@ public abstract class AbstractWidget {
     private final Message message;
     private final String guildId;
     private final Logger logger;
-    private List<WidgetAction> actions;
+    private List<AbstractWidgetAction> actions;
     // if the message has been deleted by a widget action that does not always require a reset
     private boolean messageDeleted;
 
@@ -38,7 +38,7 @@ public abstract class AbstractWidget {
         logger = LoggerFactory.getLogger(getClass());
     }
 
-    public abstract List<WidgetAction> setupActions();
+    public abstract List<AbstractWidgetAction> setupActions();
 
     /**
      * Resets (i.e. re-sends) the message output after the widget action has been executed
@@ -57,9 +57,9 @@ public abstract class AbstractWidget {
         try {
             CompletableFuture<RuntimeException> futureException = new CompletableFuture<>();
             for (int i = 0; i < actions.size(); i++) {
-                WidgetAction action = actions.get(i);
+                AbstractWidgetAction action = actions.get(i);
                 int finalI = i;
-                message.addReaction(action.getUnicode()).queue(aVoid -> {
+                message.addReaction(action.getEmojiUnicode()).queue(aVoid -> {
                     if (finalI == actions.size() - 1 && !futureException.isDone()) {
                         futureException.complete(null);
                     }
@@ -109,12 +109,12 @@ public abstract class AbstractWidget {
     public void handleReaction(GuildMessageReactionAddEvent event) throws Exception {
         MessageReaction reaction = event.getReaction();
         User sourceUser = event.getUser();
-        Optional<WidgetAction> actionOptional = actions.stream()
-            .filter(widgetAction -> widgetAction.getEmoteId().equals(reaction.getReactionEmote().getId())
-                || widgetAction.getUnicode().equals(reaction.getReactionEmote().getName())).findAny();
+        Optional<AbstractWidgetAction> actionOptional = actions.stream()
+            .filter(widgetAction -> widgetAction.getEmojiUnicode().equals(reaction.getReactionEmote().getName()))
+            .findAny();
         if (actionOptional.isPresent()) {
-            WidgetAction widgetAction = actionOptional.get();
-            widgetAction.getAction().run(event);
+            AbstractWidgetAction widgetAction = actionOptional.get();
+            widgetAction.run(event);
             if (widgetAction.isResetRequired()) {
                 reset();
             } else if (!isMessageDeleted()) {
@@ -141,41 +141,6 @@ public abstract class AbstractWidget {
 
     public String getGuildId() {
         return guildId;
-    }
-
-    public class WidgetAction {
-
-        private final String emoteId;
-        private final String unicode;
-        private final ActionRunable action;
-        private final boolean resetRequired;
-
-        public WidgetAction(String emoteId, String unicode, ActionRunable action) {
-            this(emoteId, unicode, action, false);
-        }
-
-        public WidgetAction(String emoteId, String unicode, ActionRunable action, boolean resetRequired) {
-            this.emoteId = emoteId;
-            this.unicode = unicode;
-            this.action = action;
-            this.resetRequired = resetRequired;
-        }
-
-        public String getEmoteId() {
-            return emoteId;
-        }
-
-        public ActionRunable getAction() {
-            return action;
-        }
-
-        public String getUnicode() {
-            return unicode;
-        }
-
-        public boolean isResetRequired() {
-            return resetRequired;
-        }
     }
 
 }

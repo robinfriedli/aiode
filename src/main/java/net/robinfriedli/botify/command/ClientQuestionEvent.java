@@ -1,6 +1,5 @@
 package net.robinfriedli.botify.command;
 
-import java.awt.Color;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Timer;
@@ -10,6 +9,7 @@ import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.discord.MessageService;
+import net.robinfriedli.botify.discord.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.util.Util;
 
@@ -22,6 +22,7 @@ import net.robinfriedli.botify.util.Util;
 public class ClientQuestionEvent {
 
     private final AbstractCommand sourceCommand;
+    private final Timer destructionTimer;
 
     /**
      * the available answers for the user mapped to the option they represent
@@ -30,7 +31,7 @@ public class ClientQuestionEvent {
 
     public ClientQuestionEvent(AbstractCommand sourceCommand) {
         this.sourceCommand = sourceCommand;
-        Timer destructionTimer = new Timer();
+        destructionTimer = new Timer();
         destructionTimer.schedule(new SelfDestructTask(), 300000);
     }
 
@@ -53,10 +54,14 @@ public class ClientQuestionEvent {
     }
 
     public void ask() {
+        ask("Several options found", "Choose an option using the answer command: $botify answer KEY (replace KEY with the key for your option)");
+    }
+
+    public void ask(String title, String description) {
         EmbedBuilder embedBuilder = new EmbedBuilder();
-        embedBuilder.setTitle("Several options found");
-        embedBuilder.setDescription("Choose an option using the answer command: $botify answer KEY");
-        embedBuilder.setColor(Color.decode("#1DB954"));
+        embedBuilder.setTitle(title);
+        embedBuilder.setDescription(description);
+        embedBuilder.setColor(ColorSchemeProperty.getColor());
 
         Util.appendEmbedList(
             embedBuilder,
@@ -69,7 +74,8 @@ public class ClientQuestionEvent {
     }
 
     public void destroy() {
-        sourceCommand.getManager().removeQuestion(this);
+        sourceCommand.getContext().getGuildContext().removeQuestion(this);
+        destructionTimer.cancel();
     }
 
     public AbstractCommand getSourceCommand() {

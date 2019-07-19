@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="embedDocumentSpace">
+
+  <xs:element name="embedDocuments" type="embedDocuments"/>
+  <xs:complexType name="embedDocuments">
+    <xs:sequence>
+      <xs:element name="embedDocument" type="embedDocument"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="embedDocument">
+    <xs:sequence>
+      <xs:element name="field" type="field"/>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string"/>
+    <xs:attribute name="title" type="xs:string"/>
+    <xs:attribute name="description" type="xs:string"/>
+  </xs:complexType>
+
+  <xs:complexType name="field">
+    <xs:attribute name="title" type="xs:string"/>
+    <xs:attribute name="inline" type="xs:boolean"/>
+  </xs:complexType>
+
+</xs:schema>

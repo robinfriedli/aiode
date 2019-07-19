@@ -2,44 +2,41 @@ package net.robinfriedli.botify.boot.tasks;
 
 import java.util.List;
 
-import com.google.common.collect.Lists;
-import com.wrapper.spotify.SpotifyApi;
-import net.dv8tion.jda.core.JDA;
-import net.robinfriedli.botify.audio.YouTubeService;
 import net.robinfriedli.botify.boot.StartupTask;
 import net.robinfriedli.botify.entities.AccessConfiguration;
 import net.robinfriedli.botify.entities.GuildSpecification;
-import net.robinfriedli.botify.util.PropertiesLoadingService;
-import net.robinfriedli.jxp.api.JxpBackend;
-import net.robinfriedli.jxp.api.XmlElement;
-import net.robinfriedli.jxp.persist.Context;
-import net.robinfriedli.jxp.queries.Query;
 import org.hibernate.Session;
-
-import static net.robinfriedli.jxp.queries.Conditions.*;
+import org.hibernate.SessionFactory;
 
 /**
  * Task that ensures that a accessConfiguration exists for the permission command for all guilds
  */
 public class CreatePermissionAccessConfigurationTask implements StartupTask {
 
-    @Override
-    public void perform(JxpBackend jxpBackend, JDA jda, SpotifyApi spotifyApi, YouTubeService youTubeService, Session session) {
-        String guildSpecificationPath = PropertiesLoadingService.requireProperty("GUILD_SPECIFICATION_PATH");
-        Context context = jxpBackend.getContext(guildSpecificationPath);
-        List<GuildSpecification> guildSpecifications = context.getInstancesOf(GuildSpecification.class);
-        context.invoke(() -> {
-            for (GuildSpecification guildSpecification : guildSpecifications) {
-                XmlElement existingConfiguration = Query.evaluate(and(
-                    instanceOf(AccessConfiguration.class),
-                    attribute("commandIdentifier").fuzzyIs("permission")
-                )).execute(guildSpecification.getSubElements()).getOnlyResult();
+    private final SessionFactory sessionFactory;
 
-                if (existingConfiguration == null) {
-                    AccessConfiguration accessConfiguration = new AccessConfiguration("permission", Lists.newArrayList(), context);
-                    guildSpecification.addSubElement(accessConfiguration);
+    public CreatePermissionAccessConfigurationTask(SessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
+    }
+
+    @Override
+    public void perform() {
+        try (Session session = sessionFactory.openSession()) {
+            // find all guild specifications where no access configuration for the permission command exists
+            List<GuildSpecification> guildSpecifications = session.createQuery("from " + GuildSpecification.class.getName()
+                + " as g where not exists(from " + AccessConfiguration.class.getName() + " as a"
+                + " where a.guildSpecification.pk = g.pk and a.commandIdentifier = 'permission')", GuildSpecification.class)
+                .getResultList();
+
+            if (!guildSpecifications.isEmpty()) {
+                session.beginTransaction();
+                for (GuildSpecification guildSpecification : guildSpecifications) {
+                    AccessConfiguration accessConfiguration = new AccessConfiguration("permission");
+                    session.persist(accessConfiguration);
+                    guildSpecification.addAccessConfiguration(accessConfiguration);
                 }
+                session.getTransaction().commit();
             }
-        });
+        }
     }
 }

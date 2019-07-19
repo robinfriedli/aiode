@@ -5,18 +5,19 @@ import java.util.List;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.JDA;
 import net.dv8tion.jda.core.entities.Guild;
+import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.entities.CommandContribution;
 import net.robinfriedli.botify.entities.CommandHistory;
 import net.robinfriedli.botify.entities.PlaybackHistory;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.Song;
 import net.robinfriedli.botify.entities.UrlTrack;
 import net.robinfriedli.botify.entities.Video;
+import net.robinfriedli.botify.entities.xml.CommandContribution;
 import org.hibernate.Session;
 
 public class AnalyticsCommand extends AbstractCommand {
@@ -29,7 +30,7 @@ public class AnalyticsCommand extends AbstractCommand {
     public void doRun() throws Exception {
         JDA jda = getContext().getJda();
         List<Guild> guilds = jda.getGuilds();
-        AudioManager audioManager = getManager().getAudioManager();
+        AudioManager audioManager = Botify.get().getAudioManager();
         Session session = getContext().getSession();
         Runtime runtime = Runtime.getRuntime();
 
@@ -64,7 +65,7 @@ public class AnalyticsCommand extends AbstractCommand {
                 "Total free: " + totalFreeMemory
             , true);
 
-        sendWithLogo(getContext().getChannel(), embedBuilder);
+        sendWithLogo(embedBuilder);
     }
 
     @Override

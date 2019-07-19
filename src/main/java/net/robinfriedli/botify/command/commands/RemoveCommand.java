@@ -9,9 +9,9 @@ import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.ClientQuestionEvent;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.entities.CommandContribution;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
+import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 import net.robinfriedli.botify.util.SearchEngine;
@@ -43,9 +43,9 @@ public class RemoveCommand extends AbstractCommand {
             if (indices.size() == 1 || indices.size() == 2) {
                 indices.applyForEach(String::trim);
                 if (indices.size() == 1) {
-                    int index = parse(indices.get(0)) - 1;
+                    int index = parse(indices.get(0));
                     checkIndex(index, playlist);
-                    invoke(() -> session.delete(playlist.getItemsSorted().get(index)));
+                    invoke(() -> session.delete(playlist.getItemsSorted().get(index - 1)));
                 } else {
                     int start = parse(indices.get(0));
                     int end = parse(indices.get(1));
@@ -94,7 +94,7 @@ public class RemoveCommand extends AbstractCommand {
 
     @Override
     public void onSuccess() {
-        // notification sent by AlertEventListener
+        // notification sent by interceptor
     }
 
     @Override

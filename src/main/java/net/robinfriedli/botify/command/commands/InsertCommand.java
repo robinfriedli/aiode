@@ -6,9 +6,9 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.entities.CommandContribution;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
+import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 
 public class InsertCommand extends AddCommand {

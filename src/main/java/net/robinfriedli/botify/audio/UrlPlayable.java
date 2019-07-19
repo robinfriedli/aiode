@@ -1,5 +1,9 @@
 package net.robinfriedli.botify.audio;
 
+import java.util.concurrent.TimeUnit;
+
+import javax.annotation.Nullable;
+
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.entities.Playlist;
@@ -12,17 +16,21 @@ public class UrlPlayable implements Playable {
     private final String url;
     private final String display;
     private final long duration;
+    @Nullable
+    private final AudioTrack audioTrack;
 
     public UrlPlayable(AudioTrack audioTrack) {
         url = audioTrack.getInfo().uri;
         display = audioTrack.getInfo().title;
         duration = audioTrack.getDuration();
+        this.audioTrack = audioTrack;
     }
 
     public UrlPlayable(UrlTrack urlTrack) {
         url = urlTrack.getUrl();
         display = urlTrack.getTitle();
         duration = urlTrack.getDuration();
+        audioTrack = null;
     }
 
     @Override
@@ -31,13 +39,28 @@ public class UrlPlayable implements Playable {
     }
 
     @Override
+    public String getId() {
+        return getPlaybackUrl();
+    }
+
+    @Override
     public String getDisplay() {
         return display;
     }
 
     @Override
+    public String getDisplay(long timeOut, TimeUnit unit) {
+        return getDisplay();
+    }
+
+    @Override
     public long getDurationMs() {
         return duration;
+    }
+
+    @Override
+    public long getDurationMs(long timeOut, TimeUnit unit) {
+        return getDurationMs();
     }
 
     @Override
@@ -50,4 +73,8 @@ public class UrlPlayable implements Playable {
         return "Url";
     }
 
+    @Nullable
+    public AudioTrack getAudioTrack() {
+        return audioTrack;
+    }
 }

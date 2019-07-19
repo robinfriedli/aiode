@@ -11,37 +11,56 @@ import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
 import net.dv8tion.jda.core.JDA;
 import net.dv8tion.jda.core.entities.Guild;
-import net.robinfriedli.botify.audio.YouTubeService;
 import net.robinfriedli.botify.boot.StartupTask;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
+import net.robinfriedli.botify.interceptors.InterceptorChain;
+import net.robinfriedli.botify.interceptors.PlaylistItemTimestampListener;
+import net.robinfriedli.botify.interceptors.VerifyPlaylistListener;
 import net.robinfriedli.botify.tasks.HibernatePlaylistMigrator;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.persist.Context;
 import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 
 /**
  * Migrate the XML playlists to the database
  */
 public class MigratePlaylistsTask implements StartupTask {
 
-    @Override
-    public void perform(JxpBackend jxpBackend, JDA jda, SpotifyApi spotifyApi, YouTubeService youTubeService, Session session) throws Exception {
-        session.beginTransaction();
-        for (Guild guild : jda.getGuilds()) {
-            String path = PropertiesLoadingService.requireProperty("GUILD_PLAYLISTS_PATH", guild.getId());
-            File xmlFile = new File(path);
-            if (xmlFile.exists()) {
-                try (Context context = jxpBackend.getContext(xmlFile)) {
-                    migrateFile(session, context, guild, spotifyApi);
-                }
-            }
-        }
-        session.getTransaction().commit();
+    private final JDA jda;
+    private final JxpBackend jxpBackend;
+    private final SessionFactory sessionFactory;
+    private final SpotifyApi spotifyApi;
+
+    public MigratePlaylistsTask(JDA jda, JxpBackend jxpBackend, SessionFactory sessionFactory, SpotifyApi spotifyApi) {
+        this.jda = jda;
+        this.jxpBackend = jxpBackend;
+        this.sessionFactory = sessionFactory;
+        this.spotifyApi = spotifyApi;
     }
 
-    private void migrateFile(Session session, Context context, Guild guild, SpotifyApi spotifyApi) throws IOException, SpotifyWebApiException {
+    @Override
+    public void perform() throws Exception {
+        try (Session session = sessionFactory.withOptions().interceptor(InterceptorChain.of(
+            PlaylistItemTimestampListener.class, VerifyPlaylistListener.class)).openSession()) {
+            session.beginTransaction();
+            for (Guild guild : jda.getGuilds()) {
+                String path = PropertiesLoadingService.requireProperty("GUILD_PLAYLISTS_PATH", guild.getId());
+                File xmlFile = new File(path);
+                if (xmlFile.exists()) {
+                    try (Context context = jxpBackend.getContext(xmlFile)) {
+                        migrateFile(session, context, guild, spotifyApi);
+                    }
+                }
+            }
+            session.getTransaction().commit();
+        }
+    }
+
+    private void migrateFile(Session session, Context context, Guild guild, SpotifyApi spotifyApi) throws
+        IOException, SpotifyWebApiException {
         HibernatePlaylistMigrator hibernatePlaylistMigrator = new HibernatePlaylistMigrator(context, guild, spotifyApi, session);
         Map<Playlist, List<PlaylistItem>> playlistMap = hibernatePlaylistMigrator.perform();
         for (Playlist playlist : playlistMap.keySet()) {

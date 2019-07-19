@@ -2,18 +2,19 @@ package net.robinfriedli.botify.command.commands;
 
 import java.util.List;
 
+import com.google.common.base.Strings;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.User;
+import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioQueue;
-import net.robinfriedli.botify.audio.HollowYouTubeVideo;
 import net.robinfriedli.botify.audio.Playable;
-import net.robinfriedli.botify.audio.PlayableImpl;
+import net.robinfriedli.botify.audio.youtube.HollowYouTubeVideo;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.entities.CommandContribution;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
+import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.SearchEngine;
@@ -29,7 +30,7 @@ public class ExportCommand extends AbstractCommand {
     public void doRun() {
         Session session = getContext().getSession();
         Guild guild = getContext().getGuild();
-        AudioQueue queue = getManager().getAudioManager().getQueue(guild);
+        AudioQueue queue = Botify.get().getAudioManager().getQueue(guild);
 
         if (queue.isEmpty()) {
             throw new InvalidCommandException("Queue is empty");
@@ -43,7 +44,7 @@ public class ExportCommand extends AbstractCommand {
         List<Playable> tracks = queue.getTracks();
 
         String playlistCountMax = PropertiesLoadingService.loadProperty("PLAYLIST_COUNT_MAX");
-        if (playlistCountMax != null) {
+        if (!Strings.isNullOrEmpty(playlistCountMax)) {
             int maxPlaylists = Integer.parseInt(playlistCountMax);
             String query = "select count(*) from " + Playlist.class.getName();
             Long playlistCount = (Long) session.createQuery(isPartitioned() ? query + " where guild_id = '" + guild.getId() + "'" : query).uniqueResult();
@@ -52,7 +53,7 @@ public class ExportCommand extends AbstractCommand {
             }
         }
         String playlistSizeMax = PropertiesLoadingService.loadProperty("PLAYLIST_SIZE_MAX");
-        if (playlistSizeMax != null) {
+        if (Strings.isNullOrEmpty(playlistSizeMax)) {
             int maxSize = Integer.parseInt(playlistSizeMax);
             if (tracks.size() > maxSize) {
                 throw new InvalidCommandException("List exceeds maximum size of " + maxSize + " items!");
@@ -64,8 +65,8 @@ public class ExportCommand extends AbstractCommand {
 
         invoke(() -> {
             for (Playable track : tracks) {
-                if (track instanceof PlayableImpl && ((PlayableImpl) track).delegate() instanceof HollowYouTubeVideo) {
-                    HollowYouTubeVideo video = (HollowYouTubeVideo) ((PlayableImpl) track).delegate();
+                if (track instanceof HollowYouTubeVideo) {
+                    HollowYouTubeVideo video = (HollowYouTubeVideo) track;
                     video.awaitCompletion();
                     if (video.isCanceled()) {
                         continue;
@@ -82,7 +83,7 @@ public class ExportCommand extends AbstractCommand {
 
     @Override
     public void onSuccess() {
-        // success notification sent by AlertEventListener
+        // success notification sent by interceptor
     }
 
 }

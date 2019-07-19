@@ -24,12 +24,12 @@ public class NowPlayingWidget extends AbstractWidget {
     }
 
     @Override
-    public List<WidgetAction> setupActions() {
-        List<WidgetAction> actions = Lists.newArrayList();
+    public List<AbstractWidgetAction> setupActions() {
+        List<AbstractWidgetAction> actions = Lists.newArrayList();
 
-        actions.add(new WidgetAction("566718491353153546", "⏮", new RewindAction(audioPlayback, audioManager), true));
-        actions.add(new WidgetAction("566709184054296600", "⏯", new PlayPauseAction(audioPlayback, audioManager)));
-        actions.add(new WidgetAction("566712183942283265", "⏭", new SkipAction(audioPlayback, audioManager), true));
+        actions.add(new RewindAction(audioPlayback, audioManager));
+        actions.add(new PlayPauseAction(audioPlayback, audioManager));
+        actions.add(new SkipAction(audioPlayback, audioManager));
 
         return actions;
     }

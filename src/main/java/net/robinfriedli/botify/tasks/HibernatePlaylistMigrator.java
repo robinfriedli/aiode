@@ -22,6 +22,8 @@ import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
 import org.hibernate.Session;
 
+import static net.robinfriedli.jxp.queries.Conditions.*;
+
 public class HibernatePlaylistMigrator implements PersistTask<Map<Playlist, List<PlaylistItem>>> {
 
     private final Context context;
@@ -38,7 +40,7 @@ public class HibernatePlaylistMigrator implements PersistTask<Map<Playlist, List
 
     @Override
     public Map<Playlist, List<PlaylistItem>> perform() throws IOException, SpotifyWebApiException {
-        List<XmlElement> playlists = context.query(xmlElement -> xmlElement.getTagName().equals("playlist")).collect();
+        List<XmlElement> playlists = context.query(tagName("playlist")).collect();
         Map<Playlist, List<PlaylistItem>> playlistMap = new HashMap<>();
         for (XmlElement playlist : playlists) {
             Playlist newPlaylist = new Playlist();

@@ -4,19 +4,16 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 
 import com.sun.net.httpserver.HttpServer;
-import net.robinfriedli.botify.entities.HttpHandlerContribution;
-import net.robinfriedli.botify.util.ParameterContainer;
+import net.robinfriedli.botify.entities.xml.HttpHandlerContribution;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.jxp.persist.Context;
 
 public class HttpServerStarter {
 
     private final Context httpHandlersContext;
-    private final ParameterContainer parameterContainer;
 
-    public HttpServerStarter(Context httpHandlersContext, ParameterContainer parameterContainer) {
+    public HttpServerStarter(Context httpHandlersContext) {
         this.httpHandlersContext = httpHandlersContext;
-        this.parameterContainer = parameterContainer;
     }
 
     public void start() throws IOException {
@@ -25,7 +22,7 @@ public class HttpServerStarter {
         httpServer.setExecutor(null);
 
         for (HttpHandlerContribution contribution : httpHandlersContext.getInstancesOf(HttpHandlerContribution.class)) {
-            httpServer.createContext(contribution.getAttribute("path").getValue(), contribution.instantiate(parameterContainer));
+            httpServer.createContext(contribution.getAttribute("path").getValue(), contribution.instantiate());
         }
 
         httpServer.start();

@@ -7,6 +7,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -18,6 +19,7 @@ import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
+import com.google.api.client.util.Sets;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
@@ -26,7 +28,7 @@ import com.wrapper.spotify.exceptions.SpotifyWebApiException;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.User;
-import net.robinfriedli.botify.audio.PlayableImpl;
+import net.robinfriedli.botify.audio.PlayableFactory;
 
 @Entity
 @Table(name = "playlist")
@@ -47,11 +49,11 @@ public class Playlist implements Serializable {
     @Column(name = "guild_id")
     private String guildId;
     @OneToMany(mappedBy = "playlist")
-    private List<Song> songs = Lists.newArrayList();
+    private Set<Song> songs = Sets.newHashSet();
     @OneToMany(mappedBy = "playlist")
-    private List<Video> videos = Lists.newArrayList();
+    private Set<Video> videos = Sets.newHashSet();
     @OneToMany(mappedBy = "playlist")
-    private List<UrlTrack> urlTracks = Lists.newArrayList();
+    private Set<UrlTrack> urlTracks = Sets.newHashSet();
 
     public Playlist() {
     }
@@ -158,7 +160,7 @@ public class Playlist implements Serializable {
     }
 
     /**
-     * Returns the items in this playlist as objects supported by the {@link PlayableImpl} class. Note that getting the
+     * Returns the items in this playlist as objects supported by the {@link PlayableFactory} class. Note that getting the
      * Spotify track for a Song requires this method to be invoked with client credentials
      */
     public List<Object> getTracks(SpotifyApi spotifyApi) throws IOException, SpotifyWebApiException {
@@ -205,27 +207,27 @@ public class Playlist implements Serializable {
         return tracks;
     }
 
-    public List<Song> getSongs() {
+    public Set<Song> getSongs() {
         return songs;
     }
 
-    public void setSongs(List<Song> songs) {
+    public void setSongs(Set<Song> songs) {
         this.songs = songs;
     }
 
-    public List<Video> getVideos() {
+    public Set<Video> getVideos() {
         return videos;
     }
 
-    public void setVideos(List<Video> videos) {
+    public void setVideos(Set<Video> videos) {
         this.videos = videos;
     }
 
-    public List<UrlTrack> getUrlTracks() {
+    public Set<UrlTrack> getUrlTracks() {
         return urlTracks;
     }
 
-    public void setUrlTracks(List<UrlTrack> urlTracks) {
+    public void setUrlTracks(Set<UrlTrack> urlTracks) {
         this.urlTracks = urlTracks;
     }
 

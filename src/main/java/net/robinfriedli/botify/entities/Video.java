@@ -9,8 +9,8 @@ import javax.persistence.Table;
 
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.core.entities.User;
-import net.robinfriedli.botify.audio.YouTubeVideo;
-import net.robinfriedli.botify.audio.YouTubeVideoImpl;
+import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
+import net.robinfriedli.botify.audio.youtube.YouTubeVideoImpl;
 
 @Entity
 @Table(name = "video")

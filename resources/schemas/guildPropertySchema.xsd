@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="guildPropertySpace">
+
+  <xs:element name="guildProperties" type="guildProperties"/>
+  <xs:complexType name="guildProperties">
+    <xs:sequence>
+      <xs:element name="guildProperty" type="guildProperty"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="guildProperty">
+    <xs:attribute name="property" type="xs:string"/>
+    <xs:attribute name="name" type="xs:string"/>
+    <xs:attribute name="defaultValue" type="xs:string"/>
+    <xs:attribute name="implementation" type="xs:string"/>
+    <xs:attribute name="updateMessage" type="xs:string"/>
+  </xs:complexType>
+
+</xs:schema>

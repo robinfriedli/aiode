@@ -19,12 +19,15 @@ import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.MessageChannel;
 import net.dv8tion.jda.core.entities.MessageEmbed;
 import net.dv8tion.jda.core.entities.User;
+import net.robinfriedli.botify.Botify;
+import net.robinfriedli.botify.audio.spotify.SpotifyService;
 import net.robinfriedli.botify.command.commands.AnswerCommand;
 import net.robinfriedli.botify.concurrent.CheckedRunnable;
 import net.robinfriedli.botify.concurrent.Invoker;
-import net.robinfriedli.botify.discord.DiscordListener;
+import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.MessageService;
-import net.robinfriedli.botify.entities.CommandContribution;
+import net.robinfriedli.botify.discord.properties.ColorSchemeProperty;
+import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.login.Login;
 import net.robinfriedli.botify.util.Util;
@@ -133,18 +136,16 @@ public abstract class AbstractCommand {
      * commands that do not necessarily require a login, in which case the access token will always be set before
      * executing the command, but might need to access a user's data under some condition.
      *
-     * @param user the user whose spotify data is being accessed, needs to be logged in
      * @param callable the code to run
      */
-    protected <E> E runWithLogin(User user, Callable<E> callable) throws Exception {
+    protected <E> E runWithLogin(Callable<E> callable) throws Exception {
         Invoker invoker = getContext().getGuildContext().getInvoker();
-        Login login = getManager().getLoginManager().requireLoginForUser(user);
+        Login login = Botify.get().getLoginManager().requireLoginForUser(getContext().getUser());
         return invoker.runForUser(login, getContext().getSpotifyApi(), callable);
     }
 
     /**
-     * Run a callable with the default spotify credentials. Used for spotify api queries in commands where
-     * requiresCredentials is false.
+     * Run a callable with the default spotify credentials. Used for spotify api queries in commands.
      */
     protected <E> E runWithCredentials(Callable<E> callable) throws Exception {
         Invoker invoker = getContext().getGuildContext().getInvoker();
@@ -160,8 +161,7 @@ public abstract class AbstractCommand {
     }
 
     protected boolean isPartitioned() {
-        DiscordListener.Mode mode = commandManager.getDiscordListener().getMode();
-        return mode == DiscordListener.Mode.PARTITIONED;
+        return Botify.get().getGuildManager().getMode() == GuildManager.Mode.PARTITIONED;
     }
 
     /**
@@ -211,36 +211,45 @@ public abstract class AbstractCommand {
 
     protected void askQuestion(ClientQuestionEvent question) {
         setFailed(true);
-        commandManager.addQuestion(question);
+        getContext().getGuildContext().addQuestion(question);
         question.ask();
     }
 
-    protected void sendMessage(MessageChannel channel, String message) {
-        messageService.send(message, channel);
+    protected CompletableFuture<Message> sendMessage(String message) {
+        return messageService.send(message, getContext().getChannel());
     }
 
-    protected void sendMessage(MessageChannel channel, MessageEmbed message) {
-        messageService.send(message, channel);
+    protected CompletableFuture<Message> sendMessage(EmbedBuilder message) {
+        message.setColor(ColorSchemeProperty.getColor());
+        return messageService.send(message.build(), getContext().getChannel());
     }
 
-    protected void sendMessage(User user, String message) {
-        messageService.send(message, user);
+    protected CompletableFuture<Message> sendMessage(User user, String message) {
+        return messageService.send(message, user);
     }
 
     protected void sendWrapped(String message, String wrapper, MessageChannel channel) {
         messageService.sendWrapped(message, wrapper, channel);
     }
 
-    protected CompletableFuture<Message> sendMessage(MessageChannel channel, InputStream file, String fileName, MessageBuilder messageBuilder) {
-        return messageService.send(messageBuilder, file, fileName, channel);
+    protected CompletableFuture<Message> sendMessage(InputStream file, String fileName, MessageBuilder messageBuilder) {
+        return messageService.send(messageBuilder, file, fileName, getContext().getChannel());
     }
 
-    protected CompletableFuture<Message> sendWithLogo(MessageChannel channel, EmbedBuilder embedBuilder) throws IOException {
-        return messageService.sendWithLogo(embedBuilder, channel);
+    protected CompletableFuture<Message> sendWithLogo(EmbedBuilder embedBuilder) throws IOException {
+        return messageService.sendWithLogo(embedBuilder, getContext().getChannel());
     }
 
-    protected CompletableFuture<Message> sendSuccess(MessageChannel channel, String message) {
-        return messageService.sendSuccess(message, channel);
+    protected CompletableFuture<Message> sendSuccess(String message) {
+        return messageService.sendSuccess(message, getContext().getChannel());
+    }
+
+    protected CompletableFuture<Message> sendError(String message) {
+        return messageService.sendError(message, getContext().getChannel());
+    }
+
+    protected void sendToActiveGuilds(MessageEmbed message) {
+        messageService.sendToActiveGuilds(message, getContext().getJda(), Botify.get().getAudioManager(), getContext().getSession());
     }
 
     /**
@@ -257,7 +266,7 @@ public abstract class AbstractCommand {
 
         List<Integer> positions = words.findPositionsOf("$" + argument, true);
         if (positions.isEmpty()) {
-            throw new InvalidCommandException("Expected argument: " + argument);
+            throw new InvalidCommandException("Expected inline argument: " + argument);
         }
         int position = positions.get(0);
 
@@ -310,6 +319,14 @@ public abstract class AbstractCommand {
         return requiresInput;
     }
 
+    public CommandContribution getCommandContribution() {
+        return commandContribution;
+    }
+
+    public SpotifyService getSpotifyService() {
+        return context.getSpotifyService();
+    }
+
     private void processCommand(String commandString) {
         StringList words = StringListImpl.separateString(commandString, " ");
 
@@ -338,17 +355,15 @@ public abstract class AbstractCommand {
         commandBody = words.toString().substring(commandBodyIndex).trim();
     }
 
-    public CommandContribution getCommandContribution() {
-        return commandContribution;
-    }
-
     public enum Category {
 
         PLAYBACK("playback", "Commands that manage the music playback"),
         PLAYLIST_MANAGEMENT("playlist management", "Commands that add or remove items from botify playlists"),
+        GENERAL("general", "General commands that manage this bot"),
+        CUSTOMISATION("customisation", "Commands to customise the bot"),
         SPOTIFY("spotify", "Commands that manage the Spotify login or upload playlists to Spotify"),
         SEARCH("search", "Commands that search for botify playlists or list all of them or search for Spotify and Youtube tracks, videos and playlists"),
-        GENERAL("general", "General commands that manage this bot");
+        ADMIN("admin", "Commands only available to administrators defined in settings.properties");
 
         private final String name;
         private final String description;

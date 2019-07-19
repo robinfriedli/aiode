@@ -1,11 +1,12 @@
 package net.robinfriedli.botify.command.commands;
 
+import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.entities.CommandContribution;
+import net.robinfriedli.botify.entities.xml.CommandContribution;
 
 public class RepeatCommand extends AbstractCommand {
 
@@ -15,7 +16,7 @@ public class RepeatCommand extends AbstractCommand {
 
     @Override
     public void doRun() {
-        AudioPlayback playback = getManager().getAudioManager().getPlaybackForGuild(getContext().getGuild());
+        AudioPlayback playback = Botify.get().getAudioManager().getPlaybackForGuild(getContext().getGuild());
         if (argumentSet("one")) {
             playback.setRepeatOne(!playback.isRepeatOne());
         } else {
@@ -25,11 +26,11 @@ public class RepeatCommand extends AbstractCommand {
 
     @Override
     public void onSuccess() {
-        AudioPlayback playback = getManager().getAudioManager().getPlaybackForGuild(getContext().getGuild());
+        AudioPlayback playback = Botify.get().getAudioManager().getPlaybackForGuild(getContext().getGuild());
         if (argumentSet("one")) {
-            sendSuccess(getContext().getChannel(), "Repeat one set to " + playback.isRepeatOne());
+            sendSuccess("Repeat one set to " + playback.isRepeatOne());
         } else {
-            sendSuccess(getContext().getChannel(), "Repeat all set to " + playback.isRepeatAll());
+            sendSuccess("Repeat all set to " + playback.isRepeatAll());
         }
     }
 

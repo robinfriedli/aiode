@@ -1,16 +1,19 @@
 package net.robinfriedli.botify.command.commands;
 
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import com.wrapper.spotify.requests.authorization.authorization_code.AuthorizationCodeUriRequest;
+import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.User;
+import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.entities.CommandContribution;
+import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.CommandRuntimeException;
 import net.robinfriedli.botify.login.Login;
 import net.robinfriedli.botify.login.LoginManager;
@@ -30,13 +33,19 @@ public class LoginCommand extends AbstractCommand {
             .scope("playlist-read-private playlist-read-collaborative user-library-read playlist-modify-private playlist-modify-public")
             .build();
 
-        LoginManager loginManager = getManager().getLoginManager();
+        LoginManager loginManager = Botify.get().getLoginManager();
         CompletableFuture<Login> pendingLogin = new CompletableFuture<>();
         loginManager.expectLogin(user, pendingLogin);
 
         String response = String.format("Your login link:\n%s", uriRequest.execute().toString());
-        sendMessage(user, response);
-        sendMessage(getContext().getChannel(), "I sent you a login link");
+        CompletableFuture<Message> futureMessage = sendMessage(user, response);
+        try {
+            futureMessage.get();
+            sendMessage("I sent you a login link");
+        } catch (CancellationException | ExecutionException e) {
+            sendError("I was unable to send you a message. Please adjust your privacy settings to allow direct messages from guild members.");
+        } catch (InterruptedException ignored) {
+        }
 
         // we do not want to send a "Still loading..." message when waiting for login to complete
         getContext().interruptMonitoring();
@@ -54,7 +63,7 @@ public class LoginCommand extends AbstractCommand {
 
     @Override
     public void onSuccess() {
-        sendSuccess(getContext().getChannel(), "User " + getContext().getUser().getName() + " logged in to Spotify");
+        sendSuccess("User " + getContext().getUser().getName() + " logged in to Spotify");
     }
 
 }

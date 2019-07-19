@@ -1,7 +1,7 @@
 package net.robinfriedli.botify.entities;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -19,11 +19,13 @@ public class CommandHistory implements Serializable {
     @Column(name = "pk")
     private long pk;
     @Column(name = "timestamp")
-    private Date timestamp;
+    private LocalDateTime timestamp;
     @Column(name = "start_millis")
     private long startMillis;
     @Column(name = "command_identifier")
     private String commandIdentifier;
+    @Column(name = "command_context_id")
+    private String commandContextId;
     @Column(name = "command_body", length = 2000)
     private String commandBody;
     @Column(name = "input", length = 2000)
@@ -56,11 +58,11 @@ public class CommandHistory implements Serializable {
         this.pk = pk;
     }
 
-    public Date getTimestamp() {
+    public LocalDateTime getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(Date timestamp) {
+    public void setTimestamp(LocalDateTime timestamp) {
         this.timestamp = timestamp;
     }
 
@@ -166,5 +168,13 @@ public class CommandHistory implements Serializable {
 
     public void setCommandBody(String commandBody) {
         this.commandBody = commandBody;
+    }
+
+    public String getCommandContextId() {
+        return commandContextId;
+    }
+
+    public void setCommandContextId(String commandContextId) {
+        this.commandContextId = commandContextId;
     }
 }

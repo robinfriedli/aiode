@@ -3,8 +3,8 @@ package net.robinfriedli.botify.command.commands;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.entities.CommandContribution;
 import net.robinfriedli.botify.entities.Playlist;
+import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 import net.robinfriedli.botify.util.SearchEngine;
 import org.hibernate.Session;
@@ -32,6 +32,6 @@ public class DeleteCommand extends AbstractCommand {
 
     @Override
     public void onSuccess() {
-        // notification sent by AlertEventListener
+        // notification sent by interceptor
     }
 }

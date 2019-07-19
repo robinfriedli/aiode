@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<guildProperties xmlns="guildPropertySpace">
+  <guildProperty property="botName" name="bot name" defaultValue="$botify" implementation="net.robinfriedli.botify.discord.properties.BotNameProperty" updateMessage="You can now call me %s"/>
+  <guildProperty property="prefix" name="prefix" defaultValue="$botify" implementation="net.robinfriedli.botify.discord.properties.PrefixProperty" updateMessage="Prefix set to %s"/>
+  <guildProperty property="sendPlaybackNotification" name="playback notification" defaultValue="true" implementation="net.robinfriedli.botify.discord.properties.PlaybackNotificationProperty" updateMessage="Set playback notification to %s"/>
+  <guildProperty property="color" name="color" defaultValue="#1DB954" implementation="net.robinfriedli.botify.discord.properties.ColorSchemeProperty" updateMessage="Changed colour to %s"/>
+</guildProperties>

@@ -60,6 +60,9 @@ public class Invoker {
 
     }
 
+    /**
+     * Invoke a callable with a Spotify login. Required to access the user's Spotify library for certain commands.
+     */
     public <E> E runForUser(Login login, SpotifyApi spotifyApi, Callable<E> callable) throws Exception {
         try {
             spotifyApi.setAccessToken(login.getAccessToken());
@@ -69,6 +72,10 @@ public class Invoker {
         }
     }
 
+    /**
+     * Invoke a callable with default Spotify API credentials. This is used to query any non user specific data from
+     * Spotify.
+     */
     public <E> E runWithCredentials(SpotifyApi spotifyApi, Callable<E> callable) throws Exception {
         try {
             ClientCredentials credentials = spotifyApi.clientCredentials().build().execute();

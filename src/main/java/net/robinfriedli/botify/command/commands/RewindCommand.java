@@ -2,13 +2,14 @@ package net.robinfriedli.botify.command.commands;
 
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.VoiceChannel;
+import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.audio.AudioQueue;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.entities.CommandContribution;
+import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 
 public class RewindCommand extends AbstractCommand {
@@ -19,7 +20,7 @@ public class RewindCommand extends AbstractCommand {
 
     @Override
     public void doRun() {
-        AudioManager audioManager = getManager().getAudioManager();
+        AudioManager audioManager = Botify.get().getAudioManager();
         Guild guild = getContext().getGuild();
         AudioPlayback playback = audioManager.getPlaybackForGuild(guild);
         AudioQueue queue = playback.getAudioQueue();

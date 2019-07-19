@@ -1,49 +1,31 @@
 package net.robinfriedli.botify.command.commands;
 
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 
-import org.apache.commons.validator.routines.UrlValidator;
-
-import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.model_objects.specification.AlbumSimplified;
-import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
 import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Message;
+import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.audio.AudioQueue;
 import net.robinfriedli.botify.audio.Playable;
-import net.robinfriedli.botify.audio.YouTubePlaylist;
-import net.robinfriedli.botify.audio.YouTubeService;
-import net.robinfriedli.botify.audio.YouTubeVideo;
-import net.robinfriedli.botify.command.AbstractCommand;
+import net.robinfriedli.botify.audio.PlayableFactory;
+import net.robinfriedli.botify.audio.youtube.YouTubePlaylist;
+import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
 import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.command.widgets.QueueWidget;
-import net.robinfriedli.botify.entities.CommandContribution;
-import net.robinfriedli.botify.entities.Playlist;
-import net.robinfriedli.botify.exceptions.InvalidCommandException;
-import net.robinfriedli.botify.exceptions.NoResultsFoundException;
-import net.robinfriedli.botify.exceptions.NoSpotifyResultsFoundException;
-import net.robinfriedli.botify.util.SearchEngine;
-import net.robinfriedli.stringlist.StringListImpl;
+import net.robinfriedli.botify.entities.xml.CommandContribution;
 
-public class QueueCommand extends AbstractCommand {
-
-    private Playable queuedTrack;
-    private Playlist queuedLocalList;
-    private PlaylistSimplified queuedSpotifyPlaylist;
-    private YouTubePlaylist queuedYouTubePlaylist;
-    private AlbumSimplified queuedAlbum;
-    private int queuedAmount;
+public class QueueCommand extends AbstractQueueLoadingCommand {
 
     public QueueCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContribution, context, commandManager, commandString, false, identifier, description, Category.PLAYBACK);
+        super(commandContribution, context, commandManager, commandString, false, identifier, description, Category.PLAYBACK, false);
     }
 
     @Override
@@ -51,250 +33,77 @@ public class QueueCommand extends AbstractCommand {
         if (getCommandBody().isBlank()) {
             listQueue();
         } else {
-            AudioManager audioManager = getManager().getAudioManager();
-            AudioPlayback playback = audioManager.getPlaybackForGuild(getContext().getGuild());
-            playback.setCommunicationChannel(getContext().getChannel());
-
-            if (UrlValidator.getInstance().isValid(getCommandBody())) {
-                queueUrlItems(audioManager, playback);
-            } else if (argumentSet("list")) {
-                if (argumentSet("spotify")) {
-                    queueSpotifyList(audioManager, playback);
-                } else if (argumentSet("youtube")) {
-                    queueYouTubeList(audioManager, playback);
-                } else {
-                    queueLocalList(audioManager, playback);
-                }
-            } else {
-                if (argumentSet("youtube")) {
-                    queueYouTubeVideo(audioManager, playback);
-                } else if (argumentSet("album")) {
-                    queueSpotifyAlbum(audioManager, playback);
-                } else if (UrlValidator.getInstance().isValid(getCommandBody())) {
-                    queueUrlItems(audioManager, playback);
-                } else {
-                    queueTrack(audioManager, playback);
-                }
-            }
+            super.doRun();
         }
     }
 
-    private void queueUrlItems(AudioManager audioManager, AudioPlayback playback) {
-        List<Playable> playables = audioManager.createPlayables(getCommandBody(), playback, getContext().getSpotifyApi(), !argumentSet("preview"), false);
+    @Override
+    protected void handleResults(List<Playable> playables) {
+        AudioPlayback playback = getContext().getGuildContext().getPlayback();
         playback.getAudioQueue().add(playables);
-        queuedAmount = playables.size();
-    }
-
-    private void queueLocalList(AudioManager audioManager, AudioPlayback playback) throws Exception {
-        Playlist playlist = SearchEngine.searchLocalList(getContext().getSession(), getCommandBody(), isPartitioned(), getContext().getGuild().getId());
-        if (playlist == null) {
-            throw new NoResultsFoundException("No local playlist found for " + getCommandBody());
-        }
-
-        List<Object> items = runWithCredentials(() -> playlist.getTracks(getContext().getSpotifyApi()));
-
-        if (items.isEmpty()) {
-            throw new NoResultsFoundException("Playlist is empty");
-        }
-
-        List<Playable> playables = audioManager.createPlayables(!argumentSet("preview"), items, playback, false);
-        playback.getAudioQueue().add(playables);
-        queuedLocalList = playlist;
-    }
-
-    private void queueYouTubeList(AudioManager audioManager, AudioPlayback playback) {
-        YouTubeService youTubeService = audioManager.getYouTubeService();
-
-        if (argumentSet("limit")) {
-            int limit = getArgumentValue("limit", Integer.class);
-            if (!(limit > 0 && limit <= 10)) {
-                throw new InvalidCommandException("Limit must be between 1 and 10");
-            }
-
-            List<YouTubePlaylist> playlists = youTubeService.searchSeveralPlaylists(limit, getCommandBody());
-            if (playlists.size() == 1) {
-                YouTubePlaylist playlist = playlists.get(0);
-                List<Playable> playables = audioManager.createPlayables(playlist, playback, false);
-                playback.getAudioQueue().add(playables);
-                queuedYouTubePlaylist = playlist;
-            } else if (playlists.isEmpty()) {
-                throw new NoResultsFoundException("No playlist found for " + getCommandBody());
-            } else {
-                askQuestion(playlists, YouTubePlaylist::getTitle, YouTubePlaylist::getChannelTitle);
-            }
-        } else {
-            YouTubePlaylist youTubePlaylist = youTubeService.searchPlaylist(getCommandBody());
-            List<Playable> playables = audioManager.createPlayables(youTubePlaylist, playback, false);
-            playback.getAudioQueue().add(playables);
-            queuedYouTubePlaylist = youTubePlaylist;
-        }
-    }
-
-    private void queueSpotifyList(AudioManager audioManager, AudioPlayback playback) throws Exception {
-        SpotifyApi spotifyApi = getContext().getSpotifyApi();
-        Callable<Void> callable = () -> {
-            List<PlaylistSimplified> found;
-            if (argumentSet("own")) {
-                found = SearchEngine.searchOwnPlaylist(spotifyApi, getCommandBody());
-            } else {
-                found = SearchEngine.searchSpotifyPlaylist(spotifyApi, getCommandBody());
-            }
-
-            if (found.size() == 1) {
-                PlaylistSimplified playlist = found.get(0);
-                List<Track> playlistTracks = SearchEngine.getPlaylistTracks(spotifyApi, playlist);
-                List<Playable> playables = audioManager.createPlayables(!argumentSet("preview"), playlistTracks, playback, false);
-                playback.getAudioQueue().add(playables);
-                queuedSpotifyPlaylist = playlist;
-            } else if (found.isEmpty()) {
-                throw new NoSpotifyResultsFoundException("No playlist found for " + getCommandBody());
-            } else {
-                askQuestion(found, PlaylistSimplified::getName, p -> p.getOwner().getDisplayName());
-            }
-
-            return null;
-        };
-
-        if (argumentSet("own")) {
-            runWithLogin(getContext().getUser(), callable);
-        } else {
-            runWithCredentials(callable);
-        }
-    }
-
-    private void queueSpotifyAlbum(AudioManager audioManager, AudioPlayback audioPlayback) throws Exception {
-        SpotifyApi spotifyApi = getContext().getSpotifyApi();
-        List<AlbumSimplified> albums = runWithCredentials(() -> SearchEngine.searchSpotifyAlbum(spotifyApi, getCommandBody()));
-
-        if (albums.size() == 1) {
-            AlbumSimplified album = albums.get(0);
-            List<Track> tracks = runWithCredentials(() -> SearchEngine.getAlbumTracks(spotifyApi, album.getId()));
-            List<Playable> playables = audioManager.createPlayables(!argumentSet("preview"), tracks, audioPlayback, false);
-            audioPlayback.getAudioQueue().add(playables);
-            queuedAlbum = album;
-        } else if (albums.isEmpty()) {
-            throw new NoSpotifyResultsFoundException("No albums found for " + getCommandBody());
-        } else {
-            askQuestion(albums, AlbumSimplified::getName, album -> StringListImpl.create(album.getArtists(), ArtistSimplified::getName).toSeparatedString(", "));
-        }
-    }
-
-    private void queueTrack(AudioManager audioManager, AudioPlayback playback) throws Exception {
-        SpotifyApi spotifyApi = getContext().getSpotifyApi();
-        List<Track> found;
-        if (argumentSet("own")) {
-            found = runWithLogin(getContext().getUser(), () -> SearchEngine.searchOwnTrack(spotifyApi, getCommandBody()));
-        } else {
-            found = runWithCredentials(() -> SearchEngine.searchTrack(spotifyApi, getCommandBody()));
-        }
-
-        if (found.size() == 1) {
-            Playable track = audioManager.createPlayable(!argumentSet("preview"), found.get(0));
-            playback.getAudioQueue().add(track);
-            queuedTrack = track;
-        } else if (found.isEmpty()) {
-            throw new NoSpotifyResultsFoundException("No Spotify track found for " + getCommandBody());
-        } else {
-            askQuestion(found, track -> {
-                String artistString = StringListImpl.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", ");
-                return String.format("%s by %s", track.getName(), artistString);
-            }, track -> track.getAlbum().getName());
-        }
-    }
-
-    private void queueYouTubeVideo(AudioManager audioManager, AudioPlayback playback) {
-        YouTubeService youTubeService = audioManager.getYouTubeService();
-        if (argumentSet("limit")) {
-            int limit = getArgumentValue("limit", Integer.class);
-            if (!(limit > 0 && limit <= 10)) {
-                throw new InvalidCommandException("Limit must be between 1 and 10");
-            }
-
-            List<YouTubeVideo> youTubeVideos = youTubeService.searchSeveralVideos(limit, getCommandBody());
-            if (youTubeVideos.size() == 1) {
-                Playable playable = audioManager.createPlayable(false, youTubeVideos.get(0));
-                playback.getAudioQueue().add(playable);
-                queuedTrack = playable;
-            } else if (youTubeVideos.isEmpty()) {
-                throw new NoResultsFoundException("No YouTube video found for " + getCommandBody());
-            } else {
-                askQuestion(youTubeVideos, youTubeVideo -> {
-                    try {
-                        return youTubeVideo.getTitle();
-                    } catch (InterruptedException e) {
-                        // Unreachable since only HollowYouTubeVideos might get interrupted
-                        throw new RuntimeException(e);
-                    }
-                });
-            }
-        } else {
-            YouTubeVideo youTubeVideo = youTubeService.searchVideo(getCommandBody());
-            Playable video = audioManager.createPlayable(false, youTubeVideo);
-            audioManager.getQueue(getContext().getGuild()).add(video);
-            queuedTrack = video;
-        }
     }
 
     private void listQueue() throws Exception {
         Guild guild = getContext().getGuild();
-        AudioManager audioManager = getManager().getAudioManager();
+        AudioManager audioManager = Botify.get().getAudioManager();
         AudioPlayback playback = audioManager.getPlaybackForGuild(guild);
         AudioQueue audioQueue = playback.getAudioQueue();
 
-        CompletableFuture<Message> futureMessage = sendWithLogo(getContext().getChannel(), audioQueue.buildMessageEmbed(playback, guild));
+        CompletableFuture<Message> futureMessage = sendWithLogo(audioQueue.buildMessageEmbed(playback, guild));
         getManager().registerWidget(new QueueWidget(getManager(), futureMessage.get(), audioManager, playback));
     }
 
     @Override
     public void onSuccess() {
-        if (queuedTrack != null) {
-            sendSuccess(getContext().getChannel(), "Queued " + queuedTrack.getDisplayInterruptible());
+        if (loadedTrack != null) {
+            sendSuccess("Queued " + loadedTrack.getDisplayInterruptible());
         }
-        if (queuedLocalList != null) {
-            sendSuccess(getContext().getChannel(), "Queued playlist " + queuedLocalList.getName());
+        if (loadedLocalList != null) {
+            sendSuccess("Queued playlist " + loadedLocalList.getName());
         }
-        if (queuedSpotifyPlaylist != null) {
-            sendSuccess(getContext().getChannel(), "Queued playlist " + queuedSpotifyPlaylist.getName());
+        if (loadedSpotifyPlaylist != null) {
+            sendSuccess("Queued playlist " + loadedSpotifyPlaylist.getName());
         }
-        if (queuedYouTubePlaylist != null) {
-            sendSuccess(getContext().getChannel(), "Queued playlist " + queuedYouTubePlaylist.getTitle());
+        if (loadedYouTubePlaylist != null) {
+            sendSuccess("Queued playlist " + loadedYouTubePlaylist.getTitle());
         }
-        if (queuedAlbum != null) {
-            sendSuccess(getContext().getChannel(), "Queued album " + queuedAlbum.getName());
+        if (loadedAlbum != null) {
+            sendSuccess("Queued album " + loadedAlbum.getName());
         }
-        if (queuedAmount > 0) {
-            String queuedString = queuedAmount > 1 ? "items" : "item";
-            sendSuccess(getContext().getChannel(), "Queued " + queuedAmount + " " + queuedString);
+        if (loadedAmount > 0) {
+            String loadedString = loadedAmount > 1 ? "items" : "item";
+            sendSuccess("Queued " + loadedAmount + " " + loadedString);
         }
     }
 
     @Override
     public void withUserResponse(Object chosenOption) throws Exception {
-        AudioManager audioManager = getManager().getAudioManager();
+        AudioManager audioManager = Botify.get().getAudioManager();
+        PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild());
         if (chosenOption instanceof Track || chosenOption instanceof YouTubeVideo) {
-            Playable track = audioManager.createPlayable(!argumentSet("preview"), chosenOption);
+            Playable track = playableFactory.createPlayable(!argumentSet("preview"), chosenOption);
             audioManager.getQueue(getContext().getGuild()).add(track);
-            queuedTrack = track;
+            loadedTrack = track;
         } else if (chosenOption instanceof PlaylistSimplified) {
             PlaylistSimplified playlist = (PlaylistSimplified) chosenOption;
-            List<Track> tracks = runWithCredentials(() -> SearchEngine.getPlaylistTracks(getContext().getSpotifyApi(), playlist));
+            List<Track> tracks = runWithCredentials(() -> getSpotifyService().getPlaylistTracks(playlist));
             AudioPlayback playbackForGuild = audioManager.getPlaybackForGuild(getContext().getGuild());
-            List<Playable> playables = audioManager.createPlayables(!argumentSet("preview"), tracks, playbackForGuild, false);
+            List<Playable> playables = playableFactory.createPlayables(!argumentSet("preview"), tracks, false);
             playbackForGuild.getAudioQueue().add(playables);
-            queuedSpotifyPlaylist = playlist;
+            loadedSpotifyPlaylist = playlist;
         } else if (chosenOption instanceof YouTubePlaylist) {
             AudioPlayback playback = audioManager.getPlaybackForGuild(getContext().getGuild());
             YouTubePlaylist youTubePlaylist = (YouTubePlaylist) chosenOption;
-            List<Playable> playables = audioManager.createPlayables(youTubePlaylist, playback, false);
+            List<Playable> playables = playableFactory.createPlayables(youTubePlaylist, false);
             playback.getAudioQueue().add(playables);
-            queuedYouTubePlaylist = youTubePlaylist;
+            loadedYouTubePlaylist = youTubePlaylist;
         } else if (chosenOption instanceof AlbumSimplified) {
             AlbumSimplified album = (AlbumSimplified) chosenOption;
             AudioPlayback playback = audioManager.getPlaybackForGuild(getContext().getGuild());
-            List<Track> tracks = runWithCredentials(() -> SearchEngine.getAlbumTracks(getContext().getSpotifyApi(), album.getId()));
-            List<Playable> playables = audioManager.createPlayables(!argumentSet("preview"), tracks, playback, false);
+            List<Track> tracks = runWithCredentials(() -> getSpotifyService().getAlbumTracks(album.getId()));
+            List<Playable> playables = playableFactory.createPlayables(!argumentSet("preview"), tracks, false);
             playback.getAudioQueue().add(playables);
-            queuedAlbum = album;
+            loadedAlbum = album;
         }
     }
 
@@ -310,12 +119,12 @@ public class QueueCommand extends AbstractCommand {
         argumentContribution.map("spotify").setRequiresInput(true).excludesArguments("youtube")
             .setDescription("Queue Spotify track, playlist or album. This supports Spotify query syntax (i.e. the filters \"artist:\", \"album:\", etc.). Note that this argument is only required when searching, not when entering a URL.");
         argumentContribution.map("own").needsArguments("spotify")
-            .setDescription("Limit search to Spotify tracks and playlists in the current users library. This requires a Spotify login. Spotify search filters (\"artist:\", \"album:\" etc.) are not supported with this argument.");
+            .setDescription("Limit search to Spotify tracks and playlists in the current users library. This requires a Spotify login.");
         argumentContribution.map("local").needsArguments("list")
             .setDescription("Queue local playlist.");
         argumentContribution.map("limit").needsArguments("youtube").setRequiresValue(true)
             .setDescription("Show a selection of YouTube playlists or videos to chose from. Requires value from 1 to 10: $limit=5");
-        argumentContribution.map("album").needsArguments("spotify").excludesArguments("own").setRequiresInput(true)
+        argumentContribution.map("album").needsArguments("spotify").excludesArguments("list").setRequiresInput(true)
             .setDescription("Search for a Spotify album. Note that this argument is only required when searching, not when entering a URL.");
         return argumentContribution;
     }

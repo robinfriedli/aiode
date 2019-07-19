@@ -1,122 +1,109 @@
 package net.robinfriedli.botify.entities;
 
-import java.util.HashMap;
+import java.io.Serializable;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.annotation.Nullable;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.ForeignKey;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.ISnowflake;
 import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.Role;
-import net.robinfriedli.jxp.api.AbstractXmlElement;
-import net.robinfriedli.jxp.api.XmlElement;
-import net.robinfriedli.jxp.persist.Context;
-import org.w3c.dom.Element;
 
-public class AccessConfiguration extends AbstractXmlElement {
+@Entity
+@Table(name = "access_configuration")
+public class AccessConfiguration implements Serializable {
 
-    public AccessConfiguration(String tagName, Map<String, ?> attributeMap, List<XmlElement> subElements, String textContent, Context context) {
-        super(tagName, attributeMap, subElements, textContent, context);
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "pk")
+    private long pk;
+    @Column(name = "command_identifier", nullable = false)
+    private String commandIdentifier;
+    @OneToMany(mappedBy = "accessConfiguration", fetch = FetchType.EAGER)
+    private Set<GrantedRole> roles = Sets.newHashSet();
+    @ManyToOne
+    @JoinColumn(name = "guild_specification_pk", referencedColumnName = "pk", foreignKey = @ForeignKey(name = "fk_guild_specification"))
+    private GuildSpecification guildSpecification;
+
+    public AccessConfiguration() {
     }
 
-    public AccessConfiguration(String commandIdentifier, List<Role> roles, Context context) {
-        super("accessConfiguration", buildAttributes(commandIdentifier, roles), context);
-    }
-
-    // invoked by JXP
-    @SuppressWarnings("unused")
-    public AccessConfiguration(Element element, Context context) {
-        super(element, context);
-    }
-
-    private static Map<String, ?> buildAttributes(String commandIdentifier, List<Role> roles) {
-        Map<String, String> attributeMap = new HashMap<>();
-        attributeMap.put("commandIdentifier", commandIdentifier);
-        attributeMap.put("roleIds", roles.stream().map(ISnowflake::getId).collect(Collectors.joining(",")));
-        return attributeMap;
-    }
-
-    @Nullable
-    @Override
-    public String getId() {
-        return null;
+    public AccessConfiguration(String commandIdentifier) {
+        this.commandIdentifier = commandIdentifier;
     }
 
     public boolean canAccess(Member member) {
-        String roleIds = getAttribute("roleIds").getValue();
-        List<String> roles = Lists.newArrayList(roleIds.split(","));
+        Set<String> roles = this.roles.stream().map(GrantedRole::getId).collect(Collectors.toSet());
 
-        List<String> memberRoles = member.getRoles().stream().map(ISnowflake::getId).collect(Collectors.toList());
+        if (roles.isEmpty()) {
+            return false;
+        }
+
+        Set<String> memberRoles = member.getRoles().stream().map(ISnowflake::getId).collect(Collectors.toSet());
         return memberRoles.stream().anyMatch(roles::contains);
     }
 
-    public void setRoles(List<Role> roles) {
-        getContext().invoke(() -> setAttribute("roleIds",
-            roles.stream().map(ISnowflake::getId).collect(Collectors.joining(","))));
+    public long getPk() {
+        return pk;
     }
 
-    public void removeRole(Role role) {
-        List<String> roleIds = Lists.newArrayList(getAttribute("roleIds").getValue().split(","));
-
-        if (!roleIds.contains(role.getId())) {
-            throw new IllegalArgumentException("Configuration does not contain role " + role.getName());
-        }
-
-        roleIds.remove(role.getId());
-        getContext().invoke(() -> setAttribute("roleIds", String.join(",", roleIds)));
+    public void setPk(long pk) {
+        this.pk = pk;
     }
 
-    public void removeRoles(List<Role> roles) {
-        List<String> roleIds = Lists.newArrayList(getAttribute("roleIds").getValue().split(","));
-
-        for (Role role : roles) {
-            if (!roleIds.contains(role.getId())) {
-                throw new IllegalArgumentException("Configuration does not contain role " + role.getName());
-            }
-
-            roleIds.remove(role.getId());
-        }
-        getContext().invoke(() -> setAttribute("roleIds", String.join(",", roleIds)));
+    public String getCommandIdentifier() {
+        return commandIdentifier;
     }
 
-    public void addRole(Role role) {
-        List<String> roleIds = Lists.newArrayList(getAttribute("roleIds").getValue().split(","));
-
-        if (roleIds.contains(role.getId())) {
-            throw new IllegalArgumentException("Configuration already contains role " + role.getName());
-        }
-
-        roleIds.add(role.getId());
-        getContext().invoke(() -> setAttribute("roleIds", String.join(",", roleIds)));
+    public Optional<GrantedRole> getRole(String id) {
+        return roles.stream().filter(role -> role.getId().equals(id)).findAny();
     }
 
-    public void addRoles(List<Role> roles) {
-        List<String> roleIds = Lists.newArrayList(getAttribute("roleIds").getValue().split(","));
-
-        for (Role role : roles) {
-            if (roleIds.contains(role.getId())) {
-                throw new IllegalArgumentException("Configuration already contains role " + role.getName());
-            }
-
-            roleIds.add(role.getId());
-        }
-        getContext().invoke(() -> setAttribute("roleIds", String.join(",", roleIds)));
+    public void addRole(GrantedRole role) {
+        role.setAccessConfiguration(this);
+        this.roles.add(role);
     }
 
-    public List<Role> getRoles(Guild guild) {
-        String[] roleIds = getAttribute("roleIds").getValue().split(",");
-        List<Role> roles = Lists.newArrayList();
-        for (String roleId : roleIds) {
-            if (!roleId.isEmpty()) {
-                roles.add(guild.getRoleById(roleId));
-            }
-        }
+    public void removeRole(GrantedRole role) {
+        this.roles.remove(role);
+    }
 
+    public boolean hasRole(String id) {
+        return roles.stream().anyMatch(role -> role.getId().equals(id));
+    }
+
+    public Set<String> getRoleIds() {
+        return roles.stream().map(GrantedRole::getId).collect(Collectors.toSet());
+    }
+
+    public Set<GrantedRole> getRoles() {
         return roles;
     }
 
+    public List<Role> getRoles(Guild guild) {
+        return roles.stream().map(role -> role.getRole(guild)).collect(Collectors.toList());
+    }
+
+    public GuildSpecification getGuildSpecification() {
+        return guildSpecification;
+    }
+
+    public void setGuildSpecification(GuildSpecification guildSpecification) {
+        this.guildSpecification = guildSpecification;
+    }
 }

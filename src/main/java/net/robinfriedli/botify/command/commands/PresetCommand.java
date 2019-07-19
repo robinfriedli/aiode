@@ -1,6 +1,5 @@
 package net.robinfriedli.botify.command.commands;
 
-import java.awt.Color;
 import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -10,8 +9,8 @@ import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.entities.CommandContribution;
 import net.robinfriedli.botify.entities.Preset;
+import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.util.SearchEngine;
 import net.robinfriedli.botify.util.Table2;
@@ -20,7 +19,7 @@ import org.hibernate.Session;
 public class PresetCommand extends AbstractCommand {
 
     public PresetCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContribution, context, commandManager, commandString, false, identifier, description, Category.GENERAL);
+        super(commandContribution, context, commandManager, commandString, false, identifier, description, Category.CUSTOMISATION);
     }
 
     @Override
@@ -38,7 +37,6 @@ public class PresetCommand extends AbstractCommand {
         } else if (getCommandBody().isBlank()) {
             List<Preset> presets = session.createQuery("from " + Preset.class.getName() + " where guild_id = '" + guildId + "'", Preset.class).getResultList();
             EmbedBuilder embedBuilder = new EmbedBuilder();
-            embedBuilder.setColor(Color.decode("#1DB954"));
             if (presets.isEmpty()) {
                 embedBuilder.setDescription("No presets saved");
             } else {
@@ -47,7 +45,7 @@ public class PresetCommand extends AbstractCommand {
                 table.addColumn("Preset", presets, Preset::getPreset);
                 table.build();
             }
-            sendMessage(getContext().getChannel(), embedBuilder.build());
+            sendMessage(embedBuilder);
         } else {
             Pair<String, String> pair = splitInlineArgument("as");
             String presetString = pair.getLeft();
@@ -67,7 +65,7 @@ public class PresetCommand extends AbstractCommand {
 
     @Override
     public void onSuccess() {
-        // success notification sent by AlertEventListener
+        // success notification sent by interceptor
     }
 
     @Override
