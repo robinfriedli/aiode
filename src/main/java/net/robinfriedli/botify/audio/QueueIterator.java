@@ -15,6 +15,7 @@ import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.discord.properties.AbstractGuildProperty;
+import net.robinfriedli.botify.discord.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.util.EmojiConstants;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 
@@ -189,7 +190,13 @@ public class QueueIterator extends AudioEventAdapter {
 
         String baseUri = PropertiesLoadingService.requireProperty("BASE_URI");
         embedBuilder.setFooter(footerBuilder.toString(), baseUri + "/resources-public/img/botify-logo-small.png");
-        CompletableFuture<Message> futureMessage = messageService.send(embedBuilder, playback.getCommunicationChannel());
+
+        Guild guild = playback.getGuild();
+        GuildContext guildContext = Botify.get().getGuildManager().getContextForGuild(guild);
+        Color color = ColorSchemeProperty.getColor(guildContext);
+        embedBuilder.setColor(color);
+
+        CompletableFuture<Message> futureMessage = messageService.send(embedBuilder.build(), playback.getCommunicationChannel());
         futureMessage.thenAccept(playback::setLastPlaybackNotification);
         audioManager.createNowPlayingWidget(futureMessage, playback);
     }
