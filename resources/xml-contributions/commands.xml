@@ -155,7 +155,7 @@
     <example title="list all properties">$botify property</example>
     <example title="set the color of botify messages to blue">$botify property color $set blue</example>
     <example title="set the color to Spotify green">$botify property color $set #1DB954</example>
-    <example title="toggle playback notifications">$botify property $toggle send playback notification</example>
+    <example title="toggle playback notifications">$botify property $toggle playback notification</example>
   </command>
 
   <!-- Administrator commands -->
