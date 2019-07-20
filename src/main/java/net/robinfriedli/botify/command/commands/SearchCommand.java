@@ -120,8 +120,8 @@ public class SearchCommand extends AbstractCommand {
     private void listYouTubeVideo(YouTubeVideo youTubeVideo) throws InterruptedException {
         StringBuilder responseBuilder = new StringBuilder();
         responseBuilder.append("Title: ").append(youTubeVideo.getTitle()).append(System.lineSeparator());
-        responseBuilder.append("Id: ").append(youTubeVideo.getId()).append(System.lineSeparator());
-        responseBuilder.append("Link: ").append("https://www.youtube.com/watch?v=").append(youTubeVideo.getId()).append(System.lineSeparator());
+        responseBuilder.append("Id: ").append(youTubeVideo.getVideoId()).append(System.lineSeparator());
+        responseBuilder.append("Link: ").append("https://www.youtube.com/watch?v=").append(youTubeVideo.getVideoId()).append(System.lineSeparator());
         responseBuilder.append("Duration: ").append(Util.normalizeMillis(youTubeVideo.getDuration()));
 
         sendMessage(responseBuilder.toString());
