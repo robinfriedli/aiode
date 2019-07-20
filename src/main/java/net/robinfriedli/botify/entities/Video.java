@@ -35,7 +35,7 @@ public class Video extends PlaylistItem {
     public Video(YouTubeVideo video, User user, Playlist playlist) {
         super(user, playlist);
         try {
-            id = video.getId();
+            id = video.getVideoId();
             title = video.getTitle();
             duration = video.getDuration();
 

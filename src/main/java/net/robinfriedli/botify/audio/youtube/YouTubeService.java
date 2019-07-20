@@ -361,7 +361,7 @@ public class YouTubeService {
         for (HollowYouTubeVideo hollowYouTubeVideo : videos) {
             String id;
             try {
-                id = hollowYouTubeVideo.getId();
+                id = hollowYouTubeVideo.getVideoId();
             } catch (InterruptedException e) {
                 return;
             }
@@ -375,7 +375,7 @@ public class YouTubeService {
                 for (HollowYouTubeVideo video : videos) {
                     Long duration;
                     try {
-                        duration = durationMillis.get(video.getId());
+                        duration = durationMillis.get(video.getVideoId());
                     } catch (InterruptedException e) {
                         return;
                     }

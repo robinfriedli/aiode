@@ -56,8 +56,13 @@ public class HollowYouTubeVideo implements YouTubeVideo {
     }
 
     @Override
-    public String getId() throws InterruptedException {
+    public String getVideoId() throws InterruptedException {
         return getCompleted(id);
+    }
+
+    @Override
+    public String getId() throws InterruptedException {
+        return redirectedSpotifyTrack != null ? redirectedSpotifyTrack.getId() : getVideoId();
     }
 
     public void setId(String id) {
@@ -65,7 +70,7 @@ public class HollowYouTubeVideo implements YouTubeVideo {
     }
 
     @Override
-    public String getId(long timeOut, TimeUnit unit) throws InterruptedException, TimeoutException {
+    public String getVideoId(long timeOut, TimeUnit unit) throws InterruptedException, TimeoutException {
         return getWithTimeout(id, timeOut, unit);
     }
 
@@ -111,6 +116,11 @@ public class HollowYouTubeVideo implements YouTubeVideo {
 
     public boolean isHollow() {
         return !(title.isDone() || id.isDone() || duration.isDone());
+    }
+
+    @Override
+    public String getSource() {
+        return redirectedSpotifyTrack != null ? "Spotify" : "YouTube";
     }
 
     private <E> E getCompleted(CompletableFuture<E> future) throws InterruptedException {

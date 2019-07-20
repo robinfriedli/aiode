@@ -32,13 +32,13 @@ public class YouTubeVideoImpl implements YouTubeVideo {
     }
 
     @Override
-    public String getId() {
+    public String getVideoId() {
         return id;
     }
 
     @Override
-    public String getId(long timeOut, TimeUnit unit) {
-        return getId();
+    public String getVideoId(long timeOut, TimeUnit unit) {
+        return getVideoId();
     }
 
     @Override

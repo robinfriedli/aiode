@@ -38,13 +38,18 @@ public interface YouTubeVideo extends Playable {
     /**
      * @return the id of the YouTube video
      */
-    String getId() throws InterruptedException;
+    String getVideoId() throws InterruptedException;
 
-    String getId(long timeOut, TimeUnit unit) throws InterruptedException, TimeoutException;
+    String getVideoId(long timeOut, TimeUnit unit) throws InterruptedException, TimeoutException;
+
+    @Override
+    default String getId() throws InterruptedException {
+        return getVideoId();
+    }
 
     @Override
     default String getPlaybackUrl() throws InterruptedException {
-        return String.format("https://www.youtube.com/watch?v=%s", getId());
+        return String.format("https://www.youtube.com/watch?v=%s", getVideoId());
     }
 
     /**
