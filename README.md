@@ -1,13 +1,14 @@
 ![# botify](https://raw.githubusercontent.com/robinfriedli/botify/master/resources-public/img/botify-logo-wide.png)
  Discord bot that plays Spotify tracks and YouTube videos or any URL including Soundcloud links and Twitch streams.
 
-* Play and search Spotify tracks and YouTube videos or playlists or any URL including Soundcloud links
+* Play and search Spotify tracks and YouTube videos or playlists or play any URL including Soundcloud links and Twitch streams
 * Create cross-platform playlists with tracks from any source
-* Simple player commands
-* Customise your commands using command presets
+* Simple and customisable player commands
+* Create custom command presets as shortcuts for your most used commands
+* Adjustable properties for even deeper customisation
 * Sign in to Spotify to play your own playlists or upload botify playlists
 * Manage what roles can access which commands
-* Give your bot a name
+* Customise how you want to summon your bot by using a custom prefix or giving your bot a name
 
 ## Invite it to your guild
 
@@ -39,6 +40,7 @@ router's public ip and setup port forwarding for your router.
 SERVER_PORT=8000
 BASE_URI=http://localhost:8000
 REDIRECT_URI=http://localhost:8000/login
+HIBERNATE_CONFIGURATION=./resources/hibernate.cfg.xml
 ##########
 # tokens #
 ##########
@@ -52,14 +54,16 @@ YOUTUBE_CREDENTIALS=#copy your youtube credentials here
 PLAYLISTS_PATH=./resources/playlists.xml
 GUILD_PLAYLISTS_PATH=./resources/%splaylists.xml
 GUILD_SPECIFICATION_PATH=./resources/guildSpecifications.xml
-COMMANDS_PATH=./resources/commands.xml
-COMMAND_INTERCEPTORS_PATH=./resources/commandInterceptors.xml
-HTTP_HANDLERS_PATH=./resources/httpHandlers.xml
-STARTUP_TASKS_PATH=./resources/startupTasks.xml
-LOGIN_PAGE_PATH=./resources/login.html
-LIST_PAGE_PATH=./resources/playlist_view.html
-ERROR_PAGE_PATH=./resources/default_error_page.html
-QUEUE_PAGE_PATH=./resources/queue_view.html
+COMMANDS_PATH=./resources/xml-contributions/commands.xml
+COMMAND_INTERCEPTORS_PATH=./resources/xml-contributions/commandInterceptors.xml
+HTTP_HANDLERS_PATH=./resources/xml-contributions/httpHandlers.xml
+STARTUP_TASKS_PATH=./resources/xml-contributions/startupTasks.xml
+LOGIN_PAGE_PATH=./resources/html/login.html
+LIST_PAGE_PATH=./resources/html/playlist_view.html
+ERROR_PAGE_PATH=./resources/html/default_error_page.html
+QUEUE_PAGE_PATH=./resources/html/queue_view.html
+EMBED_DOCUMENTS_PATH=./resources/xml-contributions/embedDocuments.xml
+GUILD_PROPERTIES_PATH=./resources/xml-contributions/guildProperties.xml
 ###############
 # preferences #
 ###############
@@ -67,11 +71,13 @@ MODE_PARTITIONED=true
 # playlists per guild (if mode_partitioned = true, else playlist total)
 PLAYLIST_COUNT_MAX=50
 PLAYLIST_SIZE_MAX=5000
+ADMIN_USERS=#define user ids (comma separated) that may access admin commands. These users can always use each command irregardless of access configurations
 #######################################
 # discordbots.org settings (optional) #
 #######################################
-DISCORD_BOT_ID=#copy your discord client id here
-DISCORDBOTS_TOKEN=#copy your discordbots.org token here
+#DISCORD_BOT_ID=#copy your discord client id here
+#DISCORDBOTS_TOKEN=#copy your discordbots.org token here
+
 ```
 
 ### 5. Setup database
@@ -86,6 +92,7 @@ database botify_playlists you can leave it like this:
 
 <hibernate-configuration>
   <session-factory>
+    <!-- hibernate config -->
     <property name="hibernate.connection.driver_class">org.postgresql.Driver</property>
     <property name="hibernate.connection.url">jdbc:postgresql://localhost:5432/botify_playlists</property>
     <property name="hibernate.connection.username">postgres</property>
@@ -93,10 +100,24 @@ database botify_playlists you can leave it like this:
     <property name="hibernate.dialect">org.hibernate.dialect.PostgreSQL94Dialect</property>
     <property name="show_sql">false</property>
     <property name="hibernate.hbm2ddl.auto">update</property>
+    <!-- C3P0 config -->
     <property name="hibernate.c3p0.min_size">5</property>
     <property name="hibernate.c3p0.max_size">20</property>
     <property name="hibernate.c3p0.timeout">1800</property>
     <property name="hibernate.c3p0.max_statements">50</property>
+    <!-- annotated classes -->
+    <mapping class="net.robinfriedli.botify.entities.Playlist"/>
+    <mapping class="net.robinfriedli.botify.entities.Song"/>
+    <mapping class="net.robinfriedli.botify.entities.Video"/>
+    <mapping class="net.robinfriedli.botify.entities.UrlTrack"/>
+    <mapping class="net.robinfriedli.botify.entities.Artist"/>
+    <mapping class="net.robinfriedli.botify.entities.PlaylistItem"/>
+    <mapping class="net.robinfriedli.botify.entities.CommandHistory"/>
+    <mapping class="net.robinfriedli.botify.entities.PlaybackHistory"/>
+    <mapping class="net.robinfriedli.botify.entities.Preset"/>
+    <mapping class="net.robinfriedli.botify.entities.GuildSpecification"/>
+    <mapping class="net.robinfriedli.botify.entities.AccessConfiguration"/>
+    <mapping class="net.robinfriedli.botify.entities.GrantedRole"/>
   </session-factory>
 </hibernate-configuration>
 ```
