@@ -80,7 +80,12 @@ public class MigrateGuildSpecificationsTask implements StartupTask {
 
             String botifyName = specification.getAttribute("botifyName").getValue();
             String guildName = specification.getAttribute("guildName").getValue();
-            String prefix = specification.getAttribute("prefix").getValue();
+            String prefix;
+            if (specification.hasAttribute("prefix")) {
+                prefix = specification.getAttribute("prefix").getValue();
+            } else {
+                prefix = null;
+            }
             GuildSpecification guildSpecification = new GuildSpecification();
             guildSpecification.setGuildName(guildName);
             guildSpecification.setGuildId(guildId);
