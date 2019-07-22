@@ -38,6 +38,8 @@ public class GuildSpecification implements Serializable {
     private Boolean sendPlaybackNotification;
     @Column(name = "color")
     private String color;
+    @Column(name = "enable_auto_pause")
+    private Boolean enableAutoPause;
     @OneToMany(mappedBy = "guildSpecification", fetch = FetchType.EAGER)
     private Set<AccessConfiguration> accessConfigurations = Sets.newHashSet();
 
@@ -120,6 +122,14 @@ public class GuildSpecification implements Serializable {
 
     public void setSendPlaybackNotification(Boolean sendPlaybackNotification) {
         this.sendPlaybackNotification = sendPlaybackNotification;
+    }
+
+    public Boolean isEnableAutoPause() {
+        return enableAutoPause;
+    }
+
+    public void setEnableAutoPause(Boolean enableAutoPause) {
+        this.enableAutoPause = enableAutoPause;
     }
 
     public String getColor() {
