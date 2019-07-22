@@ -100,7 +100,10 @@ public class QueueIterator extends AudioEventAdapter {
         Playable track = queue.getCurrent();
         Object result = null;
         if (track instanceof UrlPlayable) {
-            result = ((UrlPlayable) track).getAudioTrack();
+            AudioTrack cachedTracked = ((UrlPlayable) track).getAudioTrack();
+            if (cachedTracked != null) {
+                result = cachedTracked.makeClone();
+            }
         }
 
         if (result == null) {

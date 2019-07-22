@@ -247,15 +247,15 @@ public class MessageService {
                     futureMessage.completeExceptionally(e);
                 }
             } else {
-                String message = "Bot is missing permission " + permission.getName();
-                sendError(message, channel);
-
                 StringBuilder errorMessage = new StringBuilder("Missing permission ").append(permission);
                 if (channel instanceof TextChannel) {
                     errorMessage.append(" on guild ").append(((TextChannel) channel).getGuild());
                 }
                 logger.warn(errorMessage.toString());
+
                 futureMessage.completeExceptionally(e);
+                String message = "Bot is missing permission: " + permission.getName();
+                send(message, channel);
             }
         }
 
