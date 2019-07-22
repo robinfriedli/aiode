@@ -3,6 +3,9 @@ package net.robinfriedli.botify.audio;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import javax.annotation.Nullable;
+
+import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
@@ -85,5 +88,19 @@ public interface Playable {
      * @return the name of the source of the Playable. Spotify, YouTube or URL.
      */
     String getSource();
+
+    /**
+     * @return a cached instance of the AudioTrack that was the result of loading this Playable. Note that the same
+     * AudioTrack instance cannot be played multiple times and a you should create a clone using {@link AudioTrack#makeClone()} instead.
+     */
+    @Nullable
+    AudioTrack getCached();
+
+    /**
+     * Cache the resulting AudioTrack when playing this Playable
+     *
+     * @param audioTrack the resulting AudioTrack
+     */
+    void setCached(AudioTrack audioTrack);
 
 }

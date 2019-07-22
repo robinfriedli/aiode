@@ -5,6 +5,7 @@ import java.util.concurrent.TimeUnit;
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.core.entities.User;
+import net.robinfriedli.botify.audio.AbstractSoftCachedPlayable;
 import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
@@ -12,7 +13,7 @@ import net.robinfriedli.botify.entities.Song;
 import net.robinfriedli.stringlist.StringListImpl;
 import org.hibernate.Session;
 
-public class TrackWrapper implements Playable {
+public class TrackWrapper extends AbstractSoftCachedPlayable implements Playable {
 
     private final Track track;
 

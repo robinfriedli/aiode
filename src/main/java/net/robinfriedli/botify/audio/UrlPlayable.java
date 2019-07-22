@@ -17,7 +17,7 @@ public class UrlPlayable implements Playable {
     private final String display;
     private final long duration;
     @Nullable
-    private final AudioTrack audioTrack;
+    private AudioTrack audioTrack;
 
     public UrlPlayable(AudioTrack audioTrack) {
         url = audioTrack.getInfo().uri;
@@ -74,7 +74,13 @@ public class UrlPlayable implements Playable {
     }
 
     @Nullable
-    public AudioTrack getAudioTrack() {
+    @Override
+    public AudioTrack getCached() {
         return audioTrack;
+    }
+
+    @Override
+    public void setCached(AudioTrack audioTrack) {
+        this.audioTrack = audioTrack;
     }
 }
