@@ -99,11 +99,9 @@ public class QueueIterator extends AudioEventAdapter {
 
         Playable track = queue.getCurrent();
         Object result = null;
-        if (track instanceof UrlPlayable) {
-            AudioTrack cachedTracked = ((UrlPlayable) track).getAudioTrack();
-            if (cachedTracked != null) {
-                result = cachedTracked.makeClone();
-            }
+        AudioTrack cachedTracked = track.getCached();
+        if (cachedTracked != null) {
+            result = cachedTracked.makeClone();
         }
 
         if (result == null) {
@@ -120,7 +118,9 @@ public class QueueIterator extends AudioEventAdapter {
         }
         if (result != null) {
             if (result instanceof AudioTrack) {
-                playback.getAudioPlayer().playTrack((AudioTrack) result);
+                AudioTrack audioTrack = (AudioTrack) result;
+                track.setCached(audioTrack);
+                playback.getAudioPlayer().playTrack(audioTrack);
             } else if (result instanceof Throwable) {
                 sendError(track, (Throwable) result);
 

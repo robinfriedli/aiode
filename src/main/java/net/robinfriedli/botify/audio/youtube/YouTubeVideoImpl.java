@@ -5,11 +5,12 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 import com.wrapper.spotify.model_objects.specification.Track;
+import net.robinfriedli.botify.audio.AbstractSoftCachedPlayable;
 
 /**
  * Bean for YouTube videos
  */
-public class YouTubeVideoImpl implements YouTubeVideo {
+public class YouTubeVideoImpl extends AbstractSoftCachedPlayable implements YouTubeVideo {
 
     private final String title;
     private final String id;

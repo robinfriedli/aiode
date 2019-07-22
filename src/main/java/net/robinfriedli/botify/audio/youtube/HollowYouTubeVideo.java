@@ -10,12 +10,13 @@ import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
 import com.wrapper.spotify.model_objects.specification.Track;
+import net.robinfriedli.botify.audio.AbstractSoftCachedPlayable;
 
 /**
  * YouTube video when the data has not been loaded yet. This is used for YouTube playlist elements or Spotify tracks that
  * need to be redirected.
  */
-public class HollowYouTubeVideo implements YouTubeVideo {
+public class HollowYouTubeVideo extends AbstractSoftCachedPlayable implements YouTubeVideo {
 
     private final YouTubeService youTubeService;
     private final CompletableFuture<String> title;
