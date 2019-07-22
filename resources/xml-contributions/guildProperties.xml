@@ -4,4 +4,5 @@
   <guildProperty property="prefix" name="prefix" defaultValue="$botify" implementation="net.robinfriedli.botify.discord.properties.PrefixProperty" updateMessage="Prefix set to %s"/>
   <guildProperty property="sendPlaybackNotification" name="playback notification" defaultValue="true" implementation="net.robinfriedli.botify.discord.properties.PlaybackNotificationProperty" updateMessage="Set playback notification to %s"/>
   <guildProperty property="color" name="color" defaultValue="#1DB954" implementation="net.robinfriedli.botify.discord.properties.ColorSchemeProperty" updateMessage="Changed colour to %s"/>
+  <guildProperty property="enableAutoPause" name="auto pause" defaultValue="true" implementation="net.robinfriedli.botify.discord.properties.AutoPauseProperty" updateMessage="Set auto pause to %s"/>
 </guildProperties>
