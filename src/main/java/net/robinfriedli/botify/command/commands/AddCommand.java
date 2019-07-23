@@ -24,7 +24,6 @@ import net.robinfriedli.botify.audio.youtube.HollowYouTubeVideo;
 import net.robinfriedli.botify.audio.youtube.YouTubePlaylist;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
-import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
@@ -41,7 +40,7 @@ import net.robinfriedli.botify.util.SearchEngine;
 import net.robinfriedli.stringlist.StringListImpl;
 import org.hibernate.Session;
 
-public class AddCommand extends AbstractCommand {
+public class AddCommand extends AbstractSourceDecidingCommand {
 
     public AddCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
         super(commandContribution, context, commandManager, commandString, true, identifier, description, Category.PLAYLIST_MANAGEMENT);
@@ -134,9 +133,10 @@ public class AddCommand extends AbstractCommand {
     }
 
     private void addList(Playlist playlist, String searchTerm) throws Exception {
-        if (argumentSet("spotify")) {
+        Source source = getSource();
+        if (source.isSpotify()) {
             addSpotifyList(playlist, searchTerm);
-        } else if (argumentSet("youtube")) {
+        } else if (source.isYouTube()) {
             addYouTubeList(playlist, searchTerm);
         } else {
             addLocalList(playlist, searchTerm);
@@ -252,7 +252,8 @@ public class AddCommand extends AbstractCommand {
     }
 
     private void addSpecificTrack(Playlist playlist, String searchTerm) throws Exception {
-        if (argumentSet("youtube")) {
+        Source source = getSource();
+        if (source.isYouTube()) {
             YouTubeService youTubeService = Botify.get().getAudioManager().getYouTubeService();
             if (argumentSet("limit")) {
                 int limit = getArgumentValue("limit", Integer.class);
@@ -358,7 +359,7 @@ public class AddCommand extends AbstractCommand {
             .setDescription("Limit search to tracks in your library. This requires a Spotify login.");
         argumentContribution.map("list")
             .setDescription("Add tracks from a Spotify, YouTube or local list to a list.");
-        argumentContribution.map("local").needsArguments("list")
+        argumentContribution.map("local").needsArguments("list").excludesArguments("youtube", "spotify")
             .setDescription("Add items from a local list. This is the default option when adding lists.");
         argumentContribution.map("limit").needsArguments("youtube").setRequiresValue(true)
             .setDescription("Show a selection of youtube playlists or videos to chose from. Requires value from 1 to 10: $limit=5");

@@ -40,6 +40,10 @@ public class GuildSpecification implements Serializable {
     private String color;
     @Column(name = "enable_auto_pause")
     private Boolean enableAutoPause;
+    @Column(name = "default_source")
+    private String defaultSource;
+    @Column(name = "default_list_source")
+    private String defaultListSource;
     @OneToMany(mappedBy = "guildSpecification", fetch = FetchType.EAGER)
     private Set<AccessConfiguration> accessConfigurations = Sets.newHashSet();
 
@@ -138,5 +142,21 @@ public class GuildSpecification implements Serializable {
 
     public void setColor(String color) {
         this.color = color;
+    }
+
+    public String getDefaultSource() {
+        return defaultSource;
+    }
+
+    public void setDefaultSource(String defaultSource) {
+        this.defaultSource = defaultSource;
+    }
+
+    public String getDefaultListSource() {
+        return defaultListSource;
+    }
+
+    public void setDefaultListSource(String defaultListSource) {
+        this.defaultListSource = defaultListSource;
     }
 }

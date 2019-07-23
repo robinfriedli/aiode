@@ -26,7 +26,7 @@ public class GuildPropertyContribution extends GenericClassContribution<Abstract
     @Nullable
     @Override
     public String getId() {
-        return getName();
+        return getProperty();
     }
 
     public String getProperty() {

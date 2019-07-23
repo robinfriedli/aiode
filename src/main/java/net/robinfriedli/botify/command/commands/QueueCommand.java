@@ -115,12 +115,12 @@ public class QueueCommand extends AbstractQueueLoadingCommand {
         argumentContribution.map("youtube").setRequiresInput(true).excludesArguments("preview")
             .setDescription("Queue a YouTube video. Note that this argument is only required when searching, not when entering a URL.");
         argumentContribution.map("list").setRequiresInput(true)
-            .setDescription("Add the elements from a Spotify, YouTube or local Playlist to the current queue (local is default).");
+            .setDescription("Add the elements from a Spotify, YouTube or local Playlist to the current queue. Adds items from the default list source according to the set property if none of those 3 are set.");
         argumentContribution.map("spotify").setRequiresInput(true).excludesArguments("youtube")
             .setDescription("Queue Spotify track, playlist or album. This supports Spotify query syntax (i.e. the filters \"artist:\", \"album:\", etc.). Note that this argument is only required when searching, not when entering a URL.");
         argumentContribution.map("own").needsArguments("spotify")
             .setDescription("Limit search to Spotify tracks and playlists in the current users library. This requires a Spotify login.");
-        argumentContribution.map("local").needsArguments("list")
+        argumentContribution.map("local").needsArguments("list").excludesArguments("spotify", "youtube")
             .setDescription("Queue local playlist.");
         argumentContribution.map("limit").needsArguments("youtube").setRequiresValue(true)
             .setDescription("Show a selection of YouTube playlists or videos to chose from. Requires value from 1 to 10: $limit=5");
