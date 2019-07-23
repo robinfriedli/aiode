@@ -108,7 +108,7 @@ public class PlayCommand extends AbstractQueueLoadingCommand {
             .setDescription("Play a YouTube video or playlist. Note that this argument is only required when searching, not when entering a URL.");
         argumentContribution.map("own").needsArguments("spotify")
             .setDescription("Limit search to Spotify tracks or lists that are in the current user's library. This requires a Spotify login.");
-        argumentContribution.map("local").needsArguments("list")
+        argumentContribution.map("local").needsArguments("list").excludesArguments("spotify", "youtube")
             .setDescription("Play a local list.");
         argumentContribution.map("limit").needsArguments("youtube").setRequiresValue(true)
             .setDescription("Show a selection of YouTube playlists or videos to chose from. Requires value from 1 to 10: $limit=5");

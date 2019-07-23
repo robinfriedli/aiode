@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <commands xmlns="commandSpace">
   <command identifier="add" implementation="net.robinfriedli.botify.command.commands.AddCommand"
-           description="Add a specific song from spotify, youtube, the current queue or any URL to the specified local playlist. Spotify search queries support the Spotify query syntax (i.e. the &quot;artist:&quot;, &quot;album:&quot; and &quot;track:&quot; filters). To add tracks to the queue see the queue command.">
+           description="Add a specific song from spotify, youtube, the current queue or any URL to the specified local playlist. Which source is used is decided by the used arguments or the default source and default list source properties. Spotify search queries support the Spotify query syntax (i.e. the &quot;artist:&quot;, &quot;album:&quot; and &quot;track:&quot; filters). To add tracks to the queue see the queue command.">
     <example title="Add a specific track">$botify add $spotify $own from the inside $to my list.</example>
     <example title="Add tracks from the current queue to a list">$botify add $queue my list</example>
     <example title="Add tracks from a url">$botify add http://someurl.com $to linkin park</example>
@@ -31,7 +31,7 @@
     <example title="Login to Spotify.">$botify login</example>
   </command>
   <command identifier="play" implementation="net.robinfriedli.botify.command.commands.PlayCommand"
-           description="Resume the paused playback, play the current track in the queue or play the specified track, video or playlist. Can play any URL or search youtube and spotify tracks or lists and also local playlists. Local playlists, like the queue, can contain tracks from any source (YouTube, Spotify and URL). Spotify search queries support the Spotify query syntax (i.e. the &quot;artist:&quot;, &quot;album:&quot; and &quot;track:&quot; filters).">
+           description="Resume the paused playback, play the current track in the queue or play the specified track, video or playlist. Can play any URL or search youtube and spotify tracks or lists and also local playlists. Local playlists, like the queue, can contain tracks from any source (YouTube, Spotify and URL). Spotify search queries support the Spotify query syntax (i.e. the &quot;artist:&quot;, &quot;album:&quot; and &quot;track:&quot; filters). Which source is used is decided by the used arguments or the default source and default list source properties.">
     <example title="Play the current queue or unpause playback">$botify play</example>
     <example title="Play a specific track from Spotify">$botify play numb</example>
     <example title="Play a track from a specific artist and album">$botify play from the inside artist:linkin park album:meteora</example>
@@ -45,7 +45,7 @@
   <command identifier="pause" implementation="net.robinfriedli.botify.command.commands.PauseCommand"
            description="Pause the current playback."/>
   <command identifier="queue" implementation="net.robinfriedli.botify.command.commands.QueueCommand"
-           description="Display the current queue or add a youtube video or playlist, spotify track or playlist, local playlist or any URL to the current queue. Spotify search queries support the Spotify query syntax (i.e. the &quot;artist:&quot;, &quot;album:&quot; and &quot;track:&quot; filters).">
+           description="Display the current queue or add a youtube video or playlist, spotify track or playlist, local playlist or any URL to the current queue. Spotify search queries support the Spotify query syntax (i.e. the &quot;artist:&quot;, &quot;album:&quot; and &quot;track:&quot; filters). Which source is used is decided by the used arguments or the default source and default list source properties.">
     <example title="Display the queue widget">$botify queue</example>
     <example title="Add a specific track from Spotify to the queue">$botify queue numb</example>
     <example title="Add a track from a specific artist and album">$botify queue from the inside artist:linkin park album:meteora</example>
@@ -77,7 +77,7 @@
     <example title="Rewind 6 tracks">$botify rewind 6</example>
   </command>
   <command identifier="search" implementation="net.robinfriedli.botify.command.commands.SearchCommand"
-           description="Search for YouTube and Spotify tracks or playlists and local playlists or list all local playlists. Spotify search queries support the Spotify query syntax (i.e. the &quot;artist:&quot;, &quot;album:&quot; and &quot;track:&quot; filters).">
+           description="Search for YouTube and Spotify tracks or playlists and local playlists or list all local playlists. Spotify search queries support the Spotify query syntax (i.e. the &quot;artist:&quot;, &quot;album:&quot; and &quot;track:&quot; filters). Which source is used is decided by the used arguments or the default source and default list source properties.">
     <example title="List all local playlists">$botify search $list</example>
     <example title="Search for a specific local list">$botify search $list my list</example>
     <example title="Search for a Spotify track">$botify search $spotify numb artist:linkin park album:meteora</example>
@@ -156,6 +156,8 @@
     <example title="set the color of botify messages to blue">$botify property color $set blue</example>
     <example title="set the color to Spotify green">$botify property color $set #1DB954</example>
     <example title="toggle playback notifications">$botify property $toggle playback notification</example>
+    <example title="set the default service when searching for a track">$botify property default source $set youtube</example>
+    <example title="set the default service when searching for a list">$botify property default list source $set local</example>
   </command>
 
   <!-- Administrator commands -->

@@ -16,7 +16,6 @@ import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.youtube.YouTubePlaylist;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
-import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
@@ -33,7 +32,7 @@ import net.robinfriedli.botify.util.Util;
 import net.robinfriedli.stringlist.StringListImpl;
 import org.hibernate.Session;
 
-public class SearchCommand extends AbstractCommand {
+public class SearchCommand extends AbstractSourceDecidingCommand {
 
     public SearchCommand(CommandContribution commandContribution, CommandContext commandContext, CommandManager commandManager, String commandString, String identifier, String description) {
         super(commandContribution, commandContext, commandManager, commandString, false, identifier, description, Category.SEARCH);
@@ -41,10 +40,11 @@ public class SearchCommand extends AbstractCommand {
 
     @Override
     public void doRun() throws Exception {
+        Source source = getSource();
         if (argumentSet("list")) {
-            if (argumentSet("spotify")) {
+            if (source.isSpotify()) {
                 listSpotifyList();
-            } else if (argumentSet("youtube")) {
+            } else if (source.isYouTube()) {
                 listYouTubePlaylists();
             } else {
                 listLocalList();
@@ -52,7 +52,7 @@ public class SearchCommand extends AbstractCommand {
         } else if (argumentSet("album")) {
             listSpotifyAlbum();
         } else {
-            if (argumentSet("youtube")) {
+            if (source.isYouTube()) {
                 searchYouTubeVideo();
             } else {
                 searchSpotifyTrack();
@@ -341,7 +341,7 @@ public class SearchCommand extends AbstractCommand {
             .setDescription("Search for YouTube video or playlist.");
         argumentContribution.map("list")
             .setDescription("Search for a playlist.");
-        argumentContribution.map("local").needsArguments("list")
+        argumentContribution.map("local").needsArguments("list").excludesArguments("youtube", "spotify")
             .setDescription("Search for a local playlist or list all of them. This is default when searching for lists.");
         argumentContribution.map("own").needsArguments("spotify")
             .setDescription("Limit search to Spotify tracks or playlists in the current user's library. This requires a Spotify login.");

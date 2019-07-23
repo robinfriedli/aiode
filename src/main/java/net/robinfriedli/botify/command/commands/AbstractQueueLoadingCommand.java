@@ -20,7 +20,6 @@ import net.robinfriedli.botify.audio.spotify.SpotifyUri;
 import net.robinfriedli.botify.audio.youtube.YouTubePlaylist;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
-import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.Playlist;
@@ -31,7 +30,7 @@ import net.robinfriedli.botify.exceptions.NoSpotifyResultsFoundException;
 import net.robinfriedli.botify.util.SearchEngine;
 import net.robinfriedli.stringlist.StringListImpl;
 
-public abstract class AbstractQueueLoadingCommand extends AbstractCommand {
+public abstract class AbstractQueueLoadingCommand extends AbstractSourceDecidingCommand {
 
     private final boolean mayInterrupt;
     int loadedAmount;
@@ -65,20 +64,20 @@ public abstract class AbstractQueueLoadingCommand extends AbstractCommand {
         } else if (SpotifyUri.isSpotifyUri(getCommandBody())) {
             loadSpotifyUri(audioManager);
         } else if (argumentSet("list")) {
-            if (argumentSet("spotify")) {
+            Source source = getSource();
+            if (source.isSpotify()) {
                 loadSpotifyList(audioManager);
-            } else if (argumentSet("youtube")) {
+            } else if (source.isYouTube()) {
                 loadYouTubeList(audioManager);
             } else {
                 loadLocalList(audioManager);
             }
         } else {
-            if (argumentSet("youtube")) {
+            Source source = getSource();
+            if (source.isYouTube()) {
                 loadYouTubeVideo(audioManager);
             } else if (argumentSet("album")) {
                 loadSpotifyAlbum(audioManager);
-            } else if (UrlValidator.getInstance().isValid(getCommandBody())) {
-                loadUrlItems(audioManager, playback);
             } else {
                 loadTrack(audioManager);
             }

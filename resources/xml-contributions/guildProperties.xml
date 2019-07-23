@@ -5,4 +5,6 @@
   <guildProperty property="sendPlaybackNotification" name="playback notification" defaultValue="true" implementation="net.robinfriedli.botify.discord.properties.PlaybackNotificationProperty" updateMessage="Set playback notification to %s"/>
   <guildProperty property="color" name="color" defaultValue="#1DB954" implementation="net.robinfriedli.botify.discord.properties.ColorSchemeProperty" updateMessage="Changed colour to %s"/>
   <guildProperty property="enableAutoPause" name="auto pause" defaultValue="true" implementation="net.robinfriedli.botify.discord.properties.AutoPauseProperty" updateMessage="Set auto pause to %s"/>
+  <guildProperty property="defaultSource" name="default source" defaultValue="SPOTIFY" implementation="net.robinfriedli.botify.discord.properties.DefaultSourceProperty" updateMessage="Set the default search source to %s"/>
+  <guildProperty property="defaultListSource" name="default list source" defaultValue="LOCAL" implementation="net.robinfriedli.botify.discord.properties.DefaultListSourceProperty" updateMessage="Set the default list search source to %s"/>
 </guildProperties>
