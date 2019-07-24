@@ -66,6 +66,9 @@ public class GuildJoinListener extends ListenerAdapter {
     @Override
     public void onGuildJoin(GuildJoinEvent event) {
         Guild guild = event.getGuild();
+        guildManager.addGuild(guild);
+        executionQueueManager.addGuild(guild);
+
         MessageService messageService = new MessageService();
         try (Context context = jxpBackend.createLazyContext(PropertiesLoadingService.requireProperty("EMBED_DOCUMENTS_PATH"))) {
             EmbedDocumentContribution embedDocumentContribution = context
@@ -76,9 +79,6 @@ public class GuildJoinListener extends ListenerAdapter {
         } catch (Throwable e) {
             logger.error("Error sending getting started message", e);
         }
-
-        guildManager.addGuild(guild);
-        executionQueueManager.addGuild(guild);
 
         if (discordBotListAPI != null) {
             discordBotListAPI.setStats(event.getJDA().getGuilds().size());

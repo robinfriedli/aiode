@@ -17,7 +17,6 @@ import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.UserException;
 import net.robinfriedli.jxp.persist.Context;
 import org.hibernate.Session;
-import org.hibernate.SessionFactory;
 
 import static net.robinfriedli.jxp.queries.Conditions.*;
 
@@ -31,7 +30,6 @@ public class CommandManager {
     private final Context commandContributionContext;
     private final Context commandInterceptorContext;
     private final Logger logger;
-    private final SessionFactory sessionFactory;
 
     /**
      * all widgets that currently listen for reactions. Only one widget of the same type per guild may be active.
@@ -43,11 +41,9 @@ public class CommandManager {
     private CommandInterceptorChain interceptorChain;
 
     public CommandManager(Context commandContributionContext,
-                          Context commandInterceptorContext,
-                          SessionFactory sessionFactory) {
+                          Context commandInterceptorContext) {
         this.commandContributionContext = commandContributionContext;
         this.commandInterceptorContext = commandInterceptorContext;
-        this.sessionFactory = sessionFactory;
         this.logger = LoggerFactory.getLogger(getClass());
         activeWidgets = Lists.newArrayList();
     }
@@ -60,18 +56,17 @@ public class CommandManager {
         }
 
         CommandContribution commandContribution = getCommandContributionForInput(command);
-        Optional<Preset> optionalPreset;
         AbstractCommand commandInstance;
-        try (Session session = sessionFactory.openSession()) {
-            // find a preset where the preset name matches the beginning of the command, find the longest matching preset name
-            optionalPreset = session
-                .createQuery("from " + Preset.class.getName()
-                    + " where guild_id = '" + context.getGuild().getId()
-                    + "' and lower(name) = substring(lower('" + command.replaceAll("'", "''") + "'), 0, length(name) + 1) " +
-                    "order by length(name) desc", Preset.class)
-                .setMaxResults(1)
-                .uniqueResultOptional();
-        }
+        Session session = context.getSession();
+        // find a preset where the preset name matches the beginning of the command, find the longest matching preset name
+        Optional<Preset> optionalPreset = session
+            .createQuery("from " + Preset.class.getName()
+                + " where guild_id = '" + context.getGuild().getId()
+                + "' and lower(name) = substring(lower('" + command.replaceAll("'", "''") + "'), 0, length(name) + 1) " +
+                "order by length(name) desc", Preset.class)
+            .setMaxResults(1)
+            .setCacheable(true)
+            .uniqueResultOptional();
 
         if (commandContribution != null && optionalPreset.isPresent()) {
             Preset preset = optionalPreset.get();

@@ -12,21 +12,22 @@ import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.concurrent.GuildTrackLoadingExecutor;
 import net.robinfriedli.botify.concurrent.Invoker;
 import net.robinfriedli.botify.entities.GuildSpecification;
+import org.hibernate.Session;
 
 public class GuildContext {
 
     private final AudioPlayback playback;
     private final Invoker invoker;
-    private final GuildSpecification specification;
+    private final long specificationPk;
     private final GuildTrackLoadingExecutor trackLoadingExecutor;
     /**
      * all unanswered Questions. Questions get removed after 5 minutes or after the same user enters a different command.
      */
     private final List<ClientQuestionEvent> pendingQuestions;
 
-    public GuildContext(AudioPlayback playback, GuildSpecification specification, @Nullable Invoker sharedInvoker) {
+    public GuildContext(AudioPlayback playback, long specificationPk, @Nullable Invoker sharedInvoker) {
         this.playback = playback;
-        this.specification = specification;
+        this.specificationPk = specificationPk;
         invoker = sharedInvoker == null ? new Invoker() : sharedInvoker;
         trackLoadingExecutor = new GuildTrackLoadingExecutor(this);
         pendingQuestions = Lists.newArrayList();
@@ -40,8 +41,18 @@ public class GuildContext {
         return invoker;
     }
 
+    public GuildSpecification getSpecification(Session session) {
+        return session.load(GuildSpecification.class, specificationPk);
+    }
+
     public GuildSpecification getSpecification() {
-        return specification;
+        CommandContext commandContext = CommandContext.Current.get();
+
+        if (commandContext == null) {
+            throw new IllegalStateException("No command context setup, session needs to be provided explicitly as operating on a potential proxy from a different session is unsafe");
+        }
+
+        return getSpecification(commandContext.getSession());
     }
 
     public void addQuestion(ClientQuestionEvent question) {

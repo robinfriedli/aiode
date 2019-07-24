@@ -46,37 +46,38 @@ public class GuildManager {
     }
 
     public String getNameForGuild(Guild guild) {
-        GuildContext guildContext = getContextForGuild(guild);
-        AbstractGuildProperty botName = guildPropertyManager.getProperty("botName");
+        return StaticSessionProvider.invokeWithSession(session -> {
+            GuildSpecification specification = getContextForGuild(guild).getSpecification(session);
+            AbstractGuildProperty botName = guildPropertyManager.getProperty("botName");
 
-        if (botName != null) {
-            return (String) botName.get(guildContext);
-        }
+            if (botName != null) {
+                return (String) botName.get(specification);
+            }
 
-        return guildContext.getSpecification().getBotName();
+            return specification.getBotName();
+        });
     }
 
     @Nullable
     public String getPrefixForGuild(Guild guild) {
-        GuildContext guildContext = getContextForGuild(guild);
-        AbstractGuildProperty prefix = guildPropertyManager.getProperty("prefix");
+        return StaticSessionProvider.invokeWithSession(session -> {
+            GuildSpecification specification = getContextForGuild(guild).getSpecification(session);
+            AbstractGuildProperty prefix = guildPropertyManager.getProperty("prefix");
 
-        if (prefix != null) {
-            return (String) prefix.get(guildContext);
-        }
+            if (prefix != null) {
+                return (String) prefix.get(specification);
+            }
 
-        return guildContext.getSpecification().getPrefix();
+            return specification.getPrefix();
+        });
     }
 
     public boolean setName(Guild guild, String name) {
-        GuildContext guildContext = getContextForGuild(guild);
-        GuildSpecification guildSpecification = guildContext.getSpecification();
         StaticSessionProvider.invokeWithSession(session -> {
-            guildContext.getInvoker().invoke(session, () -> {
-                guildSpecification.setBotName(name);
-                // instance is attached to a different session so a merge is necessary
-                session.merge(guildSpecification);
-            });
+            GuildContext guildContext = getContextForGuild(guild);
+            GuildSpecification guildSpecification = guildContext.getSpecification(session);
+
+            guildContext.getInvoker().invoke(session, () -> guildSpecification.setBotName(name));
         });
         try {
             guild.getController().setNickname(guild.getSelfMember(), name).queue();
@@ -87,15 +88,11 @@ public class GuildManager {
     }
 
     public void setPrefix(Guild guild, String prefix) {
-        GuildContext guildContext = getContextForGuild(guild);
-        GuildSpecification guildSpecification = guildContext.getSpecification();
-
         StaticSessionProvider.invokeWithSession(session -> {
-            guildContext.getInvoker().invoke(session, () -> {
-                guildSpecification.setPrefix(prefix);
-                // instance is attached to a different session so a merge is necessary
-                session.merge(guildSpecification);
-            });
+            GuildContext guildContext = getContextForGuild(guild);
+            GuildSpecification guildSpecification = guildContext.getSpecification(session);
+
+            guildContext.getInvoker().invoke(session, () -> guildSpecification.setPrefix(prefix));
         });
     }
 
@@ -115,6 +112,7 @@ public class GuildManager {
                     + " where command_identifier = '" + commandIdentifier + "' and"
                     + " guild_specification_pk = (select pk from " + GuildSpecification.class.getName() + " where guild_id = '" + guild.getId() + "')"
                 , AccessConfiguration.class)
+                .setCacheable(true)
                 .uniqueResultOptional();
             return accessConfiguration.orElse(null);
         });
@@ -146,8 +144,8 @@ public class GuildManager {
         return StaticSessionProvider.invokeWithSession(session -> {
             AudioPlayer player = audioManager.getPlayerManager().createPlayer();
 
-            Optional<GuildSpecification> existingSpecification = session.createQuery("from " + GuildSpecification.class.getName()
-                + " where guildId = '" + guild.getId() + "'", GuildSpecification.class).uniqueResultOptional();
+            Optional<Long> existingSpecification = session.createQuery("select pk from " + GuildSpecification.class.getName()
+                + " where guildId = '" + guild.getId() + "'", Long.class).uniqueResultOptional();
 
             if (existingSpecification.isPresent()) {
                 GuildContext guildContext = new GuildContext(new AudioPlayback(player, guild), existingSpecification.get(), sharedInvoker);
@@ -165,7 +163,7 @@ public class GuildManager {
                 });
                 session.getTransaction().commit();
 
-                GuildContext guildContext = new GuildContext(new AudioPlayback(player, guild), newSpecification, sharedInvoker);
+                GuildContext guildContext = new GuildContext(new AudioPlayback(player, guild), newSpecification.getPk(), sharedInvoker);
                 guildContexts.put(guild, guildContext);
 
                 return guildContext;

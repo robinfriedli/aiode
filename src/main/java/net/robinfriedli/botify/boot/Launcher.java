@@ -57,6 +57,8 @@ public class Launcher {
     public static void main(String[] args) {
         // setup logger
         System.setProperty("log4j.configurationFile", "./resources/log4j2.properties");
+        // setup ehcache configuration
+        System.setProperty("net.sf.ehcache.configurationResourceName", "ehcache.xml");
         Logger logger = LoggerFactory.getLogger(Launcher.class);
         try {
             // initialize property values
@@ -129,7 +131,7 @@ public class Launcher {
             Context commandInterceptorContext = jxpBackend.getContext(PropertiesLoadingService.requireProperty("COMMAND_INTERCEPTORS_PATH"));
             Context guildPropertyContext = jxpBackend.getContext(PropertiesLoadingService.requireProperty("GUILD_PROPERTIES_PATH"));
 
-            CommandManager commandManager = new CommandManager(commandContributionContext, commandInterceptorContext, sessionFactory);
+            CommandManager commandManager = new CommandManager(commandContributionContext, commandInterceptorContext);
             GuildPropertyManager guildPropertyManager = new GuildPropertyManager(guildPropertyContext);
             GuildManager guildManager = new GuildManager(guildPropertyManager, mode);
             AudioManager audioManager = new AudioManager(youTubeService, sessionFactory, commandManager, guildManager);

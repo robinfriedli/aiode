@@ -10,9 +10,9 @@ import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.properties.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.properties.GuildPropertyManager;
+import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.util.Table2;
@@ -65,13 +65,13 @@ public class PropertyCommand extends AbstractCommand {
     private void listProperties() {
         GuildPropertyManager guildPropertyManager = Botify.get().getGuildPropertyManager();
         List<AbstractGuildProperty> properties = guildPropertyManager.getProperties();
-        GuildContext guildContext = getContext().getGuildContext();
+        GuildSpecification specification = getContext().getGuildContext().getSpecification();
 
         EmbedBuilder embedBuilder = new EmbedBuilder();
         Table2 table = new Table2(embedBuilder);
         table.addColumn("Name", properties, AbstractGuildProperty::getName);
         table.addColumn("Default Value", properties, AbstractGuildProperty::getDefaultValue);
-        table.addColumn("Set Value", properties, property -> String.valueOf(property.extractPersistedValue(guildContext.getSpecification())));
+        table.addColumn("Set Value", properties, property -> String.valueOf(property.extractPersistedValue(specification)));
         table.build();
         sendMessage(embedBuilder);
     }

@@ -50,9 +50,8 @@ public abstract class AbstractGuildProperty {
     public void set(String value, GuildContext guildContext) {
         StaticSessionProvider.invokeWithSession(session -> {
             guildContext.getInvoker().invoke(session, () -> {
-                GuildSpecification guildSpecification = guildContext.getSpecification();
+                GuildSpecification guildSpecification = guildContext.getSpecification(session);
                 setValue(value, guildSpecification);
-                session.merge(guildSpecification);
             });
         });
     }
@@ -61,15 +60,14 @@ public abstract class AbstractGuildProperty {
 
     /**
      * @return the persisted value of the property if not null or default value. Mind that this implementation relies on this method
-     * being called by a thread with a command context set up. Use {@link #get(GuildContext)} instead to
-     * define the target GuildContext explicitly when this is not the case.
+     * being called by a thread with a command context set up. Use {@link #get(GuildSpecification)} instead to
+     * define the target GuildSpecification explicitly when this is not the case.
      */
     public Object get() {
-        return get(CommandContext.Current.require().getGuildContext());
+        return get(CommandContext.Current.require().getGuildContext().getSpecification());
     }
 
-    public Object get(GuildContext guildContext) {
-        GuildSpecification specification = guildContext.getSpecification();
+    public Object get(GuildSpecification specification) {
         Object persistedValue = extractPersistedValue(specification);
         if (persistedValue != null) {
             return persistedValue;

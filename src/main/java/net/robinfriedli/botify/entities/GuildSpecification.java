@@ -5,9 +5,9 @@ import java.util.Optional;
 import java.util.Set;
 
 import javax.annotation.Nullable;
+import javax.persistence.Cacheable;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -17,9 +17,13 @@ import javax.persistence.Table;
 import com.google.api.client.util.Sets;
 import net.dv8tion.jda.core.JDA;
 import net.dv8tion.jda.core.entities.Guild;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 @Entity
 @Table(name = "guild_specification")
+@Cacheable
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class GuildSpecification implements Serializable {
 
     @Id
@@ -44,7 +48,7 @@ public class GuildSpecification implements Serializable {
     private String defaultSource;
     @Column(name = "default_list_source")
     private String defaultListSource;
-    @OneToMany(mappedBy = "guildSpecification", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "guildSpecification")
     private Set<AccessConfiguration> accessConfigurations = Sets.newHashSet();
 
     public GuildSpecification() {
