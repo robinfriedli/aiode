@@ -25,9 +25,11 @@ public class PlayPauseAction extends AbstractWidgetAction {
 
     @Override
     protected void handleReaction(GuildMessageReactionAddEvent event) {
-        if (audioPlayback.isPlaying()) {
+        if (audioPlayback.isPaused()) {
+            audioPlayback.unpause();
+        } else if (audioPlayback.isPlaying()) {
             audioPlayback.pause();
-        } else if (!audioPlayback.getAudioQueue().isEmpty() || audioPlayback.isPaused()) {
+        } else if (!audioPlayback.getAudioQueue().isEmpty()) {
             User user = event.getUser();
             Guild guild = event.getGuild();
             audioManager.playTrack(guild, guild.getMember(user).getVoiceState().getChannel());

@@ -41,7 +41,9 @@ public class PlayCommand extends AbstractQueueLoadingCommand {
         playbackForGuild.setCommunicationChannel(messageChannel);
 
         if (getCommandBody().isBlank()) {
-            if (playbackForGuild.isPaused() || !audioManager.getQueue(guild).isEmpty()) {
+            if (playbackForGuild.isPaused()) {
+                playbackForGuild.unpause();
+            } else if (!audioManager.getQueue(guild).isEmpty()) {
                 audioManager.playTrack(guild, channel);
             } else {
                 throw new InvalidCommandException("Queue is empty. Specify a song you want to play.");
