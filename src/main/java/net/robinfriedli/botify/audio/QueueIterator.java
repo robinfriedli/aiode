@@ -12,12 +12,13 @@ import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Message;
 import net.robinfriedli.botify.Botify;
-import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.discord.properties.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.properties.ColorSchemeProperty;
+import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.util.EmojiConstants;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
+import net.robinfriedli.botify.util.StaticSessionProvider;
 
 public class QueueIterator extends AudioEventAdapter {
 
@@ -195,8 +196,10 @@ public class QueueIterator extends AudioEventAdapter {
         embedBuilder.setFooter(footerBuilder.toString(), baseUri + "/resources-public/img/botify-logo-small.png");
 
         Guild guild = playback.getGuild();
-        GuildContext guildContext = Botify.get().getGuildManager().getContextForGuild(guild);
-        Color color = ColorSchemeProperty.getColor(guildContext);
+        Color color = StaticSessionProvider.invokeWithSession(session -> {
+            GuildSpecification specification = Botify.get().getGuildManager().getContextForGuild(guild).getSpecification(session);
+            return ColorSchemeProperty.getColor(specification);
+        });
         embedBuilder.setColor(color);
 
         CompletableFuture<Message> futureMessage = messageService.send(embedBuilder.build(), playback.getCommunicationChannel());
@@ -205,14 +208,16 @@ public class QueueIterator extends AudioEventAdapter {
     }
 
     private boolean shouldSendPlaybackNotification() {
-        Guild guild = playback.getGuild();
-        GuildContext guildContext = Botify.get().getGuildManager().getContextForGuild(guild);
-        AbstractGuildProperty property = Botify.get().getGuildPropertyManager().getProperty("sendPlaybackNotification");
-        if (property != null) {
-            return (Boolean) property.get(guildContext);
-        } else {
-            return true;
-        }
+        return StaticSessionProvider.invokeWithSession(session -> {
+            Guild guild = playback.getGuild();
+            GuildSpecification specification = Botify.get().getGuildManager().getContextForGuild(guild).getSpecification(session);
+            AbstractGuildProperty property = Botify.get().getGuildPropertyManager().getProperty("sendPlaybackNotification");
+            if (property != null) {
+                return (Boolean) property.get(specification);
+            } else {
+                return true;
+            }
+        });
     }
 
     private void appendIfTrue(StringBuilder builder, String s, boolean b) {

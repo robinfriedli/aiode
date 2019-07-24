@@ -7,10 +7,11 @@ import net.dv8tion.jda.core.hooks.ListenerAdapter;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
-import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.properties.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.properties.GuildPropertyManager;
+import net.robinfriedli.botify.entities.GuildSpecification;
+import net.robinfriedli.botify.util.StaticSessionProvider;
 
 public class VoiceChannelListener extends ListenerAdapter {
 
@@ -41,15 +42,17 @@ public class VoiceChannelListener extends ListenerAdapter {
     }
 
     private boolean isAutoPauseEnabled(Guild guild) {
-        GuildPropertyManager guildPropertyManager = Botify.get().getGuildPropertyManager();
-        GuildManager guildManager = Botify.get().getGuildManager();
-        GuildContext guildContext = guildManager.getContextForGuild(guild);
-        AbstractGuildProperty enableAutoPauseProperty = guildPropertyManager.getProperty("enableAutoPause");
-        if (enableAutoPauseProperty != null) {
-            return (boolean) enableAutoPauseProperty.get(guildContext);
-        }
+        return StaticSessionProvider.invokeWithSession(session -> {
+            GuildPropertyManager guildPropertyManager = Botify.get().getGuildPropertyManager();
+            GuildManager guildManager = Botify.get().getGuildManager();
+            GuildSpecification specification = guildManager.getContextForGuild(guild).getSpecification(session);
+            AbstractGuildProperty enableAutoPauseProperty = guildPropertyManager.getProperty("enableAutoPause");
+            if (enableAutoPauseProperty != null) {
+                return (boolean) enableAutoPauseProperty.get(specification);
+            }
 
-        return true;
+            return true;
+        });
     }
 
 }

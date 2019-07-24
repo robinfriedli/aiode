@@ -4,7 +4,6 @@ import java.awt.Color;
 
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.CommandContext;
-import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.xml.GuildPropertyContribution;
 import net.robinfriedli.botify.exceptions.InvalidPropertyValueException;
@@ -17,10 +16,10 @@ public class ColorSchemeProperty extends AbstractGuildProperty {
         super(contribution);
     }
 
-    public static Color getColor(GuildContext guildContext) {
+    public static Color getColor(GuildSpecification guildSpecification) {
         ColorSchemeProperty colorProperty = (ColorSchemeProperty) Botify.get().getGuildPropertyManager().getProperty("color");
         if (colorProperty != null) {
-            return colorProperty.getAsColor(guildContext);
+            return colorProperty.getAsColor(guildSpecification);
         } else {
             return DEFAULT_FALLBACK;
         }
@@ -82,8 +81,8 @@ public class ColorSchemeProperty extends AbstractGuildProperty {
         return parseColor((String) get());
     }
 
-    public Color getAsColor(GuildContext guildContext) {
-        return parseColor((String) get(guildContext));
+    public Color getAsColor(GuildSpecification guildSpecification) {
+        return parseColor((String) get(guildSpecification));
     }
 
 }

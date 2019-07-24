@@ -7,7 +7,6 @@ import java.util.Set;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.FlushModeType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -45,7 +44,7 @@ public class PlaybackHistory implements Serializable {
     private String guild;
     @Column(name = "guild_id")
     private String guildId;
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany
     private Set<Artist> artists = Sets.newHashSet();
 
     public PlaybackHistory() {

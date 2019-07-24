@@ -1,5 +1,6 @@
 package net.robinfriedli.botify.audio;
 
+import java.awt.Color;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -10,11 +11,12 @@ import com.google.common.collect.Lists;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.entities.Guild;
 import net.robinfriedli.botify.Botify;
-import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.properties.ColorSchemeProperty;
+import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 import net.robinfriedli.botify.util.EmojiConstants;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
+import net.robinfriedli.botify.util.StaticSessionProvider;
 import net.robinfriedli.botify.util.Util;
 
 public class AudioQueue {
@@ -163,8 +165,11 @@ public class AudioQueue {
             }
         }
 
-        GuildContext guildContext = Botify.get().getGuildManager().getContextForGuild(guild);
-        embedBuilder.setColor(ColorSchemeProperty.getColor(guildContext));
+        Color color = StaticSessionProvider.invokeWithSession(session -> {
+            GuildSpecification specification = Botify.get().getGuildManager().getContextForGuild(guild).getSpecification(session);
+            return ColorSchemeProperty.getColor(specification);
+        });
+        embedBuilder.setColor(color);
         return embedBuilder;
     }
 

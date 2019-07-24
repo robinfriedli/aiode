@@ -18,6 +18,12 @@
     <property name="hibernate.c3p0.max_size">20</property>
     <property name="hibernate.c3p0.timeout">1800</property>
     <property name="hibernate.c3p0.max_statements">50</property>
+    <!-- ehcache -->
+    <property name="hibernate.cache.use_query_cache">true</property>
+    <property name="hibernate.cache.use_second_level_cache">true</property>
+    <property name="hibernate.cache.region.factory_class">org.hibernate.cache.jcache.JCacheRegionFactory</property>
+    <property name="hibernate.javax.cache.provider">org.ehcache.jsr107.EhcacheCachingProvider</property>
+    <property name="hibernate.javax.cache.missing_cache_strategy">create</property>
     <!-- annotated classes -->
     <mapping class="net.robinfriedli.botify.entities.Playlist"/>
     <mapping class="net.robinfriedli.botify.entities.Song"/>
