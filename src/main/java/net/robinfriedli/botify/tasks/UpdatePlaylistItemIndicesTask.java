@@ -11,9 +11,15 @@ import net.robinfriedli.botify.entities.PlaylistItem;
 public class UpdatePlaylistItemIndicesTask implements PersistTask<Void> {
 
     private final Collection<Playlist> playlistsToUpdate;
+    private final Comparator<PlaylistItem> sorter;
 
     public UpdatePlaylistItemIndicesTask(Collection<Playlist> playlistsToUpdate) {
+        this(playlistsToUpdate, Comparator.comparing(PlaylistItem::getCreatedTimestamp));
+    }
+
+    public UpdatePlaylistItemIndicesTask(Collection<Playlist> playlistsToUpdate, Comparator<PlaylistItem> sorter) {
         this.playlistsToUpdate = playlistsToUpdate;
+        this.sorter = sorter;
     }
 
     @Override
@@ -26,7 +32,7 @@ public class UpdatePlaylistItemIndicesTask implements PersistTask<Void> {
                 .collect(Collectors.toList());
             List<PlaylistItem> addedItems = items.stream()
                 .filter(item -> item.getIndex() == null)
-                .sorted(Comparator.comparing(PlaylistItem::getCreatedTimestamp))
+                .sorted(sorter)
                 .collect(Collectors.toList());
             itemsOrdered.addAll(addedItems);
 

@@ -4,8 +4,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.concurrent.CompletableFuture;
 
 import net.dv8tion.jda.core.EmbedBuilder;
+import net.dv8tion.jda.core.entities.Message;
+import net.dv8tion.jda.core.entities.MessageChannel;
 import net.robinfriedli.botify.command.AbstractAdminCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
@@ -25,17 +28,25 @@ public class UpdateCommand extends AbstractAdminCommand {
         Process process = updateProcess.start();
         process.waitFor();
 
-        String output = getInputStreamString(process.getInputStream());
-        String errors = getInputStreamString(process.getErrorStream());
-
-        EmbedBuilder embedBuilder = new EmbedBuilder();
-        embedBuilder.addField("Output", output, false);
-        embedBuilder.addField("Errors", errors, false);
-        sendMessage(embedBuilder);
+        sendOutput(process.getInputStream());
     }
 
     @Override
     public void onSuccess() {
+    }
+
+    private void sendOutput(InputStream stream) throws IOException {
+        String inputStreamString = getInputStreamString(stream);
+        if (inputStreamString.length() < 2000) {
+            EmbedBuilder embedBuilder = new EmbedBuilder();
+            embedBuilder.setTitle("Output");
+            embedBuilder.setDescription(inputStreamString);
+            sendMessage(embedBuilder);
+        } else {
+            MessageChannel channel = getContext().getChannel();
+            CompletableFuture<Message> futureMessage = sendMessage("Output too long, attaching as file");
+            futureMessage.thenAccept(message -> channel.sendFile(stream, "output.txt", message).queue());
+        }
     }
 
     private String getInputStreamString(InputStream inputStream) throws IOException {

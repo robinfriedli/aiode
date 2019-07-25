@@ -1,7 +1,7 @@
 package net.robinfriedli.botify.boot;
 
 /**
- * Interface for tasks that ensure the integrity of the XML configuration
+ * Interface for tasks that migrate data for updates or ensure the integrity of the database
  */
 public interface StartupTask {
 
