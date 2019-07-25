@@ -159,6 +159,8 @@
     <example title="set the default service when searching for a track">$botify property default source $set youtube</example>
     <example title="set the default service when searching for a list">$botify property default list source $set local</example>
   </command>
+  <command identifier="charts" implementation="net.robinfriedli.botify.command.commands.ChartsCommand"
+           description="Shows the most popular tracks and artists for this guild and globally"/>
 
   <!-- Administrator commands -->
   <command identifier="reboot" implementation="net.robinfriedli.botify.command.commands.admin.RebootCommand"
