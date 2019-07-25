@@ -26,6 +26,7 @@ public class QueueIterator extends AudioEventAdapter {
     private final AudioQueue queue;
     private final AudioManager audioManager;
     private final UrlAudioLoader urlAudioLoader;
+    private Playable currentlyPlaying;
     private boolean isReplaced;
     // incremented when a track fails to load and is automatically skipped. This exists to define a maximum number of
     // tracks that can be auto skipped to avoid the queue hanging for too long and only send a message on the first
@@ -122,6 +123,7 @@ public class QueueIterator extends AudioEventAdapter {
                 AudioTrack audioTrack = (AudioTrack) result;
                 track.setCached(audioTrack);
                 playback.getAudioPlayer().playTrack(audioTrack);
+                currentlyPlaying = track;
             } else if (result instanceof Throwable) {
                 sendError(track, (Throwable) result);
 
@@ -230,4 +232,7 @@ public class QueueIterator extends AudioEventAdapter {
         retryCount = 0;
     }
 
+    public Playable getCurrentlyPlaying() {
+        return currentlyPlaying;
+    }
 }

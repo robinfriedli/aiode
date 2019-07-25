@@ -103,4 +103,13 @@ public interface Playable {
      */
     void setCached(AudioTrack audioTrack);
 
+    default boolean matches(Playable playable) {
+        try {
+            return getSource().equals(playable.getSource()) && getId().equals(playable.getId());
+        } catch (InterruptedException ignored) {
+        }
+
+        return false;
+    }
+
 }
