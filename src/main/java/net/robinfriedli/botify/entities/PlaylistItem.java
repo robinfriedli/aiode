@@ -25,6 +25,8 @@ public abstract class PlaylistItem implements Serializable {
     @Column(name = "item_index")
     private Integer index;
 
+    private transient int ordinal;
+
     public PlaylistItem() {
     }
 
@@ -88,5 +90,13 @@ public abstract class PlaylistItem implements Serializable {
 
     public void setIndex(Integer index) {
         this.index = index;
+    }
+
+    public int getOrdinal() {
+        return ordinal;
+    }
+
+    public void setOrdinal(int ordinal) {
+        this.ordinal = ordinal;
     }
 }

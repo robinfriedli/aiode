@@ -1,6 +1,7 @@
 package net.robinfriedli.botify.interceptors;
 
 import java.io.Serializable;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -15,12 +16,14 @@ import net.robinfriedli.botify.entities.UrlTrack;
 import net.robinfriedli.botify.entities.Video;
 import net.robinfriedli.botify.tasks.UpdatePlaylistItemIndicesTask;
 import org.hibernate.Interceptor;
+import org.hibernate.Transaction;
 import org.hibernate.type.Type;
 
 /**
  * Interceptor that verifies and maintains the integrity of a playlist upon changes are made.
  *
  * Ensures that the item_index field always gets set and updated for items related to a playlist where the playlist items have changed.
+ * Sets the ordinal field on the PlaylistItem for newly created items for sorting.
  *
  * Also updates the collections on the playlist when an item gets deleted. When an item gets created this is done by the
  * constructor of the corresponding class or manually.
@@ -28,6 +31,8 @@ import org.hibernate.type.Type;
  * Verifies the playlist's name when one is saved and removes subsequent spaces.
  */
 public class VerifyPlaylistListener extends ChainableInterceptor {
+
+    private int ordinal;
 
 
     public VerifyPlaylistListener(Interceptor next, Logger logger) {
@@ -47,6 +52,9 @@ public class VerifyPlaylistListener extends ChainableInterceptor {
                     }
                 }
             }
+        } else if (entity instanceof PlaylistItem) {
+            ((PlaylistItem) entity).setOrdinal(ordinal);
+            ++ordinal;
         }
     }
 
@@ -75,10 +83,14 @@ public class VerifyPlaylistListener extends ChainableInterceptor {
             .collect(Collectors.toSet());
 
         if (!playlistsToUpdate.isEmpty()) {
-            UpdatePlaylistItemIndicesTask task = new UpdatePlaylistItemIndicesTask(playlistsToUpdate);
+            UpdatePlaylistItemIndicesTask task = new UpdatePlaylistItemIndicesTask(playlistsToUpdate, Comparator.comparing(PlaylistItem::getOrdinal));
             task.perform();
         }
     }
 
+    @Override
+    public void afterTransactionCompletionChained(Transaction tx) {
+        ordinal = 0;
+    }
 }
 
