@@ -9,6 +9,7 @@ import com.google.common.collect.Lists;
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
 import com.wrapper.spotify.model_objects.specification.AlbumSimplified;
+import com.wrapper.spotify.model_objects.specification.Artist;
 import com.wrapper.spotify.model_objects.specification.Paging;
 import com.wrapper.spotify.model_objects.specification.Playlist;
 import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
@@ -34,6 +35,10 @@ public class SpotifyService {
 
     public Track getTrack(String id) throws IOException, SpotifyWebApiException {
         return spotifyApi.getTrack(id).build().execute();
+    }
+
+    public Artist getArtist(String id) throws IOException, SpotifyWebApiException {
+        return spotifyApi.getArtist(id).build().execute();
     }
 
     public List<Track> searchTrack(String searchTerm) throws IOException, SpotifyWebApiException {
