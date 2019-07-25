@@ -2,8 +2,7 @@
 <versions xmlns="versionSpace">
   <version launched="false" version="1.6.1">
     <feature>added charts command</feature>
-    <feature>added properties to select the default source (Spotify, YouTube, local) when searching a track or list
-    </feature>
+    <feature>added properties to select the default source (Spotify, YouTube, local) when searching a track or list</feature>
     <feature>added property to toggle the auto pause feature</feature>
     <feature>various bug fixes and improvements</feature>
   </version>
