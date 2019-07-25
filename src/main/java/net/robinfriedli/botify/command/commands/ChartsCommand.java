@@ -51,7 +51,7 @@ public class ChartsCommand extends AbstractCommand {
             "from playback_history_artist group by artists_pk order by c desc limit 3");
         @SuppressWarnings("unchecked")
         Query<Object[]> guildArtistQuery = session.createSQLQuery("select artists_pk, count(*) as c from " +
-            "(select * from playback_history_artist where playbackhistory_pk in(select pk from playback_history where guild_id = '484071462622330881')) as foo " +
+            "(select * from playback_history_artist where playbackhistory_pk in(select pk from playback_history where guild_id = '" + guild.getId() + "')) as foo " +
             "group by artists_pk order by c desc limit 3");
         List<Object[]> globalArtists = globalArtistQuery.getResultList();
         List<Object[]> guildArtists = guildArtistQuery.getResultList();
