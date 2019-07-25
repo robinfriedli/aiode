@@ -1,12 +1,13 @@
 package net.robinfriedli.botify.command.commands.admin;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.concurrent.CompletableFuture;
 
 import net.dv8tion.jda.core.EmbedBuilder;
+import net.dv8tion.jda.core.MessageBuilder;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.MessageChannel;
 import net.robinfriedli.botify.command.AbstractAdminCommand;
@@ -28,15 +29,15 @@ public class UpdateCommand extends AbstractAdminCommand {
         Process process = updateProcess.start();
         process.waitFor();
 
-        sendOutput(process.getInputStream());
+        sendOutput(process);
     }
 
     @Override
     public void onSuccess() {
     }
 
-    private void sendOutput(InputStream stream) throws IOException {
-        String inputStreamString = getInputStreamString(stream);
+    private void sendOutput(Process process) throws IOException {
+        String inputStreamString = getInputStreamString(process.getInputStream());
         if (inputStreamString.length() < 2000) {
             EmbedBuilder embedBuilder = new EmbedBuilder();
             embedBuilder.setTitle("Output");
@@ -44,8 +45,9 @@ public class UpdateCommand extends AbstractAdminCommand {
             sendMessage(embedBuilder);
         } else {
             MessageChannel channel = getContext().getChannel();
-            CompletableFuture<Message> futureMessage = sendMessage("Output too long, attaching as file");
-            futureMessage.thenAccept(message -> channel.sendFile(stream, "output.txt", message).queue());
+            Message message = new MessageBuilder().append("Output too long, attaching as file").build();
+            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(inputStreamString.getBytes());
+            channel.sendFile(byteArrayInputStream, "output.txt", message).queue();
         }
     }
 
