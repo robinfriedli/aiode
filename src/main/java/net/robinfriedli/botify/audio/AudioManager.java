@@ -59,9 +59,13 @@ public class AudioManager {
             throw new InvalidCommandException("Not in a voice channel");
         }
 
-        QueueIterator queueIterator = new QueueIterator(playback, this);
-        playback.setCurrentQueueIterator(queueIterator);
-        queueIterator.playNext();
+        if (!playback.isPaused()) {
+            QueueIterator queueIterator = new QueueIterator(playback, this);
+            playback.setCurrentQueueIterator(queueIterator);
+            queueIterator.playNext();
+        } else {
+            playback.unpause();
+        }
     }
 
     public AudioPlayback getPlaybackForGuild(Guild guild) {
