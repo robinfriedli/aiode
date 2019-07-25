@@ -59,7 +59,10 @@ public class AudioManager {
             throw new InvalidCommandException("Not in a voice channel");
         }
 
-        if (!playback.isPaused()) {
+        QueueIterator currentQueueIterator = playback.getCurrentQueueIterator();
+        Playable current = playback.getAudioQueue().getCurrent();
+        if (!playback.isPaused()
+            || (currentQueueIterator != null && !current.matches(currentQueueIterator.getCurrentlyPlaying()))) {
             QueueIterator queueIterator = new QueueIterator(playback, this);
             playback.setCurrentQueueIterator(queueIterator);
             queueIterator.playNext();

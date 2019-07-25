@@ -138,4 +138,7 @@ public class AudioPlayback {
         audioPlayer.addListener(queueIterator);
     }
 
+    public QueueIterator getCurrentQueueIterator() {
+        return currentQueueIterator;
+    }
 }
