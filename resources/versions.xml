@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <versions xmlns="versionSpace">
-  <version launched="false" version="1.6">
+  <version launched="false" version="1.6.1">
+    <feature>added charts command</feature>
+    <feature>added properties to select the default source (Spotify, YouTube, local) when searching a track or list
+    </feature>
+    <feature>added property to toggle the auto pause feature</feature>
+    <feature>various bug fixes and improvements</feature>
+  </version>
+  <version launched="true" version="1.6">
     <feature>added customisable properties to change the color scheme or toggle playback notifications using the new property command</feature>
     <feature>added a whole new category of commands for bot admins to manage the bot</feature>
     <feature>reworked the permission command to manage several commands at once more easily</feature>
