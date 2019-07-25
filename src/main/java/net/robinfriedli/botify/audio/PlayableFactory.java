@@ -117,6 +117,57 @@ public class PlayableFactory {
         return createPlayables(url, spotifyApi, redirectSpotify, true);
     }
 
+    public Playable createPlayable(String url, SpotifyApi spotifyApi, boolean redirectSpotify) {
+        URI uri;
+        try {
+            uri = URI.create(url);
+        } catch (IllegalArgumentException e) {
+            throw new InvalidCommandException("'" + url + "' is not a valid URL");
+        }
+        if (uri.getHost().contains("youtube.com")) {
+            Map<String, String> parameterMap = getParameterMap(uri);
+            String videoId = parameterMap.get("v");
+            if (videoId != null) {
+                return youTubeService.videoForId(videoId);
+            } else {
+                throw new IllegalArgumentException("Detected YouTube URL but no video id provided");
+            }
+        } else if (uri.getHost().equals("youtu.be")) {
+            String[] parts = uri.getPath().split("/");
+            return youTubeService.videoForId(parts[parts.length - 1]);
+        } else if (uri.getHost().equals("open.spotify.com")) {
+            StringList pathFragments = StringListImpl.create(uri.getPath(), "/");
+            if (pathFragments.contains("track")) {
+                String trackId = pathFragments.tryGet(pathFragments.indexOf("track") + 1);
+                if (trackId == null) {
+                    throw new InvalidCommandException("No track id provided");
+                }
+
+                try {
+                    String accessToken = spotifyApi.clientCredentials().build().execute().getAccessToken();
+                    spotifyApi.setAccessToken(accessToken);
+                    Track track = spotifyApi.getTrack(trackId).build().execute();
+                    return createPlayable(redirectSpotify, track);
+                } catch (IOException | SpotifyWebApiException e) {
+                    throw new RuntimeException("Exception during Spotify request", e);
+                } finally {
+                    spotifyApi.setAccessToken(null);
+                }
+            } else {
+                throw new IllegalArgumentException("Detected Spotify URL but no track id provided");
+            }
+        } else {
+            Object o = urlAudioLoader.loadUrl(uri.toString());
+            if (o instanceof AudioTrack) {
+                return new UrlPlayable((AudioTrack) o);
+            } else if (o != null) {
+                throw new IllegalArgumentException("Loading provided url did not result in an AudioTrack but " + o.getClass().toString());
+            } else {
+                throw new IllegalStateException("Loading provided url yielded no results");
+            }
+        }
+    }
+
     public List<Playable> createPlayables(String url, SpotifyApi spotifyApi, boolean redirectSpotify, boolean mayInterrupt) {
         List<Playable> playables;
 
@@ -127,9 +178,7 @@ public class PlayableFactory {
             throw new InvalidCommandException("'" + url + "' is not a valid URL");
         }
         if (uri.getHost().contains("youtube.com")) {
-            List<NameValuePair> parameters = URLEncodedUtils.parse(uri, Charset.forName("UTF-8"));
-            Map<String, String> parameterMap = new HashMap<>();
-            parameters.forEach(param -> parameterMap.put(param.getName(), param.getValue()));
+            Map<String, String> parameterMap = getParameterMap(uri);
             String videoId = parameterMap.get("v");
             String playlistId = parameterMap.get("list");
             if (videoId != null) {
@@ -237,6 +286,13 @@ public class PlayableFactory {
         } else {
             throw new InvalidCommandException("Detected Spotify URL but no track, playlist or album id provided.");
         }
+    }
+
+    private Map<String, String> getParameterMap(URI uri) {
+        List<NameValuePair> parameters = URLEncodedUtils.parse(uri, Charset.forName("UTF-8"));
+        Map<String, String> parameterMap = new HashMap<>();
+        parameters.forEach(param -> parameterMap.put(param.getName(), param.getValue()));
+        return parameterMap;
     }
 
 }
