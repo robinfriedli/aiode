@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <versions xmlns="versionSpace">
-  <version launched="false" version="1.6.1">
+  <version launched="false" version="1.6.1.1">
+    <feature>improve and add new admin tools</feature>
+    <feature>fix wrong behavior of the play / pause action when the bot left the channel</feature>
+    <feature>minor improvements</feature>
+  </version>
+  <version launched="true" version="1.6.1">
     <feature>added charts command</feature>
     <feature>added properties to select the default source (Spotify, YouTube, local) when searching a track or list</feature>
     <feature>added property to toggle the auto pause feature</feature>
