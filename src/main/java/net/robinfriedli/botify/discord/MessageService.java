@@ -9,14 +9,20 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.JDA;
 import net.dv8tion.jda.core.MessageBuilder;
@@ -32,6 +38,7 @@ import net.dv8tion.jda.core.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.core.requests.restaction.MessageAction;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
+import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.discord.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.entities.CommandHistory;
 import net.robinfriedli.botify.entities.PlaybackHistory;
@@ -177,33 +184,45 @@ public class MessageService {
     }
 
     public void sendToActiveGuilds(MessageEmbed message, JDA jda, AudioManager audioManager, Session session) {
-        List<Guild> activeGuilds = Lists.newArrayList();
+        Set<Guild> activeGuilds = Sets.newHashSet();
+        Set<String> activeGuildIds = Sets.newHashSet();
+
+        if (CommandContext.Current.isSet()) {
+            activeGuilds.add(CommandContext.Current.require().getGuild());
+        }
 
         for (Guild guild : jda.getGuilds()) {
-            // consider all guilds that are playing music right now to be active
             AudioPlayback playback = audioManager.getPlaybackForGuild(guild);
             if (playback.isPlaying()) {
                 activeGuilds.add(guild);
-                // continue to next guild, as this has already been determined to be active and query execution is unnecessary
-                continue;
             }
+        }
 
-            // consider all guilds that issued a command within the last 10 minutes to be active
-            long millis10MinutesAgo = System.currentTimeMillis() - 600000;
-            Long recentCommands = session.createQuery("select count(*) from " + CommandHistory.class.getName()
-                + " where guild_id = '" + guild.getId() + "' and start_millis > " + millis10MinutesAgo, Long.class).uniqueResult();
-            if (recentCommands > 0) {
-                activeGuilds.add(guild);
-                continue;
-            }
+        CriteriaBuilder cb = session.getCriteriaBuilder();
 
-            // consider all guilds that played a track withing the last 10 minutes to be active
-            LocalDateTime dateTime10MinutesAgo = LocalDateTime.ofInstant(Instant.ofEpochMilli(millis10MinutesAgo), ZoneId.systemDefault());
-            Long recentPlaybacks = session.createQuery("select count(*) from " + PlaybackHistory.class.getName()
-                + " where guild_id = '" + guild.getId() + "' and timestamp > '" + dateTime10MinutesAgo + "'", Long.class).uniqueResult();
-            if (recentPlaybacks > 0) {
-                activeGuilds.add(guild);
-            }
+        // consider all guilds that issued a command within the last 10 minutes to be active
+        long millis10MinutesAgo = System.currentTimeMillis() - 600000;
+        CriteriaQuery<String> recentCommandGuildsQuery = cb.createQuery(String.class);
+        Root<CommandHistory> commandsQueryRoot = recentCommandGuildsQuery.from(CommandHistory.class);
+        recentCommandGuildsQuery
+            .select(commandsQueryRoot.get("guildId"))
+            .where(cb.greaterThan(commandsQueryRoot.get("startMillis"), millis10MinutesAgo));
+        Set<String> recentCommandGuildIds = session.createQuery(recentCommandGuildsQuery).getResultStream().collect(Collectors.toSet());
+        activeGuildIds.addAll(recentCommandGuildIds);
+
+        // consider all guilds that played a track withing the last 10 minutes to be active
+        LocalDateTime dateTime10MinutesAgo = LocalDateTime.ofInstant(Instant.ofEpochMilli(millis10MinutesAgo), ZoneId.systemDefault());
+        CriteriaQuery<String> recentPlaybackGuildsQuery = cb.createQuery(String.class);
+        Root<PlaybackHistory> playbackHistoryRoot = recentPlaybackGuildsQuery.from(PlaybackHistory.class);
+        recentPlaybackGuildsQuery
+            .select(playbackHistoryRoot.get("guildId"))
+            .where(cb.greaterThan(playbackHistoryRoot.get("timestamp"), dateTime10MinutesAgo));
+        Set<String> recentPlaybackGuildIds = session.createQuery(recentPlaybackGuildsQuery).getResultStream().collect(Collectors.toSet());
+        activeGuildIds.addAll(recentPlaybackGuildIds);
+
+        for (String guildId : activeGuildIds) {
+            Guild guild = jda.getGuildById(guildId);
+            activeGuilds.add(guild);
         }
 
         logger.info("Sending message to " + activeGuilds.size() + " active guilds.");
