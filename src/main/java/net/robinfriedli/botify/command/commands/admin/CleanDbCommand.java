@@ -74,6 +74,7 @@ public class CleanDbCommand extends AbstractAdminCommand {
             cleanupThread.start();
         } catch (Throwable e) {
             Botify.registerListeners();
+            throw e;
         }
     }
 

@@ -42,31 +42,36 @@ public class RebootCommand extends AbstractAdminCommand {
     private void doRestart() {
         Botify.shutdownListeners();
 
-        EmbedBuilder embedBuilder = new EmbedBuilder();
-        embedBuilder.setTitle("Scheduled restart");
-        embedBuilder.setDescription("The bot is scheduled to restart after completing pending actions. No commands will be accepted until then.");
-        if (!getCommandBody().isBlank()) {
-            embedBuilder.addField("Reason", getCommandBody(), false);
-        }
-        sendToActiveGuilds(embedBuilder.build());
-
-        Runtime runtime = Runtime.getRuntime();
-        runtime.addShutdownHook(new Thread(() -> {
-            Logger logger = LoggerFactory.getLogger(getClass());
-            logger.info("Restarting bot");
-
-            PrintStream out = System.out;
-            try {
-                Botify.launch();
-            } catch (IOException e) {
-                out.println("new process could not be started: " + e.getMessage());
+        try {
+            EmbedBuilder embedBuilder = new EmbedBuilder();
+            embedBuilder.setTitle("Scheduled restart");
+            embedBuilder.setDescription("The bot is scheduled to restart after completing pending actions. No commands will be accepted until then.");
+            if (!getCommandBody().isBlank()) {
+                embedBuilder.addField("Reason", getCommandBody(), false);
             }
-        }));
+            sendToActiveGuilds(embedBuilder.build());
 
-        // runs in separate thread to avoid deadlock when waiting for commands to finish
-        Thread shutdownThread = new Thread(() -> Botify.shutdown(60000));
-        shutdownThread.setName("Shutdown thread");
-        shutdownThread.start();
+            Runtime runtime = Runtime.getRuntime();
+            runtime.addShutdownHook(new Thread(() -> {
+                Logger logger = LoggerFactory.getLogger(getClass());
+                logger.info("Restarting bot");
+
+                PrintStream out = System.out;
+                try {
+                    Botify.launch();
+                } catch (IOException e) {
+                    out.println("new process could not be started: " + e.getMessage());
+                }
+            }));
+
+            // runs in separate thread to avoid deadlock when waiting for commands to finish
+            Thread shutdownThread = new Thread(() -> Botify.shutdown(60000));
+            shutdownThread.setName("Shutdown thread");
+            shutdownThread.start();
+        } catch (Throwable e) {
+            Botify.registerListeners();
+            throw e;
+        }
     }
 
 }

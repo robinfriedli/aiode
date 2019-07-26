@@ -36,18 +36,23 @@ public class QuitCommand extends AbstractAdminCommand {
     private void doQuit() {
         Botify.shutdownListeners();
 
-        EmbedBuilder embedBuilder = new EmbedBuilder();
-        embedBuilder.setTitle("Scheduled shutdown");
-        embedBuilder.setDescription("The bot is scheduled to shut down after completing queued actions. No commands will be accepted until then.");
-        if (!getCommandBody().isBlank()) {
-            embedBuilder.addField("Reason", getCommandBody(), false);
-        }
-        sendToActiveGuilds(embedBuilder.build());
+        try {
+            EmbedBuilder embedBuilder = new EmbedBuilder();
+            embedBuilder.setTitle("Scheduled shutdown");
+            embedBuilder.setDescription("The bot is scheduled to shut down after completing queued actions. No commands will be accepted until then.");
+            if (!getCommandBody().isBlank()) {
+                embedBuilder.addField("Reason", getCommandBody(), false);
+            }
+            sendToActiveGuilds(embedBuilder.build());
 
-        // runs in separate thread to avoid deadlock when waiting for commands to finish
-        Thread shutdownThread = new Thread(() -> Botify.shutdown(60000));
-        shutdownThread.setName("Shutdown thread");
-        shutdownThread.start();
+            // runs in separate thread to avoid deadlock when waiting for commands to finish
+            Thread shutdownThread = new Thread(() -> Botify.shutdown(60000));
+            shutdownThread.setName("Shutdown thread");
+            shutdownThread.start();
+        } catch (Throwable e) {
+            Botify.registerListeners();
+            throw e;
+        }
     }
 
 }
