@@ -85,6 +85,8 @@ public class Botify {
         JDA jda = botify.getJda();
         ListenerAdapter[] registeredListeners = botify.getRegisteredListeners();
         jda.addEventListener((Object[]) registeredListeners);
+        jda.getPresence().setStatus(OnlineStatus.ONLINE);
+        LOGGER.info("Registered listeners");
     }
 
     public static void shutdownListeners() {

@@ -173,4 +173,8 @@
            description="Update the bot if the current branch needs to be rebased. Performs a rebase and maven clean install if necessary. A restart might be required if an update was pulled."/>
   <command identifier="load document" implementation="net.robinfriedli.botify.command.commands.admin.LoadDocumentCommand"
            description="Load a document from the embedDocuments or list them."/>
+  <command identifier="cleandb" implementation="net.robinfriedli.botify.command.commands.admin.CleanDbCommand"
+           description="Deletes data associated with guilds the bot is no longer a part of"/>
+  <command identifier="garbage collect" implementation="net.robinfriedli.botify.command.commands.admin.GarbageCollectCommand"
+           description="Executes a Java garbage collection to manually clean up memory when convenient"/>
 </commands>
