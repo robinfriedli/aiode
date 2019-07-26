@@ -71,7 +71,14 @@ public class PropertyCommand extends AbstractCommand {
         Table2 table = new Table2(embedBuilder);
         table.addColumn("Name", properties, AbstractGuildProperty::getName);
         table.addColumn("Default Value", properties, AbstractGuildProperty::getDefaultValue);
-        table.addColumn("Set Value", properties, property -> String.valueOf(property.extractPersistedValue(specification)));
+        table.addColumn("Set Value", properties, property -> {
+            Object persistedValue = property.extractPersistedValue(specification);
+            if (persistedValue != null) {
+                return String.valueOf(persistedValue);
+            } else {
+                return "Not Set";
+            }
+        });
         table.build();
         sendMessage(embedBuilder);
     }
