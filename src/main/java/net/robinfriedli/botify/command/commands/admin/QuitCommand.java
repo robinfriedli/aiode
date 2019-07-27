@@ -3,6 +3,7 @@ package net.robinfriedli.botify.command.commands.admin;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.AbstractAdminCommand;
+import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
@@ -37,13 +38,15 @@ public class QuitCommand extends AbstractAdminCommand {
         Botify.shutdownListeners();
 
         try {
-            EmbedBuilder embedBuilder = new EmbedBuilder();
-            embedBuilder.setTitle("Scheduled shutdown");
-            embedBuilder.setDescription("The bot is scheduled to shut down after completing queued actions. No commands will be accepted until then.");
-            if (!getCommandBody().isBlank()) {
-                embedBuilder.addField("Reason", getCommandBody(), false);
+            if (!argumentSet("silent")) {
+                EmbedBuilder embedBuilder = new EmbedBuilder();
+                embedBuilder.setTitle("Scheduled shutdown");
+                embedBuilder.setDescription("The bot is scheduled to shut down after completing queued actions. No commands will be accepted until then.");
+                if (!getCommandBody().isBlank()) {
+                    embedBuilder.addField("Reason", getCommandBody(), false);
+                }
+                sendToActiveGuilds(embedBuilder.build());
             }
-            sendToActiveGuilds(embedBuilder.build());
 
             // runs in separate thread to avoid deadlock when waiting for commands to finish
             Thread shutdownThread = new Thread(() -> Botify.shutdown(60000));
@@ -53,6 +56,14 @@ public class QuitCommand extends AbstractAdminCommand {
             Botify.registerListeners();
             throw e;
         }
+    }
+
+    @Override
+    public ArgumentContribution setupArguments() {
+        ArgumentContribution argumentContribution = new ArgumentContribution(this);
+        argumentContribution.map("silent")
+            .setDescription("Disables alerting active guilds about the shutdown.");
+        return argumentContribution;
     }
 
 }

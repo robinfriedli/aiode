@@ -13,6 +13,7 @@ import net.dv8tion.jda.core.JDA;
 import net.dv8tion.jda.core.entities.ISnowflake;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.AbstractAdminCommand;
+import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
@@ -38,12 +39,14 @@ public class CleanDbCommand extends AbstractAdminCommand {
     public void runAdmin() {
         Botify.shutdownListeners();
         try {
-            EmbedBuilder embedBuilder = new EmbedBuilder();
-            embedBuilder.setTitle("Scheduled cleanup");
-            embedBuilder.setDescription("Botify is suspending for a few seconds to clean the database.");
-            sendToActiveGuilds(embedBuilder.build());
-            CommandExecutionQueueManager executionQueueManager = Botify.get().getExecutionQueueManager();
+            if (!argumentSet("silent")) {
+                EmbedBuilder embedBuilder = new EmbedBuilder();
+                embedBuilder.setTitle("Scheduled cleanup");
+                embedBuilder.setDescription("Botify is suspending for a few seconds to clean the database.");
+                sendToActiveGuilds(embedBuilder.build());
+            }
 
+            CommandExecutionQueueManager executionQueueManager = Botify.get().getExecutionQueueManager();
             CommandContext context = getContext();
             Thread cleanupThread = new Thread(() -> {
                 CommandContext.Current.set(context);
@@ -196,4 +199,13 @@ public class CleanDbCommand extends AbstractAdminCommand {
     @Override
     public void onSuccess() {
     }
+
+    @Override
+    public ArgumentContribution setupArguments() {
+        ArgumentContribution argumentContribution = new ArgumentContribution(this);
+        argumentContribution.map("silent")
+            .setDescription("Disables alerting active guilds about the restart.");
+        return argumentContribution;
+    }
+
 }

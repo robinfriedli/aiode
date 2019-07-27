@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.AbstractAdminCommand;
+import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
@@ -43,13 +44,15 @@ public class RebootCommand extends AbstractAdminCommand {
         Botify.shutdownListeners();
 
         try {
-            EmbedBuilder embedBuilder = new EmbedBuilder();
-            embedBuilder.setTitle("Scheduled restart");
-            embedBuilder.setDescription("The bot is scheduled to restart after completing pending actions. No commands will be accepted until then.");
-            if (!getCommandBody().isBlank()) {
-                embedBuilder.addField("Reason", getCommandBody(), false);
+            if (!argumentSet("silent")) {
+                EmbedBuilder embedBuilder = new EmbedBuilder();
+                embedBuilder.setTitle("Scheduled restart");
+                embedBuilder.setDescription("The bot is scheduled to restart after completing pending actions. No commands will be accepted until then.");
+                if (!getCommandBody().isBlank()) {
+                    embedBuilder.addField("Reason", getCommandBody(), false);
+                }
+                sendToActiveGuilds(embedBuilder.build());
             }
-            sendToActiveGuilds(embedBuilder.build());
 
             Runtime runtime = Runtime.getRuntime();
             runtime.addShutdownHook(new Thread(() -> {
@@ -74,4 +77,11 @@ public class RebootCommand extends AbstractAdminCommand {
         }
     }
 
+    @Override
+    public ArgumentContribution setupArguments() {
+        ArgumentContribution argumentContribution = new ArgumentContribution(this);
+        argumentContribution.map("silent")
+            .setDescription("Disables alerting active guilds about the restart.");
+        return argumentContribution;
+    }
 }

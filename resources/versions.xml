@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <versions xmlns="versionSpace">
-  <version launched="false" version="1.6.1.1">
+  <version launched="false" silent="true" version="1.6.1.2">
+    <feature>enable silent updates</feature>
+    <feature>fix export command</feature>
+    <feature>fix Playable#matches</feature>
+    <feature>improve upload command</feature>
+  </version>
+  <version launched="true" version="1.6.1.1">
     <feature>improve and add new admin tools</feature>
     <feature>fix wrong behavior of the play / pause action when the bot left the channel</feature>
     <feature>minor improvements</feature>
