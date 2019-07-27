@@ -53,7 +53,7 @@ public class ExportCommand extends AbstractCommand {
             }
         }
         String playlistSizeMax = PropertiesLoadingService.loadProperty("PLAYLIST_SIZE_MAX");
-        if (Strings.isNullOrEmpty(playlistSizeMax)) {
+        if (!Strings.isNullOrEmpty(playlistSizeMax)) {
             int maxSize = Integer.parseInt(playlistSizeMax);
             if (tracks.size() > maxSize) {
                 throw new InvalidCommandException("List exceeds maximum size of " + maxSize + " items!");
@@ -64,6 +64,8 @@ public class ExportCommand extends AbstractCommand {
         Playlist playlist = new Playlist(getCommandBody(), createUser, guild);
 
         invoke(() -> {
+            session.persist(playlist);
+
             for (Playable track : tracks) {
                 if (track instanceof HollowYouTubeVideo) {
                     HollowYouTubeVideo video = (HollowYouTubeVideo) track;
@@ -76,8 +78,6 @@ public class ExportCommand extends AbstractCommand {
                 export.add();
                 session.persist(export);
             }
-
-            session.persist(playlist);
         });
     }
 
