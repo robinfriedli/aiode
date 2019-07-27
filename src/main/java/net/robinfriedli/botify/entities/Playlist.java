@@ -2,6 +2,7 @@ package net.robinfriedli.botify.entities;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -196,12 +197,19 @@ public class Playlist implements Serializable {
      */
     public List<Track> asTrackList(SpotifyApi spotifyApi) throws IOException, SpotifyWebApiException {
         List<Track> tracks = Lists.newArrayList();
+        List<String> trackIds = Lists.newArrayList();
         for (PlaylistItem item : getItemsSorted()) {
             if (item instanceof Song) {
-                tracks.add(spotifyApi.getTrack(((Song) item).getId()).build().execute());
+                trackIds.add(((Song) item).getId());
             } else if (item instanceof Video && ((Video) item).getRedirectedSpotifyId() != null) {
-                tracks.add(spotifyApi.getTrack(((Video) item).getRedirectedSpotifyId()).build().execute());
+                trackIds.add(((Video) item).getRedirectedSpotifyId());
             }
+        }
+
+        List<List<String>> sequences = Lists.partition(trackIds, 50);
+        for (List<String> sequence : sequences) {
+            Track[] loadedTracks = spotifyApi.getSeveralTracks(sequence.toArray(String[]::new)).build().execute();
+            tracks.addAll(Arrays.asList(loadedTracks));
         }
 
         return tracks;

@@ -16,6 +16,8 @@ import net.robinfriedli.botify.util.SearchEngine;
 
 public class UploadCommand extends AbstractCommand {
 
+    private String uploadedPlaylistName;
+
     public UploadCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
         super(commandContribution, context, commandManager, commandString, true, identifier, description, Category.SPOTIFY);
     }
@@ -39,13 +41,12 @@ public class UploadCommand extends AbstractCommand {
 
             String userId = spotifyApi.getCurrentUsersProfile().build().execute().getId();
             com.wrapper.spotify.model_objects.specification.Playlist spotifyPlaylist = spotifyApi.createPlaylist(userId, name).build().execute();
+            uploadedPlaylistName = spotifyPlaylist.getName();
             String playlistId = spotifyPlaylist.getId();
             List<String> trackUris = tracks.stream().map(Track::getUri).collect(Collectors.toList());
             List<List<String>> sequences = Lists.partition(trackUris, 90);
             for (List<String> sequence : sequences) {
                 spotifyApi.addTracksToPlaylist(playlistId, sequence.toArray(new String[0])).build().execute();
-                // avoid too many requests exception
-                Thread.sleep(500);
             }
 
             return null;
@@ -54,6 +55,6 @@ public class UploadCommand extends AbstractCommand {
 
     @Override
     public void onSuccess() {
-        sendSuccess("Created Spotify playlist " + getCommandBody());
+        sendSuccess("Created Spotify playlist " + uploadedPlaylistName);
     }
 }
