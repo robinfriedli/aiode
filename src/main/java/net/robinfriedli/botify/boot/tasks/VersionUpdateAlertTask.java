@@ -2,6 +2,7 @@ package net.robinfriedli.botify.boot.tasks;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.io.IOException;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -38,35 +39,41 @@ public class VersionUpdateAlertTask implements StartupTask {
             XmlElement versionElem = context.query(Conditions.attribute("version").is(currentVersion)).getOnlyResult();
             if (versionElem != null) {
                 if (!versionElem.getAttribute("launched").getBool()) {
-                    List<XmlElement> lowerLaunchedVersions = context.query(xmlElement -> xmlElement.getTagName().equals("version")
-                        && versionCompare(currentVersion, xmlElement.getAttribute("version").getValue()) == 1
-                        && xmlElement.getAttribute("launched").getBool()).collect();
-                    if (!lowerLaunchedVersions.isEmpty()) {
-                        MessageService messageService = new MessageService();
-                        String message = "Botify has been updated to " + currentVersion + ". [Check the releases here]("
-                            + "https://github.com/robinfriedli/botify/releases)";
-                        EmbedBuilder embedBuilder = new EmbedBuilder();
-                        embedBuilder.setTitle("Update");
-                        embedBuilder.setDescription(message);
-
-                        List<XmlElement> features = versionElem.query(tagName("feature")).collect();
-                        if (!features.isEmpty()) {
-                            StringBuilder featuresBuilder = new StringBuilder();
-                            for (XmlElement feature : features) {
-                                featuresBuilder.append("-\t").append(feature.getTextContent()).append(System.lineSeparator());
-                            }
-                            embedBuilder.addField("Features", featuresBuilder.toString(), false);
-                        }
-
-                        for (Guild guild : jda.getGuilds()) {
-                            messageService.sendWithLogo(embedBuilder, guild);
-                        }
+                    if (!(versionElem.hasAttribute("silent") && versionElem.getAttribute("silent").getBool())) {
+                        sendUpdateAlert(context, currentVersion, versionElem);
                     }
 
                     context.invoke(() -> versionElem.setAttribute("launched", true));
                 }
             } else {
                 logger.warn("Current version has no version element in versions.xml");
+            }
+        }
+    }
+
+    private void sendUpdateAlert(Context context, String currentVersion, XmlElement versionElem) throws IOException {
+        List<XmlElement> lowerLaunchedVersions = context.query(xmlElement -> xmlElement.getTagName().equals("version")
+            && versionCompare(currentVersion, xmlElement.getAttribute("version").getValue()) == 1
+            && xmlElement.getAttribute("launched").getBool()).collect();
+        if (!lowerLaunchedVersions.isEmpty()) {
+            MessageService messageService = new MessageService();
+            String message = "Botify has been updated to " + currentVersion + ". [Check the releases here]("
+                + "https://github.com/robinfriedli/botify/releases)";
+            EmbedBuilder embedBuilder = new EmbedBuilder();
+            embedBuilder.setTitle("Update");
+            embedBuilder.setDescription(message);
+
+            List<XmlElement> features = versionElem.query(tagName("feature")).collect();
+            if (!features.isEmpty()) {
+                StringBuilder featuresBuilder = new StringBuilder();
+                for (XmlElement feature : features) {
+                    featuresBuilder.append("-\t").append(feature.getTextContent()).append(System.lineSeparator());
+                }
+                embedBuilder.addField("Features", featuresBuilder.toString(), false);
+            }
+
+            for (Guild guild : jda.getGuilds()) {
+                messageService.sendWithLogo(embedBuilder, guild);
             }
         }
     }

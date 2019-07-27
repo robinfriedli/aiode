@@ -27,11 +27,7 @@ public class HollowYouTubeVideo extends AbstractSoftCachedPlayable implements Yo
     private boolean canceled = false;
 
     public HollowYouTubeVideo(YouTubeService youTubeService) {
-        this.youTubeService = youTubeService;
-        this.title = new CompletableFuture<>();
-        this.id = new CompletableFuture<>();
-        this.duration = new CompletableFuture<>();
-        this.redirectedSpotifyTrack = null;
+        this(youTubeService, null);
     }
 
     public HollowYouTubeVideo(YouTubeService youTubeService, @Nullable Track redirectedSpotifyTrack) {
