@@ -60,6 +60,7 @@ public class Launcher {
         // setup ehcache configuration
         System.setProperty("net.sf.ehcache.configurationResourceName", "ehcache.xml");
         Logger logger = LoggerFactory.getLogger(Launcher.class);
+        logger.info("Using java version " + System.getProperty("java.runtime.version"));
         try {
             // initialize property values
             String redirectUri = PropertiesLoadingService.requireProperty("REDIRECT_URI");
