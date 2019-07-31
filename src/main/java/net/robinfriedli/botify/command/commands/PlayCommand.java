@@ -22,6 +22,7 @@ import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
+import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 
 public class PlayCommand extends AbstractQueueLoadingCommand {
 
@@ -53,6 +54,9 @@ public class PlayCommand extends AbstractQueueLoadingCommand {
 
     @Override
     protected void handleResults(List<Playable> playables) {
+        if (playables.isEmpty()) {
+            throw new NoResultsFoundException("Result is empty!");
+        }
         Guild guild = getContext().getGuild();
         Member member = guild.getMember(getContext().getUser());
         VoiceChannel channel = member.getVoiceState().getChannel();

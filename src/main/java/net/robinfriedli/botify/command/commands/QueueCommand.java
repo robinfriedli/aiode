@@ -21,6 +21,7 @@ import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.command.widgets.QueueWidget;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
+import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 
 public class QueueCommand extends AbstractQueueLoadingCommand {
 
@@ -39,6 +40,9 @@ public class QueueCommand extends AbstractQueueLoadingCommand {
 
     @Override
     protected void handleResults(List<Playable> playables) {
+        if (playables.isEmpty()) {
+            throw new NoResultsFoundException("Result is empty!");
+        }
         AudioPlayback playback = getContext().getGuildContext().getPlayback();
         playback.getAudioQueue().add(playables);
     }
