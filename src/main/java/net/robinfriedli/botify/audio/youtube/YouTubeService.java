@@ -118,8 +118,8 @@ public class YouTubeService {
                     long viewCount = v.getStatistics().getViewCount().longValue();
                     String title = v.getSnippet().getTitle().toLowerCase();
                     Integer editDistance = levenshteinDistance.apply(searchTerm.toLowerCase(), title);
-                    viewScore = (int) (viewCount * 10 / highestViewCount);
-                    editDistanceScore = 10 - (editDistance * 10 / maxEditDistance);
+                    viewScore = highestViewCount == 0 ? 10 : (int) (viewCount * 10 / highestViewCount);
+                    editDistanceScore = maxEditDistance == 0 ? 10 : 10 - (editDistance * 10 / maxEditDistance);
                     videosByScore.putIfAbsent(artistMatchScore + viewScore + editDistanceScore, v);
                 }
 
