@@ -4,11 +4,12 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import org.apache.commons.text.similarity.LevenshteinDistance;
 
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.model.Playlist;
@@ -26,7 +27,6 @@ import net.robinfriedli.botify.audio.PlayableFactory;
 import net.robinfriedli.botify.command.commands.PlayCommand;
 import net.robinfriedli.botify.command.commands.QueueCommand;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
-import net.robinfriedli.botify.util.SearchEngine;
 import net.robinfriedli.stringlist.StringList;
 import net.robinfriedli.stringlist.StringListImpl;
 
@@ -83,28 +83,51 @@ public class YouTubeService {
             if (videos.isEmpty()) {
                 youTubeVideo.cancel();
                 return;
-            } else if (videos.size() > 1) {
-                List<Video> artistMatches = videos
-                    .stream()
-                    .filter(video -> artists.stream().anyMatch(artist -> video.getSnippet().getChannelTitle().toLowerCase().contains(artist.toLowerCase())
-                        || artist.toLowerCase().contains(video.getSnippet().getChannelTitle().toLowerCase())))
-                    .collect(Collectors.toList());
-                if (!artistMatches.isEmpty()) {
-                    videos = artistMatches;
-                }
             }
 
             Video video;
             if (videos.size() == 1) {
                 video = videos.get(0);
             } else {
-                //noinspection OptionalGetWithoutIsPresent
-                video = SearchEngine
-                    .getBestLevenshteinMatches(false, videos, searchTerm, v -> v.getSnippet().getTitle())
-                    .stream()
-                    .max(Comparator.comparing(o -> o.getStatistics().getViewCount()))
-                    .get();
+                Map<Integer, Video> videosByScore = new HashMap<>();
+                Long highestViewCount = null;
+                Integer maxEditDistance = null;
+                LevenshteinDistance levenshteinDistance = new LevenshteinDistance();
+                for (Video v : videos) {
+                    long viewCount = v.getStatistics().getViewCount().longValue();
+                    String title = v.getSnippet().getTitle();
+                    Integer editDistance = levenshteinDistance.apply(searchTerm.toLowerCase(), title.toLowerCase());
+                    if (highestViewCount == null || highestViewCount < viewCount) {
+                        highestViewCount = viewCount;
+                    }
+                    if (maxEditDistance == null || maxEditDistance < editDistance) {
+                        maxEditDistance = editDistance;
+                    }
+                }
+                for (Video v : videos) {
+                    int artistMatchScore = 0;
+                    int viewScore;
+                    int editDistanceScore;
+                    if (artists.stream().anyMatch(a -> {
+                        String artist = a.toLowerCase();
+                        String channel = v.getSnippet().getChannelTitle().toLowerCase();
+                        return channel.contains(artist) || artist.contains(channel);
+                    })) {
+                        artistMatchScore = 5;
+                    }
+                    long viewCount = v.getStatistics().getViewCount().longValue();
+                    String title = v.getSnippet().getTitle().toLowerCase();
+                    Integer editDistance = levenshteinDistance.apply(searchTerm.toLowerCase(), title);
+                    viewScore = (int) (viewCount * 10 / highestViewCount);
+                    editDistanceScore = 10 - (editDistance * 10 / maxEditDistance);
+                    videosByScore.putIfAbsent(artistMatchScore + viewScore + editDistanceScore, v);
+                }
+
+                @SuppressWarnings("OptionalGetWithoutIsPresent")
+                int bestScore = videosByScore.keySet().stream().mapToInt(k -> k).max().getAsInt();
+                video = videosByScore.get(bestScore);
             }
+
             String videoId = video.getId();
             long durationMillis = getDurationMillis(videoId);
 
