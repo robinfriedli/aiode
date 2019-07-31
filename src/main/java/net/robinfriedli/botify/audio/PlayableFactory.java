@@ -2,7 +2,7 @@ package net.robinfriedli.botify.audio;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -16,6 +16,8 @@ import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
+import com.wrapper.spotify.exceptions.detailed.BadRequestException;
+import com.wrapper.spotify.exceptions.detailed.NotFoundException;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.robinfriedli.botify.audio.spotify.SpotifyService;
 import net.robinfriedli.botify.audio.spotify.TrackWrapper;
@@ -55,8 +57,10 @@ public class PlayableFactory {
             }
         } else if (track instanceof UrlTrack) {
             return ((UrlTrack) track).asPlayable();
-        } else {
+        } else if (track != null) {
             throw new UnsupportedOperationException("Unsupported playable " + track.getClass());
+        } else {
+            throw new IllegalArgumentException("Cannot create Playable for null");
         }
     }
 
@@ -81,7 +85,7 @@ public class PlayableFactory {
                 }
             } else if (track instanceof UrlTrack) {
                 playables.add(((UrlTrack) track).asPlayable());
-            } else {
+            } else if (track != null) {
                 throw new UnsupportedOperationException("Unsupported playable " + track.getClass());
             }
         }
@@ -246,6 +250,8 @@ public class PlayableFactory {
                 spotifyApi.setAccessToken(accessToken);
                 List<Track> playlistTracks = spotifyService.getPlaylistTracks(playlistId);
                 return createPlayables(redirectSpotify, playlistTracks, mayInterrupt);
+            } catch (NotFoundException e) {
+                throw new NoResultsFoundException("No playlist found for id " + playlistId);
             } catch (IOException | SpotifyWebApiException e) {
                 throw new RuntimeException("Exception during Spotify request", e);
             } finally {
@@ -262,6 +268,8 @@ public class PlayableFactory {
                 spotifyApi.setAccessToken(accessToken);
                 Track track = spotifyApi.getTrack(trackId).build().execute();
                 return Lists.newArrayList(createPlayable(redirectSpotify, track));
+            } catch (NotFoundException e) {
+                throw new NoResultsFoundException("No track found for id " + trackId);
             } catch (IOException | SpotifyWebApiException e) {
                 throw new RuntimeException("Exception during Spotify request", e);
             } finally {
@@ -278,6 +286,8 @@ public class PlayableFactory {
                 spotifyApi.setAccessToken(accessToken);
                 List<Track> albumTracks = spotifyService.getAlbumTracks(albumId);
                 return createPlayables(redirectSpotify, albumTracks, mayInterrupt);
+            } catch (BadRequestException e) {
+                throw new NoResultsFoundException("No album found for id " + albumId);
             } catch (IOException | SpotifyWebApiException e) {
                 throw new RuntimeException("Exception during Spotify request", e);
             } finally {
@@ -289,7 +299,7 @@ public class PlayableFactory {
     }
 
     private Map<String, String> getParameterMap(URI uri) {
-        List<NameValuePair> parameters = URLEncodedUtils.parse(uri, Charset.forName("UTF-8"));
+        List<NameValuePair> parameters = URLEncodedUtils.parse(uri, StandardCharsets.UTF_8);
         Map<String, String> parameterMap = new HashMap<>();
         parameters.forEach(param -> parameterMap.put(param.getName(), param.getValue()));
         return parameterMap;

@@ -128,6 +128,10 @@ public class AudioPlayback {
         this.lastPlaybackNotification = message;
     }
 
+    public QueueIterator getCurrentQueueIterator() {
+        return currentQueueIterator;
+    }
+
     public void setCurrentQueueIterator(QueueIterator queueIterator) {
         if (currentQueueIterator != null) {
             audioPlayer.removeListener(currentQueueIterator);
@@ -136,9 +140,5 @@ public class AudioPlayback {
 
         currentQueueIterator = queueIterator;
         audioPlayer.addListener(queueIterator);
-    }
-
-    public QueueIterator getCurrentQueueIterator() {
-        return currentQueueIterator;
     }
 }

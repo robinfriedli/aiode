@@ -2,7 +2,7 @@ package net.robinfriedli.botify.servers;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -28,7 +28,7 @@ public class ServerUtil {
     }
 
     public static Map<String, String> getParameters(HttpExchange exchange) {
-        List<NameValuePair> parameters = URLEncodedUtils.parse(exchange.getRequestURI(), Charset.forName("UTF-8"));
+        List<NameValuePair> parameters = URLEncodedUtils.parse(exchange.getRequestURI(), StandardCharsets.UTF_8);
         Map<String, String> parameterMap = new HashMap<>();
         parameters.forEach(param -> parameterMap.put(param.getName(), param.getValue()));
         return parameterMap;

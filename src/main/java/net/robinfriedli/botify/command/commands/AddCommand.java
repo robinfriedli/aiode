@@ -89,6 +89,9 @@ public class AddCommand extends AbstractSourceDecidingCommand {
     }
 
     protected void addToList(Playlist playlist, List<PlaylistItem> items) {
+        if (items.isEmpty()) {
+            throw new NoResultsFoundException("Result is empty!");
+        }
         Session session = getContext().getSession();
         checkSize(playlist, items.size());
         items.forEach(item -> {
