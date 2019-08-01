@@ -20,6 +20,12 @@ import net.robinfriedli.botify.util.EmojiConstants;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.StaticSessionProvider;
 
+/**
+ * Iterator to iterate the queue automatically when a track ends or fails loading. The current QueueIterator is registered
+ * on the guilds {@link AudioPlayback} but is replaced each time a track is started manually. This makes it easy to
+ * manage when the thread calling the AudioEventAdapter is recursively skipping unavailable tracks while the user
+ * explicitly starts playing a new playback.
+ */
 public class QueueIterator extends AudioEventAdapter {
 
     private final AudioPlayback playback;

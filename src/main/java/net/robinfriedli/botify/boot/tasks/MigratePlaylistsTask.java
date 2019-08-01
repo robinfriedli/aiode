@@ -25,7 +25,7 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
 /**
- * Migrate the XML playlists to the database
+ * Migrate the old XML playlists to the database for the v1.4 update
  */
 public class MigratePlaylistsTask implements StartupTask {
 

@@ -8,6 +8,9 @@ import java.util.stream.Collectors;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
 
+/**
+ * task that updates the itemIndex property for {@link PlaylistItem}s when items are added to a playlist
+ */
 public class UpdatePlaylistItemIndicesTask implements PersistTask<Void> {
 
     private final Collection<Playlist> playlistsToUpdate;

@@ -19,6 +19,10 @@ import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.StaticSessionProvider;
 import net.robinfriedli.botify.util.Util;
 
+/**
+ * Holds and manages all tracks that are currently in the guild's queue. There is always exactly one AudioQueue on the
+ * guilds {@link AudioPlayback}
+ */
 public class AudioQueue {
 
     private final List<Playable> currentQueue = Lists.newArrayList();
@@ -28,10 +32,17 @@ public class AudioQueue {
     private boolean repeatOne;
     private boolean repeatAll;
 
+    /**
+     * @return all playables that are currently in this queue
+     */
     public List<Playable> getTracks() {
         return currentQueue;
     }
 
+    /**
+     * @return the current cursor position of the queue that is incremented by one after each track irregardless of
+     * the shuffle option
+     */
     public int getPosition() {
         return currentTrack;
     }
@@ -40,6 +51,10 @@ public class AudioQueue {
         currentTrack = position;
     }
 
+    /**
+     * @return the index of the current track in the playlist list in its normal order, this is differs from the
+     * {@link #getPosition()} method only when shuffle is enabled
+     */
     public int getCurrentTrackNumber() {
         if (isShuffle) {
             return randomizedOrder.get(currentTrack);
@@ -48,6 +63,9 @@ public class AudioQueue {
         }
     }
 
+    /**
+     * @return the {@link Playable} referenced by this queue's current position
+     */
     public Playable getCurrent() {
         if (isEmpty()) {
             throw new NoResultsFoundException("Queue is empty");
@@ -101,6 +119,13 @@ public class AudioQueue {
         }
     }
 
+    /**
+     * Format the current queue as a Discord embed message showing all enabled options, such as shuffle and repeat,
+     * the volume and previous 5, the current and the next 5 tracks and also provides a link to view the full queue
+     *
+     * @return the {@link EmbedBuilder} to build send to Discord with the colour specified by the {@link GuildSpecification}
+     * already applied
+     */
     public EmbedBuilder buildMessageEmbed(AudioPlayback playback, Guild guild) {
         int position = getPosition();
         List<Playable> tracks = getTracks();
@@ -173,6 +198,11 @@ public class AudioQueue {
         return embedBuilder;
     }
 
+    /**
+     * @param max the maximum amount of tracks to return
+     * @return a list of tracks that follow the current track, considering the shuffle option, in the order they will be
+     * played
+     */
     public List<Playable> listNext(int max) {
         List<Playable> next = Lists.newArrayList();
         int count = 0;
@@ -188,6 +218,11 @@ public class AudioQueue {
         return next;
     }
 
+    /**
+     * @param max the maximum amount of tracks to return
+     * @return a list of tracks that precede the current track, considering the shuffle option, in the order they were
+     * played
+     */
     public List<Playable> listPrevious(int max) {
         List<Playable> previous = Lists.newArrayList();
         int count = 0;
@@ -208,6 +243,9 @@ public class AudioQueue {
         add(Arrays.asList(tracks));
     }
 
+    /**
+     * add tracks to this queue, shuffling the newly added tracks if shuffle is enabled
+     */
     public void add(List<Playable> tracks) {
         if (isShuffle()) {
             appendRandomized(tracks);
@@ -219,6 +257,9 @@ public class AudioQueue {
         set(Arrays.asList(tracks));
     }
 
+    /**
+     * clear the current queue and add new tracks, shuffling the newly added tracks if shuffle is enabled
+     */
     public void set(List<Playable> tracks) {
         clear();
         currentQueue.addAll(tracks);
@@ -233,6 +274,12 @@ public class AudioQueue {
         clear(false);
     }
 
+    /**
+     * Clear the current tracks in this queue
+     *
+     * @param retainCurrent keeps the track that is referenced by the currentTrack index in the queue, this is used
+     * when the track is currently being played
+     */
     public void clear(boolean retainCurrent) {
         if (!isEmpty() && retainCurrent) {
             currentQueue.retainAll(Collections.singleton(getCurrent()));
@@ -249,6 +296,12 @@ public class AudioQueue {
         return hasNext(false);
     }
 
+    /**
+     * @param ignoreRepeat whether to ignore the repeatAll and repeatOne options
+     * @return if ignoreRepeat is false this returns true if another track will or can be played after the current
+     * track finishes, meaning if either repeat option is enabled this always returns true;
+     * if ignoreRepeat this returns true only when the current track is not the last track in the current list of tracks
+     */
     public boolean hasNext(boolean ignoreRepeat) {
         if (isEmpty()) {
             return false;
@@ -261,6 +314,12 @@ public class AudioQueue {
         return hasPrevious(false);
     }
 
+    /**
+     * @param ignoreRepeat whether to ignore the repeatAll and repeatOne options
+     * @return if ignoreRepeat is false this returns true if another track will or can be played when using the rewind
+     * command, meaning if either repeat option is enabled this always returns true;
+     * if ignoreRepeat this returns true only when the current track is not the first track in the current list of tracks
+     */
     public boolean hasPrevious(boolean ignoreRepeat) {
         if (isEmpty()) {
             return false;
@@ -269,10 +328,16 @@ public class AudioQueue {
         return ignoreRepeat ? inBound : inBound || isRepeatOne() || isRepeatAll();
     }
 
+    /**
+     * @return if the list of current tracks is empty
+     */
     public boolean isEmpty() {
         return currentQueue.isEmpty();
     }
 
+    /**
+     * sets the position of the queue back to 0, typically used when clearing the queue or when the playback finishes
+     */
     public void reset() {
         currentTrack = 0;
     }
@@ -298,6 +363,12 @@ public class AudioQueue {
         randomize(true);
     }
 
+    /**
+     * Generates the random queue order when enabling the shuffle option
+     *
+     * @param protectCurrent if true this makes sure that the current track will remain in the same position, used
+     * when the playback is currently playing
+     */
     public void randomize(boolean protectCurrent) {
         randomizedOrder.clear();
         if (protectCurrent) {

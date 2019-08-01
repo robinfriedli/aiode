@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
-import net.robinfriedli.botify.command.interceptor.CommandInterceptor;
 import net.robinfriedli.botify.command.interceptor.CommandInterceptorChain;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.Preset;
@@ -15,15 +14,18 @@ import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.UserException;
+import net.robinfriedli.botify.listeners.CommandListener;
 import net.robinfriedli.jxp.persist.Context;
 import org.hibernate.Session;
 
 import static net.robinfriedli.jxp.queries.Conditions.*;
 
 /**
- * Main hub for commands containing all available commands. Is responsible for instantiating an {@link AbstractCommand}
- * based on the given {@link CommandContext} as entered by the user and then passes it to the {@link CommandInterceptor}s for
- * execution. Also manages active widgets.
+ * Starting point of a commands life cycle after being called by the {@link CommandListener}.
+ * The {@link #runCommand(CommandContext)} is responsible for finding a {@link CommandContribution} or {@link Preset}
+ * for the given {@link CommandContext} as entered by the user and instantiating the {@link AbstractCommand} based
+ * on the results and passing it to the {@link CommandInterceptorChain} for execution.
+ * Also serves as a registry for all active {@link AbstractWidget}.
  */
 public class CommandManager {
 

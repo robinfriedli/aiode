@@ -10,6 +10,11 @@ import net.robinfriedli.botify.command.interceptor.interceptors.CommandExecution
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 import net.robinfriedli.botify.util.Cache;
 
+/**
+ * Class used to create the chain of {@link CommandInterceptor}s that carry out a command execution. Its elements are
+ * added and configured in the commandInterceptors XML file. The CommandExecutionInterceptor is always added as last
+ * element of the chain.
+ */
 public class CommandInterceptorChain implements CommandInterceptor {
 
     private final CommandInterceptor first;

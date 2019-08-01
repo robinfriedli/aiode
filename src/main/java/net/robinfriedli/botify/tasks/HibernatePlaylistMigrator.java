@@ -24,6 +24,9 @@ import org.hibernate.Session;
 
 import static net.robinfriedli.jxp.queries.Conditions.*;
 
+/**
+ * Service that creates {@link Playlist} entities based on legacy XML playlists
+ */
 public class HibernatePlaylistMigrator implements PersistTask<Map<Playlist, List<PlaylistItem>>> {
 
     private final Context context;

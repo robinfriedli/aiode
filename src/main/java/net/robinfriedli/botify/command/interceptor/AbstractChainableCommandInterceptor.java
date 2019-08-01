@@ -6,6 +6,10 @@ import org.slf4j.LoggerFactory;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 
+/**
+ * CommandInterceptor extension that calls the next interceptor and handles exceptions according to the
+ * {@link CommandInterceptorContribution} itself.
+ */
 public abstract class AbstractChainableCommandInterceptor implements CommandInterceptor {
 
     private final CommandInterceptorContribution contribution;

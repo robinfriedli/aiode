@@ -32,6 +32,10 @@ import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 import net.robinfriedli.stringlist.StringList;
 import net.robinfriedli.stringlist.StringListImpl;
 
+/**
+ * Factory class for {@link Playable}. Instantiates the matching Playable implementation for given Object or URL
+ * and handles populating YouTube playlists and redirecting Spotify tracks asynchronously
+ */
 public class PlayableFactory {
 
     private final UrlAudioLoader urlAudioLoader;
@@ -44,6 +48,14 @@ public class PlayableFactory {
         this.trackLoadingExecutor = trackLoadingExecutor;
     }
 
+    /**
+     * Creates a single playable for given Object, YouTube video or Spotify track, and redirects the Spotify track if
+     * necessary.
+     *
+     * @param redirectSpotify if true the matching YouTube video is loaded to play the full track using
+     * {@link YouTubeService#redirectSpotify(HollowYouTubeVideo)}, else a {@link TrackWrapper} is created to play the
+     * preview mp3 provided by Spotify
+     */
     public Playable createPlayable(boolean redirectSpotify, Object track) {
         if (track instanceof Playable) {
             return (Playable) track;
@@ -68,6 +80,20 @@ public class PlayableFactory {
         return createPlayables(redirectSpotify, tracks, true);
     }
 
+    /**
+     * Creates Playables for a Collection of Objects; YouTube videos or Spotify Tracks.
+     *
+     * @param redirectSpotify f true the matching YouTube video is loaded to play the full track using
+     * {@link YouTubeService#redirectSpotify(HollowYouTubeVideo)}, else a {@link TrackWrapper} is created to play the
+     * preview mp3 provided by Spotify
+     * @param tracks the objects to create a Playable for
+     * @param mayInterrupt determines whether loading the playables should be interrupted if the same
+     * {@link GuildTrackLoadingExecutor} loads different playables where mayInterrupt is also true. This is used for
+     * the play command so that when the user starts playing different tracks the bot can stop wasting resources on loading
+     * the playables that won't be needed anymore. This should never be true for command like the Queue or AddCommand
+     * where invoking the command again should not cancel out the last command.
+     * @return the create Playables
+     */
     public List<Playable> createPlayables(boolean redirectSpotify, Collection<?> tracks, boolean mayInterrupt) {
         List<Playable> playables = Lists.newArrayList();
         List<HollowYouTubeVideo> tracksToRedirect = Lists.newArrayList();
@@ -109,6 +135,15 @@ public class PlayableFactory {
         return createPlayables(youTubePlaylist, true);
     }
 
+    /**
+     * Populates a YouTube playlist by fetching the data for each {@link HollowYouTubeVideo} asynchronously and returning
+     * them as Playables
+     *
+     * @param youTubePlaylist the YouTube playlist to load the videos for
+     * @param mayInterrupt whether or not loading the tracks can be interrupted by a similar action,
+     * see {@link #createPlayables(boolean, Collection, boolean)}
+     * @return the {@link HollowYouTubeVideo}s as Playables
+     */
     public List<Playable> createPlayables(YouTubePlaylist youTubePlaylist, boolean mayInterrupt) {
         List<Playable> playables = Lists.newArrayList(youTubePlaylist.getVideos());
 
@@ -121,6 +156,11 @@ public class PlayableFactory {
         return createPlayables(url, spotifyApi, redirectSpotify, true);
     }
 
+    /**
+     * Create Playables for any url. If the url is either an open.spotify or YouTube URL this extracts the ID
+     * and uses the familiar methods to load the Playables, otherwise this method uses the {@link UrlAudioLoader}
+     * to load the {@link AudioTrack}s using lavaplayer and wraps them in {@link UrlPlayable}s
+     */
     public Playable createPlayable(String url, SpotifyApi spotifyApi, boolean redirectSpotify) {
         URI uri;
         try {

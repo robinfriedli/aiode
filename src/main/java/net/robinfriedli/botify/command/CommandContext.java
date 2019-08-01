@@ -11,6 +11,7 @@ import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.MessageChannel;
 import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.audio.spotify.SpotifyService;
+import net.robinfriedli.botify.concurrent.CommandExecutionThread;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.entities.CommandHistory;
 import net.robinfriedli.botify.interceptors.AlertAccessConfigurationModificationInterceptor;
@@ -23,6 +24,12 @@ import net.robinfriedli.botify.interceptors.VerifyPlaylistListener;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
+/**
+ * Provides context for a command request, including JDA information specific to this command such as the message and
+ * guild where this command originated, a per-request hibernate session with applied interceptors, the history entry for
+ * this command and command monitoring. The current CommandContext can be accessed statically using the
+ * CommandContext.Current class from anywhere in a {@link CommandExecutionThread}
+ */
 public class CommandContext {
 
     private final String commandBody;

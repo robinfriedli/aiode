@@ -14,6 +14,9 @@ import org.hibernate.Interceptor;
 import org.hibernate.Transaction;
 import org.hibernate.type.Type;
 
+/**
+ * Used to create a chain of hibernate interceptors
+ */
 public class InterceptorChain extends EmptyInterceptor {
 
     private final Interceptor first;

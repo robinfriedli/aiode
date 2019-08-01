@@ -20,6 +20,9 @@ import net.robinfriedli.botify.exceptions.InvalidRequestException;
 import net.robinfriedli.botify.servers.ServerUtil;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 
+/**
+ * Handler for the login flow that completes pending logins
+ */
 public class LoginHandler implements HttpHandler {
 
     private final JDA jda;

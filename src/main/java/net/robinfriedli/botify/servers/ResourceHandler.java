@@ -8,6 +8,9 @@ import java.nio.file.Path;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
+/**
+ * Handler responsible for loading binaries in the resources-public directory
+ */
 public class ResourceHandler implements HttpHandler {
 
     @Override

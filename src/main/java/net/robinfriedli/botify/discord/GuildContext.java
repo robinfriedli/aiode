@@ -14,6 +14,11 @@ import net.robinfriedli.botify.concurrent.Invoker;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import org.hibernate.Session;
 
+/**
+ * Provides context for a guild by storing and loading the guild's {@link GuildSpecification}, holding the guild's
+ * {@link AudioPlayback} and {@link Invoker} / {@link GuildTrackLoadingExecutor} to manage concurrent operations per guild.
+ * Holds all open {@link ClientQuestionEvent} for this guild.
+ */
 public class GuildContext {
 
     private final AudioPlayback playback;
@@ -21,7 +26,8 @@ public class GuildContext {
     private final long specificationPk;
     private final GuildTrackLoadingExecutor trackLoadingExecutor;
     /**
-     * all unanswered Questions. Questions get removed after 5 minutes or after the same user enters a different command.
+     * all unanswered Questions. Questions get removed after 5 minutes or after the same user enters a different command
+     * that triggers a question.
      */
     private final List<ClientQuestionEvent> pendingQuestions;
 

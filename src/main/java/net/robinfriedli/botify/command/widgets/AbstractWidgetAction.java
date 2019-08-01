@@ -5,6 +5,10 @@ import javax.annotation.Nullable;
 import net.dv8tion.jda.core.events.message.guild.react.GuildMessageReactionAddEvent;
 import net.robinfriedli.botify.Botify;
 
+/**
+ * Abstract class to implement for any action that may be added to widget. Maps the action to the given emoji that will
+ * be added to the widget and handles required permissions.
+ */
 public abstract class AbstractWidgetAction {
 
     @Nullable

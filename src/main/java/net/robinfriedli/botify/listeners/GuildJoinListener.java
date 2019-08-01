@@ -37,6 +37,9 @@ import org.hibernate.SessionFactory;
 
 import static net.robinfriedli.jxp.queries.Conditions.*;
 
+/**
+ * Listener responsible for handling the bot joining or leaving a guild
+ */
 public class GuildJoinListener extends ListenerAdapter {
 
     private final CommandExecutionQueueManager executionQueueManager;
