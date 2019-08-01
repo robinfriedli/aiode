@@ -13,6 +13,9 @@ import net.robinfriedli.botify.discord.properties.GuildPropertyManager;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.util.StaticSessionProvider;
 
+/**
+ * Listener responsible for listening for VoiceChannel events; currently used for the auto pause feature
+ */
 public class VoiceChannelListener extends ListenerAdapter {
 
     private final AudioManager audioManager;

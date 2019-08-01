@@ -26,6 +26,9 @@ import net.robinfriedli.botify.exceptions.UserException;
 import net.robinfriedli.botify.exceptions.WidgetExceptionHandler;
 import net.robinfriedli.botify.util.StaticSessionProvider;
 
+/**
+ * Listener responsible for handling reaction events and widget execution
+ */
 public class WidgetListener extends ListenerAdapter {
 
     private final CommandExecutionQueueManager executionQueueManager;

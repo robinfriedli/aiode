@@ -10,6 +10,10 @@ import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.MessageChannel;
 import net.dv8tion.jda.core.entities.VoiceChannel;
 
+/**
+ * There is exactly one AudioPlayback per guild instantiated when initializing the guild. This class holds all information
+ * about a guilds playback and its {@link AudioPlayer} and {@link AudioQueue} and is used to pause / stop the playback.
+ */
 public class AudioPlayback {
 
     private final Guild guild;

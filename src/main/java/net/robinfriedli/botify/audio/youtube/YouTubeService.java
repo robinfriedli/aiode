@@ -30,6 +30,9 @@ import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 import net.robinfriedli.stringlist.StringList;
 import net.robinfriedli.stringlist.StringListImpl;
 
+/**
+ * Service to query data from YouTube via the YouTube Data API using the API key defined in settings.properties
+ */
 public class YouTubeService {
 
     private final YouTube youTube;

@@ -7,12 +7,19 @@ import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.audio.AbstractSoftCachedPlayable;
 import net.robinfriedli.botify.audio.Playable;
+import net.robinfriedli.botify.audio.youtube.HollowYouTubeVideo;
+import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
 import net.robinfriedli.botify.entities.Song;
 import net.robinfriedli.stringlist.StringListImpl;
 import org.hibernate.Session;
 
+/**
+ * Playable wrapper for tracks are played directly from Spotify. Currently this is only possible if you play the preview
+ * mp3 provided by Spotify using the $preview argument. Normally Spotify tracks are wrapped by {@link HollowYouTubeVideo}
+ * and, usually asynchronously, redirected to YouTube, see {@link YouTubeService#redirectSpotify(HollowYouTubeVideo)}
+ */
 public class TrackWrapper extends AbstractSoftCachedPlayable implements Playable {
 
     private final Track track;

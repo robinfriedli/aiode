@@ -22,15 +22,21 @@ public interface Playable {
      */
     String getPlaybackUrl() throws InterruptedException;
 
+    /**
+     * @return an id that uniquely identifies this playable together with {@link #getSource()}
+     */
     String getId() throws InterruptedException;
 
     /**
-     * @return The human readable String to identify the track with. For random URLs just the url itself (for YouTube
-     * videos or Spotify tracks its the title)
-     * @throws InterruptedException if the loading the data asynchronously was interrupted
+     * @return The title of the Playable. For Spotify it's the track name, for YouTube it's the video title and for other
+     * URLs it's either the tile or the URL depending on whether or not a title could be found
+     * @throws InterruptedException if the thread loading the data asynchronously gets interrupted
      */
     String getDisplay() throws InterruptedException;
 
+    /**
+     * @return the display of the Playable, showing interrupted Playables as "[UNAVAILABLE]"
+     */
     default String getDisplayInterruptible() {
         try {
             return getDisplay();
@@ -39,8 +45,17 @@ public interface Playable {
         }
     }
 
+    /**
+     * @return the display of the Playable
+     * @throws InterruptedException if the thread loading the data asynchronously gets interrupted
+     * @throws TimeoutException if the data is not loaded in time
+     */
     String getDisplay(long timeOut, TimeUnit unit) throws InterruptedException, TimeoutException;
 
+    /**
+     * @return the display of the Playable, showing interrupted Playables as "[UNAVAILABLE]" and Playables that couldn't
+     * load in time as "Loading..."
+     */
     default String getDisplayInterruptible(long timeOut, TimeUnit unit) {
         try {
             return getDisplay(timeOut, unit);
@@ -57,6 +72,9 @@ public interface Playable {
      */
     long getDurationMs() throws InterruptedException;
 
+    /**
+     * @return The duration of the audio track in milliseconds or 0 if loading the Playable was interrupted
+     */
     default long getDurationMsInterruptible() {
         try {
             return getDurationMs();
@@ -65,6 +83,10 @@ public interface Playable {
         }
     }
 
+    /**
+     * @return The duration of the audio track in milliseconds or 0 if loading the Playable was interrupted or did
+     * not load in time
+     */
     long getDurationMs(long timeOut, TimeUnit unit) throws InterruptedException, TimeoutException;
 
     default long getDurationMsInterruptible(long timeOut, TimeUnit unit) {

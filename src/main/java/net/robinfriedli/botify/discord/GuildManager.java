@@ -19,6 +19,9 @@ import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.util.ISnowflakeMap;
 import net.robinfriedli.botify.util.StaticSessionProvider;
 
+/**
+ * Manages the {@link GuildContext} for all guilds.
+ */
 public class GuildManager {
 
     private final GuildPropertyManager guildPropertyManager;
@@ -173,12 +176,12 @@ public class GuildManager {
 
     public enum Mode {
         /**
-         * All database entities will be the same for all guild, meaning all guilds share the same playlists, presets etc.
+         * All database entities will be the same for all guilds, meaning all guilds share the same playlists, presets etc.
          */
         SHARED,
 
         /**
-         * Database queries will include the guild id to separate playlists, presets and other entities will be separated
+         * Database queries will include the guild id to separate playlists, presets and other entities
          */
         PARTITIONED
     }

@@ -13,6 +13,9 @@ import org.hibernate.Interceptor;
 import org.hibernate.Transaction;
 import org.hibernate.type.Type;
 
+/**
+ * Interceptor extension that records all created, deleted and updated entities during a transaction
+ */
 public abstract class CollectingInterceptor extends ChainableInterceptor {
 
     private final List<Object> createdEntities = Lists.newArrayList();

@@ -22,6 +22,7 @@ import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.spotify.SpotifyService;
 import net.robinfriedli.botify.command.commands.AnswerCommand;
+import net.robinfriedli.botify.command.interceptor.CommandInterceptorChain;
 import net.robinfriedli.botify.concurrent.CheckedRunnable;
 import net.robinfriedli.botify.concurrent.Invoker;
 import net.robinfriedli.botify.discord.GuildManager;
@@ -35,8 +36,10 @@ import net.robinfriedli.stringlist.StringList;
 import net.robinfriedli.stringlist.StringListImpl;
 
 /**
- * Abstract class to extend for each command available to the user. Commands are registered on the {@link CommandManager}
- * and instantiated reflectively based on user input
+ * Abstract class to extend for any command implementation. Implementations need to be added and configured in the
+ * commands.xml file, those will then be instantiated reflectively based on the configured command identifier and
+ * the user input. This is handled by the {@link CommandManager} which then passes the initialized AbstractCommand
+ * instance to the {@link CommandInterceptorChain} for execution. Processes used arguments and command body on creation.
  */
 public abstract class AbstractCommand {
 
@@ -91,7 +94,7 @@ public abstract class AbstractCommand {
      * Run logic with the given user choice after a {@link ClientQuestionEvent} has been completed. Called by
      * {@link AnswerCommand}.
      *
-     * @param chosenOption
+     * @param chosenOption the provided option chosen by the user
      */
     public void withUserResponse(Object chosenOption) throws Exception {
     }

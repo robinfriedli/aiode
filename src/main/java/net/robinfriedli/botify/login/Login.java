@@ -12,6 +12,9 @@ import com.wrapper.spotify.exceptions.SpotifyWebApiException;
 import com.wrapper.spotify.model_objects.credentials.AuthorizationCodeCredentials;
 import net.dv8tion.jda.core.entities.User;
 
+/**
+ * Represents and automatically refreshes Spotify logins
+ */
 public class Login {
 
     private final User user;

@@ -26,6 +26,11 @@ import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
+/**
+ * Provides access to all {@link AudioPlayback} for all guilds and methods to retrieve all audio related factories and
+ * services, such as the {@link PlayableFactory} or {@link YouTubeService}, or methods to start a playback or
+ * join / leave voice channels. Also manages the playback history and creates the {@link NowPlayingWidget}
+ */
 public class AudioManager {
 
     private final AudioPlayerManager playerManager;

@@ -20,6 +20,10 @@ import net.robinfriedli.jxp.queries.Conditions;
 
 import static net.robinfriedli.jxp.queries.Conditions.*;
 
+/**
+ * Checks if the current version has been launched before and, if not and if the silent attribute is not set or false,
+ * sends an update notification with the new features to each guild and then updates the launched attribute
+ */
 public class VersionUpdateAlertTask implements StartupTask {
 
     private final JDA jda;

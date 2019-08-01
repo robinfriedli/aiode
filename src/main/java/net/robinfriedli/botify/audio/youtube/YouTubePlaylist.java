@@ -2,6 +2,10 @@ package net.robinfriedli.botify.audio.youtube;
 
 import java.util.List;
 
+/**
+ * Class representing a YouTube playlist. At its conception none of its videos have been loaded yet, this is typically
+ * done asynchronously, see {@link YouTubeService#populateList(YouTubePlaylist)}
+ */
 public class YouTubePlaylist {
 
     private final String title;

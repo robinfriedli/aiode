@@ -8,6 +8,9 @@ import net.dv8tion.jda.core.entities.User;
 import net.robinfriedli.botify.exceptions.NoLoginException;
 import net.robinfriedli.botify.util.ISnowflakeMap;
 
+/**
+ * Manages all Spotify logins
+ */
 public class LoginManager {
 
     private ISnowflakeMap<Login> logins = new ISnowflakeMap<>();

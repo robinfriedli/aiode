@@ -7,6 +7,10 @@ import net.robinfriedli.botify.command.CommandContext;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
+/**
+ * Utility class to statically provide a hibernate session or run a code snippet with a hibernate session based on the
+ * {@link CommandContext} of the current thread
+ */
 public class StaticSessionProvider {
 
     public static SessionFactory sessionFactory;

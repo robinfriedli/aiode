@@ -4,6 +4,9 @@ import net.dv8tion.jda.core.entities.Guild;
 import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
 import net.robinfriedli.botify.util.ISnowflakeMap;
 
+/**
+ * Manages all command {@link ThreadExecutionQueue}s for all guilds.
+ */
 public class CommandExecutionQueueManager {
 
     private final ISnowflakeMap<ThreadExecutionQueue> guildExecutionQueues;

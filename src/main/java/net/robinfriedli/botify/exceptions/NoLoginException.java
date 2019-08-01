@@ -3,7 +3,7 @@ package net.robinfriedli.botify.exceptions;
 import net.dv8tion.jda.core.entities.User;
 
 /**
- * Thrown by CommandExecutor when a login is required but none is found for the corresponding user.
+ * Thrown when a Spotify login is required for an action but none is found for the corresponding user.
  */
 public class NoLoginException extends UserException {
 

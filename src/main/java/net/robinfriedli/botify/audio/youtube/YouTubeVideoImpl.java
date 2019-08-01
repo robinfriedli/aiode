@@ -8,7 +8,7 @@ import com.wrapper.spotify.model_objects.specification.Track;
 import net.robinfriedli.botify.audio.AbstractSoftCachedPlayable;
 
 /**
- * Bean for YouTube videos
+ * Represents a fully loaded YouTube video
  */
 public class YouTubeVideoImpl extends AbstractSoftCachedPlayable implements YouTubeVideo {
 

@@ -9,6 +9,9 @@ import net.robinfriedli.botify.exceptions.UserException;
 import net.robinfriedli.botify.login.Login;
 import org.hibernate.Session;
 
+/**
+ * Invoker to run code either in a hibernate transaction or with Spotify credentials.
+ */
 public class Invoker {
 
     public void invoke(Session session, CheckedRunnable runnable) {

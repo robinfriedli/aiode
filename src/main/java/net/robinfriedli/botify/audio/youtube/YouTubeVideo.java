@@ -14,15 +14,24 @@ import net.robinfriedli.botify.entities.Video;
 import org.hibernate.Session;
 
 /**
- * Represents a YouTube video
+ * Interface for all classes that may represent a YouTube video. Currently implemented by {@link YouTubeVideoImpl}
+ * as the standard implementation for YouTube videos and {@link HollowYouTubeVideo} for YouTube videos that are loaded
+ * asynchronously. This interface extends {@link Playable}, meaning it can be added to the queued and be played directly.
  */
 public interface YouTubeVideo extends Playable {
 
     /**
-     * @return the title of the YouTube video
+     * @return the title of the YouTube video, or in case of a cancelled {@link HollowYouTubeVideo} throw an
+     * {@link InterruptedException} to signal that loading the tracks has been interrupted, the checked method
+     * {@link Playable#getDisplayInterruptible()} will then show the video as "[UNAVAILABLE]"
      */
     String getTitle() throws InterruptedException;
 
+    /**
+     * like {@link #getTitle()} but throws a {@link TimeoutException} after the specified time limit if the
+     * {@link HollowYouTubeVideo} is not loaded in time, the method {@link Playable#getDisplayInterruptible(long, TimeUnit)}
+     * will then show the video as "Loading..."
+     */
     String getTitle(long timeOut, TimeUnit unit) throws InterruptedException, TimeoutException;
 
     @Override
@@ -36,10 +45,15 @@ public interface YouTubeVideo extends Playable {
     }
 
     /**
-     * @return the id of the YouTube video
+     * @return the id of the YouTube video, throwing an {@link InterruptedException} if cancelled,
+     * see {@link #getTitle()}
      */
     String getVideoId() throws InterruptedException;
 
+    /**
+     * @return the id of the YouTube video, throwing a {@link TimeoutException} if loading takes longer than the provided
+     * amount of time, see {@link #getTitle(long, TimeUnit)}
+     */
     String getVideoId(long timeOut, TimeUnit unit) throws InterruptedException, TimeoutException;
 
     @Override
@@ -53,10 +67,15 @@ public interface YouTubeVideo extends Playable {
     }
 
     /**
-     * @return the duration of the YouTube video in milliseconds
+     * @return the duration of the YouTube video in milliseconds or throw an {@link InterruptedException} if cancelled,
+     * see {@link #getTitle()}
      */
     long getDuration() throws InterruptedException;
 
+    /**
+     * @return the duration of the YouTube video in milliseconds or throw a {@link TimeoutException} if loading takes
+     * longer that the provided amount of time, see {@link #getTitle(long, TimeUnit)}
+     */
     long getDuration(long timeOut, TimeUnit unit) throws InterruptedException, TimeoutException;
 
     @Override

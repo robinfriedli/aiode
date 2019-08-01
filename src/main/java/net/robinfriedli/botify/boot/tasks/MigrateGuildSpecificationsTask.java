@@ -24,6 +24,9 @@ import org.hibernate.SessionFactory;
 
 import static net.robinfriedli.jxp.queries.Conditions.*;
 
+/**
+ * Migrates old XML {@link GuildSpecification}s to the database for the v1.6 update
+ */
 public class MigrateGuildSpecificationsTask implements StartupTask {
 
     private final JDA jda;

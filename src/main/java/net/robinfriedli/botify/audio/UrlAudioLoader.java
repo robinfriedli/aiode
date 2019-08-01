@@ -12,11 +12,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
+import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 
+/**
+ * Loads an {@link AudioTrack} or {@link AudioPlaylist} from lavaplayer from any given URL which then can be played by
+ * lavaplayer's {@link AudioPlayer}
+ */
 class UrlAudioLoader {
 
     private final AudioPlayerManager playerManager;

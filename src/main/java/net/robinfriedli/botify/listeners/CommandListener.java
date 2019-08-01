@@ -21,6 +21,10 @@ import net.robinfriedli.botify.exceptions.CommandExceptionHandler;
 import net.robinfriedli.botify.exceptions.UserException;
 import org.hibernate.SessionFactory;
 
+/**
+ * Listener responsible for filtering entered commands and creating a {@link CommandContext} to pass to the
+ * {@link CommandManager}
+ */
 public class CommandListener extends ListenerAdapter {
 
     private final CommandExecutionQueueManager executionQueueManager;

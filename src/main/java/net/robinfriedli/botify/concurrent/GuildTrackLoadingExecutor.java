@@ -1,13 +1,23 @@
 package net.robinfriedli.botify.concurrent;
 
+import java.util.Collection;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.dv8tion.jda.core.entities.MessageChannel;
+import net.robinfriedli.botify.audio.PlayableFactory;
+import net.robinfriedli.botify.audio.youtube.HollowYouTubeVideo;
+import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.exceptions.TrackLoadingExceptionHandler;
 
+/**
+ * Executes loading track information asynchronously, e.g. when populating a YouTube playlist or redirecting
+ * Spotify tracks (see {@link YouTubeService#redirectSpotify(HollowYouTubeVideo)}). There is one GuildTrackLoadingExecutor
+ * per guild to manage how many track loading threads a guild can run concurrently.
+ */
 public class GuildTrackLoadingExecutor {
 
     private final GuildContext guildContext;
@@ -22,6 +32,14 @@ public class GuildTrackLoadingExecutor {
         logger = LoggerFactory.getLogger(getClass());
     }
 
+    /**
+     * Perform the given action either as {@link QueuedThread} in the {@link ThreadExecutionQueue} or as single
+     * interruptible thread, to learn more about interruptible track loading see
+     * {@link PlayableFactory#createPlayables(boolean, Collection, boolean)}
+     *
+     * @param r the action to run
+     * @param singleThread if true creates a single thread that might get interrupted and replaced by the next action
+     */
     public void load(Runnable r, boolean singleThread) {
         Thread thread = singleThread ? new Thread(r) : new QueuedThread(threadExecutionQueue, r);
         String kind = singleThread ? "interruptible" : "parallel";

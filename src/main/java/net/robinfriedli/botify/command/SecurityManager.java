@@ -10,6 +10,10 @@ import net.robinfriedli.botify.entities.AccessConfiguration;
 import net.robinfriedli.botify.exceptions.ForbiddenCommandException;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 
+/**
+ * Manager that evaluates permission for a specific action represented by a command identifier for the given member or
+ * checks whether a manager has admin privileges as configured in the settings.properties file.
+ */
 public class SecurityManager {
 
     private final GuildManager guildManager;

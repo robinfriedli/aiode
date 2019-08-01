@@ -13,6 +13,9 @@ import org.hibernate.Interceptor;
 import org.hibernate.Transaction;
 import org.hibernate.type.Type;
 
+/**
+ * Enables chaining of hibernate interceptors
+ */
 @SuppressWarnings({"unused", "RedundantThrows", "WeakerAccess"})
 public class ChainableInterceptor extends EmptyInterceptor {
 

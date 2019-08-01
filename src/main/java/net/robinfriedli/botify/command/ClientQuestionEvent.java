@@ -14,10 +14,11 @@ import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.util.Util;
 
 /**
- * represents a two sided conversation between user and bot triggered when a user enters an ambiguous command
+ * Represents a two sided conversation between user and bot triggered when a user enters an ambiguous command
  * E.g. a user enters a play command with a song name for which several tracks were found
  *
- * This gets destroyed as soon as the user answers this question, enters a different command or 5 minutes pass
+ * This gets destroyed as soon as the user answers this question, enters a different command that triggers a question
+ * or 5 minutes pass
  */
 public class ClientQuestionEvent {
 

@@ -1,5 +1,8 @@
 package net.robinfriedli.botify.concurrent;
 
+/**
+ * Thread type that may be added to a {@link ThreadExecutionQueue} that frees up its slot after completion
+ */
 public class QueuedThread extends Thread {
 
     private final ThreadExecutionQueue queue;

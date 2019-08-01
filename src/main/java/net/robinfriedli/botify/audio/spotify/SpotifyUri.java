@@ -11,6 +11,10 @@ import net.robinfriedli.botify.audio.PlayableFactory;
 import net.robinfriedli.botify.concurrent.Invoker;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 
+/**
+ * class to recognise, parse and load Spotify URIs. Currently Spotify URIs that point directly to a track, playlist or
+ * album are supported, e.g. spotify:track:697M5JB8FDIyRXEXgl1pBZ
+ */
 public class SpotifyUri {
 
     private static final Pattern URI_REGEX = Pattern.compile("spotify:(track|album|playlist):([a-zA-Z0-9])([a-zA-Z0-9])*");
