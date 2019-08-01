@@ -9,6 +9,7 @@
 * Sign in to Spotify to play your own playlists or upload botify playlists
 * Manage what roles can access which commands
 * Customise how you want to summon your bot by using a custom prefix or giving your bot a name
+* Advanced admin commands such as updating and rebooting the bot or cleaning up the database available to bot administrators
 
 ## Invite it to your guild
 
