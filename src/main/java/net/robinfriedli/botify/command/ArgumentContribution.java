@@ -160,8 +160,9 @@ public class ArgumentContribution {
         public <E> E getValue(Class<E> type) {
             try {
                 return StringConverter.convert(value, type);
-            } catch (NumberFormatException e) {
-                throw new InvalidCommandException("Invalid argument value. Expected a number but got '" + value + "'.");
+            } catch (ConversionException e) {
+                throw new InvalidCommandException(String.format("Invalid argument value. Cannot convert '%s' to type %s",
+                    value, type.getSimpleName()));
             }
         }
 
