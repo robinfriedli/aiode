@@ -5,13 +5,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 import com.google.common.base.Splitter;
 import com.google.common.collect.Sets;
-import net.dv8tion.jda.core.EmbedBuilder;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.Role;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Role;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
@@ -83,12 +81,11 @@ public class PermissionCommand extends AbstractCommand {
         Set<CommandContribution> selectedCommands;
         Set<Role> selectedRoles;
         if (argumentSet("all")) {
-            selectedCommands = Sets.newHashSet(getManager().getAllCommandContributions());
-            selectedRoles = getSelectedRoles(getCommandBody());
+            selectedCommands = getAllCommands();
+            selectedRoles = getSelectedRoles(getCommandInput());
         } else {
-            Pair<String, String> pair = splitInlineArgument("to");
-            selectedCommands = getSelectedCommands(pair.getLeft());
-            selectedRoles = getSelectedRoles(pair.getRight());
+            selectedCommands = getSelectedCommands(getCommandInput());
+            selectedRoles = getSelectedRoles(getArgumentValue("to"));
         }
 
         boolean addedAnything = invoke(() -> {
@@ -135,12 +132,11 @@ public class PermissionCommand extends AbstractCommand {
         Set<CommandContribution> selectedCommands;
         Set<Role> selectedRoles;
         if (argumentSet("all")) {
-            selectedCommands = Sets.newHashSet(getManager().getAllCommandContributions());
-            selectedRoles = getSelectedRoles(getCommandBody());
+            selectedCommands = getAllCommands();
+            selectedRoles = getSelectedRoles(getCommandInput());
         } else {
-            Pair<String, String> pair = splitInlineArgument("for");
-            selectedCommands = getSelectedCommands(pair.getLeft());
-            selectedRoles = getSelectedRoles(pair.getRight());
+            selectedCommands = getSelectedCommands(getCommandInput());
+            selectedRoles = getSelectedRoles(getArgumentValue("for"));
         }
         Session session = getContext().getSession();
 
@@ -174,7 +170,7 @@ public class PermissionCommand extends AbstractCommand {
 
     private void clearCommands() {
         GuildSpecification specification = getContext().getGuildContext().getSpecification();
-        Set<CommandContribution> selectedCommands = getSelectedCommands(getCommandBody());
+        Set<CommandContribution> selectedCommands = getSelectedCommands(getCommandInput());
         Session session = getContext().getSession();
 
         boolean removedAnything = invoke(() -> {
@@ -199,7 +195,7 @@ public class PermissionCommand extends AbstractCommand {
 
     private void lockCommands() {
         GuildSpecification specification = getContext().getGuildContext().getSpecification();
-        Set<CommandContribution> selectedCommands = getSelectedCommands(getCommandBody());
+        Set<CommandContribution> selectedCommands = getSelectedCommands(getCommandInput());
         Session session = getContext().getSession();
 
         boolean lockedAnything = invoke(() -> {
@@ -226,7 +222,7 @@ public class PermissionCommand extends AbstractCommand {
         });
 
         if (!lockedAnything) {
-            sendError("All commands are already only available to the guild owner");
+            sendError("All selected commands are already only available to the guild owner");
         }
     }
 
@@ -248,7 +244,7 @@ public class PermissionCommand extends AbstractCommand {
 
     private Set<CommandContribution> getSelectedCommands(String commandString) {
         if (argumentSet("all")) {
-            return Sets.newHashSet(getManager().getAllCommandContributions());
+            return getAllCommands();
         } else if (argumentSet("category")) {
             Set<CommandContribution> selectedCommands = getManager()
                 .getAllCommands(getContext())
@@ -276,6 +272,13 @@ public class PermissionCommand extends AbstractCommand {
         }
     }
 
+    private Set<CommandContribution> getAllCommands() {
+        return getManager().getAllCommands(getContext()).stream()
+            .filter(c -> c.getCategory() != Category.ADMIN)
+            .map(AbstractCommand::getCommandContribution)
+            .collect(Collectors.toSet());
+    }
+
     @Override
     public void onSuccess() {
         // success message sent by interceptor
@@ -284,6 +287,10 @@ public class PermissionCommand extends AbstractCommand {
     @Override
     public ArgumentContribution setupArguments() {
         ArgumentContribution argumentContribution = new ArgumentContribution(this);
+        argumentContribution.map("to").needsArguments("grant")
+            .setDescription("Specify the roles to grant access for.");
+        argumentContribution.map("for").excludesArguments("to").needsArguments("deny")
+            .setDescription("Specify the roles to remove access privileges from when using the $deny argument.");
         argumentContribution.map("grant").setRequiresInput(true).excludesArguments("deny")
             .setDescription("Grant the selected commands to the selected roles. Limits the command to the selected roles " +
                 "if no roles were previously defined.");

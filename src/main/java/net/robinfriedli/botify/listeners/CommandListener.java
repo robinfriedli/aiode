@@ -5,10 +5,11 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Strings;
 import com.wrapper.spotify.SpotifyApi;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.Message;
-import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
-import net.dv8tion.jda.core.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
+import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.concurrent.CommandExecutionThread;
@@ -17,8 +18,11 @@ import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.MessageService;
-import net.robinfriedli.botify.exceptions.CommandExceptionHandler;
+import net.robinfriedli.botify.entities.GuildSpecification;
+import net.robinfriedli.botify.exceptions.CommandParseException;
 import net.robinfriedli.botify.exceptions.UserException;
+import net.robinfriedli.botify.exceptions.handlers.CommandExceptionHandler;
+import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
 /**
@@ -52,18 +56,22 @@ public class CommandListener extends ListenerAdapter {
     @Override
     public void onGuildMessageReceived(GuildMessageReceivedEvent event) {
         if (!event.getAuthor().isBot()) {
-            Guild guild = event.getGuild();
-            Message message = event.getMessage();
-            String msg = message.getContentDisplay();
-            String botName = guildManager.getNameForGuild(guild);
-            String prefix = guildManager.getPrefixForGuild(guild);
+            try (Session session = sessionFactory.openSession()) {
+                Guild guild = event.getGuild();
+                Message message = event.getMessage();
+                String msg = message.getContentDisplay();
+                GuildContext guildContext = guildManager.getContextForGuild(guild);
+                GuildSpecification specification = guildContext.getSpecification(session);
+                String botName = specification.getBotName();
+                String prefix = specification.getPrefix();
 
-            String lowerCaseMsg = msg.toLowerCase();
-            boolean startsWithPrefix = !Strings.isNullOrEmpty(prefix) && lowerCaseMsg.startsWith(prefix.toLowerCase());
-            boolean startsWithName = !Strings.isNullOrEmpty(botName) && lowerCaseMsg.startsWith(botName.toLowerCase());
-            if (startsWithPrefix || startsWithName || lowerCaseMsg.startsWith("$botify")) {
-                String usedPrefix = extractUsedPrefix(message, lowerCaseMsg, botName, prefix, startsWithName, startsWithPrefix);
-                startCommandExecution(usedPrefix, message, guild);
+                String lowerCaseMsg = msg.toLowerCase();
+                boolean startsWithPrefix = !Strings.isNullOrEmpty(prefix) && lowerCaseMsg.startsWith(prefix.toLowerCase());
+                boolean startsWithName = !Strings.isNullOrEmpty(botName) && lowerCaseMsg.startsWith(botName.toLowerCase());
+                if (startsWithPrefix || startsWithName || lowerCaseMsg.startsWith("$botify")) {
+                    String usedPrefix = extractUsedPrefix(message, lowerCaseMsg, botName, prefix, startsWithName, startsWithPrefix);
+                    startCommandExecution(usedPrefix, message, guild, guildContext);
+                }
             }
         }
     }
@@ -97,14 +105,16 @@ public class CommandListener extends ListenerAdapter {
         return namePrefix;
     }
 
-    private void startCommandExecution(String namePrefix, Message message, Guild guild) {
+    private void startCommandExecution(String namePrefix, Message message, Guild guild, GuildContext guildContext) {
         ThreadExecutionQueue queue = executionQueueManager.getForGuild(guild);
         String commandBody = message.getContentDisplay().substring(namePrefix.length()).trim();
-        GuildContext guildContext = guildManager.getContextForGuild(guild);
         CommandContext commandContext = new CommandContext(commandBody, message, sessionFactory, spotifyApiBuilder.build(), guildContext);
         CommandExecutionThread commandExecutionThread = new CommandExecutionThread(commandContext, queue, () -> {
             try {
                 commandManager.runCommand(commandContext);
+            } catch (CommandParseException e) {
+                EmbedBuilder embedBuilder = e.buildEmbed();
+                messageService.send(embedBuilder.build(), message.getChannel());
             } catch (UserException e) {
                 messageService.sendError(e.getMessage(), message.getChannel());
             } finally {

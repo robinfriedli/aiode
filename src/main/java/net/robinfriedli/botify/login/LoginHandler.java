@@ -14,8 +14,8 @@ import com.sun.net.httpserver.HttpHandler;
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
 import com.wrapper.spotify.model_objects.credentials.AuthorizationCodeCredentials;
-import net.dv8tion.jda.core.JDA;
-import net.dv8tion.jda.core.entities.User;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.exceptions.InvalidRequestException;
 import net.robinfriedli.botify.servers.ServerUtil;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
@@ -50,7 +50,7 @@ public class LoginHandler implements HttpHandler {
             if (accessCode != null) {
                 User user = jda.getUserById(userId);
                 if (user == null) {
-                    throw new InvalidRequestException("No user found for id " + userId);
+                    throw new InvalidRequestException(String.format("No user found for id '%s'", userId));
                 }
 
                 CompletableFuture<Login> pendingLogin = loginManager.getPendingLogin(user);

@@ -25,10 +25,10 @@ public class UploadCommand extends AbstractCommand {
     @Override
     public void doRun() throws Exception {
         SpotifyApi spotifyApi = getContext().getSpotifyApi();
-        Playlist playlist = SearchEngine.searchLocalList(getContext().getSession(), getCommandBody(), isPartitioned(), getContext().getGuild().getId());
+        Playlist playlist = SearchEngine.searchLocalList(getContext().getSession(), getCommandInput(), isPartitioned(), getContext().getGuild().getId());
 
         if (playlist == null) {
-            throw new InvalidCommandException("No local list found for " + getCommandBody());
+            throw new InvalidCommandException(String.format("No local list found for '%s'", getCommandInput()));
         }
 
         runWithLogin(() -> {

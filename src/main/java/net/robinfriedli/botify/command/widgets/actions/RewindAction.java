@@ -1,8 +1,8 @@
 package net.robinfriedli.botify.command.widgets.actions;
 
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.User;
-import net.dv8tion.jda.core.events.message.guild.react.GuildMessageReactionAddEvent;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.GuildVoiceState;
+import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.audio.AudioQueue;
@@ -28,9 +28,9 @@ public class RewindAction extends AbstractWidgetAction {
                 queue.reverse();
             }
 
-            User user = event.getUser();
             Guild guild = event.getGuild();
-            audioManager.playTrack(guild, guild.getMember(user).getVoiceState().getChannel());
+            GuildVoiceState voiceState = event.getMember().getVoiceState();
+            audioManager.startPlayback(guild, voiceState != null ? voiceState.getChannel() : null);
         }
     }
 }

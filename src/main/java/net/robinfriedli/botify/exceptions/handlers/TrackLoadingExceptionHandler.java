@@ -1,4 +1,4 @@
-package net.robinfriedli.botify.exceptions;
+package net.robinfriedli.botify.exceptions.handlers;
 
 import java.awt.Color;
 
@@ -7,8 +7,8 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
-import net.dv8tion.jda.core.EmbedBuilder;
-import net.dv8tion.jda.core.entities.MessageChannel;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.MessageChannel;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.discord.MessageService;
 

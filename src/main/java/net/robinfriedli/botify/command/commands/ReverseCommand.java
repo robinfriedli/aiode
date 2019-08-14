@@ -29,12 +29,12 @@ public class ReverseCommand extends AbstractCommand {
         long toReverseMs;
         try {
             if (argumentSet("minutes")) {
-                toReverseMs = Integer.parseInt(getCommandBody()) * 60000;
+                toReverseMs = Integer.parseInt(getCommandInput()) * 60000;
             } else {
-                toReverseMs = Integer.parseInt(getCommandBody()) * 1000;
+                toReverseMs = Integer.parseInt(getCommandInput()) * 1000;
             }
         } catch (NumberFormatException e) {
-            throw new InvalidCommandException("'" + getCommandBody() + "' is not convertible to type integer. " +
+            throw new InvalidCommandException("'" + getCommandInput() + "' is not convertible to type integer. " +
                 "Please enter a valid number.");
         }
 

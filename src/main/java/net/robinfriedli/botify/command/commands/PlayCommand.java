@@ -2,21 +2,15 @@ package net.robinfriedli.botify.command.commands;
 
 import java.util.List;
 
-import com.wrapper.spotify.model_objects.specification.AlbumSimplified;
-import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
-import com.wrapper.spotify.model_objects.specification.Track;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.Member;
-import net.dv8tion.jda.core.entities.MessageChannel;
-import net.dv8tion.jda.core.entities.VoiceChannel;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.VoiceChannel;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.audio.AudioQueue;
 import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.audio.PlayableFactory;
-import net.robinfriedli.botify.audio.youtube.YouTubePlaylist;
-import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
 import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
@@ -34,16 +28,15 @@ public class PlayCommand extends AbstractQueueLoadingCommand {
     public void doRun() throws Exception {
         CommandContext context = getContext();
         Guild guild = context.getGuild();
-        Member member = guild.getMember(context.getUser());
-        VoiceChannel channel = member.getVoiceState().getChannel();
+        VoiceChannel channel = context.getVoiceChannel();
         AudioManager audioManager = Botify.get().getAudioManager();
         MessageChannel messageChannel = getContext().getChannel();
         AudioPlayback playbackForGuild = audioManager.getPlaybackForGuild(guild);
         playbackForGuild.setCommunicationChannel(messageChannel);
 
-        if (getCommandBody().isBlank()) {
+        if (getCommandInput().isBlank()) {
             if (playbackForGuild.isPaused() || !audioManager.getQueue(guild).isEmpty()) {
-                audioManager.playTrack(guild, channel);
+                audioManager.startOrResumePlayback(guild, channel);
             } else {
                 throw new InvalidCommandException("Queue is empty. Specify a song you want to play.");
             }
@@ -58,13 +51,12 @@ public class PlayCommand extends AbstractQueueLoadingCommand {
             throw new NoResultsFoundException("Result is empty!");
         }
         Guild guild = getContext().getGuild();
-        Member member = guild.getMember(getContext().getUser());
-        VoiceChannel channel = member.getVoiceState().getChannel();
+        VoiceChannel channel = getContext().getVoiceChannel();
         AudioManager audioManager = Botify.get().getAudioManager();
 
         AudioPlayback playback = getContext().getGuildContext().getPlayback();
         playback.getAudioQueue().set(playables);
-        audioManager.playTrack(guild, channel);
+        audioManager.startPlayback(guild, channel);
     }
 
     @Override
@@ -73,30 +65,17 @@ public class PlayCommand extends AbstractQueueLoadingCommand {
     }
 
     @Override
-    public void withUserResponse(Object chosenOption) throws Exception {
+    public void withUserResponse(Object option) {
         AudioManager audioManager = Botify.get().getAudioManager();
         Guild guild = getContext().getGuild();
-        PlayableFactory playableFactory = audioManager.createPlayableFactory(guild);
+        PlayableFactory playableFactory = audioManager.createPlayableFactory(guild, getSpotifyService());
         AudioPlayback playback = audioManager.getPlaybackForGuild(guild);
         AudioQueue queue = playback.getAudioQueue();
 
-        if (chosenOption instanceof Track || chosenOption instanceof YouTubeVideo) {
-            queue.set(playableFactory.createPlayable(!argumentSet("preview"), chosenOption));
-        } else if (chosenOption instanceof PlaylistSimplified) {
-            PlaylistSimplified playlist = (PlaylistSimplified) chosenOption;
-            List<Track> tracks = runWithCredentials(() -> getSpotifyService().getPlaylistTracks(playlist));
-            queue.set(playableFactory.createPlayables(!argumentSet("preview"), tracks));
-        } else if (chosenOption instanceof YouTubePlaylist) {
-            YouTubePlaylist youTubePlaylist = (YouTubePlaylist) chosenOption;
-            queue.set(playableFactory.createPlayables(youTubePlaylist));
-        } else if (chosenOption instanceof AlbumSimplified) {
-            List<Track> tracks = runWithCredentials(() -> getSpotifyService().getAlbumTracks(((AlbumSimplified) chosenOption).getId()));
-            queue.set(playableFactory.createPlayables(!argumentSet("preview"), tracks));
-        }
+        List<Playable> playables = playableFactory.createPlayables(!argumentSet("preview"), option);
+        queue.set(playables);
 
-        Member member = guild.getMember(getContext().getUser());
-        VoiceChannel channel = member.getVoiceState().getChannel();
-        audioManager.playTrack(guild, channel);
+        audioManager.startPlayback(guild, getContext().getVoiceChannel());
     }
 
     @Override

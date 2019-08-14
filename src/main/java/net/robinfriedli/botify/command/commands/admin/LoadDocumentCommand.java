@@ -2,7 +2,7 @@ package net.robinfriedli.botify.command.commands.admin;
 
 import java.util.List;
 
-import net.dv8tion.jda.core.EmbedBuilder;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.AbstractAdminCommand;
 import net.robinfriedli.botify.command.CommandContext;
@@ -28,17 +28,17 @@ public class LoadDocumentCommand extends AbstractAdminCommand {
         JxpBackend jxpBackend = Botify.get().getJxpBackend();
         EmbedBuilder embedBuilder;
         try (Context context = jxpBackend.createLazyContext(PropertiesLoadingService.requireProperty("EMBED_DOCUMENTS_PATH"))) {
-            if (getCommandBody().isBlank()) {
+            if (getCommandInput().isBlank()) {
                 List<EmbedDocumentContribution> documents = context.getInstancesOf(EmbedDocumentContribution.class);
                 embedBuilder = new EmbedBuilder();
                 Util.appendEmbedList(embedBuilder, documents, EmbedDocumentContribution::getName, "Documents");
             } else {
                 EmbedDocumentContribution document = context
-                    .query(attribute("name").fuzzyIs(getCommandBody()), EmbedDocumentContribution.class)
+                    .query(attribute("name").fuzzyIs(getCommandInput()), EmbedDocumentContribution.class)
                     .getOnlyResult();
 
                 if (document == null) {
-                    throw new InvalidCommandException("No embed document found for " + getCommandBody());
+                    throw new InvalidCommandException(String.format("No embed document found for '%s'", getCommandInput()));
                 }
 
                 embedBuilder = document.buildEmbed();

@@ -3,15 +3,16 @@ package net.robinfriedli.botify.command.commands;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.model_objects.specification.AlbumSimplified;
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
 import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
-import net.dv8tion.jda.core.EmbedBuilder;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.youtube.YouTubePlaylist;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
@@ -25,6 +26,7 @@ import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 import net.robinfriedli.botify.exceptions.NoSpotifyResultsFoundException;
+import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.SearchEngine;
 import net.robinfriedli.botify.util.Table2;
@@ -61,11 +63,11 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
     }
 
     private void searchSpotifyTrack() throws Exception {
-        if (getCommandBody().isBlank()) {
+        if (getCommandInput().isBlank()) {
             throw new InvalidCommandException("No search term entered");
         }
 
-        Callable<List<Track>> loadTrackCallable = () -> getSpotifyService().searchTrack(getCommandBody(), argumentSet("own"));
+        Callable<List<Track>> loadTrackCallable = () -> getSpotifyService().searchTrack(getCommandInput(), argumentSet("own"));
         List<Track> found;
         if (argumentSet("own")) {
             found = runWithLogin(loadTrackCallable);
@@ -85,11 +87,11 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
 
             sendMessage(embedBuilder);
         } else {
-            throw new NoSpotifyResultsFoundException("No Spotify track found for " + getCommandBody());
+            throw new NoSpotifyResultsFoundException(String.format("No Spotify track found for '%s'", getCommandInput()));
         }
     }
 
-    private void searchYouTubeVideo() throws InterruptedException {
+    private void searchYouTubeVideo() throws UnavailableResourceException {
         YouTubeService youTubeService = Botify.get().getAudioManager().getYouTubeService();
         if (argumentSet("limit")) {
             int limit = getArgumentValue("limit", Integer.class);
@@ -97,27 +99,27 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
                 throw new InvalidCommandException("Limit must be between 1 and 10");
             }
 
-            List<YouTubeVideo> youTubeVideos = youTubeService.searchSeveralVideos(limit, getCommandBody());
+            List<YouTubeVideo> youTubeVideos = youTubeService.searchSeveralVideos(limit, getCommandInput());
             if (youTubeVideos.size() == 1) {
                 listYouTubeVideo(youTubeVideos.get(0));
             } else if (youTubeVideos.isEmpty()) {
-                throw new NoResultsFoundException("No YouTube videos found for " + getCommandBody());
+                throw new NoResultsFoundException(String.format("No YouTube videos found for '%s'", getCommandInput()));
             } else {
                 askQuestion(youTubeVideos, youTubeVideo -> {
                     try {
                         return youTubeVideo.getTitle();
-                    } catch (InterruptedException e) {
-                        // Unreachable since only HollowYouTubeVideos might get interrupted
+                    } catch (UnavailableResourceException e) {
+                        // Unreachable since only HollowYouTubeVideos might get cancelled
                         throw new RuntimeException(e);
                     }
                 });
             }
         } else {
-            listYouTubeVideo(youTubeService.searchVideo(getCommandBody()));
+            listYouTubeVideo(youTubeService.searchVideo(getCommandInput()));
         }
     }
 
-    private void listYouTubeVideo(YouTubeVideo youTubeVideo) throws InterruptedException {
+    private void listYouTubeVideo(YouTubeVideo youTubeVideo) throws UnavailableResourceException {
         StringBuilder responseBuilder = new StringBuilder();
         responseBuilder.append("Title: ").append(youTubeVideo.getTitle()).append(System.lineSeparator());
         responseBuilder.append("Id: ").append(youTubeVideo.getVideoId()).append(System.lineSeparator());
@@ -128,7 +130,7 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
     }
 
     private void listLocalList() throws IOException {
-        if (getCommandBody().isBlank()) {
+        if (getCommandInput().isBlank()) {
             Session session = getContext().getSession();
             List<Playlist> playlists;
             if (isPartitioned()) {
@@ -151,9 +153,9 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
 
             sendMessage(embedBuilder);
         } else {
-            Playlist playlist = SearchEngine.searchLocalList(getContext().getSession(), getCommandBody(), isPartitioned(), getContext().getGuild().getId());
+            Playlist playlist = SearchEngine.searchLocalList(getContext().getSession(), getCommandInput(), isPartitioned(), getContext().getGuild().getId());
             if (playlist == null) {
-                throw new NoResultsFoundException("No local list found for " + getCommandBody());
+                throw new NoResultsFoundException(String.format("No local list found for '%s'", getCommandInput()));
             }
 
             String createdUserId = playlist.getCreatedUserId();
@@ -161,7 +163,8 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
             if (createdUserId.equals("system")) {
                 createdUser = playlist.getCreatedUser();
             } else {
-                createdUser = getContext().getJda().getUserById(createdUserId).getName();
+                User userById = getContext().getJda().getUserById(createdUserId);
+                createdUser = userById != null ? userById.getName() : playlist.getCreatedUser();
             }
 
 
@@ -197,21 +200,21 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
                 throw new InvalidCommandException("Limit must be between 1 and 10");
             }
 
-            List<YouTubePlaylist> playlists = youTubeService.searchSeveralPlaylists(limit, getCommandBody());
+            List<YouTubePlaylist> playlists = youTubeService.searchSeveralPlaylists(limit, getCommandInput());
             if (playlists.size() == 1) {
                 listYouTubePlaylist(playlists.get(0));
             } else if (playlists.isEmpty()) {
-                throw new NoResultsFoundException("No YouTube playlist found for " + getCommandBody());
+                throw new NoResultsFoundException(String.format("No YouTube playlist found for '%s'", getCommandInput()));
             } else {
                 askQuestion(playlists, YouTubePlaylist::getTitle, YouTubePlaylist::getChannelTitle);
             }
         } else {
-            listYouTubePlaylist(youTubeService.searchPlaylist(getCommandBody()));
+            listYouTubePlaylist(youTubeService.searchPlaylist(getCommandInput()));
         }
     }
 
     private void listYouTubePlaylist(YouTubePlaylist youTubePlaylist) {
-        if (getCommandBody().isBlank()) {
+        if (getCommandInput().isBlank()) {
             throw new InvalidCommandException("Command body may not be empty when searching YouTube list");
         }
 
@@ -225,7 +228,7 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
     }
 
     private void listSpotifyList() throws Exception {
-        String commandBody = getCommandBody();
+        String commandBody = getCommandInput();
 
         if (commandBody.isBlank()) {
             throw new InvalidCommandException("Command may not be empty when searching spotify lists");
@@ -233,23 +236,23 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
 
         List<PlaylistSimplified> playlists;
         if (argumentSet("own")) {
-            playlists = runWithLogin(() -> getSpotifyService().searchOwnPlaylist(getCommandBody()));
+            playlists = runWithLogin(() -> getSpotifyService().searchOwnPlaylist(getCommandInput()));
         } else {
-            playlists = runWithCredentials(() -> getSpotifyService().searchPlaylist(getCommandBody()));
+            playlists = runWithCredentials(() -> getSpotifyService().searchPlaylist(getCommandInput()));
         }
         if (playlists.size() == 1) {
             PlaylistSimplified playlist = playlists.get(0);
             List<Track> tracks = runWithCredentials(() -> getSpotifyService().getPlaylistTracks(playlist));
             listTracks(tracks, playlist.getName(), playlist.getOwner().getDisplayName(), null, "playlist/" + playlist.getId());
         } else if (playlists.isEmpty()) {
-            throw new NoSpotifyResultsFoundException("No Spotify playlist found for " + getCommandBody());
+            throw new NoSpotifyResultsFoundException(String.format("No Spotify playlist found for '%s'", getCommandInput()));
         } else {
             askQuestion(playlists, PlaylistSimplified::getName, p -> p.getOwner().getDisplayName());
         }
     }
 
     private void listSpotifyAlbum() throws Exception {
-        Callable<List<AlbumSimplified>> loadAlbumsCallable = () -> getSpotifyService().searchAlbum(getCommandBody(), argumentSet("own"));
+        Callable<List<AlbumSimplified>> loadAlbumsCallable = () -> getSpotifyService().searchAlbum(getCommandInput(), argumentSet("own"));
         List<AlbumSimplified> albums;
         if (argumentSet("own")) {
             albums = runWithLogin(loadAlbumsCallable);
@@ -268,7 +271,7 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
                 "album/" + album.getId()
             );
         } else if (albums.isEmpty()) {
-            throw new NoSpotifyResultsFoundException("No album found for " + getCommandBody());
+            throw new NoSpotifyResultsFoundException(String.format("No album found for '%s'", getCommandInput()));
         } else {
             askQuestion(albums, AlbumSimplified::getName, album -> StringListImpl.create(album.getArtists(), ArtistSimplified::getName).toSeparatedString(", "));
         }
@@ -311,8 +314,11 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
 
     @Override
     public void withUserResponse(Object chosenOption) throws Exception {
+        if (chosenOption instanceof Collection) {
+            throw new InvalidCommandException("Cannot select more than one result");
+        }
+
         if (chosenOption instanceof PlaylistSimplified) {
-            SpotifyApi spotifyApi = getContext().getSpotifyApi();
             PlaylistSimplified playlist = (PlaylistSimplified) chosenOption;
             List<Track> tracks = runWithCredentials(() -> getSpotifyService().getPlaylistTracks(playlist));
             listTracks(tracks, playlist.getName(), playlist.getOwner().getDisplayName(), null, "playlist/" + playlist.getId());
@@ -321,7 +327,6 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
         } else if (chosenOption instanceof YouTubeVideo) {
             listYouTubeVideo((YouTubeVideo) chosenOption);
         } else if (chosenOption instanceof AlbumSimplified) {
-            SpotifyApi spotifyApi = getContext().getSpotifyApi();
             AlbumSimplified album = (AlbumSimplified) chosenOption;
             List<Track> tracks = runWithCredentials(() -> getSpotifyService().getAlbumTracks(album.getId()));
             listTracks(tracks,

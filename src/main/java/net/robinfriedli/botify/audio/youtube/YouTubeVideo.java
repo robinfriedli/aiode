@@ -6,11 +6,12 @@ import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
 import com.wrapper.spotify.model_objects.specification.Track;
-import net.dv8tion.jda.core.entities.User;
+import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
 import net.robinfriedli.botify.entities.Video;
+import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import org.hibernate.Session;
 
 /**
@@ -22,70 +23,74 @@ public interface YouTubeVideo extends Playable {
 
     /**
      * @return the title of the YouTube video, or in case of a cancelled {@link HollowYouTubeVideo} throw an
-     * {@link InterruptedException} to signal that loading the tracks has been interrupted, the checked method
-     * {@link Playable#getDisplayInterruptible()} will then show the video as "[UNAVAILABLE]"
+     * {@link UnavailableResourceException} to signal that loading the tracks has been cancelled, the checked method
+     * {@link Playable#display()} will then show the video as "[UNAVAILABLE]"
      */
-    String getTitle() throws InterruptedException;
+    String getTitle() throws UnavailableResourceException;
 
     /**
      * like {@link #getTitle()} but throws a {@link TimeoutException} after the specified time limit if the
-     * {@link HollowYouTubeVideo} is not loaded in time, the method {@link Playable#getDisplayInterruptible(long, TimeUnit)}
+     * {@link HollowYouTubeVideo} is not loaded in time, the method {@link Playable#display(long, TimeUnit)}
      * will then show the video as "Loading..."
      */
-    String getTitle(long timeOut, TimeUnit unit) throws InterruptedException, TimeoutException;
+    String getTitle(long timeOut, TimeUnit unit) throws UnavailableResourceException, TimeoutException;
 
     @Override
-    default String getDisplay() throws InterruptedException {
+    default String getDisplay() throws UnavailableResourceException {
         return getTitle();
     }
 
     @Override
-    default String getDisplay(long timeOut, TimeUnit unit) throws InterruptedException, TimeoutException {
+    default String getDisplay(long timeOut, TimeUnit unit) throws UnavailableResourceException, TimeoutException {
         return getTitle(timeOut, unit);
     }
 
+    @Override
+    default String getDisplayNow(String alternativeValue) throws UnavailableResourceException {
+        return getDisplay();
+    }
+
     /**
-     * @return the id of the YouTube video, throwing an {@link InterruptedException} if cancelled,
+     * @return the id of the YouTube video, throwing an {@link UnavailableResourceException} if cancelled,
      * see {@link #getTitle()}
      */
-    String getVideoId() throws InterruptedException;
-
-    /**
-     * @return the id of the YouTube video, throwing a {@link TimeoutException} if loading takes longer than the provided
-     * amount of time, see {@link #getTitle(long, TimeUnit)}
-     */
-    String getVideoId(long timeOut, TimeUnit unit) throws InterruptedException, TimeoutException;
+    String getVideoId() throws UnavailableResourceException;
 
     @Override
-    default String getId() throws InterruptedException {
+    default String getId() throws UnavailableResourceException {
         return getVideoId();
     }
 
     @Override
-    default String getPlaybackUrl() throws InterruptedException {
+    default String getPlaybackUrl() throws UnavailableResourceException {
         return String.format("https://www.youtube.com/watch?v=%s", getVideoId());
     }
 
     /**
-     * @return the duration of the YouTube video in milliseconds or throw an {@link InterruptedException} if cancelled,
+     * @return the duration of the YouTube video in milliseconds or throw an {@link UnavailableResourceException} if cancelled,
      * see {@link #getTitle()}
      */
-    long getDuration() throws InterruptedException;
+    long getDuration() throws UnavailableResourceException;
 
     /**
      * @return the duration of the YouTube video in milliseconds or throw a {@link TimeoutException} if loading takes
      * longer that the provided amount of time, see {@link #getTitle(long, TimeUnit)}
      */
-    long getDuration(long timeOut, TimeUnit unit) throws InterruptedException, TimeoutException;
+    long getDuration(long timeOut, TimeUnit unit) throws UnavailableResourceException, TimeoutException;
 
     @Override
-    default long getDurationMs() throws InterruptedException {
+    default long getDurationMs() throws UnavailableResourceException {
         return getDuration();
     }
 
     @Override
-    default long getDurationMs(long timeOut, TimeUnit unit) throws InterruptedException, TimeoutException {
+    default long getDurationMs(long timeOut, TimeUnit unit) throws UnavailableResourceException, TimeoutException {
         return getDuration(timeOut, unit);
+    }
+
+    @Override
+    default long getDurationNow(long alternativeValue) throws UnavailableResourceException {
+        return getDuration();
     }
 
     @Override

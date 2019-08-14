@@ -13,10 +13,11 @@ import org.slf4j.LoggerFactory;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.Message;
-import net.dv8tion.jda.core.entities.VoiceChannel;
-import net.dv8tion.jda.core.exceptions.InsufficientPermissionException;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.VoiceChannel;
+import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
+import net.robinfriedli.botify.audio.spotify.SpotifyService;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.command.widgets.NowPlayingWidget;
@@ -55,7 +56,15 @@ public class AudioManager {
         guildManager.setAudioManager(this);
     }
 
-    public void playTrack(Guild guild, @Nullable VoiceChannel channel) {
+    public void startPlayback(Guild guild, @Nullable VoiceChannel channel) {
+        playTrack(guild, channel, false);
+    }
+
+    public void startOrResumePlayback(Guild guild, @Nullable VoiceChannel channel) {
+        playTrack(guild, channel, true);
+    }
+
+    public void playTrack(Guild guild, @Nullable VoiceChannel channel, boolean resumePaused) {
         AudioPlayback playback = getPlaybackForGuild(guild);
 
         if (channel != null) {
@@ -64,15 +73,12 @@ public class AudioManager {
             throw new InvalidCommandException("Not in a voice channel");
         }
 
-        QueueIterator currentQueueIterator = playback.getCurrentQueueIterator();
-        Playable current = playback.getAudioQueue().getCurrent();
-        if (!playback.isPaused()
-            || (currentQueueIterator != null && !current.matches(currentQueueIterator.getCurrentlyPlaying()))) {
+        if (playback.isPaused() && resumePaused) {
+            playback.unpause();
+        } else {
             QueueIterator queueIterator = new QueueIterator(playback, this);
             playback.setCurrentQueueIterator(queueIterator);
             queueIterator.playNext();
-        } else {
-            playback.unpause();
         }
     }
 
@@ -97,8 +103,8 @@ public class AudioManager {
         return playerManager;
     }
 
-    public PlayableFactory createPlayableFactory(Guild guild) {
-        return new PlayableFactory(urlAudioLoader, youTubeService, guildManager.getContextForGuild(guild).getTrackLoadingExecutor());
+    public PlayableFactory createPlayableFactory(Guild guild, SpotifyService spotifyService) {
+        return new PlayableFactory(spotifyService, urlAudioLoader, youTubeService, guildManager.getContextForGuild(guild).getTrackLoadingExecutor());
     }
 
     void createHistoryEntry(Playable playable, Guild guild) {

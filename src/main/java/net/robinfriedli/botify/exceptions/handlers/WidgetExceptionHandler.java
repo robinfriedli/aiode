@@ -1,10 +1,11 @@
-package net.robinfriedli.botify.exceptions;
+package net.robinfriedli.botify.exceptions.handlers;
 
 import org.slf4j.Logger;
 
-import net.dv8tion.jda.core.EmbedBuilder;
-import net.dv8tion.jda.core.entities.TextChannel;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.TextChannel;
 import net.robinfriedli.botify.discord.MessageService;
+import net.robinfriedli.botify.exceptions.ExceptionUtils;
 
 public class WidgetExceptionHandler implements Thread.UncaughtExceptionHandler {
 

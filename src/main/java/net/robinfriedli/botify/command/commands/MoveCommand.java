@@ -2,11 +2,10 @@ package net.robinfriedli.botify.command.commands;
 
 import java.util.List;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 import com.google.common.base.Splitter;
-import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.botify.command.AbstractCommand;
+import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.Playlist;
@@ -29,18 +28,17 @@ public class MoveCommand extends AbstractCommand {
     public void doRun() {
         Guild guild = getContext().getGuild();
         Session session = getContext().getSession();
-        Pair<String, String> indicesWithPlaylistName = splitInlineArgument("on");
-        Playlist playlist = SearchEngine.searchLocalList(session, indicesWithPlaylistName.getRight(), isPartitioned(), guild.getId());
+        String playlistName = getArgumentValue("on");
+        Playlist playlist = SearchEngine.searchLocalList(session, playlistName, isPartitioned(), guild.getId());
 
         if (playlist == null) {
-            throw new NoResultsFoundException("No playlist found for " + indicesWithPlaylistName.getRight());
+            throw new NoResultsFoundException(String.format("No local playlist found for '%s'", playlistName));
         } else if (playlist.isEmpty()) {
             throw new InvalidCommandException("Playlist is empty");
         }
 
-        Pair<String, String> sourceAndTargetIndices = splitInlineArgument(indicesWithPlaylistName.getLeft(), "to");
-        String sourceIndex = sourceAndTargetIndices.getLeft();
-        int targetIndex = parse(sourceAndTargetIndices.getRight());
+        String sourceIndex = getCommandInput();
+        int targetIndex = getArgumentValue("to", Integer.class);
         checkIndex(targetIndex, playlist);
 
         if (sourceIndex.contains("-")) {
@@ -177,5 +175,15 @@ public class MoveCommand extends AbstractCommand {
         if (successMessageBuilder.length() != 0) {
             sendSuccess(successMessageBuilder.toString());
         }
+    }
+
+    @Override
+    public ArgumentContribution setupArguments() {
+        ArgumentContribution argumentContribution = new ArgumentContribution(this);
+        argumentContribution.map("to").setRequiresValue(true)
+            .setDescription("Mandatory argument to specify the target index.");
+        argumentContribution.map("on").setRequiresValue(true)
+            .setDescription("Mandatory argument to define the playlist where you want to move the tracks.");
+        return argumentContribution;
     }
 }

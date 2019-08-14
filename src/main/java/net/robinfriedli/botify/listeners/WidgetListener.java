@@ -6,11 +6,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.wrapper.spotify.SpotifyApi;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.TextChannel;
-import net.dv8tion.jda.core.events.message.guild.GuildMessageDeleteEvent;
-import net.dv8tion.jda.core.events.message.guild.react.GuildMessageReactionAddEvent;
-import net.dv8tion.jda.core.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.events.message.guild.GuildMessageDeleteEvent;
+import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
+import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.AbstractWidget;
 import net.robinfriedli.botify.command.CommandContext;
@@ -23,7 +23,7 @@ import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.exceptions.CommandRuntimeException;
 import net.robinfriedli.botify.exceptions.UserException;
-import net.robinfriedli.botify.exceptions.WidgetExceptionHandler;
+import net.robinfriedli.botify.exceptions.handlers.WidgetExceptionHandler;
 import net.robinfriedli.botify.util.StaticSessionProvider;
 
 /**
@@ -63,7 +63,7 @@ public class WidgetListener extends ListenerAdapter {
     private void handleWidgetExecution(GuildMessageReactionAddEvent event, String messageId, AbstractWidget activeWidget) {
         TextChannel channel = event.getChannel();
         CompletablePlaceholderMessage message = new CompletablePlaceholderMessage();
-        channel.getMessageById(messageId).queue(message::complete, message::completeExceptionally);
+        channel.retrieveMessageById(messageId).queue(message::complete, message::completeExceptionally);
 
         Guild guild = event.getGuild();
         Botify botify = Botify.get();

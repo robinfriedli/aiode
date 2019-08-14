@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import net.dv8tion.jda.core.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.MessageChannel;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.Playlist;

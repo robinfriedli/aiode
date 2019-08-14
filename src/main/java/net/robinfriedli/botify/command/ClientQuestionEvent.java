@@ -5,9 +5,9 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import net.dv8tion.jda.core.EmbedBuilder;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.User;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.discord.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
@@ -44,7 +44,7 @@ public class ClientQuestionEvent {
         Option chosenOption = options.get(key);
 
         if (chosenOption == null) {
-            throw new InvalidCommandException("Unknown option " + key);
+            throw new InvalidCommandException(String.format("Unknown option '%s'. Make sure to copy the value from the 'key' column.", key));
         }
 
         return chosenOption.getOption();
@@ -95,7 +95,7 @@ public class ClientQuestionEvent {
         return getCommandContext().getGuild();
     }
 
-    public class Option {
+    public static class Option {
 
         private final Object option;
         private final String display;

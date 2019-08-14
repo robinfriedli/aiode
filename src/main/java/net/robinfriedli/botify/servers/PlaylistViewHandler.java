@@ -11,7 +11,8 @@ import org.slf4j.LoggerFactory;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-import net.dv8tion.jda.core.JDA;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.entities.Playlist;
@@ -53,7 +54,8 @@ public class PlaylistViewHandler implements HttpHandler {
                     if (createdUserId.equals("system")) {
                         createdUser = playlist.getCreatedUser();
                     } else {
-                        createdUser = jda.getUserById(createdUserId).getName();
+                        User userById = jda.getUserById(createdUserId);
+                        createdUser = userById != null ? userById.getName() : playlist.getCreatedUser();
                     }
                     String htmlString = String.format(html,
                         playlist.getName(),

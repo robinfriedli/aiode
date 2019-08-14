@@ -6,10 +6,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-import net.dv8tion.jda.core.EmbedBuilder;
-import net.dv8tion.jda.core.MessageBuilder;
-import net.dv8tion.jda.core.entities.Message;
-import net.dv8tion.jda.core.entities.MessageChannel;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.MessageBuilder;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.requests.restaction.MessageAction;
 import net.robinfriedli.botify.command.AbstractAdminCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
@@ -47,7 +48,10 @@ public class UpdateCommand extends AbstractAdminCommand {
             MessageChannel channel = getContext().getChannel();
             Message message = new MessageBuilder().append("Output too long, attaching as file").build();
             ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(inputStreamString.getBytes());
-            channel.sendFile(byteArrayInputStream, "output.txt", message).queue();
+            getMessageService().accept(channel, c -> {
+                MessageAction messageAction = c.sendMessage(message);
+                return messageAction.addFile(byteArrayInputStream, "output.txt");
+            });
         }
     }
 

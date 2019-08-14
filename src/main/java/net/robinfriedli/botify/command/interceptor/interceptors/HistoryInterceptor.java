@@ -26,7 +26,7 @@ public class HistoryInterceptor extends AbstractChainableCommandInterceptor {
         history.setTimestamp(LocalDateTime.ofInstant(Instant.ofEpochMilli(currentTimeMillis), ZoneId.systemDefault()));
         history.setCommandContextId(command.getContext().getId());
         history.setCommandIdentifier(command.getIdentifier());
-        history.setCommandBody(command.getCommandBody());
+        history.setCommandBody(command.getCommandInput());
         history.setInput(context.getMessage().getContentDisplay());
         history.setGuild(context.getGuild().getName());
         history.setGuildId(context.getGuild().getId());

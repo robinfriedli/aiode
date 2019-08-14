@@ -17,10 +17,11 @@ import javax.persistence.Table;
 import com.google.api.client.util.Sets;
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
-import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.audio.spotify.TrackWrapper;
 import net.robinfriedli.botify.audio.youtube.HollowYouTubeVideo;
+import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import org.hibernate.Session;
 import org.hibernate.query.Query;
 
@@ -82,7 +83,7 @@ public class PlaybackHistory implements Serializable {
             this.trackId = playable.getId();
             this.guild = guild.getName();
             this.guildId = guild.getId();
-        } catch (InterruptedException e) {
+        } catch (UnavailableResourceException e) {
             // should never happen since when a track is being played that obviously means it was loaded
             throw new RuntimeException("trying to create a history for a track that didn't load successfully");
         }

@@ -6,9 +6,10 @@ import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
-import net.dv8tion.jda.core.entities.User;
+import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
+import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import org.hibernate.Session;
 
 /**
@@ -18,48 +19,48 @@ public interface Playable {
 
     /**
      * @return The url of the music file to stream
-     * @throws InterruptedException if the thread loading the data asynchronously gets interrupted
+     * @throws UnavailableResourceException if loading the item was cancelled due to being unavailable or cancelled
      */
-    String getPlaybackUrl() throws InterruptedException;
+    String getPlaybackUrl() throws UnavailableResourceException;
 
     /**
      * @return an id that uniquely identifies this playable together with {@link #getSource()}
      */
-    String getId() throws InterruptedException;
+    String getId() throws UnavailableResourceException;
 
     /**
      * @return The title of the Playable. For Spotify it's the track name, for YouTube it's the video title and for other
      * URLs it's either the tile or the URL depending on whether or not a title could be found
-     * @throws InterruptedException if the thread loading the data asynchronously gets interrupted
+     * @throws UnavailableResourceException if loading the item was cancelled due to being unavailable or cancelled
      */
-    String getDisplay() throws InterruptedException;
+    String getDisplay() throws UnavailableResourceException;
 
     /**
-     * @return the display of the Playable, showing interrupted Playables as "[UNAVAILABLE]"
+     * @return the display of the Playable, showing cancelled Playables as "[UNAVAILABLE]"
      */
-    default String getDisplayInterruptible() {
+    default String display() {
         try {
             return getDisplay();
-        } catch (InterruptedException e) {
+        } catch (UnavailableResourceException e) {
             return "[UNAVAILABLE]";
         }
     }
 
     /**
      * @return the display of the Playable
-     * @throws InterruptedException if the thread loading the data asynchronously gets interrupted
-     * @throws TimeoutException if the data is not loaded in time
+     * @throws UnavailableResourceException if loading the item was cancelled due to being unavailable or cancelled
+     * @throws TimeoutException             if the data is not loaded in time
      */
-    String getDisplay(long timeOut, TimeUnit unit) throws InterruptedException, TimeoutException;
+    String getDisplay(long timeOut, TimeUnit unit) throws UnavailableResourceException, TimeoutException;
 
     /**
-     * @return the display of the Playable, showing interrupted Playables as "[UNAVAILABLE]" and Playables that couldn't
+     * @return the display of the Playable, showing cancelled Playables as "[UNAVAILABLE]" and Playables that couldn't
      * load in time as "Loading..."
      */
-    default String getDisplayInterruptible(long timeOut, TimeUnit unit) {
+    default String display(long timeOut, TimeUnit unit) {
         try {
             return getDisplay(timeOut, unit);
-        } catch (InterruptedException e) {
+        } catch (UnavailableResourceException e) {
             return "[UNAVAILABLE]";
         } catch (TimeoutException e) {
             return "Loading...";
@@ -67,32 +68,68 @@ public interface Playable {
     }
 
     /**
-     * @return The duration of the audio track in milliseconds
-     * @throws InterruptedException if loading the data asynchronously was interrupted
+     * Return the display of the playable getting the current value without waiting for completion of the value,
+     * returning the provided alternativeValue instead if the playable is not completed.
+     *
+     * @param alternativeValue the value to return instead if the value has not been loaded yet
+     * @return the display
+     * @throws UnavailableResourceException if loading the item was cancelled due to being unavailable or cancelled
      */
-    long getDurationMs() throws InterruptedException;
+    String getDisplayNow(String alternativeValue) throws UnavailableResourceException;
+
+    default String getDisplayNow() {
+        try {
+            return getDisplayNow("Loading...");
+        } catch (UnavailableResourceException e) {
+            return "[UNAVAILABLE]";
+        }
+    }
 
     /**
-     * @return The duration of the audio track in milliseconds or 0 if loading the Playable was interrupted
+     * @return The duration of the audio track in milliseconds
+     * @throws UnavailableResourceException if loading the item was cancelled due to being unavailable or cancelled
      */
-    default long getDurationMsInterruptible() {
+    long getDurationMs() throws UnavailableResourceException;
+
+    /**
+     * @return The duration of the audio track in milliseconds or 0 if loading the Playable was cancelled
+     */
+    default long durationMs() {
         try {
             return getDurationMs();
-        } catch (InterruptedException e) {
+        } catch (UnavailableResourceException e) {
             return 0;
         }
     }
 
     /**
-     * @return The duration of the audio track in milliseconds or 0 if loading the Playable was interrupted or did
+     * @return The duration of the audio track in milliseconds or 0 if loading the Playable was cancelled or did
      * not load in time
      */
-    long getDurationMs(long timeOut, TimeUnit unit) throws InterruptedException, TimeoutException;
+    long getDurationMs(long timeOut, TimeUnit unit) throws UnavailableResourceException, TimeoutException;
 
-    default long getDurationMsInterruptible(long timeOut, TimeUnit unit) {
+    default long durationMs(long timeOut, TimeUnit unit) {
         try {
             return getDurationMs(timeOut, unit);
-        } catch (InterruptedException | TimeoutException e) {
+        } catch (UnavailableResourceException | TimeoutException e) {
+            return 0;
+        }
+    }
+
+    /**
+     * Get the duration now without waiting for the playable to finish, returning the alternativeValue instead if not
+     * done
+     *
+     * @param alternativeValue the value to return if the value has not been loaded yet
+     * @return the display
+     * @throws UnavailableResourceException if loading the item was cancelled due to being unavailable or cancelled
+     */
+    long getDurationNow(long alternativeValue) throws UnavailableResourceException;
+
+    default long getDurationNow() {
+        try {
+            return getDurationNow(0);
+        } catch (UnavailableResourceException e) {
             return 0;
         }
     }
@@ -101,7 +138,7 @@ public interface Playable {
      * Exports this playable as a persistable {@link PlaylistItem}
      *
      * @param playlist the playlist this item will be a part of
-     * @param user the user that added the item
+     * @param user     the user that added the item
      * @return the create item (not persisted yet)
      */
     PlaylistItem export(Playlist playlist, User user, Session session);
@@ -124,18 +161,5 @@ public interface Playable {
      * @param audioTrack the resulting AudioTrack
      */
     void setCached(AudioTrack audioTrack);
-
-    default boolean matches(Playable playable) {
-        if (playable == null) {
-            return false;
-        }
-
-        try {
-            return getSource().equals(playable.getSource()) && getId().equals(playable.getId());
-        } catch (InterruptedException ignored) {
-        }
-
-        return false;
-    }
 
 }

@@ -6,8 +6,8 @@ import java.util.function.Supplier;
 
 import com.google.common.collect.Lists;
 import com.wrapper.spotify.SpotifyApi;
-import net.dv8tion.jda.core.JDA;
-import net.dv8tion.jda.core.entities.MessageChannel;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.MessageChannel;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.command.CommandContext;

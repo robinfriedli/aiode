@@ -1,8 +1,8 @@
 package net.robinfriedli.botify.command.widgets.actions;
 
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.User;
-import net.dv8tion.jda.core.events.message.guild.react.GuildMessageReactionAddEvent;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.GuildVoiceState;
+import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.audio.AudioQueue;
@@ -24,11 +24,11 @@ public class SkipAction extends AbstractWidgetAction {
     protected void handleReaction(GuildMessageReactionAddEvent event) {
         AudioQueue queue = audioPlayback.getAudioQueue();
         if (!queue.isEmpty()) {
-            User user = event.getUser();
             Guild guild = event.getGuild();
             if (queue.hasNext()) {
                 queue.iterate();
-                audioManager.playTrack(guild, guild.getMember(user).getVoiceState().getChannel());
+                GuildVoiceState voiceState = event.getMember().getVoiceState();
+                audioManager.startPlayback(guild, voiceState != null ? voiceState.getChannel() : null);
             } else {
                 audioPlayback.stop();
             }

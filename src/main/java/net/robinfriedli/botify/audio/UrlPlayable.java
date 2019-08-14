@@ -5,7 +5,7 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
-import net.dv8tion.jda.core.entities.User;
+import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
 import net.robinfriedli.botify.entities.UrlTrack;
@@ -58,12 +58,22 @@ public class UrlPlayable implements Playable {
     }
 
     @Override
+    public String getDisplayNow(String alternativeValue) {
+        return getDisplay();
+    }
+
+    @Override
     public long getDurationMs() {
         return duration;
     }
 
     @Override
     public long getDurationMs(long timeOut, TimeUnit unit) {
+        return getDurationMs();
+    }
+
+    @Override
+    public long getDurationNow(long alternativeValue) {
         return getDurationMs();
     }
 

@@ -2,8 +2,7 @@ package net.robinfriedli.botify.command.commands;
 
 import java.util.List;
 
-import org.apache.commons.lang3.tuple.Pair;
-
+import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.Playlist;
@@ -22,14 +21,8 @@ public class InsertCommand extends AddCommand {
 
     @Override
     public void doRun() {
-        Pair<String, String> toAddStringWithIndex = splitInlineArgument("at");
-        toAddString = toAddStringWithIndex.getLeft();
-
-        try {
-            targetIndex = Integer.parseInt(toAddStringWithIndex.getRight());
-        } catch (NumberFormatException e) {
-            throw new InvalidCommandException(String.format("'%s' is not an integer", toAddStringWithIndex.getRight()));
-        }
+        targetIndex = getArgumentValue("at", Integer.class);
+        toAddString = getCommandInput();
 
         super.doRun();
     }
@@ -61,5 +54,13 @@ public class InsertCommand extends AddCommand {
     @Override
     protected String getToAddString() {
         return toAddString;
+    }
+
+    @Override
+    public ArgumentContribution setupArguments() {
+        ArgumentContribution argumentContribution = super.setupArguments();
+        argumentContribution.map("at").setRequiresValue(true)
+            .setDescription("Mandatory argument to define the index at which to insert the tracks.");
+        return argumentContribution;
     }
 }

@@ -12,12 +12,14 @@ public class ThreadExecutionQueue {
     private final ConcurrentLinkedQueue<QueuedThread> queue;
     private final Set<QueuedThread> currentPool;
     private final int size;
+    private final Object synchroniseLock;
     private boolean closed;
 
     public ThreadExecutionQueue(int size) {
         this.queue = new ConcurrentLinkedQueue<>();
         currentPool = new HashSet<>();
         this.size = size;
+        this.synchroniseLock = new Object();
     }
 
     /**
@@ -25,16 +27,18 @@ public class ThreadExecutionQueue {
      * @return true if the currentPool has free space, false if the thread was queued instead
      */
     public boolean add(QueuedThread thread) {
-        if (!closed) {
-            queue.add(thread);
-            if (currentPool.size() < size) {
-                runNext();
-                return true;
-            }
+        synchronized (synchroniseLock) {
+            if (!closed) {
+                queue.add(thread);
+                if (currentPool.size() < size) {
+                    runNext();
+                    return true;
+                }
 
-            return false;
-        } else {
-            throw new IllegalStateException("This " + getClass().getSimpleName() + " has been closed");
+                return false;
+            } else {
+                throw new IllegalStateException("This " + getClass().getSimpleName() + " has been closed");
+            }
         }
     }
 
@@ -51,18 +55,20 @@ public class ThreadExecutionQueue {
         }
     }
 
-    synchronized void freeSlot(QueuedThread thread) {
+    void freeSlot(QueuedThread thread) {
         currentPool.remove(thread);
         if (!closed) {
             runNext();
         }
     }
 
-    private synchronized void runNext() {
-        QueuedThread poll = queue.poll();
-        if (poll != null) {
-            currentPool.add(poll);
-            poll.start();
+    private void runNext() {
+        synchronized (synchroniseLock) {
+            QueuedThread poll = queue.poll();
+            if (poll != null) {
+                currentPool.add(poll);
+                poll.start();
+            }
         }
     }
 }

@@ -20,10 +20,10 @@ public class CreateCommand extends AbstractCommand {
     @Override
     public void doRun() {
         Session session = getContext().getSession();
-        Playlist existingPlaylist = SearchEngine.searchLocalList(session, getCommandBody(), isPartitioned(), getContext().getGuild().getId());
+        Playlist existingPlaylist = SearchEngine.searchLocalList(session, getCommandInput(), isPartitioned(), getContext().getGuild().getId());
 
         if (existingPlaylist != null) {
-            throw new InvalidCommandException("Playlist " + getCommandBody() + " already exists");
+            throw new InvalidCommandException("Playlist " + getCommandInput() + " already exists");
         }
 
         String playlistCountMax = PropertiesLoadingService.loadProperty("PLAYLIST_COUNT_MAX");
@@ -36,7 +36,7 @@ public class CreateCommand extends AbstractCommand {
             }
         }
 
-        Playlist playlist = new Playlist(getCommandBody(), getContext().getUser(), getContext().getGuild());
+        Playlist playlist = new Playlist(getCommandInput(), getContext().getUser(), getContext().getGuild());
         invoke(() -> session.persist(playlist));
     }
 

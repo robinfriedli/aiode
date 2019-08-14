@@ -16,7 +16,7 @@ public class CommandVerificationInterceptor extends AbstractChainableCommandInte
     public void performChained(AbstractCommand command) {
         command.verify();
 
-        if (command.getCommandBody().length() > 1000) {
+        if (command.getCommandInput().length() > 1000) {
             throw new InvalidCommandException("Command input exceeds maximum length of 1000 characters.");
         }
     }

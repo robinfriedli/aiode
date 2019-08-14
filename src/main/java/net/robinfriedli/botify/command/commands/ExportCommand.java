@@ -3,8 +3,8 @@ package net.robinfriedli.botify.command.commands;
 import java.util.List;
 
 import com.google.common.base.Strings;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.User;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioQueue;
 import net.robinfriedli.botify.audio.Playable;
@@ -36,9 +36,9 @@ public class ExportCommand extends AbstractCommand {
             throw new InvalidCommandException("Queue is empty");
         }
 
-        Playlist existingPlaylist = SearchEngine.searchLocalList(session, getCommandBody(), isPartitioned(), guild.getId());
+        Playlist existingPlaylist = SearchEngine.searchLocalList(session, getCommandInput(), isPartitioned(), guild.getId());
         if (existingPlaylist != null) {
-            throw new InvalidCommandException("Playlist " + getCommandBody() + " already exists");
+            throw new InvalidCommandException("Playlist " + getCommandInput() + " already exists");
         }
 
         List<Playable> tracks = queue.getTracks();
@@ -61,7 +61,7 @@ public class ExportCommand extends AbstractCommand {
         }
 
         User createUser = getContext().getUser();
-        Playlist playlist = new Playlist(getCommandBody(), createUser, guild);
+        Playlist playlist = new Playlist(getCommandInput(), createUser, guild);
 
         invoke(() -> {
             session.persist(playlist);

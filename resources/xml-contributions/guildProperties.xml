@@ -7,4 +7,5 @@
   <guildProperty property="enableAutoPause" name="auto pause" defaultValue="true" implementation="net.robinfriedli.botify.discord.properties.AutoPauseProperty" updateMessage="Set auto pause to %s"/>
   <guildProperty property="defaultSource" name="default source" defaultValue="SPOTIFY" implementation="net.robinfriedli.botify.discord.properties.DefaultSourceProperty" updateMessage="Set the default search source to %s"/>
   <guildProperty property="defaultListSource" name="default list source" defaultValue="LOCAL" implementation="net.robinfriedli.botify.discord.properties.DefaultListSourceProperty" updateMessage="Set the default list search source to %s"/>
+  <guildProperty property="argumentPrefix" name="argument prefix" defaultValue="$" implementation="net.robinfriedli.botify.discord.properties.ArgumentPrefixProperty" updateMessage="Set the argument prefix to '%1$s'. Commands now look like this: $botify play %1$sspotify %1$salbum meteora. The default prefix &quot;$&quot; still works as a fallback. All presets containing argument prefixes have been updated."/>
 </guildProperties>

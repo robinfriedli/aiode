@@ -148,6 +148,10 @@ public class SpotifyService {
         return tracks;
     }
 
+    public List<Track> getAlbumTracks(AlbumSimplified albumSimplified) throws IOException, SpotifyWebApiException {
+        return getAlbumTracks(albumSimplified.getId());
+    }
+
     public SpotifyApi getSpotifyApi() {
         return spotifyApi;
     }

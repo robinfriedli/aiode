@@ -23,17 +23,17 @@ public class ReloadContextCommand extends AbstractAdminCommand {
         JxpBackend jxpBackend = Botify.get().getJxpBackend();
         Context context;
         if (argumentSet("property")) {
-            String property = PropertiesLoadingService.loadProperty(getCommandBody());
+            String property = PropertiesLoadingService.loadProperty(getCommandInput());
             if (Strings.isNullOrEmpty(property)) {
-                throw new InvalidCommandException("Property " + getCommandBody() + " not set");
+                throw new InvalidCommandException("Property " + getCommandInput() + " not set");
             }
             context = jxpBackend.getExistingContext(property);
         } else {
-            context = jxpBackend.getExistingContext(getCommandBody());
+            context = jxpBackend.getExistingContext(getCommandInput());
         }
 
         if (context == null) {
-            throw new InvalidCommandException("No context mapped to " + getCommandBody());
+            throw new InvalidCommandException("No context mapped to " + getCommandInput());
         }
 
         context.reload();

@@ -11,6 +11,7 @@ import javax.annotation.Nullable;
 
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.robinfriedli.botify.audio.AbstractSoftCachedPlayable;
+import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 
 /**
  * YouTube video when the data has not been loaded yet. This is used for YouTube playlist elements or Spotify tracks that
@@ -39,7 +40,7 @@ public class HollowYouTubeVideo extends AbstractSoftCachedPlayable implements Yo
     }
 
     @Override
-    public String getTitle() throws InterruptedException {
+    public String getTitle() throws UnavailableResourceException {
         return getCompleted(title);
     }
 
@@ -48,17 +49,22 @@ public class HollowYouTubeVideo extends AbstractSoftCachedPlayable implements Yo
     }
 
     @Override
-    public String getTitle(long timeOut, TimeUnit unit) throws InterruptedException, TimeoutException {
+    public String getTitle(long timeOut, TimeUnit unit) throws UnavailableResourceException, TimeoutException {
         return getWithTimeout(title, timeOut, unit);
     }
 
     @Override
-    public String getVideoId() throws InterruptedException {
+    public String getDisplayNow(String alternativeValue) throws UnavailableResourceException {
+        return getNow(title, alternativeValue);
+    }
+
+    @Override
+    public String getVideoId() throws UnavailableResourceException {
         return getCompleted(id);
     }
 
     @Override
-    public String getId() throws InterruptedException {
+    public String getId() throws UnavailableResourceException {
         return redirectedSpotifyTrack != null ? redirectedSpotifyTrack.getId() : getVideoId();
     }
 
@@ -67,12 +73,7 @@ public class HollowYouTubeVideo extends AbstractSoftCachedPlayable implements Yo
     }
 
     @Override
-    public String getVideoId(long timeOut, TimeUnit unit) throws InterruptedException, TimeoutException {
-        return getWithTimeout(id, timeOut, unit);
-    }
-
-    @Override
-    public long getDuration() throws InterruptedException {
+    public long getDuration() throws UnavailableResourceException {
         return getCompleted(duration);
     }
 
@@ -81,8 +82,13 @@ public class HollowYouTubeVideo extends AbstractSoftCachedPlayable implements Yo
     }
 
     @Override
-    public long getDuration(long timeOut, TimeUnit unit) throws InterruptedException, TimeoutException {
+    public long getDuration(long timeOut, TimeUnit unit) throws UnavailableResourceException, TimeoutException {
         return getWithTimeout(duration, timeOut, unit);
+    }
+
+    @Override
+    public long getDurationNow(long alternativeValue) throws UnavailableResourceException {
+        return getNow(duration, alternativeValue);
     }
 
     @Nullable
@@ -120,7 +126,7 @@ public class HollowYouTubeVideo extends AbstractSoftCachedPlayable implements Yo
         return redirectedSpotifyTrack != null ? "Spotify" : "YouTube";
     }
 
-    private <E> E getCompleted(CompletableFuture<E> future) throws InterruptedException {
+    private <E> E getCompleted(CompletableFuture<E> future) throws UnavailableResourceException {
         try {
             if (!future.isDone() && redirectedSpotifyTrack != null) {
                 youTubeService.redirectSpotify(this);
@@ -132,17 +138,28 @@ public class HollowYouTubeVideo extends AbstractSoftCachedPlayable implements Yo
         } catch (TimeoutException e) {
             throw new RuntimeException("Video loading timed out", e);
         } catch (CancellationException e) {
-            throw new InterruptedException();
+            throw new UnavailableResourceException();
         }
     }
 
-    private <E> E getWithTimeout(CompletableFuture<E> future, long time, TimeUnit unit) throws InterruptedException, TimeoutException {
+    private <E> E getWithTimeout(CompletableFuture<E> future, long time, TimeUnit unit) throws UnavailableResourceException, TimeoutException {
         try {
             return future.get(time, unit);
-        } catch (ExecutionException e) {
+        } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         } catch (CancellationException e) {
-            throw new InterruptedException();
+            throw new UnavailableResourceException();
         }
     }
+
+    private <E> E getNow(CompletableFuture<E> future, E alternativeValue) throws UnavailableResourceException {
+        try {
+            return future.getNow(alternativeValue);
+        } catch (CompletionException e) {
+            throw new RuntimeException(e);
+        } catch (CancellationException e) {
+            throw new UnavailableResourceException();
+        }
+    }
+
 }

@@ -6,13 +6,11 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.Member;
-import net.dv8tion.jda.core.exceptions.InsufficientPermissionException;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.concurrent.Invoker;
-import net.robinfriedli.botify.discord.properties.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.properties.GuildPropertyManager;
 import net.robinfriedli.botify.entities.AccessConfiguration;
 import net.robinfriedli.botify.entities.GuildSpecification;
@@ -49,54 +47,12 @@ public class GuildManager {
     }
 
     public String getNameForGuild(Guild guild) {
-        return StaticSessionProvider.invokeWithSession(session -> {
-            GuildSpecification specification = getContextForGuild(guild).getSpecification(session);
-            AbstractGuildProperty botName = guildPropertyManager.getProperty("botName");
-
-            if (botName != null) {
-                return (String) botName.get(specification);
-            }
-
-            return specification.getBotName();
-        });
+        return getContextForGuild(guild).getBotName();
     }
 
     @Nullable
     public String getPrefixForGuild(Guild guild) {
-        return StaticSessionProvider.invokeWithSession(session -> {
-            GuildSpecification specification = getContextForGuild(guild).getSpecification(session);
-            AbstractGuildProperty prefix = guildPropertyManager.getProperty("prefix");
-
-            if (prefix != null) {
-                return (String) prefix.get(specification);
-            }
-
-            return specification.getPrefix();
-        });
-    }
-
-    public boolean setName(Guild guild, String name) {
-        StaticSessionProvider.invokeWithSession(session -> {
-            GuildContext guildContext = getContextForGuild(guild);
-            GuildSpecification guildSpecification = guildContext.getSpecification(session);
-
-            guildContext.getInvoker().invoke(session, () -> guildSpecification.setBotName(name));
-        });
-        try {
-            guild.getController().setNickname(guild.getSelfMember(), name).queue();
-            return true;
-        } catch (InsufficientPermissionException ignored) {
-            return false;
-        }
-    }
-
-    public void setPrefix(Guild guild, String prefix) {
-        StaticSessionProvider.invokeWithSession(session -> {
-            GuildContext guildContext = getContextForGuild(guild);
-            GuildSpecification guildSpecification = guildContext.getSpecification(session);
-
-            guildContext.getInvoker().invoke(session, () -> guildSpecification.setPrefix(prefix));
-        });
+        return getContextForGuild(guild).getPrefix();
     }
 
     public boolean checkAccess(String commandIdentifier, Member member) {
@@ -151,7 +107,7 @@ public class GuildManager {
                 + " where guildId = '" + guild.getId() + "'", Long.class).uniqueResultOptional();
 
             if (existingSpecification.isPresent()) {
-                GuildContext guildContext = new GuildContext(new AudioPlayback(player, guild), existingSpecification.get(), sharedInvoker);
+                GuildContext guildContext = new GuildContext(guild, new AudioPlayback(player, guild), existingSpecification.get(), sharedInvoker);
                 guildContexts.put(guild, guildContext);
                 return guildContext;
             } else {
@@ -166,7 +122,7 @@ public class GuildManager {
                 });
                 session.getTransaction().commit();
 
-                GuildContext guildContext = new GuildContext(new AudioPlayback(player, guild), newSpecification.getPk(), sharedInvoker);
+                GuildContext guildContext = new GuildContext(guild, new AudioPlayback(player, guild), newSpecification.getPk(), sharedInvoker);
                 guildContexts.put(guild, guildContext);
 
                 return guildContext;

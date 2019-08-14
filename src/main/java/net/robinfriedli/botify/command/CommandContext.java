@@ -5,11 +5,14 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 
 import com.wrapper.spotify.SpotifyApi;
-import net.dv8tion.jda.core.JDA;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.Message;
-import net.dv8tion.jda.core.entities.MessageChannel;
-import net.dv8tion.jda.core.entities.User;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.GuildVoiceState;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.VoiceChannel;
 import net.robinfriedli.botify.audio.spotify.SpotifyService;
 import net.robinfriedli.botify.concurrent.CommandExecutionThread;
 import net.robinfriedli.botify.discord.GuildContext;
@@ -58,6 +61,21 @@ public class CommandContext {
 
     public User getUser() {
         return message.getAuthor();
+    }
+
+    public Member getMember() {
+        return message.getMember();
+    }
+
+    @Nullable
+    public VoiceChannel getVoiceChannel() {
+        GuildVoiceState voiceState = getMember().getVoiceState();
+
+        if (voiceState != null) {
+            return voiceState.getChannel();
+        }
+
+        return null;
     }
 
     public Guild getGuild() {

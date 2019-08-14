@@ -1,7 +1,7 @@
 package net.robinfriedli.botify.command.commands;
 
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.VoiceChannel;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.VoiceChannel;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
@@ -24,21 +24,21 @@ public class RewindCommand extends AbstractCommand {
         Guild guild = getContext().getGuild();
         AudioPlayback playback = audioManager.getPlaybackForGuild(guild);
         AudioQueue queue = playback.getAudioQueue();
-        VoiceChannel channel = guild.getMember(getContext().getUser()).getVoiceState().getChannel();
+        VoiceChannel channel = getContext().getVoiceChannel();
 
         if (!queue.hasPrevious()) {
             throw new InvalidCommandException("No previous item in queue");
         }
 
         int queueSize = queue.getTracks().size();
-        if (getCommandBody().isBlank()) {
+        if (getCommandInput().isBlank()) {
             queue.reverse();
         } else {
             int offset;
             try {
-                offset = Integer.parseInt(getCommandBody());
+                offset = Integer.parseInt(getCommandInput());
             } catch (NumberFormatException e) {
-                throw new InvalidCommandException(getCommandBody() + " is not an integer");
+                throw new InvalidCommandException(getCommandInput() + " is not an integer");
             }
 
             if (offset < 1) {
@@ -60,7 +60,7 @@ public class RewindCommand extends AbstractCommand {
 
             queue.setPosition(newIndex);
         }
-        audioManager.playTrack(guild, channel);
+        audioManager.startPlayback(guild, channel);
     }
 
     @Override

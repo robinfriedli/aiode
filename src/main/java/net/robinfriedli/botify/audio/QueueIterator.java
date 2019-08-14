@@ -8,14 +8,15 @@ import com.sedmelluq.discord.lavaplayer.player.event.AudioEventAdapter;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
-import net.dv8tion.jda.core.EmbedBuilder;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.Message;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Message;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.discord.properties.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.entities.GuildSpecification;
+import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.botify.util.EmojiConstants;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.StaticSessionProvider;
@@ -116,7 +117,7 @@ public class QueueIterator extends AudioEventAdapter {
             String playbackUrl;
             try {
                 playbackUrl = track.getPlaybackUrl();
-            } catch (InterruptedException e) {
+            } catch (UnavailableResourceException e) {
                 ++retryCount;
                 iterateQueue(playback, queue, true);
                 return;
@@ -173,7 +174,7 @@ public class QueueIterator extends AudioEventAdapter {
     private void sendError(Playable track, Throwable e) {
         if (retryCount == 0) {
             EmbedBuilder embedBuilder = new EmbedBuilder();
-            embedBuilder.setTitle("Could not load track " + track.getDisplayInterruptible());
+            embedBuilder.setTitle("Could not load track " + track.display());
             embedBuilder.setDescription(e.getMessage());
             embedBuilder.setColor(Color.RED);
 
@@ -188,10 +189,10 @@ public class QueueIterator extends AudioEventAdapter {
     private void sendCurrentTrackNotification(Playable currentTrack) {
         MessageService messageService = new MessageService();
         EmbedBuilder embedBuilder = new EmbedBuilder();
-        embedBuilder.addField("Now playing", currentTrack.getDisplayInterruptible(), false);
+        embedBuilder.addField("Now playing", currentTrack.display(), false);
 
         if (queue.hasNext()) {
-            embedBuilder.addField("Next", queue.getNext().getDisplayInterruptible(), false);
+            embedBuilder.addField("Next", queue.getNext().display(), false);
         }
 
         StringBuilder footerBuilder = new StringBuilder();

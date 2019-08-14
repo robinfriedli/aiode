@@ -8,9 +8,10 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 
 import com.wrapper.spotify.model_objects.specification.Track;
-import net.dv8tion.jda.core.entities.User;
+import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
 import net.robinfriedli.botify.audio.youtube.YouTubeVideoImpl;
+import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 
 @Entity
 @Table(name = "video")
@@ -44,7 +45,7 @@ public class Video extends PlaylistItem {
                 redirectedSpotifyId = redirectedSpotifyTrack.getId();
                 spotifyTrackName = redirectedSpotifyTrack.getName();
             }
-        } catch (InterruptedException e) {
+        } catch (UnavailableResourceException e) {
             throw new RuntimeException("Cannot create video element for cancelled YouTube video " + video.toString(), e);
         }
     }

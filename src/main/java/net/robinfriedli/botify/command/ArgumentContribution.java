@@ -1,14 +1,16 @@
 package net.robinfriedli.botify.command;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import com.google.common.collect.Lists;
+import org.apache.commons.collections4.map.CaseInsensitiveMap;
+
+import com.google.api.client.util.Lists;
 import com.google.common.collect.Sets;
+import net.robinfriedli.botify.exceptions.InvalidArgumentException;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.jxp.api.StringConverter;
 import net.robinfriedli.jxp.exceptions.ConversionException;
@@ -21,8 +23,7 @@ import net.robinfriedli.jxp.exceptions.ConversionException;
 public class ArgumentContribution {
 
     private final AbstractCommand sourceCommand;
-    private List<Argument> arguments = Lists.newArrayList();
-    private Map<String, String> setArguments = new HashMap<>();
+    private final Map<String, Argument> definedArguments = new CaseInsensitiveMap<>();
 
     public ArgumentContribution(AbstractCommand sourceCommand) {
         this.sourceCommand = sourceCommand;
@@ -38,7 +39,37 @@ public class ArgumentContribution {
      */
     public Argument map(String arg) {
         Argument argument = new Argument(arg);
-        arguments.add(argument);
+        definedArguments.put(arg, argument);
+        return argument;
+    }
+
+    /**
+     * @param arg the identifier of the argument, case insensitive
+     * @return the found argument definition
+     */
+    public Argument get(String arg) {
+        return definedArguments.get(arg);
+    }
+
+    /**
+     * same as {@link #get(String)} but throws an exception if no argument definition was found
+     */
+    public Argument require(String arg) {
+        return require(arg, InvalidArgumentException.class);
+    }
+
+    public Argument require(String arg, Class<? extends RuntimeException> toThrow) {
+        Argument argument = get(arg);
+
+        if (argument == null) {
+            try {
+                throw toThrow.getConstructor(String.class)
+                    .newInstance(String.format("Undefined argument '%s' on command '%s'.", arg, sourceCommand.getIdentifier()));
+            } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
+                throw new RuntimeException("Could not instantiate " + toThrow);
+            }
+        }
+
         return argument;
     }
 
@@ -46,12 +77,13 @@ public class ArgumentContribution {
      * @return true if the user used the provided argument when calling the command
      */
     public boolean argumentSet(String argument) {
-        return setArguments.containsKey(argument);
+        Argument arg = require(argument, IllegalArgumentException.class);
+        return arg.isSet();
     }
 
     /**
      * Add an argument used by the user to the setArguments when processing the command, verifying whether that argument
-     * exists and meets all defined rules happens when {@link #complete()} is called.
+     * exists and meets all defined rules happens when {@link #verify()} is called.
      */
     public void setArgument(String argument) {
         setArgument(argument, "");
@@ -61,33 +93,25 @@ public class ArgumentContribution {
      * Same as {@link #setArgument(String)} but assigns the given value provided by the user
      */
     public void setArgument(String argument, String value) {
-        setArguments.put(argument, value);
+        Argument arg = require(argument);
+        arg.setSet(true);
+        arg.setValue(value);
     }
 
     /**
-     * Completes the argument contribution by verifying the defined rules and assigning the provided values to the
-     * arguments.
+     * Verifies all set argument rules
      */
-    public void complete() {
-        for (String setArgument : setArguments.keySet()) {
-            if (arguments.stream().noneMatch(arg -> arg.getArgument().equalsIgnoreCase(setArgument))) {
-                throw new InvalidCommandException(String.format("Unexpected argument '%s'", setArgument));
-            }
+    public void verify() {
+        for (Argument value : definedArguments.values()) {
+            value.check();
         }
-
-        List<Argument> selectedArguments = arguments
-            .stream()
-            .filter(arg -> setArguments.containsKey(arg.getArgument()))
-            .collect(Collectors.toList());
-        selectedArguments.forEach(arg -> arg.setValue(setArguments.get(arg.getArgument())));
-        selectedArguments.forEach(arg -> arg.check(selectedArguments));
     }
 
     /**
      * @return all arguments that may be used with this command
      */
     public List<Argument> getArguments() {
-        return arguments;
+        return Lists.newArrayList(definedArguments.values());
     }
 
     /**
@@ -98,25 +122,10 @@ public class ArgumentContribution {
     }
 
     /**
-     * @return the given argument definition for the provided name
-     */
-    public Argument getArgument(String argument) {
-        List<Argument> matches = arguments.stream().filter(arg -> arg.getArgument().equals(argument)).collect(Collectors.toList());
-
-        if (matches.size() == 1) {
-            return matches.get(0);
-        } else if (matches.isEmpty()) {
-            throw new IllegalArgumentException("Undefined argument " + argument);
-        } else {
-            throw new IllegalArgumentException("Duplicate argument definition for " + argument);
-        }
-    }
-
-    /**
      * @return true if the ArgumentContribution for this command does not contain any arguments
      */
     public boolean isEmpty() {
-        return arguments.isEmpty();
+        return definedArguments.isEmpty();
     }
 
     /**
@@ -124,17 +133,18 @@ public class ArgumentContribution {
      */
     public class Argument {
 
-        private final String argument;
+        private final String identifier;
         private String value;
         private Set<String> excludedArguments;
         private Set<String> neededArguments;
         private String description;
+        private boolean set;
         private boolean requiresValue;
         // useful for commands that only require input if a certain argument is set
         private boolean requiresInput;
 
-        Argument(String argument) {
-            this.argument = argument;
+        Argument(String identifier) {
+            this.identifier = identifier;
             this.excludedArguments = Sets.newHashSet();
             this.neededArguments = Sets.newHashSet();
             description = "";
@@ -143,8 +153,8 @@ public class ArgumentContribution {
         /**
          * @return the string identifier for this argument description
          */
-        public String getArgument() {
-            return argument;
+        public String getIdentifier() {
+            return identifier;
         }
 
         /**
@@ -227,34 +237,41 @@ public class ArgumentContribution {
 
         /**
          * Verify that this argument matches all configured rules
-         *
-         * @param selectedArguments the list of all arguments that were used
          */
-        void check(List<Argument> selectedArguments) {
-            List<String> setArguments = selectedArguments.stream().map(Argument::getArgument).collect(Collectors.toList());
-            for (String selectedArgument : setArguments) {
-                if (excludedArguments.contains(selectedArgument)) {
-                    String message = String.format("Conflicting arguments! %s may not be set when %s is set.", selectedArgument, argument);
-                    throw new InvalidCommandException(message);
+        void check() {
+            if (isSet()) {
+                for (String neededArgument : getNeededArguments()) {
+                    Argument argument = require(neededArgument);
+                    if (!argument.isSet()) {
+                        throw new InvalidCommandException(String.format("Argument '%s' may only be set if argument '%s' is set.",
+                            getIdentifier(), argument.getIdentifier()));
+                    }
+                }
+
+                for (String excludedArgument : getExcludedArguments()) {
+                    Argument argument = require(excludedArgument);
+                    if (argument.isSet()) {
+                        throw new InvalidCommandException(String.format("Argument '%s' can not be set if '%s' is set.",
+                            getIdentifier(), argument.getIdentifier()));
+                    }
+                }
+
+                if (requiresValue && !hasValue()) {
+                    throw new InvalidCommandException("Argument " + identifier + " requires an assigned value!");
+                }
+
+                if (requiresInput && getSourceCommand().getCommandInput().isBlank()) {
+                    throw new InvalidCommandException("Argument " + identifier + " requires additional command input.");
                 }
             }
+        }
 
-            for (String neededArgument : neededArguments) {
-                if (!setArguments.contains(neededArgument)) {
-                    String message = String.format("Invalid argument! %s may only be set if %s is set.", argument, neededArgument);
-                    throw new InvalidCommandException(message);
-                }
-            }
+        public boolean isSet() {
+            return set;
+        }
 
-            if (requiresValue && !hasValue()) {
-                throw new InvalidCommandException("Argument " + argument + " requires an assigned value!");
-            } else if (!requiresValue && hasValue()) {
-                throw new InvalidCommandException("Argument " + argument + " does not require an assigned value!");
-            }
-
-            if (requiresInput && getSourceCommand().getCommandBody().isBlank()) {
-                throw new InvalidCommandException("Argument " + argument + " requires additional command input.");
-            }
+        public void setSet(boolean set) {
+            this.set = set;
         }
     }
 

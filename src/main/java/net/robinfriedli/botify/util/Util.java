@@ -9,7 +9,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
-import net.dv8tion.jda.core.EmbedBuilder;
+import net.dv8tion.jda.api.EmbedBuilder;
 
 /**
  * various static utility methods
@@ -46,6 +46,10 @@ public class Util {
     }
 
     public static <E> void appendEmbedList(EmbedBuilder embedBuilder, Collection<E> elements, Function<E, String> stringFunc, String title) {
+        appendEmbedList(embedBuilder, elements, stringFunc, title, false);
+    }
+
+    public static <E> void appendEmbedList(EmbedBuilder embedBuilder, Collection<E> elements, Function<E, String> stringFunc, String title, boolean inline) {
         List<StringBuilder> parts = Lists.newArrayList(new StringBuilder());
 
         for (E element : elements) {
@@ -59,7 +63,7 @@ public class Util {
         }
 
         for (int i = 0; i < parts.size(); i++) {
-            embedBuilder.addField(i == 0 ? title : "", parts.get(i).toString(), false);
+            embedBuilder.addField(i == 0 ? title : "", parts.get(i).toString(), inline);
         }
     }
 

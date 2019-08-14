@@ -2,17 +2,19 @@ package net.robinfriedli.botify.command.commands.admin;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Collection;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.dv8tion.jda.core.EmbedBuilder;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.AbstractAdminCommand;
 import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
+import net.robinfriedli.botify.exceptions.InvalidCommandException;
 
 public class RebootCommand extends AbstractAdminCommand {
 
@@ -23,8 +25,8 @@ public class RebootCommand extends AbstractAdminCommand {
     @Override
     public void runAdmin() {
         StringBuilder confirmationMessageBuilder = new StringBuilder("Do you really want to restart the bot?");
-        if (!getCommandBody().isBlank()) {
-            confirmationMessageBuilder.append(" Reason: '").append(getCommandBody()).append("'");
+        if (!getCommandInput().isBlank()) {
+            confirmationMessageBuilder.append(" Reason: '").append(getCommandInput()).append("'");
         }
         askConfirmation(confirmationMessageBuilder.toString());
     }
@@ -35,6 +37,10 @@ public class RebootCommand extends AbstractAdminCommand {
 
     @Override
     public void withUserResponse(Object chosenOption) {
+        if (chosenOption instanceof Collection) {
+            throw new InvalidCommandException("Expected a single selection");
+        }
+
         if ((boolean) chosenOption) {
             doRestart();
         }
@@ -48,8 +54,8 @@ public class RebootCommand extends AbstractAdminCommand {
                 EmbedBuilder embedBuilder = new EmbedBuilder();
                 embedBuilder.setTitle("Scheduled restart");
                 embedBuilder.setDescription("The bot is scheduled to restart after completing pending actions. No commands will be accepted until then.");
-                if (!getCommandBody().isBlank()) {
-                    embedBuilder.addField("Reason", getCommandBody(), false);
+                if (!getCommandInput().isBlank()) {
+                    embedBuilder.addField("Reason", getCommandInput(), false);
                 }
                 sendToActiveGuilds(embedBuilder.build());
             }

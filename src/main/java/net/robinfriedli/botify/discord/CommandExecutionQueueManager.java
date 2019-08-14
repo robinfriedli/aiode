@@ -1,6 +1,6 @@
 package net.robinfriedli.botify.discord;
 
-import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
 import net.robinfriedli.botify.util.ISnowflakeMap;
 

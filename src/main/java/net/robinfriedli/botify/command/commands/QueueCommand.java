@@ -1,13 +1,16 @@
 package net.robinfriedli.botify.command.commands;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import com.google.common.collect.Lists;
 import com.wrapper.spotify.model_objects.specification.AlbumSimplified;
 import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.Message;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Message;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
@@ -31,7 +34,7 @@ public class QueueCommand extends AbstractQueueLoadingCommand {
 
     @Override
     public void doRun() throws Exception {
-        if (getCommandBody().isBlank()) {
+        if (getCommandInput().isBlank()) {
             listQueue();
         } else {
             super.doRun();
@@ -60,7 +63,7 @@ public class QueueCommand extends AbstractQueueLoadingCommand {
     @Override
     public void onSuccess() {
         if (loadedTrack != null) {
-            sendSuccess("Queued " + loadedTrack.getDisplayInterruptible());
+            sendSuccess("Queued " + loadedTrack.display());
         }
         if (loadedLocalList != null) {
             sendSuccess("Queued playlist " + loadedLocalList.getName());
@@ -83,32 +86,45 @@ public class QueueCommand extends AbstractQueueLoadingCommand {
     @Override
     public void withUserResponse(Object chosenOption) throws Exception {
         AudioManager audioManager = Botify.get().getAudioManager();
-        PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild());
+        PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild(), getSpotifyService());
+        AudioQueue queue = audioManager.getQueue(getContext().getGuild());
+
+        List<Playable> playables;
+        if (chosenOption instanceof Collection) {
+            playables = playableFactory.createPlayables(!argumentSet("preview"), chosenOption);
+            loadedAmount = playables.size();
+        } else {
+            playables = getPlayablesForOption(chosenOption, playableFactory);
+        }
+
+        queue.add(playables);
+    }
+
+    private List<Playable> getPlayablesForOption(Object chosenOption, PlayableFactory playableFactory) throws Exception {
         if (chosenOption instanceof Track || chosenOption instanceof YouTubeVideo) {
             Playable track = playableFactory.createPlayable(!argumentSet("preview"), chosenOption);
-            audioManager.getQueue(getContext().getGuild()).add(track);
             loadedTrack = track;
+            return Collections.singletonList(track);
         } else if (chosenOption instanceof PlaylistSimplified) {
             PlaylistSimplified playlist = (PlaylistSimplified) chosenOption;
             List<Track> tracks = runWithCredentials(() -> getSpotifyService().getPlaylistTracks(playlist));
-            AudioPlayback playbackForGuild = audioManager.getPlaybackForGuild(getContext().getGuild());
             List<Playable> playables = playableFactory.createPlayables(!argumentSet("preview"), tracks, false);
-            playbackForGuild.getAudioQueue().add(playables);
             loadedSpotifyPlaylist = playlist;
+            return playables;
         } else if (chosenOption instanceof YouTubePlaylist) {
-            AudioPlayback playback = audioManager.getPlaybackForGuild(getContext().getGuild());
             YouTubePlaylist youTubePlaylist = (YouTubePlaylist) chosenOption;
             List<Playable> playables = playableFactory.createPlayables(youTubePlaylist, false);
-            playback.getAudioQueue().add(playables);
             loadedYouTubePlaylist = youTubePlaylist;
+            return playables;
         } else if (chosenOption instanceof AlbumSimplified) {
             AlbumSimplified album = (AlbumSimplified) chosenOption;
-            AudioPlayback playback = audioManager.getPlaybackForGuild(getContext().getGuild());
             List<Track> tracks = runWithCredentials(() -> getSpotifyService().getAlbumTracks(album.getId()));
             List<Playable> playables = playableFactory.createPlayables(!argumentSet("preview"), tracks, false);
-            playback.getAudioQueue().add(playables);
             loadedAlbum = album;
+            return playables;
         }
+
+        throw new UnsupportedOperationException("Unsupported chosen option type: " + chosenOption.getClass());
     }
 
     @Override

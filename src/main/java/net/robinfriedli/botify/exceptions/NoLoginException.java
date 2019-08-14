@@ -1,6 +1,6 @@
 package net.robinfriedli.botify.exceptions;
 
-import net.dv8tion.jda.core.entities.User;
+import net.dv8tion.jda.api.entities.User;
 
 /**
  * Thrown when a Spotify login is required for an action but none is found for the corresponding user.

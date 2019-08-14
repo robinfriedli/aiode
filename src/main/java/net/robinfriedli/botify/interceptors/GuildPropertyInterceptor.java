@@ -2,16 +2,31 @@ package net.robinfriedli.botify.interceptors;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-import org.slf4j.Logger;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.apache.commons.lang3.tuple.Pair;
+
+import com.google.common.collect.Lists;
+import net.robinfriedli.botify.Botify;
+import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
+import net.robinfriedli.botify.command.parser.ArgumentBuildingMode;
+import net.robinfriedli.botify.command.parser.CommandParseListener;
+import net.robinfriedli.botify.command.parser.CommandParser;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.discord.properties.AbstractGuildProperty;
+import net.robinfriedli.botify.discord.properties.ArgumentPrefixProperty;
 import net.robinfriedli.botify.discord.properties.GuildPropertyManager;
 import net.robinfriedli.botify.entities.GuildSpecification;
+import net.robinfriedli.botify.entities.Preset;
 import org.hibernate.Interceptor;
+import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.type.Type;
 
@@ -19,7 +34,7 @@ public class GuildPropertyInterceptor extends ChainableInterceptor {
 
     private final CommandContext commandContext;
     private final GuildPropertyManager guildPropertyManager;
-    private final Map<AbstractGuildProperty, Object> changedProperties;
+    private final Map<AbstractGuildProperty, Pair<Object, Object>> changedProperties;
     private final MessageService messageService;
 
     public GuildPropertyInterceptor(Interceptor next, Logger logger, CommandContext commandContext, GuildPropertyManager guildPropertyManager, MessageService messageService) {
@@ -41,7 +56,7 @@ public class GuildPropertyInterceptor extends ChainableInterceptor {
                 if (current != null && !current.equals(previous)) {
                     AbstractGuildProperty property = guildPropertyManager.getProperty(propertyName);
                     if (property != null) {
-                        changedProperties.put(property, current);
+                        changedProperties.put(property, Pair.of(previous, current));
                         property.validate(current);
                     }
                 }
@@ -57,8 +72,21 @@ public class GuildPropertyInterceptor extends ChainableInterceptor {
                 StringBuilder successMessageBuilder = new StringBuilder();
                 for (AbstractGuildProperty property : changedProperties.keySet()) {
                     String updateMessage = property.getContribution().getUpdateMessage();
-                    successMessageBuilder.append(String.format(updateMessage, changedProperties.get(property)))
+                    Pair<Object, Object> previousWithNewValue = changedProperties.get(property);
+                    successMessageBuilder.append(String.format(updateMessage, previousWithNewValue.getRight()))
                         .append(System.lineSeparator());
+
+                    if ("argumentPrefix".equals(property.getProperty())) {
+                        try {
+                            // previous might be null
+                            updatePresets((Character) previousWithNewValue.getLeft(), (char) previousWithNewValue.getRight());
+                        } catch (Throwable e) {
+                            messageService.sendException("Exception occurred while updating presets with new argument prefix. " +
+                                    "Presets will have to be updated manually if necessary.",
+                                commandContext.getChannel());
+                            LoggerFactory.getLogger(getClass()).error("Exception while updating presets", e);
+                        }
+                    }
                 }
 
                 messageService.sendSuccess(successMessageBuilder.toString(), commandContext.getChannel());
@@ -66,4 +94,44 @@ public class GuildPropertyInterceptor extends ChainableInterceptor {
         }
         changedProperties.clear();
     }
+
+    private void updatePresets(Character oldArgumentPrefix, char newArgumentPrefix) {
+        Session session = commandContext.getSession();
+        CriteriaBuilder cb = session.getCriteriaBuilder();
+        CriteriaQuery<Preset> presetQuery = cb.createQuery(Preset.class);
+        presetQuery.from(Preset.class);
+        List<Preset> presets = session.createQuery(presetQuery).getResultList();
+
+        for (Preset preset : presets) {
+            Botify botify = Botify.get();
+            AbstractCommand command = preset.instantiateCommand(botify.getCommandManager(), commandContext, preset.getName());
+            char argPrefix = oldArgumentPrefix != null ? oldArgumentPrefix : ArgumentPrefixProperty.DEFAULT;
+
+            String oldPreset = preset.getPreset();
+            StringBuilder newPresetBuilder = new StringBuilder(oldPreset);
+            List<Integer> oldPrefixOccurrences = Lists.newArrayList();
+            CommandParser commandParser = new CommandParser(command, argPrefix, new CommandParseListener() {
+                @Override
+                public void onModeSwitch(CommandParser.Mode previousMode, CommandParser.Mode newMode, int index, char character) {
+                    // to be 100% certain that this only migrates the characters that are actually non-escaped argument prefixes
+                    // only replace those characters that cause a mode switch to a new ArgumentBuildingMode, meaning
+                    // they are in fact argument prefixes
+                    if (newMode instanceof ArgumentBuildingMode) {
+                        oldPrefixOccurrences.add(index);
+                    }
+                }
+            });
+            commandParser.parse(oldPreset);
+
+            for (int oldPrefixOccurrence : oldPrefixOccurrences) {
+                newPresetBuilder.setCharAt(oldPrefixOccurrence, newArgumentPrefix);
+            }
+
+            String newPreset = newPresetBuilder.toString();
+            if (!oldPreset.equals(newPreset)) {
+                preset.setPreset(newPreset);
+            }
+        }
+    }
+
 }

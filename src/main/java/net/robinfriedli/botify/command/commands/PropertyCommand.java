@@ -2,9 +2,7 @@ package net.robinfriedli.botify.command.commands;
 
 import java.util.List;
 
-import org.apache.commons.lang3.tuple.Pair;
-
-import net.dv8tion.jda.core.EmbedBuilder;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.ArgumentContribution;
@@ -26,7 +24,7 @@ public class PropertyCommand extends AbstractCommand {
 
     @Override
     public void doRun() {
-        if (getCommandBody().isBlank()) {
+        if (getCommandInput().isBlank()) {
             listProperties();
         } else {
             if (argumentSet("toggle")) {
@@ -38,17 +36,16 @@ public class PropertyCommand extends AbstractCommand {
     }
 
     private void setProperty() {
-        Pair<String, String> pair = splitInlineArgument("set");
-        AbstractGuildProperty property = Botify.get().getGuildPropertyManager().getPropertyByName(pair.getLeft());
+        AbstractGuildProperty property = Botify.get().getGuildPropertyManager().getPropertyByName(getCommandInput());
         if (property != null) {
-            property.set(pair.getRight());
+            property.set(getArgumentValue("set"));
         } else {
-            throw new InvalidCommandException("No such property '" + pair.getLeft() + "'");
+            throw new InvalidCommandException("No such property '" + getCommandInput() + "'");
         }
     }
 
     private void toggleProperty() {
-        AbstractGuildProperty property = Botify.get().getGuildPropertyManager().getPropertyByName(getCommandBody());
+        AbstractGuildProperty property = Botify.get().getGuildPropertyManager().getPropertyByName(getCommandInput());
         if (property != null) {
             Object value = property.get();
             if (value instanceof Boolean) {
@@ -58,7 +55,7 @@ public class PropertyCommand extends AbstractCommand {
                 throw new InvalidCommandException("Value of property '" + property.getName() + "' is not a boolean");
             }
         } else {
-            throw new InvalidCommandException("No such property '" + getCommandBody() + "'");
+            throw new InvalidCommandException("No such property '" + getCommandInput() + "'");
         }
     }
 
@@ -93,6 +90,9 @@ public class PropertyCommand extends AbstractCommand {
         ArgumentContribution argumentContribution = new ArgumentContribution(this);
         argumentContribution.map("toggle")
             .setDescription("Toggles a property with a boolean value (e.g. \"playback notification\") to its opposite value");
+        argumentContribution.map("set").setRequiresValue(true).excludesArguments("toggle")
+            .setDescription("Set a property to the specified value this argument is required when not using the toggle argument. " +
+                "E.g. property default source $set youtube.");
         return argumentContribution;
     }
 }
