@@ -20,9 +20,9 @@ public class VolumeCommand extends AbstractCommand {
 
         int volume;
         try {
-            volume = Integer.parseInt(getCommandBody());
+            volume = Integer.parseInt(getCommandInput());
         } catch (NumberFormatException e) {
-            throw new InvalidCommandException("'" + getCommandBody() + "' is not an integer");
+            throw new InvalidCommandException("'" + getCommandInput() + "' is not an integer");
         }
 
         if (!(volume > 0 && volume <= 200)) {

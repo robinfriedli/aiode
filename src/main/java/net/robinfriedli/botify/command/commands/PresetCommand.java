@@ -2,13 +2,13 @@ package net.robinfriedli.botify.command.commands;
 
 import java.util.List;
 
-import org.apache.commons.lang3.tuple.Pair;
-
-import net.dv8tion.jda.core.EmbedBuilder;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
+import net.robinfriedli.botify.command.parser.CommandParser;
+import net.robinfriedli.botify.discord.properties.ArgumentPrefixProperty;
 import net.robinfriedli.botify.entities.Preset;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
@@ -27,14 +27,14 @@ public class PresetCommand extends AbstractCommand {
         Session session = getContext().getSession();
         String guildId = getContext().getGuild().getId();
         if (argumentSet("delete")) {
-            Preset preset = SearchEngine.searchPreset(session, getCommandBody(), guildId);
+            Preset preset = SearchEngine.searchPreset(session, getCommandInput(), guildId);
 
             if (preset == null) {
-                throw new InvalidCommandException("No preset found for " + getCommandBody());
+                throw new InvalidCommandException(String.format("No preset found for '%s'", getCommandInput()));
             }
 
             invoke(() -> session.delete(preset));
-        } else if (getCommandBody().isBlank()) {
+        } else if (getCommandInput().isBlank()) {
             List<Preset> presets = session.createQuery("from " + Preset.class.getName() + " where guild_id = '" + guildId + "'", Preset.class).getResultList();
             EmbedBuilder embedBuilder = new EmbedBuilder();
             if (presets.isEmpty()) {
@@ -47,9 +47,8 @@ public class PresetCommand extends AbstractCommand {
             }
             sendMessage(embedBuilder);
         } else {
-            Pair<String, String> pair = splitInlineArgument("as");
-            String presetString = pair.getLeft();
-            String name = pair.getRight();
+            String presetString = getCommandInput();
+            String name = getArgumentValue("as");
             Preset existingPreset = SearchEngine.searchPreset(getContext().getSession(), name, getContext().getGuild().getId());
             if (existingPreset != null) {
                 throw new InvalidCommandException("Preset " + name + " already exists");
@@ -58,6 +57,8 @@ public class PresetCommand extends AbstractCommand {
             Preset preset = new Preset(name, presetString, getContext().getGuild(), getContext().getUser());
             String testString = presetString.contains("%s") ? name + " test" : name;
             AbstractCommand abstractCommand = preset.instantiateCommand(getManager(), getContext(), testString);
+            CommandParser commandParser = new CommandParser(abstractCommand, ArgumentPrefixProperty.getForCurrentContext());
+            commandParser.parse();
             abstractCommand.verify();
             invoke(() -> session.persist(preset));
         }
@@ -71,8 +72,11 @@ public class PresetCommand extends AbstractCommand {
     @Override
     public ArgumentContribution setupArguments() {
         ArgumentContribution argumentContribution = new ArgumentContribution(this);
+        argumentContribution.map("as").setRequiresValue(true).excludesArguments("delete")
+            .setDescription("Defines the name that will be used to call this preset. This argument is mandatory except when using the delete argument.");
         argumentContribution.map("delete").setRequiresInput(true)
             .setDescription("Delete an existing preset by its name.");
         return argumentContribution;
     }
+
 }

@@ -27,9 +27,9 @@ public class Invoker {
      * spamming of a command that uses this method, e.g. spamming the add command concurrently could evade the playlist
      * size limit.
      *
-     * @param session the target hibernate session, individual for each command execution
+     * @param session  the target hibernate session, individual for each command execution
      * @param callable tho callable to run
-     * @param <E> the return type
+     * @param <E>      the return type
      * @return the value the callable returns, often void
      */
     public synchronized <E> E invoke(Session session, Callable<E> callable) {

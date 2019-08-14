@@ -23,19 +23,19 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import net.dv8tion.jda.core.EmbedBuilder;
-import net.dv8tion.jda.core.JDA;
-import net.dv8tion.jda.core.MessageBuilder;
-import net.dv8tion.jda.core.Permission;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.Message;
-import net.dv8tion.jda.core.entities.MessageChannel;
-import net.dv8tion.jda.core.entities.MessageEmbed;
-import net.dv8tion.jda.core.entities.TextChannel;
-import net.dv8tion.jda.core.entities.User;
-import net.dv8tion.jda.core.exceptions.ErrorResponseException;
-import net.dv8tion.jda.core.exceptions.InsufficientPermissionException;
-import net.dv8tion.jda.core.requests.restaction.MessageAction;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.MessageBuilder;
+import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
+import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
+import net.dv8tion.jda.api.requests.restaction.MessageAction;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.command.CommandContext;
@@ -127,22 +127,28 @@ public class MessageService {
         return send(messageBuilder, file, "logo.png", channel);
     }
 
-    public void sendWithLogo(EmbedBuilder embedBuilder, Guild guild) throws IOException {
+    public CompletableFuture<Message> sendWithLogo(EmbedBuilder embedBuilder, Guild guild) throws IOException {
         MessageBuilder messageBuilder = new MessageBuilder();
         String baseUri = PropertiesLoadingService.requireProperty("BASE_URI");
         InputStream file = new URL(baseUri + "/resources-public/img/botify-logo.png").openStream();
         embedBuilder.setThumbnail("attachment://logo.png");
         embedBuilder.setColor(ColorSchemeProperty.getColor());
         messageBuilder.setEmbed(embedBuilder.build());
-        send(messageBuilder, file, "logo.png", guild);
+        return send(messageBuilder, file, "logo.png", guild);
     }
 
     public CompletableFuture<Message> send(MessageBuilder messageBuilder, InputStream file, String fileName, MessageChannel messageChannel) {
-        return accept(messageChannel, c -> c.sendFile(file, fileName, messageBuilder.build()));
+        return accept(messageChannel, c -> {
+            MessageAction messageAction = c.sendMessage(messageBuilder.build());
+            return messageAction.addFile(file, fileName);
+        });
     }
 
     public CompletableFuture<Message> send(MessageBuilder messageBuilder, InputStream file, String fileName, Guild guild) {
-        return acceptForGuild(guild, c -> c.sendFile(file, fileName, messageBuilder.build()));
+        return acceptForGuild(guild, c -> {
+            MessageAction messageAction = c.sendMessage(messageBuilder.build());
+            return messageAction.addFile(file, fileName);
+        });
     }
 
     public CompletableFuture<Message> sendSuccess(String message, MessageChannel channel) {
@@ -231,15 +237,7 @@ public class MessageService {
         }
     }
 
-    private CompletableFuture<Message> sendInternal(MessageChannel channel, String text) {
-        return accept(channel, c -> c.sendMessage(text));
-    }
-
-    private CompletableFuture<Message> sendInternal(MessageChannel channel, MessageEmbed messageEmbed) {
-        return accept(channel, c -> c.sendMessage(messageEmbed));
-    }
-
-    private CompletableFuture<Message> accept(MessageChannel channel, Function<MessageChannel, MessageAction> function) {
+    public CompletableFuture<Message> accept(MessageChannel channel, Function<MessageChannel, MessageAction> function) {
         CompletableFuture<Message> futureMessage = new CompletableFuture<>();
         try {
             MessageAction messageAction = function.apply(channel);
@@ -253,11 +251,7 @@ public class MessageService {
                 if (channel instanceof TextChannel && canTalk(((TextChannel) channel).getGuild())) {
                     Guild guild = ((TextChannel) channel).getGuild();
                     send("I do not have permission to send any messages to channel " + channel.getName() + " so I'll send it here instead.", guild);
-                    acceptForGuild(guild, function).thenAccept(message -> {
-                        if (futureMessage.isDone()) {
-                            futureMessage.complete(message);
-                        }
-                    });
+                    acceptForGuild(guild, function).thenAccept(futureMessage::complete);
                 } else if (channel instanceof TextChannel) {
                     logger.warn("Unable to send messages to guild " + ((TextChannel) channel).getGuild());
                     futureMessage.completeExceptionally(e);
@@ -281,7 +275,7 @@ public class MessageService {
         return futureMessage;
     }
 
-    private CompletableFuture<Message> acceptForGuild(Guild guild, Function<MessageChannel, MessageAction> function) {
+    public CompletableFuture<Message> acceptForGuild(Guild guild, Function<MessageChannel, MessageAction> function) {
         TextChannel defaultChannel = guild.getDefaultChannel();
         if (defaultChannel != null && defaultChannel.canTalk()) {
             return accept(defaultChannel, function);
@@ -299,6 +293,14 @@ public class MessageService {
         } else {
             return accept(availableChannels.get(0), function);
         }
+    }
+
+    private CompletableFuture<Message> sendInternal(MessageChannel channel, String text) {
+        return accept(channel, c -> c.sendMessage(text));
+    }
+
+    private CompletableFuture<Message> sendInternal(MessageChannel channel, MessageEmbed messageEmbed) {
+        return accept(channel, c -> c.sendMessage(messageEmbed));
     }
 
     private boolean canTalk(Guild guild) {

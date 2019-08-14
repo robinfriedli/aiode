@@ -12,11 +12,11 @@ import org.slf4j.LoggerFactory;
 
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
-import net.dv8tion.jda.core.EmbedBuilder;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.events.guild.GuildJoinEvent;
-import net.dv8tion.jda.core.events.guild.GuildLeaveEvent;
-import net.dv8tion.jda.core.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
+import net.dv8tion.jda.api.events.guild.GuildLeaveEvent;
+import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.MessageService;
@@ -34,6 +34,7 @@ import net.robinfriedli.jxp.persist.Context;
 import org.discordbots.api.client.DiscordBotListAPI;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.jetbrains.annotations.NotNull;
 
 import static net.robinfriedli.jxp.queries.Conditions.*;
 
@@ -121,7 +122,7 @@ public class GuildJoinListener extends ListenerAdapter {
     }
 
     @Override
-    public void onGuildLeave(GuildLeaveEvent event) {
+    public void onGuildLeave(@NotNull GuildLeaveEvent event) {
         if (discordBotListAPI != null) {
             discordBotListAPI.setStats(event.getJDA().getGuilds().size());
         }

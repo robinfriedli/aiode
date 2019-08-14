@@ -1,12 +1,15 @@
 package net.robinfriedli.botify.command.commands.admin;
 
-import net.dv8tion.jda.core.EmbedBuilder;
+import java.util.Collection;
+
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.AbstractAdminCommand;
 import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
+import net.robinfriedli.botify.exceptions.InvalidCommandException;
 
 public class QuitCommand extends AbstractAdminCommand {
 
@@ -17,8 +20,8 @@ public class QuitCommand extends AbstractAdminCommand {
     @Override
     public void runAdmin() {
         StringBuilder confirmationMessageBuilder = new StringBuilder("Do you really want to stop the bot?");
-        if (!getCommandBody().isBlank()) {
-            confirmationMessageBuilder.append(" Reason: '").append(getCommandBody()).append("'");
+        if (!getCommandInput().isBlank()) {
+            confirmationMessageBuilder.append(" Reason: '").append(getCommandInput()).append("'");
         }
         askConfirmation(confirmationMessageBuilder.toString());
     }
@@ -29,6 +32,10 @@ public class QuitCommand extends AbstractAdminCommand {
 
     @Override
     public void withUserResponse(Object chosenOption) {
+        if (chosenOption instanceof Collection) {
+            throw new InvalidCommandException("Expected a single selection");
+        }
+
         if ((boolean) chosenOption) {
             doQuit();
         }
@@ -42,8 +49,8 @@ public class QuitCommand extends AbstractAdminCommand {
                 EmbedBuilder embedBuilder = new EmbedBuilder();
                 embedBuilder.setTitle("Scheduled shutdown");
                 embedBuilder.setDescription("The bot is scheduled to shut down after completing queued actions. No commands will be accepted until then.");
-                if (!getCommandBody().isBlank()) {
-                    embedBuilder.addField("Reason", getCommandBody(), false);
+                if (!getCommandInput().isBlank()) {
+                    embedBuilder.addField("Reason", getCommandInput(), false);
                 }
                 sendToActiveGuilds(embedBuilder.build());
             }

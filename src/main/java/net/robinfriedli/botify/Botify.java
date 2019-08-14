@@ -6,9 +6,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.wrapper.spotify.SpotifyApi;
-import net.dv8tion.jda.core.JDA;
-import net.dv8tion.jda.core.OnlineStatus;
-import net.dv8tion.jda.core.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.OnlineStatus;
+import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.command.SecurityManager;
@@ -105,7 +105,7 @@ public class Botify {
      * method waits for those threads to finish, causing a deadlock.
      *
      * @param millisToWait time to wait for pending actions to complete in milliseconds, after this time the bot will
-     * quit either way
+     *                     quit either way
      */
     public static void shutdown(long millisToWait) {
         Botify botify = get();

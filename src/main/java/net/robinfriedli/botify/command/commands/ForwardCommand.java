@@ -29,12 +29,12 @@ public class ForwardCommand extends AbstractCommand {
         long toForwardMs;
         try {
             if (argumentSet("minutes")) {
-                toForwardMs = Integer.parseInt(getCommandBody()) * 60000;
+                toForwardMs = Integer.parseInt(getCommandInput()) * 60000;
             } else {
-                toForwardMs = Integer.parseInt(getCommandBody()) * 1000;
+                toForwardMs = Integer.parseInt(getCommandInput()) * 1000;
             }
         } catch (NumberFormatException e) {
-            throw new InvalidCommandException("'" + getCommandBody() + "' is not convertible to type integer. " +
+            throw new InvalidCommandException("'" + getCommandInput() + "' is not convertible to type integer. " +
                 "Please enter a valid number.");
         }
 
@@ -43,7 +43,7 @@ public class ForwardCommand extends AbstractCommand {
         }
 
         long newPosition = playback.getCurrentPositionMs() + toForwardMs;
-        long duration = playback.getAudioQueue().getCurrent().getDurationMsInterruptible();
+        long duration = playback.getAudioQueue().getCurrent().durationMs();
         if (newPosition > duration) {
             throw new InvalidCommandException("New position too high! Current track duration: " + Util.normalizeMillis(duration) +
                 ", new position: " + Util.normalizeMillis(newPosition));

@@ -1,14 +1,16 @@
 package net.robinfriedli.botify.command.commands;
 
 import java.math.BigInteger;
+import java.sql.Date;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.Lists;
 import com.wrapper.spotify.model_objects.specification.Track;
-import net.dv8tion.jda.core.EmbedBuilder;
-import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.Playable;
@@ -37,37 +39,66 @@ public class ChartsCommand extends AbstractCommand {
         Session session = getContext().getSession();
         Guild guild = getContext().getGuild();
 
+        Date dateAtStartOfMonth = Date.valueOf(LocalDateTime.now().withDayOfMonth(1).toLocalDate());
         Query<Object[]> globalQuery = session.createQuery("select source, trackId, count(*) as c from " + PlaybackHistory.class.getName()
             + " where trackId is not null group by trackId, source order by c desc", Object[].class)
             .setMaxResults(5);
         Query<Object[]> guildQuery = session.createQuery("select source, trackId, count(*) as c from " + PlaybackHistory.class.getName()
             + " where trackId is not null and guildId = '" + guild.getId() + "' group by trackId, source order by c desc", Object[].class)
             .setMaxResults(5);
+
+        Query<Object[]> globalQueryMonthly = session.createQuery("select source, trackId, count(*) as c from " + PlaybackHistory.class.getName()
+            + " where trackId is not null and timestamp > '" + dateAtStartOfMonth.toString() + "' group by trackId, source order by c desc", Object[].class)
+            .setMaxResults(5);
+        Query<Object[]> guildQueryMonthly = session.createQuery("select source, trackId, count(*) as c from " + PlaybackHistory.class.getName()
+            + " where trackId is not null and timestamp > '" + dateAtStartOfMonth.toString() + "' and guildId = '" + guild.getId() + "' group by trackId, source order by c desc", Object[].class)
+            .setMaxResults(5);
+
         List<Object[]> globalResults = globalQuery.getResultList();
         List<Object[]> guildResults = guildQuery.getResultList();
+        List<Object[]> globalMonthlyResults = globalQueryMonthly.getResultList();
+        List<Object[]> guildMonthlyResults = guildQueryMonthly.getResultList();
 
         @SuppressWarnings("unchecked")
         Query<Object[]> globalArtistQuery = session.createSQLQuery("select artists_pk, count(*) as c " +
             "from playback_history_artist group by artists_pk order by c desc limit 3");
         @SuppressWarnings("unchecked")
         Query<Object[]> guildArtistQuery = session.createSQLQuery("select artists_pk, count(*) as c from " +
-            "(select * from playback_history_artist where playbackhistory_pk in(select pk from playback_history where guild_id = '" + guild.getId() + "')) as foo " +
+            "playback_history_artist as p where p.playbackhistory_pk in(select pk from playback_history where guild_id = '" + guild.getId() + "') " +
             "group by artists_pk order by c desc limit 3");
+
+        @SuppressWarnings("unchecked")
+        Query<Object[]> globalArtistMonthlyQuery = session.createSQLQuery("select artists_pk, count(*) as c " +
+            "from playback_history_artist as p " +
+            "where p.playbackhistory_pk in(select pk from playback_history where timestamp > '" + dateAtStartOfMonth.toString() + "') " +
+            "group by artists_pk order by c desc limit 3");
+        @SuppressWarnings("unchecked")
+        Query<Object[]> guildArtistMonthlyQuery = session.createSQLQuery("select artists_pk, count(*) as c " +
+            "from playback_history_artist where playbackhistory_pk in(select pk from playback_history " +
+            "where timestamp > '" + dateAtStartOfMonth.toString() + "' and guild_id = '" + guild.getId() + "') " +
+            "group by artists_pk order by c desc limit 3");
+
         List<Object[]> globalArtists = globalArtistQuery.getResultList();
         List<Object[]> guildArtists = guildArtistQuery.getResultList();
+        List<Object[]> globalArtistsMonthly = globalArtistMonthlyQuery.getResultList();
+        List<Object[]> guildArtistMonthly = guildArtistMonthlyQuery.getResultList();
 
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.addField("Global", "Shows the charts across all guilds", false);
-        addTrackCharts(globalResults, embedBuilder);
-        addArtists(globalArtists, embedBuilder);
+        addTrackCharts(globalResults, embedBuilder, "All time");
+        addArtists(globalArtists, embedBuilder, "All time");
+        addTrackCharts(globalMonthlyResults, embedBuilder, "Monthly");
+        addArtists(globalArtistsMonthly, embedBuilder, "Monthly");
         embedBuilder.addBlankField(false);
         embedBuilder.addField("Guild", "Shows the charts for this guild", false);
-        addTrackCharts(guildResults, embedBuilder);
-        addArtists(guildArtists, embedBuilder);
+        addTrackCharts(guildResults, embedBuilder, "All time");
+        addArtists(guildArtists, embedBuilder, "All time");
+        addTrackCharts(guildMonthlyResults, embedBuilder, "Monthly");
+        addArtists(guildArtistMonthly, embedBuilder, "Monthly");
         sendMessage(embedBuilder);
     }
 
-    private void addTrackCharts(List<Object[]> queryResults, EmbedBuilder embedBuilder) throws Exception {
+    private void addTrackCharts(List<Object[]> queryResults, EmbedBuilder embedBuilder, String period) throws Exception {
         Map<Playable, Long> tracksWithPlayedAmount = new HashMap<>();
         List<Playable> tracks = Lists.newArrayList();
         for (Object[] record : queryResults) {
@@ -77,20 +108,21 @@ public class ChartsCommand extends AbstractCommand {
             tracks.add(track);
         }
 
-        String title = "Count - Track";
+        String title = period + " - Track Charts";
         if (!tracks.isEmpty()) {
             Util.appendEmbedList(
                 embedBuilder,
                 tracks,
-                track -> tracksWithPlayedAmount.get(track) + " - " + track.getDisplayInterruptible(),
-                title
+                track -> tracksWithPlayedAmount.get(track) + " - " + track.display(),
+                title,
+                true
             );
         } else {
-            embedBuilder.addField(title, "No data", false);
+            embedBuilder.addField(title, "No data", true);
         }
     }
 
-    private void addArtists(List<Object[]> records, EmbedBuilder embedBuilder) {
+    private void addArtists(List<Object[]> records, EmbedBuilder embedBuilder, String period) {
         Session session = getContext().getSession();
         Map<Artist, BigInteger> artistsWithPlayedAmount = new HashMap<>();
         List<Artist> artists = Lists.newArrayList();
@@ -102,16 +134,17 @@ public class ChartsCommand extends AbstractCommand {
             artistsWithPlayedAmount.put(artist, playedCount);
         }
 
-        String title = "Count - Artist";
+        String title = period + " - Artist Charts";
         if (!artists.isEmpty()) {
             Util.appendEmbedList(
                 embedBuilder,
                 artists,
                 artist -> artistsWithPlayedAmount.get(artist) + " - " + artist.getName(),
-                title
+                title,
+                true
             );
         } else {
-            embedBuilder.addField(title, "No data", false);
+            embedBuilder.addField(title, "No data", true);
         }
     }
 
@@ -130,7 +163,7 @@ public class ChartsCommand extends AbstractCommand {
                 return youTubeService.videoForId(id);
             case "Url":
                 AudioManager audioManager = Botify.get().getAudioManager();
-                PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild());
+                PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild(), getSpotifyService());
                 return playableFactory.createPlayable(id, getContext().getSpotifyApi(), false);
         }
 

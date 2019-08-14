@@ -42,7 +42,7 @@ public class ShuffleCommand extends AbstractCommand {
 
         AudioQueue queue = playback.getAudioQueue();
         if (queue.hasNext()) {
-            messageBuilder.append(" New next track: ").append(queue.getNext().getDisplayInterruptible());
+            messageBuilder.append(" New next track: ").append(queue.getNext().display());
         }
 
         sendSuccess(messageBuilder.toString());

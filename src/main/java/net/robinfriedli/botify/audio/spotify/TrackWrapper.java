@@ -4,7 +4,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
-import net.dv8tion.jda.core.entities.User;
+import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.audio.AbstractSoftCachedPlayable;
 import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.audio.youtube.HollowYouTubeVideo;
@@ -51,12 +51,22 @@ public class TrackWrapper extends AbstractSoftCachedPlayable implements Playable
     }
 
     @Override
+    public String getDisplayNow(String alternativeValue) {
+        return getDisplay();
+    }
+
+    @Override
     public long getDurationMs() {
         return track.getDurationMs();
     }
 
     @Override
     public long getDurationMs(long timeOut, TimeUnit unit) {
+        return getDurationMs();
+    }
+
+    @Override
+    public long getDurationNow(long alternativeValue) {
         return getDurationMs();
     }
 

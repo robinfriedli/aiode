@@ -5,16 +5,19 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.LinkedHashMultimap;
-import net.dv8tion.jda.core.EmbedBuilder;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.Role;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Role;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
+import net.robinfriedli.botify.discord.properties.ArgumentPrefixProperty;
 import net.robinfriedli.botify.entities.AccessConfiguration;
+import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.jxp.api.XmlElement;
@@ -30,7 +33,7 @@ public class HelpCommand extends AbstractCommand {
 
     @Override
     public void doRun() {
-        if (getCommandBody().isBlank()) {
+        if (getCommandInput().isBlank()) {
             listCommands();
         } else {
             showCommandHelp();
@@ -38,10 +41,24 @@ public class HelpCommand extends AbstractCommand {
     }
 
     private void showCommandHelp() {
-        getManager().getCommand(getContext(), getCommandBody()).ifPresentOrElse(command -> {
+        getManager().getCommand(getContext(), getCommandInput()).ifPresentOrElse(command -> {
+            String prefix;
+            GuildSpecification specification = getContext().getGuildContext().getSpecification();
+            String setPrefix = specification.getPrefix();
+            String botName = specification.getBotName();
+            if (!Strings.isNullOrEmpty(setPrefix)) {
+                prefix = setPrefix;
+            } else if (!Strings.isNullOrEmpty(botName)) {
+                prefix = botName + " ";
+            } else {
+                prefix = "$botify ";
+            }
+
             EmbedBuilder embedBuilder = new EmbedBuilder();
             embedBuilder.setTitle("Command " + command.getIdentifier() + ":");
-            embedBuilder.setDescription(command.getDescription());
+            String descriptionFormat = command.getDescription();
+            String descriptionText = descriptionFormat.contains("%s") ? String.format(descriptionFormat, prefix) : descriptionFormat;
+            embedBuilder.setDescription(descriptionText);
             Guild guild = getContext().getGuild();
             AccessConfiguration accessConfiguration = Botify.get().getGuildManager().getAccessConfiguration(command.getIdentifier(), guild);
             if (accessConfiguration != null) {
@@ -58,25 +75,30 @@ public class HelpCommand extends AbstractCommand {
             }
             ArgumentContribution argumentContribution = command.setupArguments();
             if (!argumentContribution.isEmpty()) {
-                embedBuilder.addField("__Arguments__", "Keywords that alter the command behavior or define a search scope", false);
+                embedBuilder.addField("__Arguments__", "Keywords that alter the command behavior or define a search scope.", false);
 
+                char argumentPrefix = ArgumentPrefixProperty.getForCurrentContext();
                 for (ArgumentContribution.Argument argument : argumentContribution.getArguments()) {
-                    embedBuilder.addField("$" + argument.getArgument(), argument.getDescription(), false);
+                    embedBuilder.addField(argumentPrefix + argument.getIdentifier(), argument.getDescription(), false);
                 }
 
             }
 
             List<XmlElement> examples = command.getCommandContribution().query(tagName("example")).collect();
             if (!examples.isEmpty()) {
-                embedBuilder.addField("__Examples__", "Practical usage examples for this command. Note that '$botify' can be exchanged for your custom prefix or bot name.", false);
+                embedBuilder.addField("__Examples__", "Practical usage examples for this command.", false);
                 for (XmlElement example : examples) {
-                    embedBuilder.addField(example.getAttribute("title").getValue(), example.getTextContent(), false);
+                    String exampleFormat = example.getTextContent();
+                    String exampleText = exampleFormat.contains("%s") ? String.format(exampleFormat, prefix) : exampleFormat;
+                    String titleFormat = example.getAttribute("title").getValue();
+                    String titleText = titleFormat.contains("%s") ? String.format(titleFormat, prefix) : titleFormat;
+                    embedBuilder.addField(titleText, exampleText, false);
                 }
             }
 
             sendMessage(embedBuilder);
         }, () -> {
-            throw new InvalidCommandException("No command found for " + getCommandBody());
+            throw new InvalidCommandException(String.format("No command found for '%s'", getCommandInput()));
         });
     }
 
@@ -98,7 +120,7 @@ public class HelpCommand extends AbstractCommand {
         for (Category category : categories) {
             Iterator<AbstractCommand> commandIterator = commandsByCategory.get(category).iterator();
             StringBuilder commandString = new StringBuilder();
-            for (int i = 0; commandIterator.hasNext(); i++) {
+            while (commandIterator.hasNext()) {
                 AbstractCommand c = commandIterator.next();
                 commandString.append(c.getIdentifier());
 

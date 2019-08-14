@@ -38,11 +38,6 @@ public class YouTubeVideoImpl extends AbstractSoftCachedPlayable implements YouT
     }
 
     @Override
-    public String getVideoId(long timeOut, TimeUnit unit) {
-        return getVideoId();
-    }
-
-    @Override
     public long getDuration() {
         return duration;
     }

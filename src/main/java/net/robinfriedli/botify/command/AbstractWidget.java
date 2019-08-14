@@ -3,18 +3,18 @@ package net.robinfriedli.botify.command;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.dv8tion.jda.core.entities.Message;
-import net.dv8tion.jda.core.entities.MessageReaction;
-import net.dv8tion.jda.core.entities.User;
-import net.dv8tion.jda.core.events.message.guild.react.GuildMessageReactionAddEvent;
-import net.dv8tion.jda.core.exceptions.ErrorResponseException;
-import net.dv8tion.jda.core.exceptions.InsufficientPermissionException;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageReaction;
+import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
+import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.robinfriedli.botify.command.widgets.AbstractWidgetAction;
+import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.exceptions.UserException;
 
 /**
@@ -61,7 +61,7 @@ public abstract class AbstractWidget {
                 int finalI = i;
                 message.addReaction(action.getEmojiUnicode()).queue(aVoid -> {
                     if (finalI == actions.size() - 1 && !futureException.isDone()) {
-                        futureException.complete(null);
+                        futureException.cancel(false);
                     }
                 }, throwable -> {
                     if (throwable instanceof InsufficientPermissionException || throwable instanceof ErrorResponseException) {
@@ -74,10 +74,19 @@ public abstract class AbstractWidget {
                 });
             }
 
-            RuntimeException e = futureException.get();
-            if (e != null) {
-                throw e;
-            }
+            futureException.thenAccept(e -> {
+                MessageService messageService = new MessageService();
+                if (e instanceof InsufficientPermissionException) {
+                    messageService.sendError("Bot is missing permission: "
+                        + ((InsufficientPermissionException) e).getPermission().getName(), message.getChannel());
+                } else if (e instanceof ErrorResponseException) {
+                    if (((ErrorResponseException) e).getErrorCode() == 50013) {
+                        messageService.sendError("Bot is missing permission to add reactions", message.getChannel());
+                    } else {
+                        logger.warn("Could not add reaction to message " + message, e);
+                    }
+                }
+            });
         } catch (InsufficientPermissionException e) {
             // exception is actually never thrown when it should be, remove completable future hack if this ever changes
             throw new UserException("Bot is missing permission: " + e.getPermission().getName(), e);
@@ -87,8 +96,6 @@ public abstract class AbstractWidget {
             } else {
                 logger.warn("Could not add reaction to message " + message, e);
             }
-        } catch (InterruptedException | ExecutionException e) {
-            logger.warn("Unexpected exception while adding reaction", e);
         }
     }
 

@@ -15,8 +15,8 @@ import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import com.google.api.client.util.Sets;
-import net.dv8tion.jda.core.JDA;
-import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.Guild;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
@@ -48,6 +48,8 @@ public class GuildSpecification implements Serializable {
     private String defaultSource;
     @Column(name = "default_list_source")
     private String defaultListSource;
+    @Column(name = "argument_prefix")
+    private Character argumentPrefix;
     @OneToMany(mappedBy = "guildSpecification")
     private Set<AccessConfiguration> accessConfigurations = Sets.newHashSet();
 
@@ -162,5 +164,13 @@ public class GuildSpecification implements Serializable {
 
     public void setDefaultListSource(String defaultListSource) {
         this.defaultListSource = defaultListSource;
+    }
+
+    public Character getArgumentPrefix() {
+        return argumentPrefix;
+    }
+
+    public void setArgumentPrefix(Character argumentPrefix) {
+        this.argumentPrefix = argumentPrefix;
     }
 }

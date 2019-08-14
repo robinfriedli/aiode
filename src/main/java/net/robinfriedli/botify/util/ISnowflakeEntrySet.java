@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import net.dv8tion.jda.core.entities.ISnowflake;
+import net.dv8tion.jda.api.entities.ISnowflake;
 
 public class ISnowflakeEntrySet<V> extends AbstractSet<Map.Entry<ISnowflake, V>> {
 

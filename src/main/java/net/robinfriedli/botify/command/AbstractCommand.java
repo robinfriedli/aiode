@@ -13,16 +13,17 @@ import java.util.function.Function;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.google.api.client.util.Sets;
-import net.dv8tion.jda.core.EmbedBuilder;
-import net.dv8tion.jda.core.MessageBuilder;
-import net.dv8tion.jda.core.entities.Message;
-import net.dv8tion.jda.core.entities.MessageChannel;
-import net.dv8tion.jda.core.entities.MessageEmbed;
-import net.dv8tion.jda.core.entities.User;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.MessageBuilder;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.spotify.SpotifyService;
 import net.robinfriedli.botify.command.commands.AnswerCommand;
 import net.robinfriedli.botify.command.interceptor.CommandInterceptorChain;
+import net.robinfriedli.botify.command.parser.CommandParser;
 import net.robinfriedli.botify.concurrent.CheckedRunnable;
 import net.robinfriedli.botify.concurrent.Invoker;
 import net.robinfriedli.botify.discord.GuildManager;
@@ -48,18 +49,19 @@ public abstract class AbstractCommand {
     private final CommandManager commandManager;
     private final ArgumentContribution argumentContribution;
     private final MessageService messageService;
+    private final String commandBody;
     private final String identifier;
     private final String description;
     private final Category category;
     private boolean requiresInput;
-    private String commandBody;
+    private String commandInput;
     // used to prevent onSuccess being called when no exception has been thrown but the command failed anyway
     private boolean isFailed;
 
     public AbstractCommand(CommandContribution commandContribution,
                            CommandContext context,
                            CommandManager commandManager,
-                           String commandString,
+                           String commandBody,
                            boolean requiresInput,
                            String identifier,
                            String description,
@@ -68,13 +70,13 @@ public abstract class AbstractCommand {
         this.context = context;
         this.commandManager = commandManager;
         this.requiresInput = requiresInput;
+        this.commandBody = commandBody;
         this.identifier = identifier;
         this.description = description;
         this.category = category;
         this.argumentContribution = setupArguments();
         this.messageService = new MessageService();
-
-        processCommand(commandString);
+        commandInput = "";
     }
 
     /**
@@ -100,11 +102,11 @@ public abstract class AbstractCommand {
     }
 
     public void verify() {
-        if (requiresInput() && getCommandBody().isBlank()) {
+        if (requiresInput() && getCommandInput().isBlank()) {
             throw new InvalidCommandException("That command requires more input!");
         }
 
-        getArgumentContribution().complete();
+        getArgumentContribution().verify();
     }
 
     /**
@@ -134,6 +136,10 @@ public abstract class AbstractCommand {
         return context;
     }
 
+    public MessageService getMessageService() {
+        return messageService;
+    }
+
     /**
      * Run code after setting the spotify access token to the one of the current user's login. This is required for
      * commands that do not necessarily require a login, in which case the access token will always be set before
@@ -159,8 +165,22 @@ public abstract class AbstractCommand {
         return argumentContribution.argumentSet(argument);
     }
 
+    protected String getArgumentValue(String argument) {
+        return getArgumentValue(argument, String.class);
+    }
+
     protected <E> E getArgumentValue(String argument, Class<E> type) {
-        return argumentContribution.getArgument(argument).getValue(type);
+        if (!argumentSet(argument)) {
+            throw new InvalidCommandException("Expected argument: " + argument);
+        }
+
+        ArgumentContribution.Argument arg = argumentContribution.require(argument, IllegalArgumentException.class);
+
+        if (!arg.hasValue()) {
+            throw new InvalidCommandException("Argument '" + argument + "' requires an assigned value!");
+        }
+
+        return arg.getValue(type);
     }
 
     protected boolean isPartitioned() {
@@ -171,10 +191,10 @@ public abstract class AbstractCommand {
      * askQuestion implementation that uses the index of the option as its key and accepts a function to get the display
      * for each option
      *
-     * @param options the available options
+     * @param options     the available options
      * @param displayFunc the function that returns the display for each option (e.g. for a Track it should be a function
-     * that returns the track's name and artists)
-     * @param <O> the type of options
+     *                    that returns the track's name and artists)
+     * @param <O>         the type of options
      */
     protected <O> void askQuestion(List<O> options, Function<O, String> displayFunc) {
         ClientQuestionEvent question = new ClientQuestionEvent(this);
@@ -182,6 +202,8 @@ public abstract class AbstractCommand {
             O option = options.get(i);
             question.mapOption(String.valueOf(i), option, displayFunc.apply(option));
         }
+
+        question.mapOption("all", options, "All of the above");
         askQuestion(question);
     }
 
@@ -259,11 +281,17 @@ public abstract class AbstractCommand {
      * Used for any command with an A $to B syntax.
      *
      * @return both halves of the logical two sided statement
+     * @deprecated replaced by the {@link CommandParser}; inline arguments are now treated as regular arguments with their
+     * right side up to the next argument as value. This has the benefit the the order and location of inline arguments
+     * no longer matters. Meaning 'insert a $to b $at c' could also be written 'insert a $at c $to b' or even
+     * 'insert $to=b $at=c a'
      */
+    @Deprecated
     protected Pair<String, String> splitInlineArgument(String argument) {
-        return splitInlineArgument(getCommandBody(), argument);
+        return splitInlineArgument(getCommandInput(), argument);
     }
 
+    @Deprecated
     protected Pair<String, String> splitInlineArgument(String part, String argument) {
         StringList words = StringListImpl.create(part, " ");
 
@@ -288,6 +316,14 @@ public abstract class AbstractCommand {
     }
 
     /**
+     * @return the string following the command identifier. This represents the command string used to parse the
+     * arguments and command input
+     */
+    public String getCommandBody() {
+        return commandBody;
+    }
+
+    /**
      * @return the String this command gets referenced with
      */
     public String getIdentifier() {
@@ -306,8 +342,12 @@ public abstract class AbstractCommand {
         return commandManager;
     }
 
-    public String getCommandBody() {
-        return commandBody;
+    public String getCommandInput() {
+        return commandInput;
+    }
+
+    public void setCommandInput(String commandInput) {
+        this.commandInput = commandInput;
     }
 
     public boolean isFailed() {
@@ -330,6 +370,11 @@ public abstract class AbstractCommand {
         return context.getSpotifyService();
     }
 
+    /**
+     * @param commandString the string following the command identifier
+     * @deprecated replaced by the {@link CommandParser}
+     */
+    @Deprecated
     private void processCommand(String commandString) {
         StringList words = StringListImpl.separateString(commandString, " ");
 
@@ -355,7 +400,7 @@ public abstract class AbstractCommand {
             commandBodyIndex += word.length();
         }
 
-        commandBody = words.toString().substring(commandBodyIndex).trim();
+        commandInput = words.toString().substring(commandBodyIndex).trim();
     }
 
     public enum Category {

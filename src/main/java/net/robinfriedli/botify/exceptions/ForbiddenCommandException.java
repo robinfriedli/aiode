@@ -2,8 +2,8 @@ package net.robinfriedli.botify.exceptions;
 
 import java.util.List;
 
-import net.dv8tion.jda.core.entities.Role;
-import net.dv8tion.jda.core.entities.User;
+import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.stringlist.StringListImpl;
 
 

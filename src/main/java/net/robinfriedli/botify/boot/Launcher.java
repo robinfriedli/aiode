@@ -12,11 +12,11 @@ import com.google.api.services.youtube.YouTube;
 import com.google.common.base.Strings;
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.SpotifyHttpManager;
-import net.dv8tion.jda.core.AccountType;
-import net.dv8tion.jda.core.JDA;
-import net.dv8tion.jda.core.JDABuilder;
-import net.dv8tion.jda.core.OnlineStatus;
-import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.api.AccountType;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.OnlineStatus;
+import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
@@ -106,7 +106,6 @@ public class Launcher {
             // setup JDA
             JDA jda = new JDABuilder(AccountType.BOT)
                 .setToken(discordToken)
-                .setCorePoolSize(10)
                 .setStatus(OnlineStatus.IDLE)
                 .build()
                 .awaitReady();

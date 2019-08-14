@@ -5,7 +5,7 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
-import net.dv8tion.jda.core.entities.ISnowflake;
+import net.dv8tion.jda.api.entities.ISnowflake;
 import org.jetbrains.annotations.NotNull;
 
 /**

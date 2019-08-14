@@ -27,6 +27,7 @@ import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 import net.robinfriedli.botify.exceptions.NoSpotifyResultsFoundException;
+import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.botify.util.SearchEngine;
 import net.robinfriedli.stringlist.StringListImpl;
 
@@ -59,9 +60,9 @@ public abstract class AbstractQueueLoadingCommand extends AbstractSourceDeciding
         AudioPlayback playback = audioManager.getPlaybackForGuild(getContext().getGuild());
         playback.setCommunicationChannel(getContext().getChannel());
 
-        if (UrlValidator.getInstance().isValid(getCommandBody())) {
+        if (UrlValidator.getInstance().isValid(getCommandInput())) {
             loadUrlItems(audioManager, playback);
-        } else if (SpotifyUri.isSpotifyUri(getCommandBody())) {
+        } else if (SpotifyUri.isSpotifyUri(getCommandInput())) {
             loadSpotifyUri(audioManager);
         } else if (argumentSet("list")) {
             Source source = getSource();
@@ -87,8 +88,8 @@ public abstract class AbstractQueueLoadingCommand extends AbstractSourceDeciding
     protected abstract void handleResults(List<Playable> playables);
 
     private void loadUrlItems(AudioManager audioManager, AudioPlayback playback) {
-        PlayableFactory playableFactory = audioManager.createPlayableFactory(playback.getGuild());
-        List<Playable> playables = playableFactory.createPlayables(getCommandBody(), getContext().getSpotifyApi(), !argumentSet("preview"), mayInterrupt);
+        PlayableFactory playableFactory = audioManager.createPlayableFactory(playback.getGuild(), getSpotifyService());
+        List<Playable> playables = playableFactory.createPlayables(getCommandInput(), getContext().getSpotifyApi(), !argumentSet("preview"), mayInterrupt);
         if (playables.isEmpty()) {
             throw new NoResultsFoundException("Result is empty!");
         }
@@ -97,18 +98,18 @@ public abstract class AbstractQueueLoadingCommand extends AbstractSourceDeciding
     }
 
     private void loadSpotifyUri(AudioManager audioManager) throws Exception {
-        SpotifyUri spotifyUri = SpotifyUri.parse(getCommandBody());
+        SpotifyUri spotifyUri = SpotifyUri.parse(getCommandInput());
         SpotifyService spotifyService = getContext().getSpotifyService();
-        PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild());
+        PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild(), getSpotifyService());
         List<Playable> playables = spotifyUri.loadPlayables(playableFactory, spotifyService, !argumentSet("preview"), mayInterrupt);
         handleResults(playables);
         loadedAmount = playables.size();
     }
 
     private void loadLocalList(AudioManager audioManager) throws Exception {
-        Playlist playlist = SearchEngine.searchLocalList(getContext().getSession(), getCommandBody(), isPartitioned(), getContext().getGuild().getId());
+        Playlist playlist = SearchEngine.searchLocalList(getContext().getSession(), getCommandInput(), isPartitioned(), getContext().getGuild().getId());
         if (playlist == null) {
-            throw new NoResultsFoundException("No local playlist found for " + getCommandBody());
+            throw new NoResultsFoundException(String.format("No local playlist found for '%s'", getCommandInput()));
         }
 
         List<Object> items = runWithCredentials(() -> playlist.getTracks(getContext().getSpotifyApi()));
@@ -117,7 +118,7 @@ public abstract class AbstractQueueLoadingCommand extends AbstractSourceDeciding
             throw new NoResultsFoundException("Playlist is empty");
         }
 
-        PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild());
+        PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild(), getSpotifyService());
         List<Playable> playables = playableFactory.createPlayables(!argumentSet("preview"), items, mayInterrupt);
         handleResults(playables);
         loadedLocalList = playlist;
@@ -125,7 +126,7 @@ public abstract class AbstractQueueLoadingCommand extends AbstractSourceDeciding
 
     private void loadYouTubeList(AudioManager audioManager) {
         YouTubeService youTubeService = audioManager.getYouTubeService();
-        PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild());
+        PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild(), getSpotifyService());
 
         if (argumentSet("limit")) {
             int limit = getArgumentValue("limit", Integer.class);
@@ -133,19 +134,19 @@ public abstract class AbstractQueueLoadingCommand extends AbstractSourceDeciding
                 throw new InvalidCommandException("Limit must be between 1 and 10");
             }
 
-            List<YouTubePlaylist> playlists = youTubeService.searchSeveralPlaylists(limit, getCommandBody());
+            List<YouTubePlaylist> playlists = youTubeService.searchSeveralPlaylists(limit, getCommandInput());
             if (playlists.size() == 1) {
                 YouTubePlaylist playlist = playlists.get(0);
                 List<Playable> playables = playableFactory.createPlayables(playlist, mayInterrupt);
                 handleResults(playables);
                 loadedYouTubePlaylist = playlist;
             } else if (playlists.isEmpty()) {
-                throw new NoResultsFoundException("No playlist found for " + getCommandBody());
+                throw new NoResultsFoundException(String.format("No YouTube playlist found for '%s'", getCommandInput()));
             } else {
                 askQuestion(playlists, YouTubePlaylist::getTitle, YouTubePlaylist::getChannelTitle);
             }
         } else {
-            YouTubePlaylist youTubePlaylist = youTubeService.searchPlaylist(getCommandBody());
+            YouTubePlaylist youTubePlaylist = youTubeService.searchPlaylist(getCommandInput());
             List<Playable> playables = playableFactory.createPlayables(youTubePlaylist, mayInterrupt);
             handleResults(playables);
             loadedYouTubePlaylist = youTubePlaylist;
@@ -156,20 +157,20 @@ public abstract class AbstractQueueLoadingCommand extends AbstractSourceDeciding
         Callable<Void> callable = () -> {
             List<PlaylistSimplified> found;
             if (argumentSet("own")) {
-                found = getSpotifyService().searchOwnPlaylist(getCommandBody());
+                found = getSpotifyService().searchOwnPlaylist(getCommandInput());
             } else {
-                found = getSpotifyService().searchPlaylist(getCommandBody());
+                found = getSpotifyService().searchPlaylist(getCommandInput());
             }
 
             if (found.size() == 1) {
                 PlaylistSimplified playlist = found.get(0);
                 List<Track> playlistTracks = getSpotifyService().getPlaylistTracks(playlist);
-                PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild());
+                PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild(), getSpotifyService());
                 List<Playable> playables = playableFactory.createPlayables(!argumentSet("preview"), playlistTracks, mayInterrupt);
                 handleResults(playables);
                 loadedSpotifyPlaylist = playlist;
             } else if (found.isEmpty()) {
-                throw new NoSpotifyResultsFoundException("No playlist found for " + getCommandBody());
+                throw new NoSpotifyResultsFoundException(String.format("No Spotify playlist found for '%s'", getCommandInput()));
             } else {
                 askQuestion(found, PlaylistSimplified::getName, p -> p.getOwner().getDisplayName());
             }
@@ -185,7 +186,7 @@ public abstract class AbstractQueueLoadingCommand extends AbstractSourceDeciding
     }
 
     private void loadSpotifyAlbum(AudioManager audioManager) throws Exception {
-        Callable<List<AlbumSimplified>> albumLoadCallable = () -> getSpotifyService().searchAlbum(getCommandBody(), argumentSet("own"));
+        Callable<List<AlbumSimplified>> albumLoadCallable = () -> getSpotifyService().searchAlbum(getCommandInput(), argumentSet("own"));
         List<AlbumSimplified> albums;
         if (argumentSet("own")) {
             albums = runWithLogin(albumLoadCallable);
@@ -196,19 +197,19 @@ public abstract class AbstractQueueLoadingCommand extends AbstractSourceDeciding
         if (albums.size() == 1) {
             AlbumSimplified album = albums.get(0);
             List<Track> tracks = runWithCredentials(() -> getSpotifyService().getAlbumTracks(album.getId()));
-            PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild());
+            PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild(), getSpotifyService());
             List<Playable> playables = playableFactory.createPlayables(!argumentSet("preview"), tracks, mayInterrupt);
             handleResults(playables);
             loadedAlbum = album;
         } else if (albums.isEmpty()) {
-            throw new NoSpotifyResultsFoundException("No albums found for " + getCommandBody());
+            throw new NoSpotifyResultsFoundException(String.format("No albums found for '%s'", getCommandInput()));
         } else {
             askQuestion(albums, AlbumSimplified::getName, album -> StringListImpl.create(album.getArtists(), ArtistSimplified::getName).toSeparatedString(", "));
         }
     }
 
     private void loadTrack(AudioManager audioManager) throws Exception {
-        Callable<List<Track>> loadTrackCallable = () -> getSpotifyService().searchTrack(getCommandBody(), argumentSet("own"));
+        Callable<List<Track>> loadTrackCallable = () -> getSpotifyService().searchTrack(getCommandInput(), argumentSet("own"));
         List<Track> found;
         if (argumentSet("own")) {
             found = runWithLogin(loadTrackCallable);
@@ -217,12 +218,12 @@ public abstract class AbstractQueueLoadingCommand extends AbstractSourceDeciding
         }
 
         if (found.size() == 1) {
-            PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild());
+            PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild(), getSpotifyService());
             Playable track = playableFactory.createPlayable(!argumentSet("preview"), found.get(0));
             handleResults(Lists.newArrayList(track));
             loadedTrack = track;
         } else if (found.isEmpty()) {
-            throw new NoSpotifyResultsFoundException("No Spotify track found for " + getCommandBody());
+            throw new NoSpotifyResultsFoundException(String.format("No Spotify track found for '%s'", getCommandInput()));
         } else {
             askQuestion(found, track -> {
                 String artistString = StringListImpl.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", ");
@@ -239,25 +240,25 @@ public abstract class AbstractQueueLoadingCommand extends AbstractSourceDeciding
                 throw new InvalidCommandException("Limit must be between 1 and 10");
             }
 
-            List<YouTubeVideo> youTubeVideos = youTubeService.searchSeveralVideos(limit, getCommandBody());
+            List<YouTubeVideo> youTubeVideos = youTubeService.searchSeveralVideos(limit, getCommandInput());
             if (youTubeVideos.size() == 1) {
                 Playable playable = youTubeVideos.get(0);
                 handleResults(Lists.newArrayList(playable));
                 loadedTrack = playable;
             } else if (youTubeVideos.isEmpty()) {
-                throw new NoResultsFoundException("No YouTube video found for " + getCommandBody());
+                throw new NoResultsFoundException(String.format("No YouTube video found for '%s'", getCommandInput()));
             } else {
                 askQuestion(youTubeVideos, youTubeVideo -> {
                     try {
                         return youTubeVideo.getTitle();
-                    } catch (InterruptedException e) {
+                    } catch (UnavailableResourceException e) {
                         // Unreachable since only HollowYouTubeVideos might get interrupted
                         throw new RuntimeException(e);
                     }
                 });
             }
         } else {
-            YouTubeVideo youTubeVideo = youTubeService.searchVideo(getCommandBody());
+            YouTubeVideo youTubeVideo = youTubeService.searchVideo(getCommandInput());
             audioManager.getQueue(getContext().getGuild()).add(youTubeVideo);
             handleResults(Lists.newArrayList(youTubeVideo));
             loadedTrack = youTubeVideo;

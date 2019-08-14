@@ -2,11 +2,11 @@ package net.robinfriedli.botify.exceptions;
 
 import java.awt.Color;
 
-import net.dv8tion.jda.core.EmbedBuilder;
+import net.dv8tion.jda.api.EmbedBuilder;
 
-class ExceptionUtils {
+public class ExceptionUtils {
 
-    static EmbedBuilder buildErrorEmbed(Throwable e) {
+    public static EmbedBuilder buildErrorEmbed(Throwable e) {
         Throwable exception = e instanceof CommandRuntimeException ? e.getCause() : e;
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setColor(Color.RED);

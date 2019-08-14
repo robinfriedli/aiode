@@ -7,7 +7,7 @@ import javax.persistence.Column;
 import javax.persistence.ManyToOne;
 import javax.persistence.MappedSuperclass;
 
-import net.dv8tion.jda.core.entities.User;
+import net.dv8tion.jda.api.entities.User;
 
 @MappedSuperclass
 public abstract class PlaylistItem implements Serializable {

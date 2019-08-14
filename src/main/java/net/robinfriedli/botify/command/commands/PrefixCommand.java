@@ -18,11 +18,11 @@ public class PrefixCommand extends AbstractCommand {
     public void doRun() {
         GuildManager guildManager = Botify.get().getGuildManager();
 
-        if (getCommandBody().length() < 1 || getCommandBody().length() > 5) {
+        if (getCommandInput().length() < 1 || getCommandInput().length() > 5) {
             throw new InvalidCommandException("Length should be 1 - 5 characters");
         }
 
-        guildManager.setPrefix(getContext().getGuild(), getCommandBody());
+        getContext().getGuildContext().setPrefix(getCommandInput());
     }
 
     @Override

@@ -5,13 +5,13 @@ import java.util.Collection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.dv8tion.jda.core.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.MessageChannel;
 import net.robinfriedli.botify.audio.PlayableFactory;
 import net.robinfriedli.botify.audio.youtube.HollowYouTubeVideo;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.discord.GuildContext;
-import net.robinfriedli.botify.exceptions.TrackLoadingExceptionHandler;
+import net.robinfriedli.botify.exceptions.handlers.TrackLoadingExceptionHandler;
 
 /**
  * Executes loading track information asynchronously, e.g. when populating a YouTube playlist or redirecting
@@ -37,7 +37,7 @@ public class GuildTrackLoadingExecutor {
      * interruptible thread, to learn more about interruptible track loading see
      * {@link PlayableFactory#createPlayables(boolean, Collection, boolean)}
      *
-     * @param r the action to run
+     * @param r            the action to run
      * @param singleThread if true creates a single thread that might get interrupted and replaced by the next action
      */
     public void load(Runnable r, boolean singleThread) {

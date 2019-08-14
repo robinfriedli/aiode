@@ -8,8 +8,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import com.google.common.collect.Lists;
-import net.dv8tion.jda.core.EmbedBuilder;
-import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.discord.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.entities.GuildSpecification;
@@ -167,10 +167,10 @@ public class AudioQueue {
 
             String currentPosition = Util.normalizeMillis(playback.getCurrentPositionMs());
             Playable current = getCurrent();
-            String duration = Util.normalizeMillis(current.getDurationMsInterruptible());
+            String duration = Util.normalizeMillis(current.durationMs());
             embedBuilder.addField(
                 "Current",
-                "| " + current.getDisplayInterruptible() + " - " + currentPosition + " / " + duration,
+                "| " + current.display() + " - " + currentPosition + " / " + duration,
                 false
             );
 
@@ -278,7 +278,7 @@ public class AudioQueue {
      * Clear the current tracks in this queue
      *
      * @param retainCurrent keeps the track that is referenced by the currentTrack index in the queue, this is used
-     * when the track is currently being played
+     *                      when the track is currently being played
      */
     public void clear(boolean retainCurrent) {
         if (!isEmpty() && retainCurrent) {
@@ -367,7 +367,7 @@ public class AudioQueue {
      * Generates the random queue order when enabling the shuffle option
      *
      * @param protectCurrent if true this makes sure that the current track will remain in the same position, used
-     * when the playback is currently playing
+     *                       when the playback is currently playing
      */
     public void randomize(boolean protectCurrent) {
         randomizedOrder.clear();
@@ -420,8 +420,8 @@ public class AudioQueue {
     }
 
     private void appendPlayable(StringBuilder trackListBuilder, Playable playable) {
-        String display = playable.getDisplayInterruptible();
-        long durationMs = playable.getDurationMsInterruptible();
+        String display = playable.display();
+        long durationMs = playable.durationMs();
         trackListBuilder.append("| ").append(display).append(" - ").append(Util.normalizeMillis(durationMs)).append(System.lineSeparator());
     }
 

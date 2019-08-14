@@ -7,14 +7,13 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.LoggerFactory;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-import net.dv8tion.jda.core.JDA;
-import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.audio.AudioQueue;
@@ -103,8 +102,8 @@ public class QueueViewHandler implements HttpHandler {
         listBuilder.append("<tbody>").append(System.lineSeparator());
         for (Playable playable : playables) {
             listBuilder.append("<tr>").append(System.lineSeparator());
-            listBuilder.append("<td>").append(playable.getDisplayInterruptible(10, TimeUnit.MILLISECONDS)).append("</td>").append(System.lineSeparator());
-            listBuilder.append("<td>").append(Util.normalizeMillis(playable.getDurationMsInterruptible(10, TimeUnit.MILLISECONDS))).append("</td>").append(System.lineSeparator());
+            listBuilder.append("<td>").append(playable.getDisplayNow()).append("</td>").append(System.lineSeparator());
+            listBuilder.append("<td>").append(Util.normalizeMillis(playable.getDurationNow())).append("</td>").append(System.lineSeparator());
             listBuilder.append("</tr>").append(System.lineSeparator());
         }
         listBuilder.append("</tbody>").append(System.lineSeparator());

@@ -3,7 +3,7 @@ package net.robinfriedli.botify.command.widgets;
 import java.util.List;
 
 import com.google.common.collect.Lists;
-import net.dv8tion.jda.core.entities.Message;
+import net.dv8tion.jda.api.entities.Message;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.command.AbstractWidget;

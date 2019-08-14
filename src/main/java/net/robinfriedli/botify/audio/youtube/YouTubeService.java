@@ -27,6 +27,7 @@ import net.robinfriedli.botify.audio.PlayableFactory;
 import net.robinfriedli.botify.command.commands.PlayCommand;
 import net.robinfriedli.botify.command.commands.QueueCommand;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
+import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.stringlist.StringList;
 import net.robinfriedli.stringlist.StringListImpl;
 
@@ -196,7 +197,7 @@ public class YouTubeService {
 
         List<SearchResult> items = search.execute().getItems();
         if (items.isEmpty()) {
-            throw new NoResultsFoundException("No YouTube video found for " + searchTerm);
+            throw new NoResultsFoundException(String.format("No YouTube video found for '%s'", searchTerm));
         }
 
         return items;
@@ -215,7 +216,8 @@ public class YouTubeService {
             VideoListResponse response = query.execute();
             videos.addAll(response.getItems());
             nextPageToken = response.getNextPageToken();
-        } while (nextPageToken != null);
+            query.setPageToken(nextPageToken);
+        } while (!Strings.isNullOrEmpty(nextPageToken));
 
         return videos;
     }
@@ -301,7 +303,7 @@ public class YouTubeService {
 
         List<SearchResult> items = playlistSearch.execute().getItems();
         if (items.isEmpty()) {
-            throw new NoResultsFoundException("No YouTube playlist found for " + searchTerm);
+            throw new NoResultsFoundException(String.format("No YouTube playlist found for '%s'", searchTerm));
         }
 
         return items;
@@ -388,8 +390,8 @@ public class YouTubeService {
             String id;
             try {
                 id = hollowYouTubeVideo.getVideoId();
-            } catch (InterruptedException e) {
-                return;
+            } catch (UnavailableResourceException e) {
+                continue;
             }
             videoIds.add(id);
         }
@@ -402,8 +404,8 @@ public class YouTubeService {
                     Long duration;
                     try {
                         duration = durationMillis.get(video.getVideoId());
-                    } catch (InterruptedException e) {
-                        return;
+                    } catch (UnavailableResourceException e) {
+                        continue;
                     }
                     video.setDuration(duration != null ? duration : 0);
                 }
@@ -422,7 +424,7 @@ public class YouTubeService {
      * but it's necessary if shuffle is enabled when loading a large playlist as the populateList methods might take a
      * while until the items towards the end of the list are loaded.
      *
-     * @param index the index of the item to load
+     * @param index    the index of the item to load
      * @param playlist the playlist the item is a part of
      * @deprecated deprecated as of 1.2.1 since the method is unreliable when the playlist contains unavailable items and
      * very inefficient for minimal gain
@@ -492,7 +494,7 @@ public class YouTubeService {
             List<Video> items = videoRequest.execute().getItems();
 
             if (items.isEmpty()) {
-                throw new NoResultsFoundException("No YouTube video found for id " + id);
+                throw new NoResultsFoundException(String.format("No YouTube video found for id '%s'", id));
             }
 
             Video video = items.get(0);
@@ -511,7 +513,7 @@ public class YouTubeService {
             List<Playlist> items = playlistRequest.execute().getItems();
 
             if (items.isEmpty()) {
-                throw new NoResultsFoundException("No YouTube playlist found for id " + id);
+                throw new NoResultsFoundException(String.format("No YouTube playlist found for id '%s'", id));
             }
 
             Playlist playlist = items.get(0);

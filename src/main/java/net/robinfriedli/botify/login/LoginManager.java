@@ -4,7 +4,7 @@ import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.Nullable;
 
-import net.dv8tion.jda.core.entities.User;
+import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.exceptions.NoLoginException;
 import net.robinfriedli.botify.util.ISnowflakeMap;
 

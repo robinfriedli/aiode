@@ -3,10 +3,12 @@ package net.robinfriedli.botify.command.interceptor.interceptors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
+import com.google.common.base.Strings;
 import com.wrapper.spotify.exceptions.detailed.TooManyRequestsException;
 import com.wrapper.spotify.exceptions.detailed.UnauthorizedException;
-import net.dv8tion.jda.core.entities.MessageChannel;
-import net.dv8tion.jda.core.entities.User;
+import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.interceptor.CommandInterceptor;
@@ -48,7 +50,7 @@ public class CommandExecutionInterceptor implements CommandInterceptor {
             errorMessage = message;
         } catch (UserException e) {
             MessageService messageService = new MessageService();
-            messageService.sendError(e.getMessage(), command.getContext().getChannel());
+            messageService.send(e.buildEmbed().build(), command.getContext().getChannel());
             errorMessage = e.getMessage();
         } catch (UnauthorizedException e) {
             MessageService messageService = new MessageService();
@@ -63,6 +65,17 @@ public class CommandExecutionInterceptor implements CommandInterceptor {
             messageService.sendException(message,
                 command.getContext().getChannel());
             logger.warn("Executing too many Spotify requests", e);
+            errorMessage = message;
+            unexpectedException = true;
+        } catch (GoogleJsonResponseException e) {
+            MessageService messageService = new MessageService();
+            String message = e.getDetails().getMessage();
+            StringBuilder responseBuilder = new StringBuilder("Error occurred when requesting data from YouTube.");
+            if (!Strings.isNullOrEmpty(message)) {
+                responseBuilder.append(" Error response: ").append(message);
+            }
+            messageService.sendException(responseBuilder.toString(), command.getContext().getChannel());
+            logger.error("Exception during YouTube request", e);
             errorMessage = message;
             unexpectedException = true;
         } catch (CommandRuntimeException e) {
@@ -104,7 +117,7 @@ public class CommandExecutionInterceptor implements CommandInterceptor {
             Session session = context.getSession();
             context.getGuildContext().getInvoker().invoke(session, () -> session.persist(history));
         } else {
-            logger.warn("Command " + command + " has not history");
+            logger.warn("Command " + command + " has no history");
         }
 
     }

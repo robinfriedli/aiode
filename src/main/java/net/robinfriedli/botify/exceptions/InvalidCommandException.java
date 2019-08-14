@@ -4,14 +4,14 @@ package net.robinfriedli.botify.exceptions;
  * Type of command thrown when the cause is user error. This exception typically gets caught and its message sent to
  * Discord.
  */
-public class InvalidCommandException extends UserException {
+public class InvalidCommandException extends AdditionalInformationException {
 
     public InvalidCommandException() {
         super();
     }
 
     public InvalidCommandException(String errorMessage) {
-        super(enhanceMessage(errorMessage));
+        super(errorMessage);
     }
 
     public InvalidCommandException(Throwable cause) {
@@ -19,12 +19,12 @@ public class InvalidCommandException extends UserException {
     }
 
     public InvalidCommandException(String errorMessage, Throwable cause) {
-        super(enhanceMessage(errorMessage), cause);
+        super(errorMessage, cause);
     }
 
-    private static String enhanceMessage(String message) {
-        return message + System.lineSeparator() + System.lineSeparator()
-            + "_If you need help with a command you can use the help command. E.g. $botify help play_";
+    @Override
+    public String getAdditionalInformation() {
+        return "If you need help with a command you can use the help command. E.g. $botify help play";
     }
 
 }

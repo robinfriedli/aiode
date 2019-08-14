@@ -1,12 +1,10 @@
 package net.robinfriedli.botify.command.commands;
 
+import java.util.Collection;
 import java.util.List;
-
-import org.apache.commons.lang3.tuple.Pair;
 
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.ArgumentContribution;
-import net.robinfriedli.botify.command.ClientQuestionEvent;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.Playlist;
@@ -19,6 +17,8 @@ import net.robinfriedli.stringlist.StringList;
 import net.robinfriedli.stringlist.StringListImpl;
 import org.hibernate.Session;
 
+import static java.lang.String.*;
+
 public class RemoveCommand extends AbstractCommand {
 
     public RemoveCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
@@ -28,18 +28,18 @@ public class RemoveCommand extends AbstractCommand {
 
     @Override
     public void doRun() {
-        Pair<String, String> pair = splitInlineArgument("from");
         Session session = getContext().getSession();
-        Playlist playlist = SearchEngine.searchLocalList(session, pair.getRight(), isPartitioned(), getContext().getGuild().getId());
+        String playlistName = getArgumentValue("from");
+        Playlist playlist = SearchEngine.searchLocalList(session, playlistName, isPartitioned(), getContext().getGuild().getId());
 
         if (playlist == null) {
-            throw new NoResultsFoundException("No local list found for " + pair.getRight());
+            throw new NoResultsFoundException(String.format("No local list found for '%s'", playlistName));
         } else if (playlist.isEmpty()) {
             throw new InvalidCommandException("Playlist is empty");
         }
 
         if (argumentSet("index")) {
-            StringList indices = StringListImpl.create(pair.getLeft(), "-");
+            StringList indices = StringListImpl.create(getCommandInput(), "-");
             if (indices.size() == 1 || indices.size() == 2) {
                 indices.applyForEach(String::trim);
                 if (indices.size() == 1) {
@@ -61,19 +61,15 @@ public class RemoveCommand extends AbstractCommand {
                 throw new InvalidCommandException("Expected one or two indices but found " + indices.size());
             }
         } else {
-            List<PlaylistItem> playlistItems = SearchEngine.searchPlaylistItems(playlist, pair.getLeft());
+            List<PlaylistItem> playlistItems = SearchEngine.searchPlaylistItems(playlist, getCommandInput());
             if (playlistItems.size() == 1) {
                 invoke(() -> session.delete(playlistItems.get(0)));
             } else if (playlistItems.isEmpty()) {
-                throw new NoResultsFoundException("No tracks found for " + pair.getLeft() + " on list " + pair.getRight());
+                throw new NoResultsFoundException(String.format("No tracks found for '%s' on list '%s'", getCommandInput(), playlistName));
             } else {
-                ClientQuestionEvent question = new ClientQuestionEvent(this);
-                for (int i = 0; i < playlistItems.size(); i++) {
-                    PlaylistItem item = playlistItems.get(i);
-                    question.mapOption(String.valueOf(i), item, item.display());
-                }
-                question.mapOption("all", playlistItems, "All of the above");
-                askQuestion(question);
+                askQuestion(playlistItems,
+                    PlaylistItem::display,
+                    item -> valueOf(item.getIndex() + 1));
             }
         }
     }
@@ -88,7 +84,7 @@ public class RemoveCommand extends AbstractCommand {
 
     private void checkIndex(int index, Playlist playlist) {
         if (!(index > 0 && index <= playlist.getSize())) {
-            throw new InvalidCommandException(String.format("Invalid index '%s'. Needs to in range 1 - %s", index, playlist.getSize()));
+            throw new InvalidCommandException(format("Invalid index '%s'. Needs to in range 1 - %s", index, playlist.getSize()));
         }
     }
 
@@ -102,8 +98,8 @@ public class RemoveCommand extends AbstractCommand {
         Session session = getContext().getSession();
 
         invoke(() -> {
-            if (option instanceof List) {
-                for (Object o : ((List) option)) {
+            if (option instanceof Collection) {
+                for (Object o : ((Collection) option)) {
                     session.delete(o);
                 }
             } else {
@@ -116,6 +112,8 @@ public class RemoveCommand extends AbstractCommand {
     @Override
     public ArgumentContribution setupArguments() {
         ArgumentContribution argumentContribution = new ArgumentContribution(this);
+        argumentContribution.map("from").setRequiresValue(true)
+            .setDescription("Mandatory argument to specify the playlist from which to remove the items.");
         argumentContribution.map("index").setDescription("Remove items by their index. You can also provide an index" +
             "range like $botify remove 13-19 $from list. This includes starting and end index.");
         return argumentContribution;

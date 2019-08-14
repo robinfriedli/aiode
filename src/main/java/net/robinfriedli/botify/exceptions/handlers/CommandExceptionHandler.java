@@ -1,11 +1,12 @@
-package net.robinfriedli.botify.exceptions;
+package net.robinfriedli.botify.exceptions.handlers;
 
 import org.slf4j.Logger;
 
-import net.dv8tion.jda.core.EmbedBuilder;
-import net.dv8tion.jda.core.entities.MessageChannel;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.MessageChannel;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.discord.MessageService;
+import net.robinfriedli.botify.exceptions.ExceptionUtils;
 
 public class CommandExceptionHandler implements Thread.UncaughtExceptionHandler {
 

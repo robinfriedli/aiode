@@ -20,11 +20,11 @@ public class RenameCommand extends AbstractCommand {
     public void doRun() {
         GuildManager guildManager = Botify.get().getGuildManager();
 
-        if (getCommandBody().length() < 1 || getCommandBody().length() > 20) {
+        if (getCommandInput().length() < 1 || getCommandInput().length() > 20) {
             throw new InvalidCommandException("Length should be 1 - 20 characters");
         }
 
-        couldChangeNickname = guildManager.setName(getContext().getGuild(), getCommandBody());
+        couldChangeNickname = getContext().getGuildContext().setBotName(getCommandInput());
     }
 
     @Override

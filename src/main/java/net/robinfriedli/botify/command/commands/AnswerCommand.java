@@ -1,5 +1,11 @@
 package net.robinfriedli.botify.command.commands;
 
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+
+import com.google.common.base.Splitter;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
@@ -20,7 +26,25 @@ public class AnswerCommand extends AbstractCommand {
         getContext().getGuildContext().getQuestion(getContext()).ifPresentOrElse(question -> {
             sourceCommand = question.getSourceCommand();
 
-            Object option = question.get(getCommandBody());
+            String commandInput = getCommandInput();
+            Splitter commaSplitter = Splitter.on(",").trimResults().omitEmptyStrings();
+            List<String> options = commaSplitter.splitToList(commandInput);
+            Object option;
+            if (options.size() == 1) {
+                option = question.get(options.get(0));
+            } else {
+                Set<Object> chosenOptions = new LinkedHashSet<>();
+                for (String o : options) {
+                    Object chosen = question.get(o);
+                    if (chosen instanceof Collection) {
+                        chosenOptions.addAll((Collection) chosen);
+                    } else {
+                        chosenOptions.add(chosen);
+                    }
+                }
+
+                option = chosenOptions;
+            }
             try {
                 sourceCommand.withUserResponse(option);
                 question.destroy();

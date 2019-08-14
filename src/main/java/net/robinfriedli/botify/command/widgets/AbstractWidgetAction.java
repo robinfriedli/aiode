@@ -2,7 +2,7 @@ package net.robinfriedli.botify.command.widgets;
 
 import javax.annotation.Nullable;
 
-import net.dv8tion.jda.core.events.message.guild.react.GuildMessageReactionAddEvent;
+import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
 import net.robinfriedli.botify.Botify;
 
 /**
