@@ -162,6 +162,8 @@
   </command>
   <command identifier="charts" implementation="net.robinfriedli.botify.command.commands.ChartsCommand"
            description="Shows the most popular tracks and artists for this guild and globally"/>
+  <command identifier="abort" implementation="net.robinfriedli.botify.command.commands.AbortCommand"
+           description="Sends all currently running commands an interrupt signal and cancels all queued commands. Not all operations are affected by the interrupt signal but those that actually might take a long time, such as loading a large YouTube playlist, usually are. Use this command carefully as an emergency break if, for example, someone spammed to bot with large commands."/>
 
   <!-- Administrator commands -->
   <command identifier="reboot" implementation="net.robinfriedli.botify.command.commands.admin.RebootCommand"

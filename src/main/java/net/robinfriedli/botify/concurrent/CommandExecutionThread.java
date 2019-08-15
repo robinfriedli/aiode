@@ -1,5 +1,6 @@
 package net.robinfriedli.botify.concurrent;
 
+import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 
 /**
@@ -8,21 +9,30 @@ import net.robinfriedli.botify.command.CommandContext;
  */
 public class CommandExecutionThread extends QueuedThread {
 
-    private final CommandContext commandContext;
+    private final AbstractCommand command;
 
-    public CommandExecutionThread(CommandContext commandContext, ThreadExecutionQueue queue, Runnable runnable) {
+    public CommandExecutionThread(AbstractCommand command, ThreadExecutionQueue queue, Runnable runnable) {
         super(queue, runnable);
-        this.commandContext = commandContext;
+        this.command = command;
     }
 
     @Override
     public void run() {
         CommandContext.Current.set(getCommandContext());
-        commandContext.startMonitoring();
+        command.setThread(this);
         super.run();
     }
 
+    @Override
+    protected boolean isPrivileged() {
+        return command.isPrivileged();
+    }
+
+    public AbstractCommand getCommand() {
+        return command;
+    }
+
     public CommandContext getCommandContext() {
-        return commandContext;
+        return command.getContext();
     }
 }

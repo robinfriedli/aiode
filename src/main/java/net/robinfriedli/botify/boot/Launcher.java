@@ -140,7 +140,7 @@ public class Launcher {
 
             CommandListener commandListener = new CommandListener(executionQueueManager, commandManager, guildManager, sessionFactory, spotifyApiBuilder);
             GuildJoinListener guildJoinListener = new GuildJoinListener(executionQueueManager, discordBotListAPI, guildManager, jxpBackend, sessionFactory, spotifyApiBuilder);
-            WidgetListener widgetListener = new WidgetListener(executionQueueManager, commandManager);
+            WidgetListener widgetListener = new WidgetListener(commandManager);
             VoiceChannelListener voiceChannelListener = new VoiceChannelListener(audioManager);
 
             Botify botify = new Botify(audioManager,

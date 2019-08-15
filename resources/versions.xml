@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <versions xmlns="versionSpace">
-  <version launched="false" version="1.6.2">
+  <version launched="false" version="1.6.2.1">
+    <feature>fix issue with unavailable Spotify tracks in local playlists</feature>
+    <feature>improve concurrent command handling and create abort command to interrupt long commands and cancel queued commands</feature>
+  </version>
+  <version launched="true" version="1.6.2">
     <feature>**new command parser that is smarter at interpreting arguments**
       - makes using arguments less strict and inline arguments may now be used wherever you want in the command and they are treated as regular arguments with the input to their right as value
       - *meaning `insert track $to listName $at position` could now also be written `insert track $at position $to listName` or even `insert $to=listName $at=position track`*

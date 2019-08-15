@@ -25,6 +25,7 @@ import net.robinfriedli.botify.command.commands.AnswerCommand;
 import net.robinfriedli.botify.command.interceptor.CommandInterceptorChain;
 import net.robinfriedli.botify.command.parser.CommandParser;
 import net.robinfriedli.botify.concurrent.CheckedRunnable;
+import net.robinfriedli.botify.concurrent.CommandExecutionThread;
 import net.robinfriedli.botify.concurrent.Invoker;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.MessageService;
@@ -57,6 +58,7 @@ public abstract class AbstractCommand {
     private String commandInput;
     // used to prevent onSuccess being called when no exception has been thrown but the command failed anyway
     private boolean isFailed;
+    private CommandExecutionThread thread;
 
     public AbstractCommand(CommandContribution commandContribution,
                            CommandContext context,
@@ -138,6 +140,28 @@ public abstract class AbstractCommand {
 
     public MessageService getMessageService() {
         return messageService;
+    }
+
+    /**
+     * @return whether or not the command is privileged, meaning it skips the ThreadExecutionQueue and gets executed
+     * regardless of the queue being full
+     */
+    public boolean isPrivileged() {
+        return false;
+    }
+
+    /**
+     * @return the thread that is executing this command
+     */
+    public CommandExecutionThread getThread() {
+        return thread;
+    }
+
+    /**
+     * @param thread the thread that is executing this command
+     */
+    public void setThread(CommandExecutionThread thread) {
+        this.thread = thread;
     }
 
     /**

@@ -20,7 +20,7 @@ public class InsertCommand extends AddCommand {
     }
 
     @Override
-    public void doRun() {
+    public void doRun() throws Exception {
         targetIndex = getArgumentValue("at", Integer.class);
         toAddString = getCommandInput();
 

@@ -8,12 +8,15 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 import net.robinfriedli.botify.command.interceptor.CommandInterceptorChain;
+import net.robinfriedli.botify.concurrent.CommandExecutionThread;
+import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.Preset;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.UserException;
+import net.robinfriedli.botify.exceptions.handlers.CommandExceptionHandler;
 import net.robinfriedli.botify.listeners.CommandListener;
 import net.robinfriedli.jxp.persist.Context;
 import org.hibernate.Session;
@@ -50,21 +53,49 @@ public class CommandManager {
         activeWidgets = Lists.newArrayList();
     }
 
-    public void runCommand(CommandContext context) {
+    public void runCommand(CommandContext context, ThreadExecutionQueue executionQueue) {
         String command = context.getCommandBody();
 
         if (command.isBlank()) {
             return;
         }
 
-        CommandContribution commandContribution = getCommandContributionForInput(command);
+        AbstractCommand commandInstance = instantiateCommandForContext(context);
+
+        MessageService messageService = new MessageService();
+        CommandExecutionThread commandExecutionThread = new CommandExecutionThread(commandInstance, executionQueue, () -> {
+            try {
+                interceptorChain.intercept(commandInstance);
+            } finally {
+                context.closeSession();
+            }
+        });
+
+        commandExecutionThread.setUncaughtExceptionHandler(new CommandExceptionHandler(context, logger));
+        commandExecutionThread.setName("botify command execution: " + context);
+        if (commandInstance.isPrivileged()) {
+            commandExecutionThread.start();
+        } else {
+            boolean queued = !executionQueue.add(commandExecutionThread);
+
+            if (queued) {
+                messageService.sendError("Executing too many commands concurrently. This command will be executed after one has finished.", context.getChannel());
+            }
+        }
+
+    }
+
+    public AbstractCommand instantiateCommandForContext(CommandContext context) {
+        String commandBody = context.getCommandBody();
+
+        CommandContribution commandContribution = getCommandContributionForInput(commandBody);
         AbstractCommand commandInstance;
         Session session = context.getSession();
         // find a preset where the preset name matches the beginning of the command, find the longest matching preset name
         Optional<Preset> optionalPreset = session
             .createQuery("from " + Preset.class.getName()
                 + " where guild_id = '" + context.getGuild().getId()
-                + "' and lower(name) = substring(lower('" + command.replaceAll("'", "''") + "'), 0, length(name) + 1) " +
+                + "' and lower(name) = substring(lower('" + commandBody.replaceAll("'", "''") + "'), 0, length(name) + 1) " +
                 "order by length(name) desc", Preset.class)
             .setMaxResults(1)
             .setCacheable(true)
@@ -74,22 +105,22 @@ public class CommandManager {
             Preset preset = optionalPreset.get();
             String identifier = commandContribution.getIdentifier();
             if (preset.getName().length() > identifier.length()) {
-                commandInstance = preset.instantiateCommand(this, context, command);
+                commandInstance = preset.instantiateCommand(this, context, commandBody);
             } else {
-                String commandInput = command.substring(identifier.length()).trim();
+                String commandInput = commandBody.substring(identifier.length()).trim();
                 commandInstance = commandContribution.instantiate(this, context, commandInput);
             }
         } else if (commandContribution != null) {
             String selectedCommand = commandContribution.getAttribute("identifier").getValue();
-            String commandInput = command.substring(selectedCommand.length()).trim();
+            String commandInput = commandBody.substring(selectedCommand.length()).trim();
             commandInstance = commandContribution.instantiate(this, context, commandInput);
         } else if (optionalPreset.isPresent()) {
-            commandInstance = optionalPreset.get().instantiateCommand(this, context, command);
+            commandInstance = optionalPreset.get().instantiateCommand(this, context, commandBody);
         } else {
             throw new InvalidCommandException("No command or preset found.");
         }
 
-        interceptorChain.intercept(commandInstance);
+        return commandInstance;
     }
 
     public Optional<AbstractCommand> getCommand(CommandContext commandContext, String name) {

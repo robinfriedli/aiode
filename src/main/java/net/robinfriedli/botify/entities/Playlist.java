@@ -184,6 +184,11 @@ public class Playlist implements Serializable {
         for (List<String> batch : batches) {
             Track[] tracks = spotifyApi.getSeveralTracks(batch.toArray(new String[0])).build().execute();
             for (Track track : tracks) {
+                if (track == null) {
+                    // might be null for tracks that have become unavailable
+                    continue;
+                }
+
                 itemsWithIndex.put(track, trackIdsWithIndex.get(track.getId()));
             }
         }

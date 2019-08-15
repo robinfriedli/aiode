@@ -7,12 +7,15 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import javax.annotation.Nullable;
+
 import com.google.common.collect.Lists;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.discord.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.entities.GuildSpecification;
+import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 import net.robinfriedli.botify.util.EmojiConstants;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
@@ -26,11 +29,17 @@ import net.robinfriedli.botify.util.Util;
 public class AudioQueue {
 
     private final List<Playable> currentQueue = Lists.newArrayList();
+    private final List<Integer> randomizedOrder = Lists.newArrayList();
+    @Nullable
+    private final Integer maxSize;
     private int currentTrack = 0;
     private boolean isShuffle = false;
-    private List<Integer> randomizedOrder = Lists.newArrayList();
     private boolean repeatOne;
     private boolean repeatAll;
+
+    public AudioQueue(@Nullable Integer maxSize) {
+        this.maxSize = maxSize;
+    }
 
     /**
      * @return all playables that are currently in this queue
@@ -247,6 +256,7 @@ public class AudioQueue {
      * add tracks to this queue, shuffling the newly added tracks if shuffle is enabled
      */
     public void add(List<Playable> tracks) {
+        checkSize(tracks.size());
         if (isShuffle()) {
             appendRandomized(tracks);
         }
@@ -262,6 +272,7 @@ public class AudioQueue {
      */
     public void set(List<Playable> tracks) {
         clear();
+        checkSize(tracks.size());
         currentQueue.addAll(tracks);
         if (isShuffle()) {
             List<Integer> indices = IntStream.range(0, currentQueue.size()).boxed().collect(Collectors.toList());
@@ -440,4 +451,13 @@ public class AudioQueue {
     public void setRepeatAll(boolean repeatAll) {
         this.repeatAll = repeatAll;
     }
+
+    private void checkSize(int toAddSize) {
+        if (maxSize != null) {
+            if (toAddSize + getTracks().size() > maxSize) {
+                throw new InvalidCommandException("Queue exceeds maximum size of " + maxSize + " tracks");
+            }
+        }
+    }
+
 }
