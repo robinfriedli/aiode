@@ -28,6 +28,11 @@ public abstract class AbstractAdminCommand extends AbstractCommand {
         runAdmin();
     }
 
+    @Override
+    public boolean isPrivileged() {
+        return true;
+    }
+
     public abstract void runAdmin() throws Exception;
 
     protected void askConfirmation(String description) {

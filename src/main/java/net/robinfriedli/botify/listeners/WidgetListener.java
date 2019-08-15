@@ -15,9 +15,6 @@ import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.AbstractWidget;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.concurrent.CommandExecutionThread;
-import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
-import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
 import net.robinfriedli.botify.discord.CompletablePlaceholderMessage;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.MessageService;
@@ -31,12 +28,10 @@ import net.robinfriedli.botify.util.StaticSessionProvider;
  */
 public class WidgetListener extends ListenerAdapter {
 
-    private final CommandExecutionQueueManager executionQueueManager;
     private final CommandManager commandManager;
     private final Logger logger;
 
-    public WidgetListener(CommandExecutionQueueManager executionQueueManager, CommandManager commandManager) {
-        this.executionQueueManager = executionQueueManager;
+    public WidgetListener(CommandManager commandManager) {
         this.commandManager = commandManager;
         logger = LoggerFactory.getLogger(getClass());
     }
@@ -70,9 +65,9 @@ public class WidgetListener extends ListenerAdapter {
         SpotifyApi spotifyApi = botify.getSpotifyApiBuilder().build();
         GuildContext guildContext = botify.getGuildManager().getContextForGuild(guild);
         CommandContext commandContext = new CommandContext("", message, StaticSessionProvider.getSessionFactory(), spotifyApi, guildContext);
-        ThreadExecutionQueue queue = executionQueueManager.getForGuild(guild);
 
-        CommandExecutionThread widgetExecutionThread = new CommandExecutionThread(commandContext, queue, () -> {
+        Thread widgetExecutionThread = new Thread(() -> {
+            CommandContext.Current.set(commandContext);
             try {
                 activeWidget.handleReaction(event);
             } catch (UserException e) {
@@ -83,7 +78,7 @@ public class WidgetListener extends ListenerAdapter {
         });
         widgetExecutionThread.setName("Widget execution thread " + messageId);
         widgetExecutionThread.setUncaughtExceptionHandler(new WidgetExceptionHandler(channel, logger));
-        queue.add(widgetExecutionThread);
+        widgetExecutionThread.start();
     }
 
 }

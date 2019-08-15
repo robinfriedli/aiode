@@ -69,6 +69,7 @@ GUILD_PROPERTIES_PATH=./resources/xml-contributions/guildProperties.xml
 # preferences #
 ###############
 MODE_PARTITIONED=true
+QUEUE_SIZE_MAX=10000
 # playlists per guild (if mode_partitioned = true, else playlist total)
 PLAYLIST_COUNT_MAX=50
 PLAYLIST_SIZE_MAX=5000

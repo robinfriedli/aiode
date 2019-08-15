@@ -7,6 +7,7 @@ import net.dv8tion.jda.api.entities.MessageChannel;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.exceptions.ExceptionUtils;
+import net.robinfriedli.botify.exceptions.UserException;
 
 public class CommandExceptionHandler implements Thread.UncaughtExceptionHandler {
 
@@ -24,10 +25,15 @@ public class CommandExceptionHandler implements Thread.UncaughtExceptionHandler 
         String command = commandContext.getMessage().getContentDisplay();
         MessageService messageService = new MessageService();
 
-        EmbedBuilder embedBuilder = ExceptionUtils.buildErrorEmbed(e);
-        embedBuilder.addField("CommandContext ID", commandContext.getId(), false);
-        messageService.send(embedBuilder.build(), channel);
-        logger.error(String.format("Exception while handling command %s on guild %s", command, commandContext.getGuild().getName()), e);
+        if (e instanceof UserException) {
+            EmbedBuilder embedBuilder = ((UserException) e).buildEmbed();
+            messageService.send(embedBuilder.build(), channel);
+        } else {
+            EmbedBuilder embedBuilder = ExceptionUtils.buildErrorEmbed(e);
+            embedBuilder.addField("CommandContext ID", commandContext.getId(), false);
+            messageService.send(embedBuilder.build(), channel);
+            logger.error(String.format("Exception while handling command %s on guild %s", command, commandContext.getGuild().getName()), e);
+        }
     }
 
 }

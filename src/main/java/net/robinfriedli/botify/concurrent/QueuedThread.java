@@ -17,8 +17,14 @@ public class QueuedThread extends Thread {
         try {
             super.run();
         } finally {
-            queue.freeSlot(this);
+            if (!isPrivileged()) {
+                queue.freeSlot(this);
+            }
         }
+    }
+
+    protected boolean isPrivileged() {
+        return false;
     }
 
 }

@@ -110,10 +110,12 @@ public class HollowYouTubeVideo extends AbstractSoftCachedPlayable implements Yo
 
     public void awaitCompletion() {
         try {
-            title.join();
-            id.join();
-            duration.join();
-        } catch (CancellationException | CompletionException ignored) {
+            title.get(5, TimeUnit.MINUTES);
+            id.get(5, TimeUnit.MINUTES);
+            duration.get(5, TimeUnit.MINUTES);
+        } catch (TimeoutException e) {
+            throw new RuntimeException("Waiting for video timed out", e);
+        } catch (InterruptedException | ExecutionException | CancellationException ignored) {
         }
     }
 

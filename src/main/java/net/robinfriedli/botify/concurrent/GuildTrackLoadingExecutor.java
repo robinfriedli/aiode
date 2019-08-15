@@ -79,4 +79,20 @@ public class GuildTrackLoadingExecutor {
     public GuildContext getGuildContext() {
         return guildContext;
     }
+
+    /**
+     * Interrupts all commands that are currently loading tracks for this guild and cancel queued threads
+     */
+    public void interruptAll() {
+        interruptTrackLoading();
+        threadExecutionQueue.abortAll();
+    }
+
+    /**
+     * @return true if there is no thread currently loading any tracks
+     */
+    public boolean isIdle() {
+        return (trackLoadingThread == null || !trackLoadingThread.isAlive()) && threadExecutionQueue.isIdle();
+    }
+
 }

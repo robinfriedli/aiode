@@ -10,4 +10,5 @@
     <interruptingException class="net.robinfriedli.botify.exceptions.InvalidCommandException"/>
   </commandInterceptor>
   <commandInterceptor order="4" implementation="net.robinfriedli.botify.command.interceptor.interceptors.HistoryInterceptor"/>
+  <commandInterceptor order="5" implementation="net.robinfriedli.botify.command.interceptor.interceptors.CommandMonitoringInterceptor"/>
 </commandInterceptors>

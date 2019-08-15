@@ -46,6 +46,17 @@ public class ThreadExecutionQueue {
         closed = true;
     }
 
+    /**
+     * Sends an interrupt signal to current threads and clears the queue
+     */
+    public void abortAll() {
+        synchronized (synchroniseLock) {
+            queue.clear();
+            currentPool.forEach(Thread::interrupt);
+            currentPool.clear();
+        }
+    }
+
     public void join() throws InterruptedException {
         if (!currentPool.isEmpty()) {
             QueuedThread[] queuedThreads = currentPool.toArray(new QueuedThread[0]);
@@ -55,20 +66,27 @@ public class ThreadExecutionQueue {
         }
     }
 
+    /**
+     * @return true if this queue does not contain any running or queued threads
+     */
+    public boolean isIdle() {
+        return currentPool.isEmpty() && queue.isEmpty();
+    }
+
     void freeSlot(QueuedThread thread) {
-        currentPool.remove(thread);
-        if (!closed) {
-            runNext();
+        synchronized (synchroniseLock) {
+            boolean removed = currentPool.remove(thread);
+            if (!closed && removed) {
+                runNext();
+            }
         }
     }
 
     private void runNext() {
-        synchronized (synchroniseLock) {
-            QueuedThread poll = queue.poll();
-            if (poll != null) {
-                currentPool.add(poll);
-                poll.start();
-            }
+        QueuedThread poll = queue.poll();
+        if (poll != null) {
+            currentPool.add(poll);
+            poll.start();
         }
     }
 }

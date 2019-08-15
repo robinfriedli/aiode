@@ -48,7 +48,7 @@ public class AddCommand extends AbstractSourceDecidingCommand {
     }
 
     @Override
-    public void doRun() {
+    public void doRun() throws Exception {
         Session session = getContext().getSession();
         if (argumentSet("queue")) {
             AudioQueue queue = Botify.get().getAudioManager().getQueue(getContext().getGuild());
@@ -62,7 +62,7 @@ public class AddCommand extends AbstractSourceDecidingCommand {
             }
 
             List<Playable> tracks = queue.getTracks();
-            invoke(() -> addPlayables(playlist, tracks));
+            addPlayables(playlist, tracks);
         } else {
             String playlistName = getArgumentValue("to");
             Playlist playlist = SearchEngine.searchLocalList(session, playlistName, isPartitioned(), getContext().getGuild().getId());
@@ -71,21 +71,19 @@ public class AddCommand extends AbstractSourceDecidingCommand {
                 throw new NoResultsFoundException(String.format("No local list found for '%s'", playlistName));
             }
 
-            invoke(() -> {
-                if (UrlValidator.getInstance().isValid(getCommandInput())) {
-                    addUrl(playlist, getCommandInput());
-                } else if (SpotifyUri.isSpotifyUri(getCommandInput())) {
-                    addSpotifyUri(playlist, SpotifyUri.parse(getCommandInput()));
+            if (UrlValidator.getInstance().isValid(getCommandInput())) {
+                addUrl(playlist, getCommandInput());
+            } else if (SpotifyUri.isSpotifyUri(getCommandInput())) {
+                addSpotifyUri(playlist, SpotifyUri.parse(getCommandInput()));
+            } else {
+                if (argumentSet("list")) {
+                    addList(playlist, getCommandInput());
+                } else if (argumentSet("album")) {
+                    addSpotifyAlbum(playlist, getCommandInput());
                 } else {
-                    if (argumentSet("list")) {
-                        addList(playlist, getCommandInput());
-                    } else if (argumentSet("album")) {
-                        addSpotifyAlbum(playlist, getCommandInput());
-                    } else {
-                        addSpecificTrack(playlist, getCommandInput());
-                    }
+                    addSpecificTrack(playlist, getCommandInput());
                 }
-            });
+            }
         }
     }
 
@@ -94,10 +92,12 @@ public class AddCommand extends AbstractSourceDecidingCommand {
             throw new NoResultsFoundException("Result is empty!");
         }
         Session session = getContext().getSession();
-        checkSize(playlist, items.size());
-        items.forEach(item -> {
-            item.add();
-            session.persist(item);
+        invoke(() -> {
+            checkSize(playlist, items.size());
+            items.forEach(item -> {
+                item.add();
+                session.persist(item);
+            });
         });
     }
 
@@ -108,18 +108,20 @@ public class AddCommand extends AbstractSourceDecidingCommand {
     private void addPlayables(Playlist playlist, List<Playable> playables) {
         Session session = getContext().getSession();
         List<PlaylistItem> items = Lists.newArrayList();
-        playables.forEach(playable -> {
-            if (playable instanceof HollowYouTubeVideo) {
-                HollowYouTubeVideo video = (HollowYouTubeVideo) playable;
-                video.awaitCompletion();
-                if (video.isCanceled()) {
-                    return;
+        invoke(() -> {
+            playables.forEach(playable -> {
+                if (playable instanceof HollowYouTubeVideo) {
+                    HollowYouTubeVideo video = (HollowYouTubeVideo) playable;
+                    video.awaitCompletion();
+                    if (video.isCanceled()) {
+                        return;
+                    }
                 }
-            }
 
-            items.add(playable.export(playlist, getContext().getUser(), session));
+                items.add(playable.export(playlist, getContext().getUser(), session));
+            });
+            addToList(playlist, items);
         });
-        addToList(playlist, items);
     }
 
     private void addUrl(Playlist playlist, String url) {
@@ -158,11 +160,13 @@ public class AddCommand extends AbstractSourceDecidingCommand {
 
             if (playlists.size() == 1) {
                 List<Track> playlistTracks = getSpotifyService().getPlaylistTracks(playlists.get(0));
-                List<PlaylistItem> songs = playlistTracks
-                    .stream()
-                    .map(t -> new Song(t, getContext().getUser(), playlist, getContext().getSession()))
-                    .collect(Collectors.toList());
-                addToList(playlist, songs);
+                invoke(() -> {
+                    List<PlaylistItem> songs = playlistTracks
+                        .stream()
+                        .map(t -> new Song(t, getContext().getUser(), playlist, getContext().getSession()))
+                        .collect(Collectors.toList());
+                    addToList(playlist, songs);
+                });
             } else if (playlists.isEmpty()) {
                 throw new NoSpotifyResultsFoundException(String.format("No Spotify playlists found for '%s'", searchTerm));
             } else {
@@ -239,11 +243,13 @@ public class AddCommand extends AbstractSourceDecidingCommand {
         if (albums.size() == 1) {
             AlbumSimplified album = albums.get(0);
             List<Track> tracks = runWithCredentials(() -> getSpotifyService().getAlbumTracks(album.getId()));
-            List<PlaylistItem> songs = tracks
-                .stream()
-                .map(t -> new Song(t, getContext().getUser(), playlist, getContext().getSession()))
-                .collect(Collectors.toList());
-            addToList(playlist, songs);
+            invoke(() -> {
+                List<PlaylistItem> songs = tracks
+                    .stream()
+                    .map(t -> new Song(t, getContext().getUser(), playlist, getContext().getSession()))
+                    .collect(Collectors.toList());
+                addToList(playlist, songs);
+            });
         } else if (albums.isEmpty()) {
             throw new NoSpotifyResultsFoundException(String.format("No Spotify album found for '%s'", searchTerm));
         } else {
@@ -293,7 +299,7 @@ public class AddCommand extends AbstractSourceDecidingCommand {
             }
 
             if (tracks.size() == 1) {
-                addToList(playlist, new Song(tracks.get(0), getContext().getUser(), playlist, getContext().getSession()));
+                invoke(() -> addToList(playlist, new Song(tracks.get(0), getContext().getUser(), playlist, getContext().getSession())));
             } else if (tracks.isEmpty()) {
                 throw new NoSpotifyResultsFoundException(String.format("No Spotify track found for '%s'", searchTerm));
             } else {
@@ -343,20 +349,24 @@ public class AddCommand extends AbstractSourceDecidingCommand {
 
     private void handleOption(Object option, Playlist playlist, Session session) throws Exception {
         if (option instanceof Track) {
-            addToList(playlist, new Song((Track) option, getContext().getUser(), playlist, session));
+            invoke(() -> addToList(playlist, new Song((Track) option, getContext().getUser(), playlist, session)));
         } else if (option instanceof YouTubeVideo) {
             addToList(playlist, new Video((YouTubeVideo) option, getContext().getUser(), playlist));
         } else if (option instanceof PlaylistSimplified) {
             List<Track> playlistTracks = runWithCredentials(() -> getSpotifyService().getPlaylistTracks((PlaylistSimplified) option));
-            List<PlaylistItem> songs = playlistTracks.stream().map(t -> new Song(t, getContext().getUser(), playlist, session)).collect(Collectors.toList());
-            addToList(playlist, songs);
+            invoke(() -> {
+                List<PlaylistItem> songs = playlistTracks.stream().map(t -> new Song(t, getContext().getUser(), playlist, session)).collect(Collectors.toList());
+                addToList(playlist, songs);
+            });
         } else if (option instanceof YouTubePlaylist) {
             YouTubeService youTubeService = Botify.get().getAudioManager().getYouTubeService();
             loadYouTubeList((YouTubePlaylist) option, playlist, youTubeService);
         } else if (option instanceof AlbumSimplified) {
             List<Track> tracks = runWithCredentials(() -> getSpotifyService().getAlbumTracks(((AlbumSimplified) option).getId()));
-            List<PlaylistItem> songs = tracks.stream().map(t -> new Song(t, getContext().getUser(), playlist, session)).collect(Collectors.toList());
-            addToList(playlist, songs);
+            invoke(() -> {
+                List<PlaylistItem> songs = tracks.stream().map(t -> new Song(t, getContext().getUser(), playlist, session)).collect(Collectors.toList());
+                addToList(playlist, songs);
+            });
         }
     }
 
