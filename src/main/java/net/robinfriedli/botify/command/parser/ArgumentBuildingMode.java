@@ -85,8 +85,8 @@ public class ArgumentBuildingMode implements CommandParser.Mode {
     @Override
     public void terminate() {
         ArgumentContribution argumentContribution = command.getArgumentContribution();
-        String argument = argumentBuilder.toString();
-        String argumentValue = argumentValueBuilder.toString();
+        String argument = argumentBuilder.toString().trim();
+        String argumentValue = argumentValueBuilder.toString().trim();
         argumentContribution.setArgument(argument, argumentValue);
         commandParser.fireOnArgumentParsed(argument, argumentValue);
     }

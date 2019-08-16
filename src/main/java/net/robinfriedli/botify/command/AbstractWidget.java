@@ -80,9 +80,11 @@ public abstract class AbstractWidget {
                     messageService.sendError("Bot is missing permission: "
                         + ((InsufficientPermissionException) e).getPermission().getName(), message.getChannel());
                 } else if (e instanceof ErrorResponseException) {
-                    if (((ErrorResponseException) e).getErrorCode() == 50013) {
+                    int errorCode = ((ErrorResponseException) e).getErrorCode();
+                    if (errorCode == 50013) {
                         messageService.sendError("Bot is missing permission to add reactions", message.getChannel());
-                    } else {
+                    } else if (errorCode != 10008) {
+                        // ignore errors thrown when the message has been deleted
                         logger.warn("Could not add reaction to message " + message, e);
                     }
                 }
