@@ -1,5 +1,6 @@
 package net.robinfriedli.botify.listeners;
 
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -13,6 +14,7 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
@@ -73,7 +75,7 @@ public class CommandListener extends ListenerAdapter {
                     boolean startsWithName = !Strings.isNullOrEmpty(botName) && lowerCaseMsg.startsWith(botName.toLowerCase());
                     if (startsWithPrefix || startsWithName || lowerCaseMsg.startsWith("$botify")) {
                         String usedPrefix = extractUsedPrefix(message, lowerCaseMsg, botName, prefix, startsWithName, startsWithPrefix);
-                        startCommandExecution(usedPrefix, message, guild, guildContext);
+                        startCommandExecution(usedPrefix, message, guild, guildContext, session);
                     }
                 }
             });
@@ -109,13 +111,14 @@ public class CommandListener extends ListenerAdapter {
         return namePrefix;
     }
 
-    private void startCommandExecution(String namePrefix, Message message, Guild guild, GuildContext guildContext) {
+    private void startCommandExecution(String namePrefix, Message message, Guild guild, GuildContext guildContext, Session session) {
         ThreadExecutionQueue queue = executionQueueManager.getForGuild(guild);
         String commandBody = message.getContentDisplay().substring(namePrefix.length()).trim();
         CommandContext commandContext = new CommandContext(commandBody, message, sessionFactory, spotifyApiBuilder.build(), guildContext);
         CommandContext.Current.set(commandContext);
         try {
-            commandManager.runCommand(commandContext, queue);
+            Optional<AbstractCommand> commandInstance = commandManager.instantiateCommandForContext(commandContext, session);
+            commandInstance.ifPresent(command -> commandManager.runCommand(command, queue));
         } catch (UserException e) {
             EmbedBuilder embedBuilder = e.buildEmbed();
             messageService.send(embedBuilder.build(), commandContext.getChannel());
