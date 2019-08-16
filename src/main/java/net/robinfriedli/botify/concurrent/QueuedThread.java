@@ -17,9 +17,7 @@ public class QueuedThread extends Thread {
         try {
             super.run();
         } finally {
-            if (!isPrivileged()) {
-                queue.freeSlot(this);
-            }
+            queue.freeSlot(this);
         }
     }
 

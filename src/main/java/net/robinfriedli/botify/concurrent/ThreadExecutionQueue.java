@@ -29,12 +29,17 @@ public class ThreadExecutionQueue {
     public boolean add(QueuedThread thread) {
         synchronized (synchroniseLock) {
             if (!closed) {
-                queue.add(thread);
-                if (currentPool.size() < size) {
-                    runNext();
+                if (thread.isPrivileged()) {
+                    currentPool.add(thread);
+                    thread.start();
                     return true;
+                } else {
+                    queue.add(thread);
+                    if (currentPool.size() < size) {
+                        runNext();
+                        return true;
+                    }
                 }
-
                 return false;
             } else {
                 throw new IllegalStateException("This " + getClass().getSimpleName() + " has been closed");

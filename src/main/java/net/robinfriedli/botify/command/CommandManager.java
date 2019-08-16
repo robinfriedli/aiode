@@ -14,7 +14,6 @@ import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.Preset;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
-import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.UserException;
 import net.robinfriedli.botify.exceptions.handlers.CommandExceptionHandler;
 import net.robinfriedli.botify.listeners.CommandListener;
@@ -25,9 +24,10 @@ import static net.robinfriedli.jxp.queries.Conditions.*;
 
 /**
  * Starting point of a commands life cycle after being called by the {@link CommandListener}.
- * The {@link #runCommand(CommandContext)} is responsible for finding a {@link CommandContribution} or {@link Preset}
- * for the given {@link CommandContext} as entered by the user and instantiating the {@link AbstractCommand} based
- * on the results and passing it to the {@link CommandInterceptorChain} for execution.
+ * The {@link #instantiateCommandForContext(CommandContext, Session)} is responsible for finding a
+ * {@link CommandContribution} or {@link Preset} for the given {@link CommandContext} as entered by the user and
+ * instantiating the {@link AbstractCommand} based on the results and {@link #runCommand(AbstractCommand, ThreadExecutionQueue)}
+ * passes it to the {@link CommandInterceptorChain} for execution.
  * Also serves as a registry for all active {@link AbstractWidget}.
  */
 public class CommandManager {
@@ -53,19 +53,12 @@ public class CommandManager {
         activeWidgets = Lists.newArrayList();
     }
 
-    public void runCommand(CommandContext context, ThreadExecutionQueue executionQueue) {
-        String command = context.getCommandBody();
-
-        if (command.isBlank()) {
-            return;
-        }
-
-        AbstractCommand commandInstance = instantiateCommandForContext(context);
-
+    public void runCommand(AbstractCommand command, ThreadExecutionQueue executionQueue) {
+        CommandContext context = command.getContext();
         MessageService messageService = new MessageService();
-        CommandExecutionThread commandExecutionThread = new CommandExecutionThread(commandInstance, executionQueue, () -> {
+        CommandExecutionThread commandExecutionThread = new CommandExecutionThread(command, executionQueue, () -> {
             try {
-                interceptorChain.intercept(commandInstance);
+                interceptorChain.intercept(command);
             } finally {
                 context.closeSession();
             }
@@ -73,24 +66,22 @@ public class CommandManager {
 
         commandExecutionThread.setUncaughtExceptionHandler(new CommandExceptionHandler(context, logger));
         commandExecutionThread.setName("botify command execution: " + context);
-        if (commandInstance.isPrivileged()) {
-            commandExecutionThread.start();
-        } else {
-            boolean queued = !executionQueue.add(commandExecutionThread);
+        boolean queued = !executionQueue.add(commandExecutionThread);
 
-            if (queued) {
-                messageService.sendError("Executing too many commands concurrently. This command will be executed after one has finished.", context.getChannel());
-            }
+        if (queued) {
+            messageService.sendError("Executing too many commands concurrently. This command will be executed after one has finished.", context.getChannel());
         }
-
     }
 
-    public AbstractCommand instantiateCommandForContext(CommandContext context) {
+    public Optional<AbstractCommand> instantiateCommandForContext(CommandContext context, Session session) {
         String commandBody = context.getCommandBody();
+
+        if (commandBody.isBlank()) {
+            return Optional.empty();
+        }
 
         CommandContribution commandContribution = getCommandContributionForInput(commandBody);
         AbstractCommand commandInstance;
-        Session session = context.getSession();
         // find a preset where the preset name matches the beginning of the command, find the longest matching preset name
         Optional<Preset> optionalPreset = session
             .createQuery("from " + Preset.class.getName()
@@ -117,10 +108,10 @@ public class CommandManager {
         } else if (optionalPreset.isPresent()) {
             commandInstance = optionalPreset.get().instantiateCommand(this, context, commandBody);
         } else {
-            throw new InvalidCommandException("No command or preset found.");
+            return Optional.empty();
         }
 
-        return commandInstance;
+        return Optional.of(commandInstance);
     }
 
     public Optional<AbstractCommand> getCommand(CommandContext commandContext, String name) {
