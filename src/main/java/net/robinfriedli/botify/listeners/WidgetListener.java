@@ -15,7 +15,6 @@ import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.AbstractWidget;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.discord.CompletablePlaceholderMessage;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.exceptions.CommandRuntimeException;
@@ -57,14 +56,11 @@ public class WidgetListener extends ListenerAdapter {
 
     private void handleWidgetExecution(GuildMessageReactionAddEvent event, String messageId, AbstractWidget activeWidget) {
         TextChannel channel = event.getChannel();
-        CompletablePlaceholderMessage message = new CompletablePlaceholderMessage();
-        channel.retrieveMessageById(messageId).queue(message::complete, message::completeExceptionally);
-
         Guild guild = event.getGuild();
         Botify botify = Botify.get();
         SpotifyApi spotifyApi = botify.getSpotifyApiBuilder().build();
         GuildContext guildContext = botify.getGuildManager().getContextForGuild(guild);
-        CommandContext commandContext = new CommandContext("", message, StaticSessionProvider.getSessionFactory(), spotifyApi, guildContext);
+        CommandContext commandContext = new CommandContext("", activeWidget.getMessage(), StaticSessionProvider.getSessionFactory(), spotifyApi, guildContext);
 
         Thread widgetExecutionThread = new Thread(() -> {
             CommandContext.Current.set(commandContext);

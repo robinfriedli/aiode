@@ -16,7 +16,6 @@ import net.robinfriedli.botify.command.widgets.actions.PlayPauseAction;
 import net.robinfriedli.botify.command.widgets.actions.RewindAction;
 import net.robinfriedli.botify.command.widgets.actions.SkipAction;
 import net.robinfriedli.botify.discord.MessageService;
-import net.robinfriedli.botify.exceptions.UserException;
 import net.robinfriedli.botify.util.EmojiConstants;
 
 public class QueueWidget extends AbstractWidget {
@@ -46,15 +45,15 @@ public class QueueWidget extends AbstractWidget {
 
     @Override
     public void reset() throws Exception {
-        setMessageDeleted(true);
+        MessageService messageService = new MessageService();
         try {
             getMessage().delete().queue();
+            setMessageDeleted(true);
         } catch (InsufficientPermissionException e) {
-            throw new UserException("Bot is missing permission: " + e.getPermission().getName(), e);
+            messageService.sendError("Bot is missing permission: " + e.getPermission().getName(), getMessage().getChannel());
         }
 
         EmbedBuilder embedBuilder = audioPlayback.getAudioQueue().buildMessageEmbed(audioPlayback, getMessage().getGuild());
-        MessageService messageService = new MessageService();
         CompletableFuture<Message> futureMessage = messageService.sendWithLogo(embedBuilder, getMessage().getChannel());
         getCommandManager().registerWidget(new QueueWidget(getCommandManager(), futureMessage.get(), audioManager, audioPlayback));
     }
