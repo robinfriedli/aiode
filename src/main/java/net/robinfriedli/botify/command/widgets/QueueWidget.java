@@ -46,8 +46,6 @@ public class QueueWidget extends AbstractWidget {
 
     @Override
     public void reset() throws Exception {
-        EmbedBuilder embedBuilder = audioPlayback.getAudioQueue().buildMessageEmbed(audioPlayback, getMessage().getGuild());
-
         setMessageDeleted(true);
         try {
             getMessage().delete().queue();
@@ -55,6 +53,7 @@ public class QueueWidget extends AbstractWidget {
             throw new UserException("Bot is missing permission: " + e.getPermission().getName(), e);
         }
 
+        EmbedBuilder embedBuilder = audioPlayback.getAudioQueue().buildMessageEmbed(audioPlayback, getMessage().getGuild());
         MessageService messageService = new MessageService();
         CompletableFuture<Message> futureMessage = messageService.sendWithLogo(embedBuilder, getMessage().getChannel());
         getCommandManager().registerWidget(new QueueWidget(getCommandManager(), futureMessage.get(), audioManager, audioPlayback));
