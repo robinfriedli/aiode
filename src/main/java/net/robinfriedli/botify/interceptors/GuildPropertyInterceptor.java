@@ -7,6 +7,7 @@ import java.util.Map;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,7 +100,8 @@ public class GuildPropertyInterceptor extends ChainableInterceptor {
         Session session = commandContext.getSession();
         CriteriaBuilder cb = session.getCriteriaBuilder();
         CriteriaQuery<Preset> presetQuery = cb.createQuery(Preset.class);
-        presetQuery.from(Preset.class);
+        Root<Preset> queryRoot = presetQuery.from(Preset.class);
+        presetQuery.where(cb.equal(queryRoot.get("guildId"), commandContext.getGuild().getId()));
         List<Preset> presets = session.createQuery(presetQuery).getResultList();
 
         for (Preset preset : presets) {
