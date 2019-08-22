@@ -16,7 +16,7 @@ public class Invoker {
 
     public void invoke(Session session, CheckedRunnable runnable) {
         invoke(session, () -> {
-            runnable.run();
+            runnable.doRun();
             return null;
         });
     }

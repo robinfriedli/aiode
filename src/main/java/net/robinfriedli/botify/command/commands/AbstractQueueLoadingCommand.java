@@ -1,5 +1,6 @@
 package net.robinfriedli.botify.command.commands;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -87,7 +88,7 @@ public abstract class AbstractQueueLoadingCommand extends AbstractSourceDeciding
 
     protected abstract void handleResults(List<Playable> playables);
 
-    private void loadUrlItems(AudioManager audioManager, AudioPlayback playback) {
+    private void loadUrlItems(AudioManager audioManager, AudioPlayback playback) throws IOException {
         PlayableFactory playableFactory = audioManager.createPlayableFactory(playback.getGuild(), getSpotifyService());
         List<Playable> playables = playableFactory.createPlayables(getCommandInput(), getContext().getSpotifyApi(), !argumentSet("preview"), mayInterrupt);
         if (playables.isEmpty()) {
@@ -124,7 +125,7 @@ public abstract class AbstractQueueLoadingCommand extends AbstractSourceDeciding
         loadedLocalList = playlist;
     }
 
-    private void loadYouTubeList(AudioManager audioManager) {
+    private void loadYouTubeList(AudioManager audioManager) throws IOException {
         YouTubeService youTubeService = audioManager.getYouTubeService();
         PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild(), getSpotifyService());
 
@@ -232,7 +233,7 @@ public abstract class AbstractQueueLoadingCommand extends AbstractSourceDeciding
         }
     }
 
-    private void loadYouTubeVideo(AudioManager audioManager) {
+    private void loadYouTubeVideo(AudioManager audioManager) throws IOException {
         YouTubeService youTubeService = audioManager.getYouTubeService();
         if (argumentSet("limit")) {
             int limit = getArgumentValue("limit", Integer.class);

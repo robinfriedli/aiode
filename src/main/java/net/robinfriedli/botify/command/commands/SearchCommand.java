@@ -91,7 +91,7 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
         }
     }
 
-    private void searchYouTubeVideo() throws UnavailableResourceException {
+    private void searchYouTubeVideo() throws UnavailableResourceException, IOException {
         YouTubeService youTubeService = Botify.get().getAudioManager().getYouTubeService();
         if (argumentSet("limit")) {
             int limit = getArgumentValue("limit", Integer.class);
@@ -192,7 +192,7 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
         }
     }
 
-    private void listYouTubePlaylists() {
+    private void listYouTubePlaylists() throws IOException {
         YouTubeService youTubeService = Botify.get().getAudioManager().getYouTubeService();
         if (argumentSet("limit")) {
             int limit = getArgumentValue("limit", Integer.class);

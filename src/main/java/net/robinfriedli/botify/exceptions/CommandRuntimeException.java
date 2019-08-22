@@ -1,5 +1,7 @@
 package net.robinfriedli.botify.exceptions;
 
+import javax.annotation.Nonnull;
+
 import net.robinfriedli.botify.exceptions.handlers.CommandExceptionHandler;
 
 /**
@@ -8,7 +10,7 @@ import net.robinfriedli.botify.exceptions.handlers.CommandExceptionHandler;
  */
 public class CommandRuntimeException extends RuntimeException {
 
-    public CommandRuntimeException(Throwable cause) {
+    public CommandRuntimeException(@Nonnull Throwable cause) {
         super(cause);
     }
 
