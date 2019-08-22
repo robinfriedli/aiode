@@ -57,134 +57,122 @@ public class YouTubeService {
      *
      * @param youTubeVideo the hollow youtube that has already been added to the queue and awaits to receive values
      */
-    public void redirectSpotify(HollowYouTubeVideo youTubeVideo) {
+    public void redirectSpotify(HollowYouTubeVideo youTubeVideo) throws IOException {
         Track spotifyTrack = youTubeVideo.getRedirectedSpotifyTrack();
 
         if (spotifyTrack == null) {
             throw new IllegalArgumentException(youTubeVideo.toString() + " is not a placeholder for a redirected Spotify Track");
         }
 
-        try {
-            YouTube.Search.List search = youTube.search().list("id,snippet");
-            search.setKey(apiKey);
+        YouTube.Search.List search = youTube.search().list("id,snippet");
+        search.setKey(apiKey);
 
-            StringList artists = StringListImpl.create(spotifyTrack.getArtists(), ArtistSimplified::getName);
-            String searchTerm = artists.toSeparatedString(" ") + " - " + spotifyTrack.getName();
-            search.setQ(searchTerm);
-            // set topic to filter results to music video
-            search.setTopicId("/m/04rlf");
-            search.setType("video");
-            search.setFields("items(snippet/title,id/videoId)");
-            search.setMaxResults(3L);
+        StringList artists = StringListImpl.create(spotifyTrack.getArtists(), ArtistSimplified::getName);
+        String searchTerm = artists.toSeparatedString(" ") + " - " + spotifyTrack.getName();
+        search.setQ(searchTerm);
+        // set topic to filter results to music video
+        search.setTopicId("/m/04rlf");
+        search.setType("video");
+        search.setFields("items(snippet/title,id/videoId)");
+        search.setMaxResults(3L);
 
-            List<SearchResult> items = search.execute().getItems();
-            if (items.isEmpty()) {
-                youTubeVideo.cancel();
-                return;
-            }
+        List<SearchResult> items = search.execute().getItems();
+        if (items.isEmpty()) {
+            youTubeVideo.cancel();
+            return;
+        }
 
-            List<Video> videos = getAllVideos(items.stream().map(item -> item.getId().getVideoId()).collect(Collectors.toList()));
-            if (videos.isEmpty()) {
-                youTubeVideo.cancel();
-                return;
-            }
+        List<Video> videos = getAllVideos(items.stream().map(item -> item.getId().getVideoId()).collect(Collectors.toList()));
+        if (videos.isEmpty()) {
+            youTubeVideo.cancel();
+            return;
+        }
 
-            Video video;
-            if (videos.size() == 1) {
-                video = videos.get(0);
-            } else {
-                Map<Integer, Video> videosByScore = new HashMap<>();
-                Long highestViewCount = null;
-                Integer maxEditDistance = null;
-                LevenshteinDistance levenshteinDistance = new LevenshteinDistance();
-                for (Video v : videos) {
-                    long viewCount = v.getStatistics().getViewCount().longValue();
-                    String title = v.getSnippet().getTitle();
-                    Integer editDistance = levenshteinDistance.apply(searchTerm.toLowerCase(), title.toLowerCase());
-                    if (highestViewCount == null || highestViewCount < viewCount) {
-                        highestViewCount = viewCount;
-                    }
-                    if (maxEditDistance == null || maxEditDistance < editDistance) {
-                        maxEditDistance = editDistance;
-                    }
+        Video video;
+        if (videos.size() == 1) {
+            video = videos.get(0);
+        } else {
+            Map<Integer, Video> videosByScore = new HashMap<>();
+            Long highestViewCount = null;
+            Integer maxEditDistance = null;
+            LevenshteinDistance levenshteinDistance = new LevenshteinDistance();
+            for (Video v : videos) {
+                long viewCount = v.getStatistics().getViewCount().longValue();
+                String title = v.getSnippet().getTitle();
+                Integer editDistance = levenshteinDistance.apply(searchTerm.toLowerCase(), title.toLowerCase());
+                if (highestViewCount == null || highestViewCount < viewCount) {
+                    highestViewCount = viewCount;
                 }
-                for (Video v : videos) {
-                    int artistMatchScore = 0;
-                    int viewScore;
-                    int editDistanceScore;
-                    if (artists.stream().anyMatch(a -> {
-                        String artist = a.toLowerCase();
-                        String channel = v.getSnippet().getChannelTitle().toLowerCase();
-                        return channel.contains(artist) || artist.contains(channel);
-                    })) {
-                        artistMatchScore = 5;
-                    }
-                    long viewCount = v.getStatistics().getViewCount().longValue();
-                    String title = v.getSnippet().getTitle().toLowerCase();
-                    Integer editDistance = levenshteinDistance.apply(searchTerm.toLowerCase(), title);
-                    viewScore = highestViewCount == 0 ? 10 : (int) (viewCount * 10 / highestViewCount);
-                    editDistanceScore = maxEditDistance == 0 ? 10 : 10 - (editDistance * 10 / maxEditDistance);
-                    videosByScore.putIfAbsent(artistMatchScore + viewScore + editDistanceScore, v);
+                if (maxEditDistance == null || maxEditDistance < editDistance) {
+                    maxEditDistance = editDistance;
                 }
-
-                @SuppressWarnings("OptionalGetWithoutIsPresent")
-                int bestScore = videosByScore.keySet().stream().mapToInt(k -> k).max().getAsInt();
-                video = videosByScore.get(bestScore);
+            }
+            for (Video v : videos) {
+                int artistMatchScore = 0;
+                int viewScore;
+                int editDistanceScore;
+                if (artists.stream().anyMatch(a -> {
+                    String artist = a.toLowerCase();
+                    String channel = v.getSnippet().getChannelTitle().toLowerCase();
+                    return channel.contains(artist) || artist.contains(channel);
+                })) {
+                    artistMatchScore = 5;
+                }
+                long viewCount = v.getStatistics().getViewCount().longValue();
+                String title = v.getSnippet().getTitle().toLowerCase();
+                Integer editDistance = levenshteinDistance.apply(searchTerm.toLowerCase(), title);
+                viewScore = highestViewCount == 0 ? 10 : (int) (viewCount * 10 / highestViewCount);
+                editDistanceScore = maxEditDistance == 0 ? 10 : 10 - (editDistance * 10 / maxEditDistance);
+                videosByScore.putIfAbsent(artistMatchScore + viewScore + editDistanceScore, v);
             }
 
+            @SuppressWarnings("OptionalGetWithoutIsPresent")
+            int bestScore = videosByScore.keySet().stream().mapToInt(k -> k).max().getAsInt();
+            video = videosByScore.get(bestScore);
+        }
+
+        String videoId = video.getId();
+        long durationMillis = getDurationMillis(videoId);
+
+        String artistString = artists.toSeparatedString(", ");
+        String title = spotifyTrack.getName() + " by " + artistString;
+        youTubeVideo.setTitle(title);
+        youTubeVideo.setId(videoId);
+        youTubeVideo.setDuration(durationMillis);
+    }
+
+    public YouTubeVideo searchVideo(String searchTerm) throws IOException {
+        List<SearchResult> items = searchVideos(1, searchTerm);
+        SearchResult searchResult = items.get(0);
+        String videoId = searchResult.getId().getVideoId();
+        VideoListResponse videoListResponse = youTube.videos().list("snippet,contentDetails")
+            .setKey(apiKey)
+            .setId(videoId)
+            .setFields("items(snippet/title,contentDetails/duration)")
+            .setMaxResults(1L)
+            .execute();
+        Video video = videoListResponse.getItems().get(0);
+
+        return new YouTubeVideoImpl(video.getSnippet().getTitle(),
+            videoId,
+            Duration.parse(video.getContentDetails().getDuration()).get(ChronoUnit.SECONDS) * 1000);
+    }
+
+    public List<YouTubeVideo> searchSeveralVideos(long limit, String searchTerm) throws IOException {
+        List<SearchResult> searchResults = searchVideos(limit, searchTerm);
+        List<String> videoIds = searchResults.stream().map(result -> result.getId().getVideoId()).collect(Collectors.toList());
+        List<Video> youtubeVideos = getAllVideos(videoIds);
+        List<YouTubeVideo> videos = Lists.newArrayList();
+
+        for (Video video : youtubeVideos) {
             String videoId = video.getId();
-            long durationMillis = getDurationMillis(videoId);
+            String title = video.getSnippet().getTitle();
+            long duration = Duration.parse(video.getContentDetails().getDuration()).get(ChronoUnit.SECONDS) * 1000;
 
-            String artistString = artists.toSeparatedString(", ");
-            String title = spotifyTrack.getName() + " by " + artistString;
-            youTubeVideo.setTitle(title);
-            youTubeVideo.setId(videoId);
-            youTubeVideo.setDuration(durationMillis);
-        } catch (IOException e) {
-            throw new RuntimeException("Exception occurred during YouTube redirect", e);
+            videos.add(new YouTubeVideoImpl(title, videoId, duration));
         }
-    }
 
-    public YouTubeVideo searchVideo(String searchTerm) {
-        try {
-            List<SearchResult> items = searchVideos(1, searchTerm);
-            SearchResult searchResult = items.get(0);
-            String videoId = searchResult.getId().getVideoId();
-            VideoListResponse videoListResponse = youTube.videos().list("snippet,contentDetails")
-                .setKey(apiKey)
-                .setId(videoId)
-                .setFields("items(snippet/title,contentDetails/duration)")
-                .setMaxResults(1L)
-                .execute();
-            Video video = videoListResponse.getItems().get(0);
-
-            return new YouTubeVideoImpl(video.getSnippet().getTitle(),
-                videoId,
-                Duration.parse(video.getContentDetails().getDuration()).get(ChronoUnit.SECONDS) * 1000);
-        } catch (IOException e) {
-            throw new RuntimeException("Exception occurred during YouTube search", e);
-        }
-    }
-
-    public List<YouTubeVideo> searchSeveralVideos(long limit, String searchTerm) {
-        try {
-            List<SearchResult> searchResults = searchVideos(limit, searchTerm);
-            List<String> videoIds = searchResults.stream().map(result -> result.getId().getVideoId()).collect(Collectors.toList());
-            List<Video> youtubeVideos = getAllVideos(videoIds);
-            List<YouTubeVideo> videos = Lists.newArrayList();
-
-            for (Video video : youtubeVideos) {
-                String videoId = video.getId();
-                String title = video.getSnippet().getTitle();
-                long duration = Duration.parse(video.getContentDetails().getDuration()).get(ChronoUnit.SECONDS) * 1000;
-
-                videos.add(new YouTubeVideoImpl(title, videoId, duration));
-            }
-
-            return videos;
-        } catch (IOException e) {
-            throw new RuntimeException("Exception occurred during YouTube search", e);
-        }
+        return videos;
     }
 
     private List<SearchResult> searchVideos(long limit, String searchTerm) throws IOException {
@@ -232,65 +220,57 @@ public class YouTubeService {
         return durationMap;
     }
 
-    public YouTubePlaylist searchPlaylist(String searchTerm) {
-        try {
-            List<SearchResult> items = searchPlaylists(1, searchTerm);
-            SearchResult searchResult = items.get(0);
-            String playlistId = searchResult.getId().getPlaylistId();
-            String title = searchResult.getSnippet().getTitle();
-            String channelTitle = searchResult.getSnippet().getChannelTitle();
+    public YouTubePlaylist searchPlaylist(String searchTerm) throws IOException {
+        List<SearchResult> items = searchPlaylists(1, searchTerm);
+        SearchResult searchResult = items.get(0);
+        String playlistId = searchResult.getId().getPlaylistId();
+        String title = searchResult.getSnippet().getTitle();
+        String channelTitle = searchResult.getSnippet().getChannelTitle();
 
-            int itemCount = youTube
-                .playlists()
-                .list("contentDetails")
-                .setKey(apiKey)
-                .setId(playlistId)
-                .setFields("items(contentDetails/itemCount)")
-                .setMaxResults(1L)
-                .execute()
-                .getItems()
-                .get(0)
-                .getContentDetails()
-                .getItemCount()
-                .intValue();
+        int itemCount = youTube
+            .playlists()
+            .list("contentDetails")
+            .setKey(apiKey)
+            .setId(playlistId)
+            .setFields("items(contentDetails/itemCount)")
+            .setMaxResults(1L)
+            .execute()
+            .getItems()
+            .get(0)
+            .getContentDetails()
+            .getItemCount()
+            .intValue();
 
-            // return hollow youtube videos so that the playlist items can be loaded asynchronously
+        // return hollow youtube videos so that the playlist items can be loaded asynchronously
+        List<HollowYouTubeVideo> videos = Lists.newArrayListWithCapacity(itemCount);
+        for (int i = 0; i < itemCount; i++) {
+            videos.add(new HollowYouTubeVideo(this));
+        }
+
+        return new YouTubePlaylist(title, playlistId, channelTitle, videos);
+    }
+
+    public List<YouTubePlaylist> searchSeveralPlaylists(long limit, String searchTerm) throws IOException {
+        List<SearchResult> items = searchPlaylists(limit, searchTerm);
+        List<String> playlistIds = items.stream().map(item -> item.getId().getPlaylistId()).collect(Collectors.toList());
+        Map<String, Long> playlistItemCounts = getAllPlaylistItemCounts(playlistIds);
+        List<YouTubePlaylist> playlists = Lists.newArrayList();
+
+        for (SearchResult item : items) {
+            String title = item.getSnippet().getTitle();
+            String channelTitle = item.getSnippet().getChannelTitle();
+            String playlistId = item.getId().getPlaylistId();
+            Long longCount = playlistItemCounts.get(playlistId);
+            int itemCount = longCount != null ? longCount.intValue() : 0;
             List<HollowYouTubeVideo> videos = Lists.newArrayListWithCapacity(itemCount);
             for (int i = 0; i < itemCount; i++) {
                 videos.add(new HollowYouTubeVideo(this));
             }
 
-            return new YouTubePlaylist(title, playlistId, channelTitle, videos);
-        } catch (IOException e) {
-            throw new RuntimeException("Exception occurred during YouTube search", e);
+            playlists.add(new YouTubePlaylist(title, playlistId, channelTitle, videos));
         }
-    }
 
-    public List<YouTubePlaylist> searchSeveralPlaylists(long limit, String searchTerm) {
-        try {
-            List<SearchResult> items = searchPlaylists(limit, searchTerm);
-            List<String> playlistIds = items.stream().map(item -> item.getId().getPlaylistId()).collect(Collectors.toList());
-            Map<String, Long> playlistItemCounts = getAllPlaylistItemCounts(playlistIds);
-            List<YouTubePlaylist> playlists = Lists.newArrayList();
-
-            for (SearchResult item : items) {
-                String title = item.getSnippet().getTitle();
-                String channelTitle = item.getSnippet().getChannelTitle();
-                String playlistId = item.getId().getPlaylistId();
-                Long longCount = playlistItemCounts.get(playlistId);
-                int itemCount = longCount != null ? longCount.intValue() : 0;
-                List<HollowYouTubeVideo> videos = Lists.newArrayListWithCapacity(itemCount);
-                for (int i = 0; i < itemCount; i++) {
-                    videos.add(new HollowYouTubeVideo(this));
-                }
-
-                playlists.add(new YouTubePlaylist(title, playlistId, channelTitle, videos));
-            }
-
-            return playlists;
-        } catch (IOException e) {
-            throw new RuntimeException("Exception occurred during YouTube search", e);
-        }
+        return playlists;
     }
 
     private List<SearchResult> searchPlaylists(long limit, String searchTerm) throws IOException {
@@ -334,53 +314,49 @@ public class YouTubeService {
      *
      * @param playlist the playlist to load
      */
-    public void populateList(YouTubePlaylist playlist) {
-        try {
-            YouTube.PlaylistItems.List itemSearch = youTube.playlistItems().list("snippet");
-            itemSearch.setKey(apiKey);
-            itemSearch.setMaxResults(50L);
-            itemSearch.setFields("items(snippet/title,snippet/resourceId),nextPageToken");
-            itemSearch.setPlaylistId(playlist.getId());
+    public void populateList(YouTubePlaylist playlist) throws IOException {
+        YouTube.PlaylistItems.List itemSearch = youTube.playlistItems().list("snippet");
+        itemSearch.setKey(apiKey);
+        itemSearch.setMaxResults(50L);
+        itemSearch.setFields("items(snippet/title,snippet/resourceId),nextPageToken");
+        itemSearch.setPlaylistId(playlist.getId());
 
-            String nextPageToken;
-            List<PlaylistItem> playlistItems = Lists.newArrayList();
-            List<HollowYouTubeVideo> hollowVideos = playlist.getVideos();
-            int index = 0;
-            do {
-                PlaylistItemListResponse response = itemSearch.execute();
-                nextPageToken = response.getNextPageToken();
-                List<PlaylistItem> items = response.getItems();
-                playlistItems.addAll(items);
+        String nextPageToken;
+        List<PlaylistItem> playlistItems = Lists.newArrayList();
+        List<HollowYouTubeVideo> hollowVideos = playlist.getVideos();
+        int index = 0;
+        do {
+            PlaylistItemListResponse response = itemSearch.execute();
+            nextPageToken = response.getNextPageToken();
+            List<PlaylistItem> items = response.getItems();
+            playlistItems.addAll(items);
 
-                List<HollowYouTubeVideo> currentVideos = Lists.newArrayList();
-                for (PlaylistItem item : items) {
-                    String videoTitle = item.getSnippet().getTitle();
-                    String videoId = item.getSnippet().getResourceId().getVideoId();
-                    HollowYouTubeVideo hollowVideo = hollowVideos.get(index);
-                    hollowVideo.setTitle(videoTitle);
-                    hollowVideo.setId(videoId);
-                    currentVideos.add(hollowVideo);
-                    ++index;
-                }
-                loadDurationsAsync(currentVideos);
-
-                itemSearch.setPageToken(nextPageToken);
-
-                if (Thread.currentThread().isInterrupted()) {
-                    playlist.cancelLoading();
-                    return;
-                }
-            } while (!Strings.isNullOrEmpty(nextPageToken));
-
-            if (playlistItems.isEmpty()) {
-                throw new NoResultsFoundException("Playlist " + playlist.getTitle() + " has no items");
+            List<HollowYouTubeVideo> currentVideos = Lists.newArrayList();
+            for (PlaylistItem item : items) {
+                String videoTitle = item.getSnippet().getTitle();
+                String videoId = item.getSnippet().getResourceId().getVideoId();
+                HollowYouTubeVideo hollowVideo = hollowVideos.get(index);
+                hollowVideo.setTitle(videoTitle);
+                hollowVideo.setId(videoId);
+                currentVideos.add(hollowVideo);
+                ++index;
             }
+            loadDurationsAsync(currentVideos);
 
-            // finally cancel each video that could be loaded e.g. if it's private
-            playlist.cancelLoading();
-        } catch (IOException e) {
-            throw new RuntimeException("Exception occurred while loading playlist items", e);
+            itemSearch.setPageToken(nextPageToken);
+
+            if (Thread.currentThread().isInterrupted()) {
+                playlist.cancelLoading();
+                return;
+            }
+        } while (!Strings.isNullOrEmpty(nextPageToken));
+
+        if (playlistItems.isEmpty()) {
+            throw new NoResultsFoundException("Playlist " + playlist.getTitle() + " has no items");
         }
+
+        // finally cancel each video that could be loaded e.g. if it's private
+        playlist.cancelLoading();
     }
 
     private void loadDurationsAsync(List<HollowYouTubeVideo> videos) {
@@ -484,49 +460,41 @@ public class YouTubeService {
         }
     }
 
-    public YouTubeVideo videoForId(String id) {
-        try {
-            YouTube.Videos.List videoRequest = youTube.videos().list("snippet");
-            videoRequest.setId(id);
-            videoRequest.setFields("items(contentDetails/duration,snippet/title)");
-            videoRequest.setKey(apiKey);
-            videoRequest.setMaxResults(1L);
-            List<Video> items = videoRequest.execute().getItems();
+    public YouTubeVideo videoForId(String id) throws IOException {
+        YouTube.Videos.List videoRequest = youTube.videos().list("snippet");
+        videoRequest.setId(id);
+        videoRequest.setFields("items(contentDetails/duration,snippet/title)");
+        videoRequest.setKey(apiKey);
+        videoRequest.setMaxResults(1L);
+        List<Video> items = videoRequest.execute().getItems();
 
-            if (items.isEmpty()) {
-                throw new NoResultsFoundException(String.format("No YouTube video found for id '%s'", id));
-            }
-
-            Video video = items.get(0);
-            return new YouTubeVideoImpl(video.getSnippet().getTitle(), id, getDurationMillis(id));
-        } catch (IOException e) {
-            throw new RuntimeException("Exception occurred while loading video " + id);
+        if (items.isEmpty()) {
+            throw new NoResultsFoundException(String.format("No YouTube video found for id '%s'", id));
         }
+
+        Video video = items.get(0);
+        return new YouTubeVideoImpl(video.getSnippet().getTitle(), id, getDurationMillis(id));
     }
 
-    public YouTubePlaylist playlistForId(String id) {
-        try {
-            YouTube.Playlists.List playlistRequest = youTube.playlists().list("snippet,contentDetails");
-            playlistRequest.setId(id);
-            playlistRequest.setFields("items(contentDetails/itemCount,snippet/title,snippet/channelTitle)");
-            playlistRequest.setKey(apiKey);
-            List<Playlist> items = playlistRequest.execute().getItems();
+    public YouTubePlaylist playlistForId(String id) throws IOException {
+        YouTube.Playlists.List playlistRequest = youTube.playlists().list("snippet,contentDetails");
+        playlistRequest.setId(id);
+        playlistRequest.setFields("items(contentDetails/itemCount,snippet/title,snippet/channelTitle)");
+        playlistRequest.setKey(apiKey);
+        List<Playlist> items = playlistRequest.execute().getItems();
 
-            if (items.isEmpty()) {
-                throw new NoResultsFoundException(String.format("No YouTube playlist found for id '%s'", id));
-            }
-
-            Playlist playlist = items.get(0);
-
-            List<HollowYouTubeVideo> videoPlaceholders = Lists.newArrayList();
-            for (int i = 0; i < playlist.getContentDetails().getItemCount(); i++) {
-                videoPlaceholders.add(new HollowYouTubeVideo(this));
-            }
-
-            return new YouTubePlaylist(playlist.getSnippet().getTitle(), id, playlist.getSnippet().getChannelTitle(), videoPlaceholders);
-        } catch (IOException e) {
-            throw new RuntimeException("Exception occurred while loading playlist " + id);
+        if (items.isEmpty()) {
+            throw new NoResultsFoundException(String.format("No YouTube playlist found for id '%s'", id));
         }
+
+        Playlist playlist = items.get(0);
+
+        List<HollowYouTubeVideo> videoPlaceholders = Lists.newArrayList();
+        for (int i = 0; i < playlist.getContentDetails().getItemCount(); i++) {
+            videoPlaceholders.add(new HollowYouTubeVideo(this));
+        }
+
+        return new YouTubePlaylist(playlist.getSnippet().getTitle(), id, playlist.getSnippet().getChannelTitle(), videoPlaceholders);
     }
 
     /**

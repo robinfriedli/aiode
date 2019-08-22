@@ -2,6 +2,7 @@ package net.robinfriedli.botify.exceptions;
 
 import java.awt.Color;
 
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import net.dv8tion.jda.api.EmbedBuilder;
 
 public class ExceptionUtils {
@@ -10,16 +11,18 @@ public class ExceptionUtils {
         Throwable exception = e instanceof CommandRuntimeException ? e.getCause() : e;
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setColor(Color.RED);
-        embedBuilder.addField("Exception", String.format("%s: %s", exception.getClass().getSimpleName(), exception.getMessage()), false);
-        recursiveCause(embedBuilder, exception);
+        appendException(embedBuilder, exception, false);
         return embedBuilder;
     }
 
-    private static void recursiveCause(EmbedBuilder embedBuilder, Throwable exception) {
-        Throwable cause = exception.getCause();
-        if (cause != null) {
-            embedBuilder.addField("Caused by", String.format("%s: %s", cause.getClass().getSimpleName(), cause.getMessage()), false);
-            recursiveCause(embedBuilder, cause);
+    private static void appendException(EmbedBuilder embedBuilder, Throwable e, boolean isCause) {
+        String message = e instanceof GoogleJsonResponseException
+            ? ((GoogleJsonResponseException) e).getDetails().getMessage()
+            : e.getMessage();
+        embedBuilder.addField(isCause ? "Caused by" : "Exception", String.format("%s: %s", e.getClass().getSimpleName(), message), false);
+
+        if (e.getCause() != null) {
+            appendException(embedBuilder, e.getCause(), true);
         }
     }
 

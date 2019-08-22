@@ -1,5 +1,6 @@
 package net.robinfriedli.botify.command.commands;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -124,7 +125,7 @@ public class AddCommand extends AbstractSourceDecidingCommand {
         });
     }
 
-    private void addUrl(Playlist playlist, String url) {
+    private void addUrl(Playlist playlist, String url) throws IOException {
         AudioManager audioManager = Botify.get().getAudioManager();
         PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild(), getSpotifyService());
         List<Playable> playables = playableFactory.createPlayables(url, getContext().getSpotifyApi(), false, false);
@@ -183,7 +184,7 @@ public class AddCommand extends AbstractSourceDecidingCommand {
         }
     }
 
-    private void addYouTubeList(Playlist playlist, String searchTerm) {
+    private void addYouTubeList(Playlist playlist, String searchTerm) throws IOException {
         YouTubeService youTubeService = Botify.get().getAudioManager().getYouTubeService();
         if (argumentSet("limit")) {
             int limit = getArgumentValue("limit", Integer.class);
@@ -218,7 +219,14 @@ public class AddCommand extends AbstractSourceDecidingCommand {
     }
 
     private void loadYouTubeList(YouTubePlaylist youTubePlaylist, Playlist playlist, YouTubeService youTubeService) {
-        getContext().getGuildContext().getTrackLoadingExecutor().load(() -> youTubeService.populateList(youTubePlaylist), false);
+        getContext().getGuildContext().getTrackLoadingExecutor().load(() -> {
+            try {
+                youTubeService.populateList(youTubePlaylist);
+            } catch (IOException e) {
+                youTubePlaylist.cancelLoading();
+                throw e;
+            }
+        }, false);
         List<HollowYouTubeVideo> videos = youTubePlaylist.getVideos();
         List<PlaylistItem> items = Lists.newArrayList();
         for (HollowYouTubeVideo video : videos) {

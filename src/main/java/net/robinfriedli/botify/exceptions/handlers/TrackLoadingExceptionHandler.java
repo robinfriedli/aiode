@@ -1,16 +1,14 @@
 package net.robinfriedli.botify.exceptions.handlers;
 
-import java.awt.Color;
-
 import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 
-import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.discord.MessageService;
+import net.robinfriedli.botify.exceptions.ExceptionUtils;
 
 public class TrackLoadingExceptionHandler implements Thread.UncaughtExceptionHandler {
 
@@ -29,11 +27,8 @@ public class TrackLoadingExceptionHandler implements Thread.UncaughtExceptionHan
     public void uncaughtException(Thread t, Throwable e) {
         logger.error("Exception while loading tracks", e);
         if (channel != null) {
-            EmbedBuilder embedBuilder = new EmbedBuilder();
-            embedBuilder.setColor(Color.RED);
+            EmbedBuilder embedBuilder = ExceptionUtils.buildErrorEmbed(e);
             embedBuilder.setDescription("There has been an API error while loading some tracks. Please try again.");
-            appendException(embedBuilder, e, false);
-            recursiveCause(embedBuilder, e);
 
             if (commandContext != null) {
                 embedBuilder.addField("CommandContext ID", commandContext.getId(), false);
@@ -44,18 +39,4 @@ public class TrackLoadingExceptionHandler implements Thread.UncaughtExceptionHan
         }
     }
 
-    private void recursiveCause(EmbedBuilder embedBuilder, Throwable e) {
-        Throwable cause = e.getCause();
-        if (cause != null) {
-            appendException(embedBuilder, cause, true);
-            recursiveCause(embedBuilder, cause);
-        }
-    }
-
-    private void appendException(EmbedBuilder embedBuilder, Throwable e, boolean isCause) {
-        String message = e instanceof GoogleJsonResponseException
-            ? ((GoogleJsonResponseException) e).getDetails().getMessage()
-            : e.getMessage();
-        embedBuilder.addField(isCause ? "Caused by" : "Error", String.format("%s: %s", e.getClass().getSimpleName(), message), false);
-    }
 }

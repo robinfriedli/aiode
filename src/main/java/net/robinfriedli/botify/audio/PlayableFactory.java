@@ -63,7 +63,7 @@ public class PlayableFactory {
      *                        {@link YouTubeService#redirectSpotify(HollowYouTubeVideo)}, else a {@link TrackWrapper} is created to play the
      *                        preview mp3 provided by Spotify
      */
-    public Playable createPlayable(boolean redirectSpotify, Object track) {
+    public Playable createPlayable(boolean redirectSpotify, Object track) throws IOException {
         if (track instanceof Playable) {
             return (Playable) track;
         } else if (track instanceof Track) {
@@ -150,20 +150,26 @@ public class PlayableFactory {
 
         if (!tracksToRedirect.isEmpty()) {
             trackLoadingExecutor.load(() -> {
-                for (HollowYouTubeVideo youTubeVideo : tracksToRedirect) {
-                    if (Thread.currentThread().isInterrupted()) {
-                        tracksToRedirect.stream().filter(HollowYouTubeVideo::isHollow).forEach(HollowYouTubeVideo::cancel);
-                        break;
-                    }
-                    youTubeService.redirectSpotify(youTubeVideo);
-                }
-
-                for (YouTubePlaylist youTubePlaylist : youTubePlaylistsToLoad) {
-                    if (Thread.currentThread().isInterrupted()) {
-                        youTubePlaylistsToLoad.forEach(YouTubePlaylist::cancelLoading);
+                try {
+                    for (HollowYouTubeVideo youTubeVideo : tracksToRedirect) {
+                        if (Thread.currentThread().isInterrupted()) {
+                            tracksToRedirect.stream().filter(HollowYouTubeVideo::isHollow).forEach(HollowYouTubeVideo::cancel);
+                            break;
+                        }
+                        youTubeService.redirectSpotify(youTubeVideo);
                     }
 
-                    youTubeService.populateList(youTubePlaylist);
+                    for (YouTubePlaylist youTubePlaylist : youTubePlaylistsToLoad) {
+                        if (Thread.currentThread().isInterrupted()) {
+                            youTubePlaylistsToLoad.forEach(YouTubePlaylist::cancelLoading);
+                        }
+
+                        youTubeService.populateList(youTubePlaylist);
+                    }
+                } catch (IOException e) {
+                    tracksToRedirect.forEach(HollowYouTubeVideo::cancel);
+                    youTubePlaylistsToLoad.forEach(YouTubePlaylist::cancelLoading);
+                    throw e;
                 }
             }, mayInterrupt);
         }
@@ -197,12 +203,19 @@ public class PlayableFactory {
     public List<Playable> createPlayables(YouTubePlaylist youTubePlaylist, boolean mayInterrupt) {
         List<Playable> playables = Lists.newArrayList(youTubePlaylist.getVideos());
 
-        trackLoadingExecutor.load(() -> youTubeService.populateList(youTubePlaylist), mayInterrupt);
+        trackLoadingExecutor.load(() -> {
+            try {
+                youTubeService.populateList(youTubePlaylist);
+            } catch (IOException e) {
+                youTubePlaylist.cancelLoading();
+                throw e;
+            }
+        }, mayInterrupt);
 
         return playables;
     }
 
-    public List<Playable> createPlayables(String url, SpotifyApi spotifyApi, boolean redirectSpotify) {
+    public List<Playable> createPlayables(String url, SpotifyApi spotifyApi, boolean redirectSpotify) throws IOException {
         return createPlayables(url, spotifyApi, redirectSpotify, true);
     }
 
@@ -211,7 +224,7 @@ public class PlayableFactory {
      * and uses the familiar methods to load the Playables, otherwise this method uses the {@link UrlAudioLoader}
      * to load the {@link AudioTrack}s using lavaplayer and wraps them in {@link UrlPlayable}s
      */
-    public Playable createPlayable(String url, SpotifyApi spotifyApi, boolean redirectSpotify) {
+    public Playable createPlayable(String url, SpotifyApi spotifyApi, boolean redirectSpotify) throws IOException {
         URI uri;
         try {
             uri = URI.create(url);
@@ -272,7 +285,7 @@ public class PlayableFactory {
      *                        see {@link #createPlayables(boolean, Collection, boolean)}
      * @return the created playables
      */
-    public List<Playable> createPlayables(String url, SpotifyApi spotifyApi, boolean redirectSpotify, boolean mayInterrupt) {
+    public List<Playable> createPlayables(String url, SpotifyApi spotifyApi, boolean redirectSpotify, boolean mayInterrupt) throws IOException {
         List<Playable> playables;
 
         URI uri;

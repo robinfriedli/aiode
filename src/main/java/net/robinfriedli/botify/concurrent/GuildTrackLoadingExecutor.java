@@ -40,7 +40,7 @@ public class GuildTrackLoadingExecutor {
      * @param r            the action to run
      * @param singleThread if true creates a single thread that might get interrupted and replaced by the next action
      */
-    public void load(Runnable r, boolean singleThread) {
+    public void load(CheckedRunnable r, boolean singleThread) {
         Thread thread = singleThread ? new Thread(r) : new QueuedThread(threadExecutionQueue, r);
         String kind = singleThread ? "interruptible" : "parallel";
         String name = "botify " + kind + " track loading thread";
