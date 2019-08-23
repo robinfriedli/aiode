@@ -9,7 +9,6 @@ import net.robinfriedli.botify.concurrent.GuildTrackLoadingExecutor;
 import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
 import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
-import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
 
 public class AbortCommand extends AbstractCommand {
 
@@ -19,34 +18,23 @@ public class AbortCommand extends AbstractCommand {
 
     @Override
     public void doRun() {
-        Thread commandExecutionThread = Thread.currentThread();
-        Thread abortThread = new Thread(() -> {
-            try {
-                commandExecutionThread.join();
-            } catch (InterruptedException ignored) {
-            }
-
-            CommandExecutionQueueManager executionQueueManager = Botify.get().getExecutionQueueManager();
-            GuildTrackLoadingExecutor trackLoadingExecutor = getContext().getGuildContext().getTrackLoadingExecutor();
-            ThreadExecutionQueue executionQueue = executionQueueManager.getForGuild(getContext().getGuild());
-            if (executionQueue.isIdle() && trackLoadingExecutor.isIdle()) {
-                EmbedBuilder embedBuilder = new EmbedBuilder();
-                embedBuilder.setDescription("No commands are currently running");
-                sendMessage(embedBuilder);
-                setFailed(true);
-            } else {
-                executionQueue.abortAll();
-                trackLoadingExecutor.interruptAll();
-                sendSuccess("Sent all currently running commands an interrupt signal and cancelled queued commands.");
-            }
-        });
-        abortThread.setName("botify abort thread");
-        abortThread.setUncaughtExceptionHandler(new LoggingExceptionHandler());
-        abortThread.start();
+        CommandExecutionQueueManager executionQueueManager = Botify.get().getExecutionQueueManager();
+        GuildTrackLoadingExecutor trackLoadingExecutor = getContext().getGuildContext().getTrackLoadingExecutor();
+        ThreadExecutionQueue executionQueue = executionQueueManager.getForGuild(getContext().getGuild());
+        if (executionQueue.isIdle() && trackLoadingExecutor.isIdle()) {
+            EmbedBuilder embedBuilder = new EmbedBuilder();
+            embedBuilder.setDescription("No commands are currently running");
+            sendMessage(embedBuilder);
+            setFailed(true);
+        } else {
+            executionQueue.abortAll();
+            trackLoadingExecutor.interruptAll();
+        }
     }
 
     @Override
     public void onSuccess() {
+        sendSuccess("Sent all currently running commands an interrupt signal and cancelled queued commands.");
     }
 
     @Override
