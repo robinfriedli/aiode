@@ -1,4 +1,4 @@
-package net.robinfriedli.botify.discord.properties;
+package net.robinfriedli.botify.discord.property;
 
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.xml.GuildPropertyContribution;
@@ -27,6 +27,6 @@ public abstract class AbstractBoolProperty extends AbstractGuildProperty {
         setBoolValue((boolean) process(value), guildSpecification);
     }
 
-    abstract void setBoolValue(boolean bool, GuildSpecification guildSpecification);
+    protected abstract void setBoolValue(boolean bool, GuildSpecification guildSpecification);
 
 }

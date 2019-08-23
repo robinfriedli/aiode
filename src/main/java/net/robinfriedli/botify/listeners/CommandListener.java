@@ -45,13 +45,14 @@ public class CommandListener extends ListenerAdapter {
     public CommandListener(CommandExecutionQueueManager executionQueueManager,
                            CommandManager commandManager,
                            GuildManager guildManager,
+                           MessageService messageService,
                            SessionFactory sessionFactory,
                            SpotifyApi.Builder spotifyApiBuilder) {
         this.executionQueueManager = executionQueueManager;
         this.commandManager = commandManager;
         this.commandConceptionPool = Executors.newCachedThreadPool();
         this.guildManager = guildManager;
-        this.messageService = new MessageService();
+        this.messageService = messageService;
         this.sessionFactory = sessionFactory;
         this.spotifyApiBuilder = spotifyApiBuilder;
         this.logger = LoggerFactory.getLogger(getClass());
@@ -101,7 +102,6 @@ public class CommandListener extends ListenerAdapter {
             }
         }
 
-        MessageService messageService = new MessageService();
         if (namePrefix == null) {
             // realistically should never happen but catch this edge case just to be sure
             messageService.sendException("Something went wrong parsing your command, try starting with \"$botify\" instead.", message.getChannel());
@@ -121,7 +121,7 @@ public class CommandListener extends ListenerAdapter {
             commandInstance.ifPresent(command -> commandManager.runCommand(command, queue));
         } catch (UserException e) {
             EmbedBuilder embedBuilder = e.buildEmbed();
-            messageService.send(embedBuilder.build(), commandContext.getChannel());
+            messageService.sendTemporary(embedBuilder.build(), commandContext.getChannel());
         }
     }
 

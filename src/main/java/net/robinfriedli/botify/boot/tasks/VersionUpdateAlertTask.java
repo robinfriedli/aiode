@@ -28,10 +28,12 @@ public class VersionUpdateAlertTask implements StartupTask {
 
     private final JDA jda;
     private final JxpBackend jxpBackend;
+    private final MessageService messageService;
 
-    public VersionUpdateAlertTask(JDA jda, JxpBackend jxpBackend) {
+    public VersionUpdateAlertTask(JDA jda, JxpBackend jxpBackend, MessageService messageService) {
         this.jda = jda;
         this.jxpBackend = jxpBackend;
+        this.messageService = messageService;
     }
 
     @Override
@@ -60,7 +62,6 @@ public class VersionUpdateAlertTask implements StartupTask {
             && versionCompare(currentVersion, xmlElement.getAttribute("version").getValue()) == 1
             && xmlElement.getAttribute("launched").getBool()).collect();
         if (!lowerLaunchedVersions.isEmpty()) {
-            MessageService messageService = new MessageService();
             String message = "Botify has been updated to " + currentVersion + ". [Check the releases here]("
                 + "https://github.com/robinfriedli/botify/releases)";
             EmbedBuilder embedBuilder = new EmbedBuilder();

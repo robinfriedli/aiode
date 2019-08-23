@@ -13,6 +13,7 @@ import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
+import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.widgets.AbstractWidgetAction;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.exceptions.UserException;
@@ -75,7 +76,7 @@ public abstract class AbstractWidget {
             }
 
             futureException.thenAccept(e -> {
-                MessageService messageService = new MessageService();
+                MessageService messageService = Botify.get().getMessageService();
                 if (e instanceof InsufficientPermissionException) {
                     messageService.sendError("Bot is missing permission: "
                         + ((InsufficientPermissionException) e).getPermission().getName(), message.getChannel());

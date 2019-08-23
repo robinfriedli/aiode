@@ -29,7 +29,7 @@ import net.robinfriedli.botify.concurrent.CommandExecutionThread;
 import net.robinfriedli.botify.concurrent.Invoker;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.MessageService;
-import net.robinfriedli.botify.discord.properties.ColorSchemeProperty;
+import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.login.Login;
@@ -77,7 +77,7 @@ public abstract class AbstractCommand {
         this.description = description;
         this.category = category;
         this.argumentContribution = setupArguments();
-        this.messageService = new MessageService();
+        this.messageService = Botify.get().getMessageService();
         commandInput = "";
     }
 

@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
+import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.interceptor.CommandInterceptorChain;
 import net.robinfriedli.botify.concurrent.CommandExecutionThread;
 import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
@@ -55,7 +56,6 @@ public class CommandManager {
 
     public void runCommand(AbstractCommand command, ThreadExecutionQueue executionQueue) {
         CommandContext context = command.getContext();
-        MessageService messageService = new MessageService();
         CommandExecutionThread commandExecutionThread = new CommandExecutionThread(command, executionQueue, () -> {
             try {
                 interceptorChain.intercept(command);
@@ -69,6 +69,7 @@ public class CommandManager {
         boolean queued = !executionQueue.add(commandExecutionThread);
 
         if (queued) {
+            MessageService messageService = Botify.get().getMessageService();
             messageService.sendError("Executing too many commands concurrently. This command will be executed after one has finished.", context.getChannel());
         }
     }
@@ -167,7 +168,7 @@ public class CommandManager {
             activeWidgets.add(widget);
             toRemove.forEach(AbstractWidget::destroy);
         } catch (UserException e) {
-            new MessageService().sendError(e.getMessage(), widget.getMessage().getChannel());
+            Botify.get().getMessageService().sendError(e.getMessage(), widget.getMessage().getChannel());
         }
     }
 

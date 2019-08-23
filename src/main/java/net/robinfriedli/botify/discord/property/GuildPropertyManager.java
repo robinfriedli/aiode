@@ -1,4 +1,4 @@
-package net.robinfriedli.botify.discord.properties;
+package net.robinfriedli.botify.discord.property;
 
 import java.util.List;
 import java.util.stream.Collectors;

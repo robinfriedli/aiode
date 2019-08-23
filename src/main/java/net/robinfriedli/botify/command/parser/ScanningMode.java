@@ -1,7 +1,7 @@
 package net.robinfriedli.botify.command.parser;
 
 import net.robinfriedli.botify.command.AbstractCommand;
-import net.robinfriedli.botify.discord.properties.ArgumentPrefixProperty;
+import net.robinfriedli.botify.discord.property.properties.ArgumentPrefixProperty;
 
 /**
  * Starting mode when parsing a command that scans for argument prefixes and switches into a {@link ArgumentBuildingMode}

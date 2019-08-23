@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageChannel;
+import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.exceptions.ExceptionUtils;
@@ -23,11 +24,11 @@ public class CommandExceptionHandler implements Thread.UncaughtExceptionHandler 
     public void uncaughtException(Thread t, Throwable e) {
         MessageChannel channel = commandContext.getChannel();
         String command = commandContext.getMessage().getContentDisplay();
-        MessageService messageService = new MessageService();
+        MessageService messageService = Botify.get().getMessageService();
 
         if (e instanceof UserException) {
             EmbedBuilder embedBuilder = ((UserException) e).buildEmbed();
-            messageService.send(embedBuilder.build(), channel);
+            messageService.sendTemporary(embedBuilder.build(), channel);
         } else {
             EmbedBuilder embedBuilder = ExceptionUtils.buildErrorEmbed(e);
             embedBuilder.addField("CommandContext ID", commandContext.getId(), false);

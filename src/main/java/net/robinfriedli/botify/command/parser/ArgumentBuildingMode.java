@@ -2,7 +2,7 @@ package net.robinfriedli.botify.command.parser;
 
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.ArgumentContribution;
-import net.robinfriedli.botify.discord.properties.ArgumentPrefixProperty;
+import net.robinfriedli.botify.discord.property.properties.ArgumentPrefixProperty;
 
 /**
  * Mode implementation that is used to build one argument per instance. This mode is typically switched to if the last

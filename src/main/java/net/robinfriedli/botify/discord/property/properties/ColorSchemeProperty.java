@@ -1,9 +1,11 @@
-package net.robinfriedli.botify.discord.properties;
+package net.robinfriedli.botify.discord.property.properties;
 
 import java.awt.Color;
 
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.CommandContext;
+import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
+import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.xml.GuildPropertyContribution;
 import net.robinfriedli.botify.exceptions.InvalidPropertyValueException;

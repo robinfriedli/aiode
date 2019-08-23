@@ -10,8 +10,11 @@ import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 
 public class CommandMonitoringInterceptor extends AbstractChainableCommandInterceptor {
 
-    public CommandMonitoringInterceptor(CommandInterceptorContribution contribution, CommandInterceptor next) {
+    private final MessageService messageService;
+
+    public CommandMonitoringInterceptor(CommandInterceptorContribution contribution, CommandInterceptor next, MessageService messageService) {
         super(contribution, next);
+        this.messageService = messageService;
     }
 
     @Override
@@ -25,7 +28,6 @@ public class CommandMonitoringInterceptor extends AbstractChainableCommandInterc
                 return;
             }
             if (commandExecutionThread.isAlive()) {
-                MessageService messageService = new MessageService();
                 messageService.send("Still loading...", context.getChannel());
             }
         }));

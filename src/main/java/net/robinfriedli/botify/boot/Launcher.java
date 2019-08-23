@@ -24,7 +24,8 @@ import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.command.SecurityManager;
 import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
 import net.robinfriedli.botify.discord.GuildManager;
-import net.robinfriedli.botify.discord.properties.GuildPropertyManager;
+import net.robinfriedli.botify.discord.MessageService;
+import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 import net.robinfriedli.botify.entities.xml.EmbedDocumentContribution;
@@ -126,6 +127,7 @@ public class Launcher {
             // setup botify
             LoginManager loginManager = new LoginManager();
             GuildManager.Mode mode = modePartitioned ? GuildManager.Mode.PARTITIONED : GuildManager.Mode.SHARED;
+            MessageService messageService = new MessageService();
 
             Context commandContributionContext = jxpBackend.getContext(PropertiesLoadingService.requireProperty("COMMANDS_PATH"));
             Context commandInterceptorContext = jxpBackend.getContext(PropertiesLoadingService.requireProperty("COMMAND_INTERCEPTORS_PATH"));
@@ -138,9 +140,9 @@ public class Launcher {
             CommandExecutionQueueManager executionQueueManager = new CommandExecutionQueueManager();
             SecurityManager securityManager = new SecurityManager(guildManager);
 
-            CommandListener commandListener = new CommandListener(executionQueueManager, commandManager, guildManager, sessionFactory, spotifyApiBuilder);
-            GuildJoinListener guildJoinListener = new GuildJoinListener(executionQueueManager, discordBotListAPI, guildManager, jxpBackend, sessionFactory, spotifyApiBuilder);
-            WidgetListener widgetListener = new WidgetListener(commandManager);
+            CommandListener commandListener = new CommandListener(executionQueueManager, commandManager, guildManager, messageService, sessionFactory, spotifyApiBuilder);
+            GuildJoinListener guildJoinListener = new GuildJoinListener(executionQueueManager, discordBotListAPI, guildManager, jxpBackend, messageService, sessionFactory, spotifyApiBuilder);
+            WidgetListener widgetListener = new WidgetListener(commandManager, messageService);
             VoiceChannelListener voiceChannelListener = new VoiceChannelListener(audioManager);
 
             Botify botify = new Botify(audioManager,
@@ -151,6 +153,7 @@ public class Launcher {
                 jda,
                 jxpBackend,
                 loginManager,
+                messageService,
                 securityManager,
                 sessionFactory,
                 spotifyApiBuilder,

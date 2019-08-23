@@ -19,10 +19,10 @@ public class AlertPlaylistModificationInterceptor extends CollectingInterceptor 
     private final MessageChannel channel;
     private final MessageService messageService;
 
-    public AlertPlaylistModificationInterceptor(Interceptor next, Logger logger, CommandContext commandContext) {
+    public AlertPlaylistModificationInterceptor(Interceptor next, Logger logger, CommandContext commandContext, MessageService messageService) {
         super(next, logger);
         channel = commandContext.getChannel();
-        messageService = new MessageService();
+        this.messageService = messageService;
     }
 
     @Override

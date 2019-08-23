@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.TextChannel;
-import net.robinfriedli.botify.discord.MessageService;
+import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.exceptions.ExceptionUtils;
 
 public class WidgetExceptionHandler implements Thread.UncaughtExceptionHandler {
@@ -20,7 +20,7 @@ public class WidgetExceptionHandler implements Thread.UncaughtExceptionHandler {
     @Override
     public void uncaughtException(Thread t, Throwable e) {
         EmbedBuilder embedBuilder = ExceptionUtils.buildErrorEmbed(e);
-        new MessageService().send(embedBuilder.build(), textChannel);
+        Botify.get().getMessageService().send(embedBuilder.build(), textChannel);
         logger.error("Exception in widget", e);
     }
 }

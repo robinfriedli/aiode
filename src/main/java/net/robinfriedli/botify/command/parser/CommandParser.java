@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ImmutableSet;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.interceptor.interceptors.CommandParserInterceptor;
-import net.robinfriedli.botify.discord.properties.ArgumentPrefixProperty;
+import net.robinfriedli.botify.discord.property.properties.ArgumentPrefixProperty;
 import net.robinfriedli.botify.exceptions.CommandParseException;
 import net.robinfriedli.botify.exceptions.IllegalEscapeCharacterException;
 import net.robinfriedli.botify.exceptions.UnclosedQuotationsException;

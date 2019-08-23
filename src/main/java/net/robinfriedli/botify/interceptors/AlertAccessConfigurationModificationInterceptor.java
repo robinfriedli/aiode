@@ -19,10 +19,10 @@ public class AlertAccessConfigurationModificationInterceptor extends CollectingI
     private final CommandContext context;
     private final MessageService messageService;
 
-    public AlertAccessConfigurationModificationInterceptor(Interceptor next, Logger logger, CommandContext commandContext) {
+    public AlertAccessConfigurationModificationInterceptor(Interceptor next, Logger logger, CommandContext commandContext, MessageService messageService) {
         super(next, logger);
         context = commandContext;
-        messageService = new MessageService();
+        this.messageService = messageService;
     }
 
     @Override

@@ -50,6 +50,8 @@ public class GuildSpecification implements Serializable {
     private String defaultListSource;
     @Column(name = "argument_prefix")
     private Character argumentPrefix;
+    @Column(name = "temp_message_timeout")
+    private Integer tempMessageTimeout;
     @OneToMany(mappedBy = "guildSpecification")
     private Set<AccessConfiguration> accessConfigurations = Sets.newHashSet();
 
@@ -172,5 +174,13 @@ public class GuildSpecification implements Serializable {
 
     public void setArgumentPrefix(Character argumentPrefix) {
         this.argumentPrefix = argumentPrefix;
+    }
+
+    public Integer getTempMessageTimeout() {
+        return tempMessageTimeout;
+    }
+
+    public void setTempMessageTimeout(Integer tempMessageTimeout) {
+        this.tempMessageTimeout = tempMessageTimeout;
     }
 }

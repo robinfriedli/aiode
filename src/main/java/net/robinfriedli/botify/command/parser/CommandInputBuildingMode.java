@@ -1,7 +1,7 @@
 package net.robinfriedli.botify.command.parser;
 
 import net.robinfriedli.botify.command.AbstractCommand;
-import net.robinfriedli.botify.discord.properties.ArgumentPrefixProperty;
+import net.robinfriedli.botify.discord.property.properties.ArgumentPrefixProperty;
 
 /**
  * Records the command input. E.g. if the used enters 'add $list 00s Rock Anthems $to rock' this mode will set

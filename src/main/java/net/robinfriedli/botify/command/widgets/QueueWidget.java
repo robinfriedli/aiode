@@ -8,6 +8,7 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
+import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.command.AbstractWidget;
@@ -45,7 +46,7 @@ public class QueueWidget extends AbstractWidget {
 
     @Override
     public void reset() throws Exception {
-        MessageService messageService = new MessageService();
+        MessageService messageService = Botify.get().getMessageService();
         try {
             getMessage().delete().queue();
             setMessageDeleted(true);

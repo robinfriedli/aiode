@@ -49,6 +49,7 @@ public class GuildJoinListener extends ListenerAdapter {
     private final GuildManager guildManager;
     private final JxpBackend jxpBackend;
     private final Logger logger;
+    private final MessageService messageService;
     private final SessionFactory sessionFactory;
     private final SpotifyApi.Builder spotifyApiBuilder;
 
@@ -56,12 +57,14 @@ public class GuildJoinListener extends ListenerAdapter {
                              @Nullable DiscordBotListAPI discordBotListAPI,
                              GuildManager guildManager,
                              JxpBackend jxpBackend,
+                             MessageService messageService,
                              SessionFactory sessionFactory,
                              SpotifyApi.Builder spotifyApiBuilder) {
         this.executionQueueManager = executionQueueManager;
         this.discordBotListAPI = discordBotListAPI;
         this.guildManager = guildManager;
         this.jxpBackend = jxpBackend;
+        this.messageService = messageService;
         this.sessionFactory = sessionFactory;
         this.spotifyApiBuilder = spotifyApiBuilder;
         logger = LoggerFactory.getLogger(getClass());
@@ -73,7 +76,6 @@ public class GuildJoinListener extends ListenerAdapter {
         guildManager.addGuild(guild);
         executionQueueManager.addGuild(guild);
 
-        MessageService messageService = new MessageService();
         try (Context context = jxpBackend.createLazyContext(PropertiesLoadingService.requireProperty("EMBED_DOCUMENTS_PATH"))) {
             EmbedDocumentContribution embedDocumentContribution = context
                 .query(attribute("name").is("getting-started"), EmbedDocumentContribution.class)
