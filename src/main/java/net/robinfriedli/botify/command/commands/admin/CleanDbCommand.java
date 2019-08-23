@@ -66,6 +66,7 @@ public class CleanDbCommand extends AbstractAdminCommand {
 
                     doClean();
                 } finally {
+                    context.closeSession();
                     Botify.registerListeners();
                 }
             });
