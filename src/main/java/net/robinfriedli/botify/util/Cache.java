@@ -18,7 +18,7 @@ import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.MessageService;
-import net.robinfriedli.botify.discord.properties.GuildPropertyManager;
+import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.login.LoginManager;
 import net.robinfriedli.jxp.api.JxpBackend;
 import org.hibernate.SessionFactory;
@@ -59,7 +59,7 @@ public class Cache {
                 return null;
             }
         }));
-        EXTRACTORS.add(new Extractor<>(MessageService.class, MessageService::new));
+        EXTRACTORS.add(new Extractor<>(MessageService.class, () -> Botify.get().getMessageService()));
         EXTRACTORS.add(new Extractor<>(SecurityManager.class, () -> Botify.get().getSecurityManager()));
         EXTRACTORS.add(new Extractor<>(SessionFactory.class, () -> Botify.get().getSessionFactory()));
         EXTRACTORS.add(new Extractor<>(SpotifyApi.class, () -> Botify.get().getSpotifyApiBuilder().build()));

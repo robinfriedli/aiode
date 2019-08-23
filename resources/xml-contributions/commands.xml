@@ -159,6 +159,9 @@
     <example title="toggle playback notifications">%sproperty $toggle playback notification</example>
     <example title="set the default service when searching for a track">%sproperty default source $set youtube</example>
     <example title="set the default service when searching for a list">%sproperty default list source $set local</example>
+    <example title="set the argument prefix to '-' to make commands look like this: %splay -youtube vid">%sproperty argument prefix $set -</example>
+    <example title="set the amount of seconds after which success and error messages disappear to 20">%sproperty message timeout $set 20</example>
+    <example title="disable the automatic removal of success and error messages">%sproperty message timeout $set 0</example>
   </command>
   <command identifier="charts" implementation="net.robinfriedli.botify.command.commands.ChartsCommand"
            description="Shows the most popular tracks and artists for this guild and globally"/>

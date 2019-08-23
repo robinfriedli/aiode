@@ -14,13 +14,13 @@ import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.command.SecurityManager;
 import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
 import net.robinfriedli.botify.discord.GuildManager;
-import net.robinfriedli.botify.discord.properties.GuildPropertyManager;
+import net.robinfriedli.botify.discord.MessageService;
+import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.login.LoginManager;
 import net.robinfriedli.jxp.api.JxpBackend;
 import org.hibernate.SessionFactory;
 
 public class Botify {
-
 
     public static final Logger LOGGER = LoggerFactory.getLogger(Botify.class);
 
@@ -35,6 +35,7 @@ public class Botify {
     private final JxpBackend jxpBackend;
     private final ListenerAdapter[] registeredListeners;
     private final LoginManager loginManager;
+    private final MessageService messageService;
     private final SecurityManager securityManager;
     private final SessionFactory sessionFactory;
     private final SpotifyApi.Builder spotifyApiBuilder;
@@ -47,6 +48,7 @@ public class Botify {
                   JDA jda,
                   JxpBackend jxpBackend,
                   LoginManager loginManager,
+                  MessageService messageService,
                   SecurityManager securityManager,
                   SessionFactory sessionFactory,
                   SpotifyApi.Builder spotifyApiBuilder,
@@ -59,6 +61,7 @@ public class Botify {
         this.jda = jda;
         this.jxpBackend = jxpBackend;
         this.loginManager = loginManager;
+        this.messageService = messageService;
         this.securityManager = securityManager;
         this.sessionFactory = sessionFactory;
         this.spotifyApiBuilder = spotifyApiBuilder;
@@ -171,6 +174,10 @@ public class Botify {
 
     public LoginManager getLoginManager() {
         return loginManager;
+    }
+
+    public MessageService getMessageService() {
+        return messageService;
     }
 
     public SecurityManager getSecurityManager() {

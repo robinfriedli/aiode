@@ -1,22 +1,21 @@
-package net.robinfriedli.botify.discord.properties;
+package net.robinfriedli.botify.discord.property.properties;
 
+import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.xml.GuildPropertyContribution;
 import net.robinfriedli.botify.exceptions.InvalidPropertyValueException;
 
-public class DefaultListSourceProperty extends AbstractGuildProperty {
+public class DefaultSourceProperty extends AbstractGuildProperty {
 
-    public DefaultListSourceProperty(GuildPropertyContribution contribution) {
+    public DefaultSourceProperty(GuildPropertyContribution contribution) {
         super(contribution);
     }
 
     @Override
     public void validate(Object state) {
         String input = (String) state;
-        if (!(input.equalsIgnoreCase("spotify")
-            || input.equalsIgnoreCase("youtube")
-            || input.equalsIgnoreCase("local"))) {
-            throw new InvalidPropertyValueException("Source needs to be either 'spotify', 'youtube' or 'local'");
+        if (!(input.equalsIgnoreCase("spotify") || input.equalsIgnoreCase("youtube"))) {
+            throw new InvalidPropertyValueException("Source needs to be either 'spotify' or 'youtube'");
         }
     }
 
@@ -27,12 +26,11 @@ public class DefaultListSourceProperty extends AbstractGuildProperty {
 
     @Override
     public void setValue(String value, GuildSpecification guildSpecification) {
-        guildSpecification.setDefaultListSource(value.toUpperCase());
+        guildSpecification.setDefaultSource(value.toUpperCase());
     }
 
     @Override
     public Object extractPersistedValue(GuildSpecification guildSpecification) {
-        return guildSpecification.getDefaultListSource();
+        return guildSpecification.getDefaultSource();
     }
-
 }

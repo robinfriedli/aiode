@@ -1,5 +1,6 @@
-package net.robinfriedli.botify.discord.properties;
+package net.robinfriedli.botify.discord.property.properties;
 
+import net.robinfriedli.botify.discord.property.AbstractBoolProperty;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.xml.GuildPropertyContribution;
 
@@ -10,7 +11,7 @@ public class AutoPauseProperty extends AbstractBoolProperty {
     }
 
     @Override
-    void setBoolValue(boolean bool, GuildSpecification guildSpecification) {
+    protected void setBoolValue(boolean bool, GuildSpecification guildSpecification) {
         guildSpecification.setEnableAutoPause(bool);
     }
 

@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageChannel;
+import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.exceptions.ExceptionUtils;
@@ -34,7 +35,7 @@ public class TrackLoadingExceptionHandler implements Thread.UncaughtExceptionHan
                 embedBuilder.addField("CommandContext ID", commandContext.getId(), false);
             }
 
-            MessageService messageService = new MessageService();
+            MessageService messageService = Botify.get().getMessageService();
             messageService.send(embedBuilder.build(), channel);
         }
     }

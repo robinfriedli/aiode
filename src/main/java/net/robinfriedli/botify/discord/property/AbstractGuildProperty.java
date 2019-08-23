@@ -1,4 +1,4 @@
-package net.robinfriedli.botify.discord.properties;
+package net.robinfriedli.botify.discord.property;
 
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.discord.GuildContext;

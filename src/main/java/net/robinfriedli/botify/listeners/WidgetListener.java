@@ -29,9 +29,11 @@ public class WidgetListener extends ListenerAdapter {
 
     private final CommandManager commandManager;
     private final Logger logger;
+    private final MessageService messageService;
 
-    public WidgetListener(CommandManager commandManager) {
+    public WidgetListener(CommandManager commandManager, MessageService messageService) {
         this.commandManager = commandManager;
+        this.messageService = messageService;
         logger = LoggerFactory.getLogger(getClass());
     }
 
@@ -67,7 +69,7 @@ public class WidgetListener extends ListenerAdapter {
             try {
                 activeWidget.handleReaction(event);
             } catch (UserException e) {
-                new MessageService().sendError(e.getMessage(), channel);
+                messageService.sendError(e.getMessage(), channel);
             } catch (Exception e) {
                 throw new CommandRuntimeException(e);
             }

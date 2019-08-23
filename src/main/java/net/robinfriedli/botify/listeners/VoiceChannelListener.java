@@ -8,8 +8,8 @@ import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.discord.GuildManager;
-import net.robinfriedli.botify.discord.properties.AbstractGuildProperty;
-import net.robinfriedli.botify.discord.properties.GuildPropertyManager;
+import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
+import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.util.StaticSessionProvider;
 

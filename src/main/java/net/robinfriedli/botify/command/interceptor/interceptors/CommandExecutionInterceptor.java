@@ -21,9 +21,11 @@ import org.hibernate.Session;
 
 public class CommandExecutionInterceptor implements CommandInterceptor {
 
+    private final MessageService messageService;
     private final Logger logger;
 
-    public CommandExecutionInterceptor() {
+    public CommandExecutionInterceptor(MessageService messageService) {
+        this.messageService = messageService;
         this.logger = LoggerFactory.getLogger(getClass());
     }
 
@@ -42,25 +44,21 @@ public class CommandExecutionInterceptor implements CommandInterceptor {
                 failedManually = true;
             }
         } catch (NoLoginException e) {
-            MessageService messageService = new MessageService();
             MessageChannel channel = command.getContext().getChannel();
             User user = command.getContext().getUser();
             String message = "User " + user.getName() + " is not logged in to Spotify";
             messageService.sendError(message, channel);
             errorMessage = message;
         } catch (UserException e) {
-            MessageService messageService = new MessageService();
-            messageService.send(e.buildEmbed().build(), command.getContext().getChannel());
+            messageService.sendTemporary(e.buildEmbed().build(), command.getContext().getChannel());
             errorMessage = e.getMessage();
         } catch (UnauthorizedException e) {
-            MessageService messageService = new MessageService();
             String message = "Unauthorized: " + e.getMessage();
             messageService.sendException(message, command.getContext().getChannel());
             logger.warn("Unauthorized Spotify API operation", e);
             errorMessage = message;
             unexpectedException = true;
         } catch (TooManyRequestsException e) {
-            MessageService messageService = new MessageService();
             String message = "Executing too many Spotify requests at the moment, please try again later.";
             messageService.sendException(message,
                 command.getContext().getChannel());
@@ -68,7 +66,6 @@ public class CommandExecutionInterceptor implements CommandInterceptor {
             errorMessage = message;
             unexpectedException = true;
         } catch (GoogleJsonResponseException e) {
-            MessageService messageService = new MessageService();
             String message = e.getDetails().getMessage();
             StringBuilder responseBuilder = new StringBuilder("Error occurred when requesting data from YouTube.");
             if (!Strings.isNullOrEmpty(message)) {

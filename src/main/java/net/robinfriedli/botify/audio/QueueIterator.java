@@ -13,8 +13,8 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.discord.MessageService;
-import net.robinfriedli.botify.discord.properties.AbstractGuildProperty;
-import net.robinfriedli.botify.discord.properties.ColorSchemeProperty;
+import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
+import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.botify.util.EmojiConstants;
@@ -32,6 +32,7 @@ public class QueueIterator extends AudioEventAdapter {
     private final AudioPlayback playback;
     private final AudioQueue queue;
     private final AudioManager audioManager;
+    private final MessageService messageService;
     private final UrlAudioLoader urlAudioLoader;
     private Playable currentlyPlaying;
     private boolean isReplaced;
@@ -44,6 +45,7 @@ public class QueueIterator extends AudioEventAdapter {
         this.playback = playback;
         this.queue = playback.getAudioQueue();
         this.audioManager = audioManager;
+        messageService = Botify.get().getMessageService();
         urlAudioLoader = new UrlAudioLoader(audioManager.getPlayerManager());
     }
 
@@ -99,7 +101,7 @@ public class QueueIterator extends AudioEventAdapter {
             EmbedBuilder embedBuilder = new EmbedBuilder();
             embedBuilder.setColor(Color.RED);
             embedBuilder.setDescription("Queue contains too many unplayable tracks subsequently for automatic skipping. You can skip to the next valid track manually.");
-            new MessageService().send(embedBuilder.build(), playback.getCommunicationChannel());
+            messageService.sendTemporary(embedBuilder.build(), playback.getCommunicationChannel());
             playback.stop();
             audioManager.leaveChannel(playback);
             resetRetryCount();
@@ -182,12 +184,11 @@ public class QueueIterator extends AudioEventAdapter {
                 embedBuilder.addField("", "Skipping to the next playable track...", false);
             }
 
-            new MessageService().send(embedBuilder.build(), playback.getCommunicationChannel());
+            messageService.sendTemporary(embedBuilder.build(), playback.getCommunicationChannel());
         }
     }
 
     private void sendCurrentTrackNotification(Playable currentTrack) {
-        MessageService messageService = new MessageService();
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.addField("Now playing", currentTrack.display(), false);
 

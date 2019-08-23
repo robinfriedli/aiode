@@ -8,8 +8,7 @@ import java.util.TimerTask;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.User;
-import net.robinfriedli.botify.discord.MessageService;
-import net.robinfriedli.botify.discord.properties.ColorSchemeProperty;
+import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.util.Util;
 
@@ -71,7 +70,7 @@ public class ClientQuestionEvent {
             "Key - Option"
         );
 
-        new MessageService().send(embedBuilder.build(), sourceCommand.getContext().getChannel());
+        sourceCommand.getMessageService().send(embedBuilder.build(), sourceCommand.getContext().getChannel());
     }
 
     public void destroy() {

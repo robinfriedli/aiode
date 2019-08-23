@@ -1,20 +1,21 @@
-package net.robinfriedli.botify.discord.properties;
+package net.robinfriedli.botify.discord.property.properties;
 
+import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.xml.GuildPropertyContribution;
 import net.robinfriedli.botify.exceptions.InvalidPropertyValueException;
 
-public class DefaultSourceProperty extends AbstractGuildProperty {
+public class BotNameProperty extends AbstractGuildProperty {
 
-    public DefaultSourceProperty(GuildPropertyContribution contribution) {
+    public BotNameProperty(GuildPropertyContribution contribution) {
         super(contribution);
     }
 
     @Override
     public void validate(Object state) {
         String input = (String) state;
-        if (!(input.equalsIgnoreCase("spotify") || input.equalsIgnoreCase("youtube"))) {
-            throw new InvalidPropertyValueException("Source needs to be either 'spotify' or 'youtube'");
+        if (input.length() < 1 || input.length() > 20) {
+            throw new InvalidPropertyValueException("Length should be 1 - 20 characters");
         }
     }
 
@@ -25,11 +26,11 @@ public class DefaultSourceProperty extends AbstractGuildProperty {
 
     @Override
     public void setValue(String value, GuildSpecification guildSpecification) {
-        guildSpecification.setDefaultSource(value.toUpperCase());
+        guildSpecification.setBotName(value);
     }
 
     @Override
     public Object extractPersistedValue(GuildSpecification guildSpecification) {
-        return guildSpecification.getDefaultSource();
+        return guildSpecification.getBotName();
     }
 }

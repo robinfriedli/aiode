@@ -4,7 +4,7 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import net.robinfriedli.botify.discord.properties.AbstractGuildProperty;
+import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
 import org.w3c.dom.Element;
