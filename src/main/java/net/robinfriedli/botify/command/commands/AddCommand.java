@@ -65,6 +65,11 @@ public class AddCommand extends AbstractSourceDecidingCommand {
             List<Playable> tracks = queue.getTracks();
             addPlayables(playlist, tracks);
         } else {
+            if (!argumentSet("to")) {
+                throw new InvalidCommandException("Expected argument 'to', defining the target playlist. " +
+                    "Hint: if you meant to add tracks to the queue, use the queue command instead.");
+            }
+
             String playlistName = getArgumentValue("to");
             Playlist playlist = SearchEngine.searchLocalList(session, playlistName, isPartitioned(), getContext().getGuild().getId());
 
