@@ -148,7 +148,7 @@ public class PlayableFactory {
             throw new RuntimeException("Exception while creating Playables", e);
         }
 
-        if (!tracksToRedirect.isEmpty()) {
+        if (!tracksToRedirect.isEmpty() || !youTubePlaylistsToLoad.isEmpty()) {
             trackLoadingExecutor.load(() -> {
                 try {
                     for (HollowYouTubeVideo youTubeVideo : tracksToRedirect) {

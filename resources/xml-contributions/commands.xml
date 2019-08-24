@@ -167,6 +167,16 @@
            description="Shows the most popular tracks and artists for this guild and globally"/>
   <command identifier="abort" implementation="net.robinfriedli.botify.command.commands.AbortCommand"
            description="Sends all currently running commands an interrupt signal and cancels all queued commands. Not all operations are affected by the interrupt signal but those that actually might take a long time, such as loading a large YouTube playlist, usually are. Use this command carefully as an emergency break if, for example, someone spammed to bot with large commands."/>
+  <command identifier="synchronise" implementation="net.robinfriedli.botify.command.commands.SynchroniseCommand"
+           description="Synchronise a botify playlist with an external playlist. In practice this the same as the add command but empties the selected list first.">
+    <example title="Sync the contents of a botify playlist with a YouTube playlist">%ssynchronise $youtube $list best of linkin park $with mylist</example>
+    <example title="Sync the contents of a botify playlist with a Spotify playlist">%ssynchronise $spotify $list 00s Rock Anthems $with mylist</example>
+    <example title="Sync the contents of a botify playlist with a URL">%ssynchronise `https://open.spotify.com/playlist/6XAFuwLF6q9wdGBobd8JPt?si=9upjrtjaSiaLboyKNlBhTQ` $with mylist</example>
+  </command>
+  <command identifier="empty" implementation="net.robinfriedli.botify.command.commands.EmptyCommand"
+           description="Clears a botify playlist of all items.">
+    <example title="Empty the botify playlist 'favs'">%sempty favs</example>
+  </command>
 
   <!-- Administrator commands -->
   <command identifier="reboot" implementation="net.robinfriedli.botify.command.commands.admin.RebootCommand"
