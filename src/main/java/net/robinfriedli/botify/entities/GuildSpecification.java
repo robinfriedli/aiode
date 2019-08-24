@@ -52,6 +52,8 @@ public class GuildSpecification implements Serializable {
     private Character argumentPrefix;
     @Column(name = "temp_message_timeout")
     private Integer tempMessageTimeout;
+    @Column(name = "default_text_channel_id")
+    private String defaultTextChannelId;
     @OneToMany(mappedBy = "guildSpecification")
     private Set<AccessConfiguration> accessConfigurations = Sets.newHashSet();
 
@@ -182,5 +184,13 @@ public class GuildSpecification implements Serializable {
 
     public void setTempMessageTimeout(Integer tempMessageTimeout) {
         this.tempMessageTimeout = tempMessageTimeout;
+    }
+
+    public String getDefaultTextChannelId() {
+        return defaultTextChannelId;
+    }
+
+    public void setDefaultTextChannelId(String defaultTextChannelId) {
+        this.defaultTextChannelId = defaultTextChannelId;
     }
 }

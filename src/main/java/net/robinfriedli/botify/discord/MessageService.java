@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -24,6 +25,7 @@ import javax.persistence.criteria.Root;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -254,7 +256,9 @@ public class MessageService {
 
         logger.info("Sending message to " + activeGuilds.size() + " active guilds.");
         for (Guild activeGuild : activeGuilds) {
-            send(message, activeGuild);
+            if (activeGuild != null) {
+                send(message, activeGuild);
+            }
         }
     }
 
@@ -297,22 +301,49 @@ public class MessageService {
     }
 
     public CompletableFuture<Message> acceptForGuild(Guild guild, Function<MessageChannel, MessageAction> function) {
+        TextChannel textChannel = getTextChannelForGuild(guild);
+
+        if (textChannel == null) {
+            logger.warn("Unable to send any messages to guild " + guild.getName() + " (" + guild.getId() + ")");
+            return CompletableFuture.failedFuture(new CancellationException());
+        } else {
+            return accept(textChannel, function);
+        }
+    }
+
+    private TextChannel getTextChannelForGuild(Guild guild) {
+        Botify botify = Botify.get();
+        GuildPropertyManager guildPropertyManager = botify.getGuildPropertyManager();
+        GuildContext guildContext = botify.getGuildManager().getContextForGuild(guild);
+        AbstractGuildProperty defaultTextChannelProperty = guildPropertyManager.getProperty("defaultTextChannelId");
+        if (defaultTextChannelProperty != null) {
+            String defaultTextChannelId = (String) StaticSessionProvider.invokeWithSession(session -> {
+                return defaultTextChannelProperty.get(guildContext.getSpecification(session));
+            });
+
+            if (!Strings.isNullOrEmpty(defaultTextChannelId)) {
+                TextChannel textChannelById = guild.getTextChannelById(defaultTextChannelId);
+                if (textChannelById != null && textChannelById.canTalk()) {
+                    return textChannelById;
+                }
+            }
+        }
+
         TextChannel defaultChannel = guild.getDefaultChannel();
         if (defaultChannel != null && defaultChannel.canTalk()) {
-            return accept(defaultChannel, function);
+            return defaultChannel;
         } else {
             TextChannel systemChannel = guild.getSystemChannel();
             if (systemChannel != null && systemChannel.canTalk()) {
-                return accept(systemChannel, function);
+                return systemChannel;
             }
         }
 
         List<TextChannel> availableChannels = guild.getTextChannels().stream().filter(TextChannel::canTalk).collect(Collectors.toList());
         if (availableChannels.isEmpty()) {
-            logger.warn("Unable to send any messages to guild " + guild.getName() + " (" + guild.getId() + ")");
-            return CompletableFuture.completedFuture(null);
+            return null;
         } else {
-            return accept(availableChannels.get(0), function);
+            return availableChannels.get(0);
         }
     }
 

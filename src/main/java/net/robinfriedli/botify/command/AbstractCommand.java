@@ -220,7 +220,7 @@ public abstract class AbstractCommand {
      *                    that returns the track's name and artists)
      * @param <O>         the type of options
      */
-    protected <O> void askQuestion(List<O> options, Function<O, String> displayFunc) {
+    public <O> void askQuestion(List<O> options, Function<O, String> displayFunc) {
         ClientQuestionEvent question = new ClientQuestionEvent(this);
         for (int i = 0; i < options.size(); i++) {
             O option = options.get(i);

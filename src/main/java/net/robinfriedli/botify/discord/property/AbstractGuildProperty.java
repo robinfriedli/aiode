@@ -78,4 +78,13 @@ public abstract class AbstractGuildProperty {
 
     public abstract Object extractPersistedValue(GuildSpecification guildSpecification);
 
+    public String display(GuildSpecification guildSpecification) {
+        Object persistedValue = extractPersistedValue(guildSpecification);
+        if (persistedValue != null) {
+            return String.valueOf(persistedValue);
+        } else {
+            return "Not Set";
+        }
+    }
+
 }
