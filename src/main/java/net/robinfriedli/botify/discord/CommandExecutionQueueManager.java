@@ -19,6 +19,10 @@ public class CommandExecutionQueueManager {
         guildExecutionQueues.put(guild, new ThreadExecutionQueue(3));
     }
 
+    public void removeGuild(Guild guild) {
+        guildExecutionQueues.remove(guild);
+    }
+
     public ThreadExecutionQueue getForGuild(Guild guild) {
         ThreadExecutionQueue threadExecutionQueue = guildExecutionQueues.get(guild);
 
