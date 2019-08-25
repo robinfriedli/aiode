@@ -34,6 +34,7 @@ router's public ip and setup port forwarding for your router.
 
 ### 4. Setup botify settings
 #### 4.1 Navigate to your cloned project and go to ./resources and open the settings.properties file and fill in the blanks, it should look like this:
+#### 4.2 To take advantage of the admin commands that can perform administrative actions, such as updating and restarting the bot, be sure to add your Discord user id to the `ADMIN_USERS` property. To find your Discord user id, enable Developer Mode in the App Settings > Appearance. Then go to any guild, right click your user and click "Copy ID".
 ```properties
 ###################
 # server settings #
@@ -102,6 +103,7 @@ database botify_playlists you can leave it like this:
     <property name="hibernate.dialect">org.hibernate.dialect.PostgreSQL94Dialect</property>
     <property name="show_sql">false</property>
     <property name="hibernate.hbm2ddl.auto">update</property>
+    <property name="hibernate.current_session_context_class">thread</property>
     <!-- C3P0 config -->
     <property name="hibernate.c3p0.min_size">5</property>
     <property name="hibernate.c3p0.max_size">20</property>
