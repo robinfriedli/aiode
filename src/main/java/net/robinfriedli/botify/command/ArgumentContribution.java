@@ -44,6 +44,16 @@ public class ArgumentContribution {
     }
 
     /**
+     * Remove an argument definition from this ArgumentContribution. Useful for subclasses of commands that have similar
+     * arguments but might exclude a few.
+     *
+     * @param arg the argument identifier
+     */
+    public void remove(String arg) {
+        definedArguments.remove(arg);
+    }
+
+    /**
      * @param arg the identifier of the argument, case insensitive
      * @return the found argument definition
      */

@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <versions xmlns="versionSpace">
-  <version launched="false" version="1.6.2.1">
+  <version launched="false" version="1.6.3">
+    <feature>added synchronise command to sync an external playlist with a botify playlist</feature>
+    <feature>added empty command to clear botify playlists</feature>
+    <feature>added property to define the default text channel for bot messages</feature>
+    <feature>added property to define timeout for automatic deletion of success and common error messages</feature>
+    <feature>several improvements and fixes</feature>
+  </version>
+  <version launched="true" version="1.6.2.1">
     <feature>fix issue with unavailable Spotify tracks in local playlists</feature>
     <feature>improve concurrent command handling and create abort command to interrupt long commands and cancel queued commands</feature>
   </version>

@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import javax.annotation.Nullable;
 
@@ -23,6 +25,7 @@ import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
 import net.robinfriedli.botify.entities.xml.EmbedDocumentContribution;
+import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
 import net.robinfriedli.botify.interceptors.InterceptorChain;
 import net.robinfriedli.botify.interceptors.PlaylistItemTimestampListener;
 import net.robinfriedli.botify.interceptors.VerifyPlaylistListener;
@@ -46,6 +49,7 @@ public class GuildJoinListener extends ListenerAdapter {
     private final CommandExecutionQueueManager executionQueueManager;
     @Nullable
     private final DiscordBotListAPI discordBotListAPI;
+    private final ExecutorService guildJoinExecutorService;
     private final GuildManager guildManager;
     private final JxpBackend jxpBackend;
     private final Logger logger;
@@ -62,6 +66,11 @@ public class GuildJoinListener extends ListenerAdapter {
                              SpotifyApi.Builder spotifyApiBuilder) {
         this.executionQueueManager = executionQueueManager;
         this.discordBotListAPI = discordBotListAPI;
+        guildJoinExecutorService = Executors.newFixedThreadPool(3, r -> {
+            Thread thread = new Thread(r);
+            thread.setUncaughtExceptionHandler(new LoggingExceptionHandler());
+            return thread;
+        });
         this.guildManager = guildManager;
         this.jxpBackend = jxpBackend;
         this.messageService = messageService;
@@ -71,63 +80,71 @@ public class GuildJoinListener extends ListenerAdapter {
     }
 
     @Override
-    public void onGuildJoin(GuildJoinEvent event) {
-        Guild guild = event.getGuild();
-        guildManager.addGuild(guild);
-        executionQueueManager.addGuild(guild);
+    public void onGuildJoin(@NotNull GuildJoinEvent event) {
+        guildJoinExecutorService.execute(() -> {
+            Guild guild = event.getGuild();
+            guildManager.addGuild(guild);
+            executionQueueManager.addGuild(guild);
 
-        try (Context context = jxpBackend.createLazyContext(PropertiesLoadingService.requireProperty("EMBED_DOCUMENTS_PATH"))) {
-            EmbedDocumentContribution embedDocumentContribution = context
-                .query(attribute("name").is("getting-started"), EmbedDocumentContribution.class)
-                .requireOnlyResult();
-            EmbedBuilder embedBuilder = embedDocumentContribution.buildEmbed();
-            messageService.sendWithLogo(embedBuilder, guild);
-        } catch (Throwable e) {
-            logger.error("Error sending getting started message", e);
-        }
-
-        if (discordBotListAPI != null) {
-            discordBotListAPI.setStats(event.getJDA().getGuilds().size());
-        }
-
-        try (Session session = sessionFactory.withOptions().interceptor(InterceptorChain.of(
-            PlaylistItemTimestampListener.class, VerifyPlaylistListener.class)).openSession()) {
-            String playlistsPath = PropertiesLoadingService.requireProperty("PLAYLISTS_PATH");
-            File file = new File(playlistsPath);
-            if (file.exists()) {
-                Context context = jxpBackend.getContext(file);
-                HibernatePlaylistMigrator hibernatePlaylistMigrator = new HibernatePlaylistMigrator(context, guild, spotifyApiBuilder.build(), session);
-                Map<Playlist, List<PlaylistItem>> playlistMap;
-                try {
-                    playlistMap = hibernatePlaylistMigrator.perform();
-                } catch (IOException | SpotifyWebApiException e) {
-                    logger.error("Exception while migrating hibernate playlists", e);
-                    session.close();
-                    return;
-                }
-
-                GuildManager.Mode mode = guildManager.getMode();
-                session.beginTransaction();
-                for (Playlist playlist : playlistMap.keySet()) {
-                    Playlist existingList = SearchEngine.searchLocalList(session, playlist.getName(), mode == GuildManager.Mode.PARTITIONED, guild.getId());
-                    if (existingList == null) {
-                        playlistMap.get(playlist).forEach(item -> {
-                            item.add();
-                            session.persist(item);
-                        });
-                        session.persist(playlist);
-                    }
-                }
-                session.getTransaction().commit();
+            try (Context context = jxpBackend.createLazyContext(PropertiesLoadingService.requireProperty("EMBED_DOCUMENTS_PATH"))) {
+                EmbedDocumentContribution embedDocumentContribution = context
+                    .query(attribute("name").is("getting-started"), EmbedDocumentContribution.class)
+                    .requireOnlyResult();
+                EmbedBuilder embedBuilder = embedDocumentContribution.buildEmbed();
+                messageService.sendWithLogo(embedBuilder, guild);
+            } catch (Throwable e) {
+                logger.error("Error sending getting started message", e);
             }
-        }
+
+            if (discordBotListAPI != null) {
+                discordBotListAPI.setStats(event.getJDA().getGuilds().size());
+            }
+
+            try (Session session = sessionFactory.withOptions().interceptor(InterceptorChain.of(
+                PlaylistItemTimestampListener.class, VerifyPlaylistListener.class)).openSession()) {
+                String playlistsPath = PropertiesLoadingService.requireProperty("PLAYLISTS_PATH");
+                File file = new File(playlistsPath);
+                if (file.exists()) {
+                    Context context = jxpBackend.getContext(file);
+                    HibernatePlaylistMigrator hibernatePlaylistMigrator = new HibernatePlaylistMigrator(context, guild, spotifyApiBuilder.build(), session);
+                    Map<Playlist, List<PlaylistItem>> playlistMap;
+                    try {
+                        playlistMap = hibernatePlaylistMigrator.perform();
+                    } catch (IOException | SpotifyWebApiException e) {
+                        logger.error("Exception while migrating hibernate playlists", e);
+                        session.close();
+                        return;
+                    }
+
+                    GuildManager.Mode mode = guildManager.getMode();
+                    session.beginTransaction();
+                    for (Playlist playlist : playlistMap.keySet()) {
+                        Playlist existingList = SearchEngine.searchLocalList(session, playlist.getName(), mode == GuildManager.Mode.PARTITIONED, guild.getId());
+                        if (existingList == null) {
+                            playlistMap.get(playlist).forEach(item -> {
+                                item.add();
+                                session.persist(item);
+                            });
+                            session.persist(playlist);
+                        }
+                    }
+                    session.getTransaction().commit();
+                }
+            }
+        });
     }
 
     @Override
     public void onGuildLeave(@NotNull GuildLeaveEvent event) {
-        if (discordBotListAPI != null) {
-            discordBotListAPI.setStats(event.getJDA().getGuilds().size());
-        }
+        guildJoinExecutorService.execute(() -> {
+            Guild guild = event.getGuild();
+            guildManager.removeGuild(guild);
+            executionQueueManager.removeGuild(guild);
+
+            if (discordBotListAPI != null) {
+                discordBotListAPI.setStats(event.getJDA().getGuilds().size());
+            }
+        });
     }
 
 }

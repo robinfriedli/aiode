@@ -22,7 +22,6 @@ import net.robinfriedli.botify.util.StaticSessionProvider;
  */
 public class GuildManager {
 
-    private final GuildPropertyManager guildPropertyManager;
     private final ISnowflakeMap<GuildContext> guildContexts = new ISnowflakeMap<>();
     private final Invoker internalInvoker;
     // invoker used in mode shared, so that all guilds are synchronised
@@ -31,8 +30,7 @@ public class GuildManager {
     private final Mode mode;
     private AudioManager audioManager;
 
-    public GuildManager(GuildPropertyManager guildPropertyManager, Mode mode) {
-        this.guildPropertyManager = guildPropertyManager;
+    public GuildManager(Mode mode) {
         internalInvoker = new Invoker();
         this.mode = mode;
         if (mode == Mode.SHARED) {
@@ -44,6 +42,10 @@ public class GuildManager {
 
     public void addGuild(Guild guild) {
         initializeGuild(guild);
+    }
+
+    public void removeGuild(Guild guild) {
+        guildContexts.remove(guild);
     }
 
     public String getNameForGuild(Guild guild) {
@@ -111,7 +113,6 @@ public class GuildManager {
                 guildContexts.put(guild, guildContext);
                 return guildContext;
             } else {
-                session.beginTransaction();
                 GuildSpecification newSpecification = internalInvoker.invoke(session, () -> {
                     GuildSpecification specification = new GuildSpecification(guild);
                     AccessConfiguration permissionConfiguration = new AccessConfiguration("permission");
@@ -120,7 +121,6 @@ public class GuildManager {
                     session.persist(specification);
                     return specification;
                 });
-                session.getTransaction().commit();
 
                 GuildContext guildContext = new GuildContext(guild, new AudioPlayback(player, guild), newSpecification.getPk(), sharedInvoker);
                 guildContexts.put(guild, guildContext);

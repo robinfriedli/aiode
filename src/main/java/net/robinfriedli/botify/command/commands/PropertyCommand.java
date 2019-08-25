@@ -1,8 +1,10 @@
 package net.robinfriedli.botify.command.commands;
 
+import java.util.Collection;
 import java.util.List;
 
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.TextChannel;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.ArgumentContribution;
@@ -68,14 +70,7 @@ public class PropertyCommand extends AbstractCommand {
         Table2 table = new Table2(embedBuilder);
         table.addColumn("Name", properties, AbstractGuildProperty::getName);
         table.addColumn("Default Value", properties, AbstractGuildProperty::getDefaultValue);
-        table.addColumn("Set Value", properties, property -> {
-            Object persistedValue = property.extractPersistedValue(specification);
-            if (persistedValue != null) {
-                return String.valueOf(persistedValue);
-            } else {
-                return "Not Set";
-            }
-        });
+        table.addColumn("Set Value", properties, property -> property.display(specification));
         table.build();
         sendMessage(embedBuilder);
     }
@@ -94,5 +89,19 @@ public class PropertyCommand extends AbstractCommand {
             .setDescription("Set a property to the specified value this argument is required when not using the toggle argument. " +
                 "E.g. property default source $set youtube.");
         return argumentContribution;
+    }
+
+    @Override
+    public void withUserResponse(Object chosenOption) {
+        if (chosenOption instanceof Collection) {
+            throw new InvalidCommandException("Required single selection");
+        }
+
+        if (chosenOption instanceof TextChannel) {
+            AbstractGuildProperty defaultTextChannelProperty = Botify.get().getGuildPropertyManager().getProperty("defaultTextChannelId");
+            if (defaultTextChannelProperty != null) {
+                defaultTextChannelProperty.set(((TextChannel) chosenOption).getId());
+            }
+        }
     }
 }

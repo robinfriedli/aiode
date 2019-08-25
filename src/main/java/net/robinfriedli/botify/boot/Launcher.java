@@ -135,7 +135,7 @@ public class Launcher {
 
             CommandManager commandManager = new CommandManager(commandContributionContext, commandInterceptorContext);
             GuildPropertyManager guildPropertyManager = new GuildPropertyManager(guildPropertyContext);
-            GuildManager guildManager = new GuildManager(guildPropertyManager, mode);
+            GuildManager guildManager = new GuildManager(mode);
             AudioManager audioManager = new AudioManager(youTubeService, sessionFactory, commandManager, guildManager);
             CommandExecutionQueueManager executionQueueManager = new CommandExecutionQueueManager();
             SecurityManager securityManager = new SecurityManager(guildManager);

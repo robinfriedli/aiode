@@ -24,7 +24,7 @@ public class StaticSessionProvider {
             return CommandContext.Current.require().getSession();
         }
 
-        return sessionFactory.openSession();
+        return sessionFactory.getCurrentSession();
     }
 
     public static SessionFactory getSessionFactory() {
@@ -43,13 +43,24 @@ public class StaticSessionProvider {
     }
 
     public static <E> E invokeWithSession(Function<Session, E> function) {
-        boolean closeAfter = !CommandContext.Current.isSet();
         Session session = provide();
+        boolean commitRequired = false;
+        if (!CommandContext.Current.isSet()) {
+            if (session.getTransaction() == null || !session.getTransaction().isActive()) {
+                session.beginTransaction();
+                commitRequired = true;
+            }
+        }
         try {
             return function.apply(session);
+        } catch (Throwable e) {
+            if (commitRequired) {
+                session.getTransaction().rollback();
+            }
+            throw e;
         } finally {
-            if (closeAfter) {
-                session.close();
+            if (commitRequired) {
+                session.getTransaction().commit();
             }
         }
     }

@@ -14,6 +14,7 @@ import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.interceptor.CommandInterceptor;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.CommandHistory;
+import net.robinfriedli.botify.exceptions.AmbiguousCommandException;
 import net.robinfriedli.botify.exceptions.CommandRuntimeException;
 import net.robinfriedli.botify.exceptions.NoLoginException;
 import net.robinfriedli.botify.exceptions.UserException;
@@ -43,6 +44,8 @@ public class CommandExecutionInterceptor implements CommandInterceptor {
             } else {
                 failedManually = true;
             }
+        } catch (AmbiguousCommandException e) {
+            command.askQuestion(e.getOptions(), e.getDisplayFunc());
         } catch (NoLoginException e) {
             MessageChannel channel = command.getContext().getChannel();
             User user = command.getContext().getUser();
