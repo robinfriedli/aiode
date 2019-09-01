@@ -12,6 +12,7 @@ import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.exceptions.handlers.TrackLoadingExceptionHandler;
+import net.robinfriedli.botify.function.CheckedRunnable;
 
 /**
  * Executes loading track information asynchronously, e.g. when populating a YouTube playlist or redirecting

@@ -29,7 +29,7 @@ public class HollowYouTubeVideo extends AbstractSoftCachedPlayable implements Yo
     private final CompletableFuture<String> id;
     private final CompletableFuture<Long> duration;
     @Nullable
-    private final Track redirectedSpotifyTrack;
+    private Track redirectedSpotifyTrack;
     private boolean canceled = false;
 
     public HollowYouTubeVideo(YouTubeService youTubeService) {
@@ -69,11 +69,6 @@ public class HollowYouTubeVideo extends AbstractSoftCachedPlayable implements Yo
         return getCompleted(id);
     }
 
-    @Override
-    public String getId() throws UnavailableResourceException {
-        return redirectedSpotifyTrack != null ? redirectedSpotifyTrack.getId() : getVideoId();
-    }
-
     public void setId(String id) {
         this.id.complete(id);
     }
@@ -103,6 +98,11 @@ public class HollowYouTubeVideo extends AbstractSoftCachedPlayable implements Yo
         return redirectedSpotifyTrack;
     }
 
+    @Override
+    public void setRedirectedSpotifyTrack(@Nullable Track track) {
+        redirectedSpotifyTrack = track;
+    }
+
     public void cancel() {
         canceled = true;
         title.cancel(false);
@@ -127,11 +127,6 @@ public class HollowYouTubeVideo extends AbstractSoftCachedPlayable implements Yo
 
     public boolean isHollow() {
         return !(title.isDone() || id.isDone() || duration.isDone());
-    }
-
-    @Override
-    public String getSource() {
-        return redirectedSpotifyTrack != null ? "Spotify" : "YouTube";
     }
 
     private <E> E getCompleted(CompletableFuture<E> future) throws UnavailableResourceException {

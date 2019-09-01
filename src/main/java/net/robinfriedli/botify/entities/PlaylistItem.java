@@ -31,8 +31,8 @@ public abstract class PlaylistItem implements Serializable {
     }
 
     public PlaylistItem(User user, Playlist playlist) {
-        this.addedUser = user.getName();
-        this.addedUserId = user.getId();
+        this.addedUser = user != null ? user.getName() : "UNKNOWN USER";
+        this.addedUserId = user != null ? user.getId() : "system";
         this.playlist = playlist;
     }
 

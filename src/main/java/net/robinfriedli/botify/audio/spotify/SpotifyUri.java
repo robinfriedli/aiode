@@ -8,8 +8,8 @@ import com.wrapper.spotify.exceptions.detailed.NotFoundException;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.audio.PlayableFactory;
-import net.robinfriedli.botify.concurrent.Invoker;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
+import net.robinfriedli.botify.function.Invoker;
 
 /**
  * class to recognise, parse and load Spotify URIs. Currently Spotify URIs that point directly to a track, playlist or

@@ -1,14 +1,12 @@
 package net.robinfriedli.botify.boot.tasks;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 import com.google.common.io.Files;
 import com.wrapper.spotify.SpotifyApi;
-import com.wrapper.spotify.exceptions.SpotifyWebApiException;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.botify.boot.StartupTask;
@@ -59,8 +57,7 @@ public class MigratePlaylistsTask implements StartupTask {
         }
     }
 
-    private void migrateFile(Session session, Context context, Guild guild, SpotifyApi spotifyApi) throws
-        IOException, SpotifyWebApiException {
+    private void migrateFile(Session session, Context context, Guild guild, SpotifyApi spotifyApi) throws Exception {
         HibernatePlaylistMigrator hibernatePlaylistMigrator = new HibernatePlaylistMigrator(context, guild, spotifyApi, session);
         Map<Playlist, List<PlaylistItem>> playlistMap = hibernatePlaylistMigrator.perform();
         for (Playlist playlist : playlistMap.keySet()) {
