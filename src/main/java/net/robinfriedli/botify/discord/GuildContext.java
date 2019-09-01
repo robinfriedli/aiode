@@ -13,10 +13,10 @@ import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.command.ClientQuestionEvent;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.concurrent.GuildTrackLoadingExecutor;
-import net.robinfriedli.botify.concurrent.Invoker;
 import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.entities.GuildSpecification;
+import net.robinfriedli.botify.function.Invoker;
 import net.robinfriedli.botify.util.StaticSessionProvider;
 import org.hibernate.Session;
 

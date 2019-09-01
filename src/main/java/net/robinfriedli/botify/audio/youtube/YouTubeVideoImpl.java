@@ -15,6 +15,7 @@ public class YouTubeVideoImpl extends AbstractSoftCachedPlayable implements YouT
     private final String title;
     private final String id;
     private final long duration;
+    private Track redirectedSpotifyTrack;
 
     public YouTubeVideoImpl(String title, String id, long duration) {
         this.title = title;
@@ -50,6 +51,11 @@ public class YouTubeVideoImpl extends AbstractSoftCachedPlayable implements YouT
     @Override
     @Nullable
     public Track getRedirectedSpotifyTrack() {
-        return null;
+        return redirectedSpotifyTrack;
+    }
+
+    @Override
+    public void setRedirectedSpotifyTrack(@Nullable Track track) {
+        redirectedSpotifyTrack = track;
     }
 }

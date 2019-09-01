@@ -32,9 +32,6 @@ import net.robinfriedli.botify.entities.xml.EmbedDocumentContribution;
 import net.robinfriedli.botify.entities.xml.GuildPropertyContribution;
 import net.robinfriedli.botify.entities.xml.HttpHandlerContribution;
 import net.robinfriedli.botify.entities.xml.StartupTaskContribution;
-import net.robinfriedli.botify.interceptors.InterceptorChain;
-import net.robinfriedli.botify.interceptors.PlaylistItemTimestampListener;
-import net.robinfriedli.botify.interceptors.VerifyPlaylistListener;
 import net.robinfriedli.botify.listeners.CommandListener;
 import net.robinfriedli.botify.listeners.GuildJoinListener;
 import net.robinfriedli.botify.listeners.VoiceChannelListener;
@@ -47,7 +44,6 @@ import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.api.JxpBuilder;
 import net.robinfriedli.jxp.persist.Context;
 import org.discordbots.api.client.DiscordBotListAPI;
-import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistry;
@@ -165,19 +161,19 @@ public class Launcher {
             HttpServerStarter serverStarter = new HttpServerStarter(httpHanldersContext);
             serverStarter.start();
 
+            // setup guilds
+            StaticSessionProvider.invokeWithSession(session -> {
+                // setup current thread session and handle all guilds within one session instead of opening a new session for each
+                for (Guild guild : jda.getGuilds()) {
+                    guildManager.addGuild(guild);
+                    executionQueueManager.addGuild(guild);
+                }
+            });
+
             // run startup tasks
             Context context = jxpBackend.getContext(startupTasksPath);
-            Session session = sessionFactory.withOptions().interceptor(InterceptorChain.of(
-                PlaylistItemTimestampListener.class, VerifyPlaylistListener.class)).openSession();
             for (StartupTaskContribution element : context.getInstancesOf(StartupTaskContribution.class)) {
                 element.instantiate().perform();
-            }
-            session.close();
-
-            // setup guilds
-            for (Guild guild : jda.getGuilds()) {
-                guildManager.addGuild(guild);
-                executionQueueManager.addGuild(guild);
             }
 
             Botify.registerListeners();

@@ -5,9 +5,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.SocketTimeoutException;
 import java.net.URL;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
@@ -18,16 +15,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.MessageBuilder;
@@ -44,15 +36,11 @@ import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.requests.restaction.MessageAction;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
-import net.robinfriedli.botify.audio.AudioPlayback;
-import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.discord.property.properties.TempMessageTimeoutProperty;
-import net.robinfriedli.botify.entities.CommandHistory;
 import net.robinfriedli.botify.entities.GuildSpecification;
-import net.robinfriedli.botify.entities.PlaybackHistory;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.StaticSessionProvider;
 import net.robinfriedli.stringlist.StringList;
@@ -194,6 +182,18 @@ public class MessageService {
         return futureMessage;
     }
 
+    public CompletableFuture<Message> sendTemporary(EmbedBuilder embedBuilder, MessageChannel messageChannel) {
+        CompletableFuture<Message> futureMessage = send(embedBuilder, messageChannel);
+        futureMessage.thenAccept(message -> new TempMessageDeletionTask(message).schedule());
+        return futureMessage;
+    }
+
+    public CompletableFuture<Message> sendTemporary(String message, MessageChannel messageChannel) {
+        CompletableFuture<Message> futureMessage = send(message, messageChannel);
+        futureMessage.thenAccept(msg -> new TempMessageDeletionTask(msg).schedule());
+        return futureMessage;
+    }
+
     public void sendWrapped(String message, String wrapper, MessageChannel channel) {
         if (message.length() < limit) {
             sendInternal(channel, wrapper + message + wrapper);
@@ -213,46 +213,8 @@ public class MessageService {
     }
 
     public void sendToActiveGuilds(MessageEmbed message, JDA jda, AudioManager audioManager, Session session) {
-        Set<Guild> activeGuilds = Sets.newHashSet();
-        Set<String> activeGuildIds = Sets.newHashSet();
-
-        if (CommandContext.Current.isSet()) {
-            activeGuilds.add(CommandContext.Current.require().getGuild());
-        }
-
-        for (Guild guild : jda.getGuilds()) {
-            AudioPlayback playback = audioManager.getPlaybackForGuild(guild);
-            if (playback.isPlaying()) {
-                activeGuilds.add(guild);
-            }
-        }
-
-        CriteriaBuilder cb = session.getCriteriaBuilder();
-
-        // consider all guilds that issued a command within the last 10 minutes to be active
-        long millis10MinutesAgo = System.currentTimeMillis() - 600000;
-        CriteriaQuery<String> recentCommandGuildsQuery = cb.createQuery(String.class);
-        Root<CommandHistory> commandsQueryRoot = recentCommandGuildsQuery.from(CommandHistory.class);
-        recentCommandGuildsQuery
-            .select(commandsQueryRoot.get("guildId"))
-            .where(cb.greaterThan(commandsQueryRoot.get("startMillis"), millis10MinutesAgo));
-        Set<String> recentCommandGuildIds = session.createQuery(recentCommandGuildsQuery).getResultStream().collect(Collectors.toSet());
-        activeGuildIds.addAll(recentCommandGuildIds);
-
-        // consider all guilds that played a track withing the last 10 minutes to be active
-        LocalDateTime dateTime10MinutesAgo = LocalDateTime.ofInstant(Instant.ofEpochMilli(millis10MinutesAgo), ZoneId.systemDefault());
-        CriteriaQuery<String> recentPlaybackGuildsQuery = cb.createQuery(String.class);
-        Root<PlaybackHistory> playbackHistoryRoot = recentPlaybackGuildsQuery.from(PlaybackHistory.class);
-        recentPlaybackGuildsQuery
-            .select(playbackHistoryRoot.get("guildId"))
-            .where(cb.greaterThan(playbackHistoryRoot.get("timestamp"), dateTime10MinutesAgo));
-        Set<String> recentPlaybackGuildIds = session.createQuery(recentPlaybackGuildsQuery).getResultStream().collect(Collectors.toSet());
-        activeGuildIds.addAll(recentPlaybackGuildIds);
-
-        for (String guildId : activeGuildIds) {
-            Guild guild = jda.getGuildById(guildId);
-            activeGuilds.add(guild);
-        }
+        GuildManager guildManager = Botify.get().getGuildManager();
+        Set<Guild> activeGuilds = guildManager.getActiveGuilds(session);
 
         logger.info("Sending message to " + activeGuilds.size() + " active guilds.");
         for (Guild activeGuild : activeGuilds) {

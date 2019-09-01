@@ -1,7 +1,6 @@
 package net.robinfriedli.botify.listeners;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -13,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.wrapper.spotify.SpotifyApi;
-import com.wrapper.spotify.exceptions.SpotifyWebApiException;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
@@ -110,7 +108,7 @@ public class GuildJoinListener extends ListenerAdapter {
                     Map<Playlist, List<PlaylistItem>> playlistMap;
                     try {
                         playlistMap = hibernatePlaylistMigrator.perform();
-                    } catch (IOException | SpotifyWebApiException e) {
+                    } catch (Exception e) {
                         logger.error("Exception while migrating hibernate playlists", e);
                         session.close();
                         return;

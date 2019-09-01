@@ -58,7 +58,7 @@ public interface YouTubeVideo extends Playable {
 
     @Override
     default String getId() throws UnavailableResourceException {
-        return getVideoId();
+        return getRedirectedSpotifyTrack() != null ? getRedirectedSpotifyTrack().getId() : getVideoId();
     }
 
     @Override
@@ -100,7 +100,7 @@ public interface YouTubeVideo extends Playable {
 
     @Override
     default String getSource() {
-        return "YouTube";
+        return getRedirectedSpotifyTrack() != null ? "Spotify" : "YouTube";
     }
 
     /**
@@ -109,4 +109,6 @@ public interface YouTubeVideo extends Playable {
      */
     @Nullable
     Track getRedirectedSpotifyTrack();
+
+    void setRedirectedSpotifyTrack(@Nullable Track track);
 }

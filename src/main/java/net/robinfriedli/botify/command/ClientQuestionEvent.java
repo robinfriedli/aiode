@@ -4,9 +4,13 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.CompletableFuture;
+
+import org.slf4j.LoggerFactory;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
@@ -23,6 +27,7 @@ public class ClientQuestionEvent {
 
     private final AbstractCommand sourceCommand;
     private final Timer destructionTimer;
+    private CompletableFuture<Message> questionMessage;
 
     /**
      * the available answers for the user mapped to the option they represent
@@ -54,7 +59,7 @@ public class ClientQuestionEvent {
     }
 
     public void ask() {
-        ask("Several options found", "Choose an option using the answer command: $botify answer KEY (replace KEY with the key for your option)");
+        ask("Several options found", "Choose an option using the answer command: $botify answer KEY (replace KEY with the key for your option). Depending on the command you may select several options comma separated.");
     }
 
     public void ask(String title, String description) {
@@ -70,12 +75,20 @@ public class ClientQuestionEvent {
             "Key - Option"
         );
 
-        sourceCommand.getMessageService().send(embedBuilder.build(), sourceCommand.getContext().getChannel());
+        questionMessage = sourceCommand.getMessageService().send(embedBuilder.build(), sourceCommand.getContext().getChannel());
     }
 
     public void destroy() {
         sourceCommand.getContext().getGuildContext().removeQuestion(this);
         destructionTimer.cancel();
+
+        questionMessage.thenAccept(message -> {
+            try {
+                message.delete().queue();
+            } catch (Throwable e) {
+                LoggerFactory.getLogger(getClass()).error(String.format("Could not delete destroyed question event for command %s on guild %s", sourceCommand, sourceCommand.getContext().getGuild()), e);
+            }
+        });
     }
 
     public AbstractCommand getSourceCommand() {

@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import org.slf4j.Logger;
+
 import com.google.common.collect.Lists;
 import com.wrapper.spotify.SpotifyApi;
 import net.dv8tion.jda.api.JDA;
@@ -13,12 +15,12 @@ import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.command.SecurityManager;
-import net.robinfriedli.botify.concurrent.Invoker;
 import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
+import net.robinfriedli.botify.function.Invoker;
 import net.robinfriedli.botify.login.LoginManager;
 import net.robinfriedli.jxp.api.JxpBackend;
 import org.hibernate.SessionFactory;
@@ -51,6 +53,7 @@ public class Cache {
         }));
         EXTRACTORS.add(new Extractor<>(JDA.class, () -> Botify.get().getJda()));
         EXTRACTORS.add(new Extractor<>(JxpBackend.class, () -> Botify.get().getJxpBackend()));
+        EXTRACTORS.add(new Extractor<>(Logger.class, () -> Botify.LOGGER));
         EXTRACTORS.add(new Extractor<>(LoginManager.class, () -> Botify.get().getLoginManager()));
         EXTRACTORS.add(new Extractor<>(MessageChannel.class, () -> {
             if (CommandContext.Current.isSet()) {

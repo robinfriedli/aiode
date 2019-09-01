@@ -32,7 +32,7 @@ public class AbortCommand extends AbstractCommand {
             if (executionQueue.isIdle() && trackLoadingExecutor.isIdle()) {
                 EmbedBuilder embedBuilder = new EmbedBuilder();
                 embedBuilder.setDescription("No commands are currently running");
-                sendMessage(embedBuilder);
+                getMessageService().sendTemporary(embedBuilder, getContext().getChannel());
                 setFailed(true);
             } else {
                 executionQueue.abortAll();

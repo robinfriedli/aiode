@@ -20,7 +20,7 @@ import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.audio.spotify.TrackWrapper;
-import net.robinfriedli.botify.audio.youtube.HollowYouTubeVideo;
+import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import org.hibernate.Session;
 import org.hibernate.query.Query;
@@ -58,8 +58,8 @@ public class PlaybackHistory implements Serializable {
             if (playable instanceof TrackWrapper) {
                 track = ((TrackWrapper) playable).getTrack();
             }
-            if (playable instanceof HollowYouTubeVideo) {
-                track = ((HollowYouTubeVideo) playable).getRedirectedSpotifyTrack();
+            if (playable instanceof YouTubeVideo) {
+                track = ((YouTubeVideo) playable).getRedirectedSpotifyTrack();
             }
             if (track != null) {
                 title = track.getName();

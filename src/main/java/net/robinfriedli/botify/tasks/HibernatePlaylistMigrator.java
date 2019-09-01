@@ -1,23 +1,21 @@
 package net.robinfriedli.botify.tasks;
 
-import java.io.IOException;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.Lists;
 import com.wrapper.spotify.SpotifyApi;
-import com.wrapper.spotify.exceptions.SpotifyWebApiException;
-import com.wrapper.spotify.model_objects.credentials.ClientCredentials;
-import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.User;
+import net.robinfriedli.botify.audio.spotify.SpotifyTrackBulkLoadingService;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
 import net.robinfriedli.botify.entities.Song;
 import net.robinfriedli.botify.entities.UrlTrack;
 import net.robinfriedli.botify.entities.Video;
+import net.robinfriedli.botify.function.Invoker;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
 import org.hibernate.Session;
@@ -42,7 +40,8 @@ public class HibernatePlaylistMigrator implements PersistTask<Map<Playlist, List
     }
 
     @Override
-    public Map<Playlist, List<PlaylistItem>> perform() throws IOException, SpotifyWebApiException {
+    public Map<Playlist, List<PlaylistItem>> perform() throws Exception {
+        SpotifyTrackBulkLoadingService spotifyBulkLoadingService = new SpotifyTrackBulkLoadingService(spotifyApi);
         List<XmlElement> playlists = context.query(tagName("playlist")).collect();
         Map<Playlist, List<PlaylistItem>> playlistMap = new HashMap<>();
         for (XmlElement playlist : playlists) {
@@ -53,8 +52,6 @@ public class HibernatePlaylistMigrator implements PersistTask<Map<Playlist, List
             newPlaylist.setGuild(guild.getName());
             newPlaylist.setGuildId(guild.getId());
 
-            Map<String, Integer> indexedTrackIds = new HashMap<>();
-            Map<String, XmlElement> tracksWithId = new HashMap<>();
             List<XmlElement> items = playlist.getSubElements();
             Map<PlaylistItem, Integer> itemsWithIndex = new HashMap<>();
             for (int i = 0; i < items.size(); i++) {
@@ -62,8 +59,17 @@ public class HibernatePlaylistMigrator implements PersistTask<Map<Playlist, List
                 switch (item.getTagName()) {
                     case "song":
                         String id = item.getAttribute("id").getValue();
-                        indexedTrackIds.put(id, i);
-                        tracksWithId.put(id, item);
+                        int finalI = i;
+                        spotifyBulkLoadingService.add(id, track -> {
+                            String addedUserId = item.getAttribute("addedUserId").getValue();
+                            User userById = guild.getJDA().getUserById(addedUserId);
+                            Song song = new Song(track, userById, newPlaylist, session);
+                            if (userById == null) {
+                                song.setAddedUser(item.getAttribute("addedUser").getValue());
+                                song.setAddedUserId(item.getAttribute("addedUserId").getValue());
+                            }
+                            itemsWithIndex.put(song, finalI);
+                        });
                         break;
                     case "video":
                         Video video = new Video();
@@ -96,22 +102,11 @@ public class HibernatePlaylistMigrator implements PersistTask<Map<Playlist, List
                 }
             }
 
-            ClientCredentials clientCredentials = spotifyApi.clientCredentials().build().execute();
-            spotifyApi.setAccessToken(clientCredentials.getAccessToken());
-            List<List<String>> batches = Lists.partition(Lists.newArrayList(indexedTrackIds.keySet()), 50);
-            try {
-                for (List<String> batch : batches) {
-                    Track[] tracks = spotifyApi.getSeveralTracks(batch.toArray(new String[0])).build().execute();
-                    for (Track track : tracks) {
-                        String id = track.getId();
-                        String addedUserId = tracksWithId.get(id).getAttribute("addedUserId").getValue();
-                        Song song = new Song(track, guild.getJDA().getUserById(addedUserId), newPlaylist, session);
-                        itemsWithIndex.put(song, indexedTrackIds.get(id));
-                    }
-                }
-            } finally {
-                spotifyApi.setAccessToken(null);
-            }
+            Invoker invoker = new Invoker();
+            invoker.runWithCredentials(spotifyApi, () -> {
+                spotifyBulkLoadingService.perform();
+                return null;
+            });
 
             List<PlaylistItem> playlistItems = itemsWithIndex.keySet().stream().sorted(Comparator.comparing(itemsWithIndex::get)).collect(Collectors.toList());
             playlistMap.put(newPlaylist, playlistItems);

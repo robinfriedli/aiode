@@ -1,5 +1,9 @@
 package net.robinfriedli.botify.audio;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -129,7 +133,10 @@ public class AudioPlayback {
             try {
                 lastPlaybackNotification.delete().queue();
             } catch (Throwable e) {
-                logger.warn("Cannot delete playback notification message for channel " + communicationChannel, e);
+                OffsetDateTime timeCreated = lastPlaybackNotification.getTimeCreated();
+                ZonedDateTime zonedDateTime = timeCreated.atZoneSameInstant(ZoneId.systemDefault());
+                logger.warn(String.format("Cannot delete playback notification message from %s for channel %s on guild %s",
+                    zonedDateTime, communicationChannel, guild), e);
             }
         }
         this.lastPlaybackNotification = message;

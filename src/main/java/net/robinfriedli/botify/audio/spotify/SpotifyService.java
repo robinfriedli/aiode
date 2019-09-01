@@ -16,7 +16,7 @@ import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
 import com.wrapper.spotify.model_objects.specification.PlaylistTrack;
 import com.wrapper.spotify.model_objects.specification.Track;
 import com.wrapper.spotify.model_objects.specification.TrackSimplified;
-import net.robinfriedli.botify.concurrent.Invoker;
+import net.robinfriedli.botify.function.Invoker;
 
 import static net.robinfriedli.botify.util.SearchEngine.*;
 

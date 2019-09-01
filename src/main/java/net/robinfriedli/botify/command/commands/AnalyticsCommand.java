@@ -1,5 +1,7 @@
 package net.robinfriedli.botify.command.commands;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -11,6 +13,7 @@ import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
+import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.entities.CommandHistory;
 import net.robinfriedli.botify.entities.PlaybackHistory;
 import net.robinfriedli.botify.entities.Playlist;
@@ -30,7 +33,9 @@ public class AnalyticsCommand extends AbstractCommand {
     public void doRun() throws Exception {
         JDA jda = getContext().getJda();
         List<Guild> guilds = jda.getGuilds();
-        AudioManager audioManager = Botify.get().getAudioManager();
+        Botify botify = Botify.get();
+        AudioManager audioManager = botify.getAudioManager();
+        GuildManager guildManager = botify.getGuildManager();
         Session session = getContext().getSession();
         Runtime runtime = Runtime.getRuntime();
 
@@ -51,21 +56,27 @@ public class AnalyticsCommand extends AbstractCommand {
 
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.addField("Guilds", String.valueOf(guildCount), true);
+        embedBuilder.addField("Guilds active", String.valueOf(guildManager.getActiveGuilds(session).size()), true);
         embedBuilder.addField("Guilds playing now", String.valueOf(playingCount), true);
         embedBuilder.addField("Total commands entered", String.valueOf(commandCount), true);
         embedBuilder.addField("Saved playlists", String.valueOf(playlistCount), true);
         embedBuilder.addField("Saved tracks", String.valueOf(trackCount), true);
         embedBuilder.addField("Total tracks played", String.valueOf(playedCount), true);
         embedBuilder.addField("Memory (in MB)",
-            "Total: " + maxMemory + System.lineSeparator() +
-                "Allocated: " + allocatedMemory + System.lineSeparator() +
-                "Unallocated: " + unallocatedMemory + System.lineSeparator() +
-                "Free allocated: " + allocFreeMemory + System.lineSeparator() +
-                "Currently used: " + usedMemory + System.lineSeparator() +
-                "Total free: " + totalFreeMemory
-            , true);
+            "Total: " + round(maxMemory) + System.lineSeparator() +
+                "Allocated: " + round(allocatedMemory) + System.lineSeparator() +
+                "Unallocated: " + round(unallocatedMemory) + System.lineSeparator() +
+                "Free allocated: " + round(allocFreeMemory) + System.lineSeparator() +
+                "Currently used: " + round(usedMemory) + System.lineSeparator() +
+                "Total free: " + round(totalFreeMemory)
+            , false);
 
         sendWithLogo(embedBuilder);
+    }
+
+    private double round(double d) {
+        BigDecimal bigDecimal = BigDecimal.valueOf(d).setScale(2, RoundingMode.HALF_UP);
+        return bigDecimal.doubleValue();
     }
 
     @Override

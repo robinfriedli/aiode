@@ -1,8 +1,6 @@
 package net.robinfriedli.botify.entities;
 
-import java.io.IOException;
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -23,13 +21,15 @@ import javax.persistence.Table;
 import com.google.api.client.util.Sets;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.wrapper.spotify.SpotifyApi;
-import com.wrapper.spotify.exceptions.SpotifyWebApiException;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.audio.PlayableFactory;
+import net.robinfriedli.botify.audio.spotify.SpotifyTrackBulkLoadingService;
+import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
 
 @Entity
 @Table(name = "playlist")
@@ -164,35 +164,30 @@ public class Playlist implements Serializable {
      * Returns the items in this playlist as objects supported by the {@link PlayableFactory} class. Note that getting the
      * Spotify track for a Song requires this method to be invoked with client credentials
      */
-    public List<Object> getTracks(SpotifyApi spotifyApi) throws IOException, SpotifyWebApiException {
+    public List<Object> getTracks(SpotifyApi spotifyApi) {
         List<PlaylistItem> playlistItems = getItemsSorted();
+        SpotifyTrackBulkLoadingService service = new SpotifyTrackBulkLoadingService(spotifyApi);
 
         Map<Object, Integer> itemsWithIndex = new HashMap<>();
-        Map<String, Integer> trackIdsWithIndex = new HashMap<>();
         for (int i = 0; i < playlistItems.size(); i++) {
             PlaylistItem item = playlistItems.get(i);
             if (item instanceof Song) {
-                trackIdsWithIndex.put(((Song) item).getId(), i);
+                String id = ((Song) item).getId();
+                int finalI = i;
+                service.add(id, track -> itemsWithIndex.put(track, finalI));
             } else if (item instanceof Video) {
-                itemsWithIndex.put(((Video) item).asYouTubeVideo(), i);
+                Video video = (Video) item;
+                YouTubeVideo youtubeVideo = video.asYouTubeVideo();
+                itemsWithIndex.put(youtubeVideo, i);
+                if (!Strings.isNullOrEmpty(video.getRedirectedSpotifyId())) {
+                    service.add(video.getRedirectedSpotifyId(), youtubeVideo::setRedirectedSpotifyTrack);
+                }
             } else if (item instanceof UrlTrack) {
                 itemsWithIndex.put(item, i);
             }
         }
 
-        List<List<String>> batches = Lists.partition(Lists.newArrayList(trackIdsWithIndex.keySet()), 50);
-        for (List<String> batch : batches) {
-            Track[] tracks = spotifyApi.getSeveralTracks(batch.toArray(new String[0])).build().execute();
-            for (Track track : tracks) {
-                if (track == null) {
-                    // might be null for tracks that have become unavailable
-                    continue;
-                }
-
-                itemsWithIndex.put(track, trackIdsWithIndex.get(track.getId()));
-            }
-        }
-
+        service.perform();
         return itemsWithIndex.keySet().stream().sorted(Comparator.comparing(itemsWithIndex::get)).collect(Collectors.toList());
     }
 
@@ -200,23 +195,19 @@ public class Playlist implements Serializable {
      * returns all Songs as Spotify tracks including all videos that are redirected Spotify tracks i.e. the attribute
      * redirectedSpotifyId is set. Mind that this method has to be invoked with client credentials
      */
-    public List<Track> asTrackList(SpotifyApi spotifyApi) throws IOException, SpotifyWebApiException {
+    public List<Track> asTrackList(SpotifyApi spotifyApi) {
+        SpotifyTrackBulkLoadingService service = new SpotifyTrackBulkLoadingService(spotifyApi);
         List<Track> tracks = Lists.newArrayList();
-        List<String> trackIds = Lists.newArrayList();
         for (PlaylistItem item : getItemsSorted()) {
             if (item instanceof Song) {
-                trackIds.add(((Song) item).getId());
+                service.add(((Song) item).getId(), tracks::add);
             } else if (item instanceof Video && ((Video) item).getRedirectedSpotifyId() != null) {
-                trackIds.add(((Video) item).getRedirectedSpotifyId());
+                String redirectedSpotifyId = ((Video) item).getRedirectedSpotifyId();
+                service.add(redirectedSpotifyId, tracks::add);
             }
         }
 
-        List<List<String>> sequences = Lists.partition(trackIds, 50);
-        for (List<String> sequence : sequences) {
-            Track[] loadedTracks = spotifyApi.getSeveralTracks(sequence.toArray(String[]::new)).build().execute();
-            tracks.addAll(Arrays.asList(loadedTracks));
-        }
-
+        service.perform();
         return tracks;
     }
 

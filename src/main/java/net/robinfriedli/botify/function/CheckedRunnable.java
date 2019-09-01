@@ -1,4 +1,4 @@
-package net.robinfriedli.botify.concurrent;
+package net.robinfriedli.botify.function;
 
 import net.robinfriedli.botify.exceptions.CommandRuntimeException;
 

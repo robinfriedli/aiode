@@ -1,21 +1,35 @@
 package net.robinfriedli.botify.discord;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
 
+import com.google.common.collect.Sets;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
+import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
-import net.robinfriedli.botify.concurrent.Invoker;
-import net.robinfriedli.botify.discord.property.GuildPropertyManager;
+import net.robinfriedli.botify.command.CommandContext;
+import net.robinfriedli.botify.function.Invoker;
 import net.robinfriedli.botify.entities.AccessConfiguration;
+import net.robinfriedli.botify.entities.CommandHistory;
 import net.robinfriedli.botify.entities.GuildSpecification;
+import net.robinfriedli.botify.entities.PlaybackHistory;
 import net.robinfriedli.botify.util.ISnowflakeMap;
 import net.robinfriedli.botify.util.StaticSessionProvider;
+import org.hibernate.Session;
 
 /**
  * Manages the {@link GuildContext} for all guilds.
@@ -87,6 +101,54 @@ public class GuildManager {
         }
 
         return guildContext;
+    }
+
+    public Set<Guild> getActiveGuilds(Session session) {
+        JDA jda = Botify.get().getJda();
+        Set<Guild> activeGuilds = Sets.newHashSet();
+        Set<String> activeGuildIds = Sets.newHashSet();
+
+        if (CommandContext.Current.isSet()) {
+            activeGuilds.add(CommandContext.Current.require().getGuild());
+        }
+
+        for (Guild guild : jda.getGuilds()) {
+            AudioPlayback playback = audioManager.getPlaybackForGuild(guild);
+            if (playback.isPlaying()) {
+                activeGuilds.add(guild);
+            }
+        }
+
+        CriteriaBuilder cb = session.getCriteriaBuilder();
+
+        // consider all guilds that issued a command within the last 10 minutes to be active
+        long millis10MinutesAgo = System.currentTimeMillis() - 600000;
+        CriteriaQuery<String> recentCommandGuildsQuery = cb.createQuery(String.class);
+        Root<CommandHistory> commandsQueryRoot = recentCommandGuildsQuery.from(CommandHistory.class);
+        recentCommandGuildsQuery
+            .select(commandsQueryRoot.get("guildId"))
+            .where(cb.greaterThan(commandsQueryRoot.get("startMillis"), millis10MinutesAgo));
+        Set<String> recentCommandGuildIds = session.createQuery(recentCommandGuildsQuery).getResultStream().collect(Collectors.toSet());
+        activeGuildIds.addAll(recentCommandGuildIds);
+
+        // consider all guilds that played a track withing the last 10 minutes to be active
+        LocalDateTime dateTime10MinutesAgo = LocalDateTime.ofInstant(Instant.ofEpochMilli(millis10MinutesAgo), ZoneId.systemDefault());
+        CriteriaQuery<String> recentPlaybackGuildsQuery = cb.createQuery(String.class);
+        Root<PlaybackHistory> playbackHistoryRoot = recentPlaybackGuildsQuery.from(PlaybackHistory.class);
+        recentPlaybackGuildsQuery
+            .select(playbackHistoryRoot.get("guildId"))
+            .where(cb.greaterThan(playbackHistoryRoot.get("timestamp"), dateTime10MinutesAgo));
+        Set<String> recentPlaybackGuildIds = session.createQuery(recentPlaybackGuildsQuery).getResultStream().collect(Collectors.toSet());
+        activeGuildIds.addAll(recentPlaybackGuildIds);
+
+        for (String guildId : activeGuildIds) {
+            Guild guild = jda.getGuildById(guildId);
+            if (guild != null) {
+                activeGuilds.add(guild);
+            }
+        }
+
+        return activeGuilds;
     }
 
     public Collection<GuildContext> getGuildContexts() {
