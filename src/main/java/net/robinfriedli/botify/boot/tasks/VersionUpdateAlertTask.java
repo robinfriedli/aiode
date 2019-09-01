@@ -2,7 +2,6 @@ package net.robinfriedli.botify.boot.tasks;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
-import java.io.IOException;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -13,10 +12,13 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.botify.boot.StartupTask;
 import net.robinfriedli.botify.discord.MessageService;
+import net.robinfriedli.botify.function.CheckedConsumer;
+import net.robinfriedli.botify.util.StaticSessionProvider;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
 import net.robinfriedli.jxp.queries.Conditions;
+import org.hibernate.Session;
 
 import static net.robinfriedli.jxp.queries.Conditions.*;
 
@@ -57,7 +59,7 @@ public class VersionUpdateAlertTask implements StartupTask {
         }
     }
 
-    private void sendUpdateAlert(Context context, String currentVersion, XmlElement versionElem) throws IOException {
+    private void sendUpdateAlert(Context context, String currentVersion, XmlElement versionElem) {
         List<XmlElement> lowerLaunchedVersions = context.query(xmlElement -> xmlElement.getTagName().equals("version")
             && versionCompare(currentVersion, xmlElement.getAttribute("version").getValue()) == 1
             && xmlElement.getAttribute("launched").getBool()).collect();
@@ -77,9 +79,12 @@ public class VersionUpdateAlertTask implements StartupTask {
                 embedBuilder.addField("Features", featuresBuilder.toString(), false);
             }
 
-            for (Guild guild : jda.getGuilds()) {
-                messageService.sendWithLogo(embedBuilder, guild);
-            }
+            // setup current thread session and handle all guilds within one session instead of opening a new session for each
+            StaticSessionProvider.invokeWithSession((CheckedConsumer<Session>) session -> {
+                for (Guild guild : jda.getGuilds()) {
+                    messageService.sendWithLogo(embedBuilder, guild);
+                }
+            });
         }
     }
 

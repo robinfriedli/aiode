@@ -16,9 +16,7 @@ public class StaticSessionProvider {
     public static SessionFactory sessionFactory;
 
     public static Session provide() {
-        if (sessionFactory == null) {
-            throw new IllegalStateException("SessionFactory has not been set up yet");
-        }
+        SessionFactory sessionFactory = getSessionFactory();
 
         if (CommandContext.Current.isSet()) {
             return CommandContext.Current.require().getSession();
