@@ -1,7 +1,12 @@
 package net.robinfriedli.botify.command.widgets;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -47,15 +52,21 @@ public class QueueWidget extends AbstractWidget {
     @Override
     public void reset() throws Exception {
         MessageService messageService = Botify.get().getMessageService();
+        Message message = getMessage();
         try {
-            getMessage().delete().queue();
+            message.delete().queue();
             setMessageDeleted(true);
         } catch (InsufficientPermissionException e) {
-            messageService.sendError("Bot is missing permission: " + e.getPermission().getName(), getMessage().getChannel());
+            messageService.sendError("Bot is missing permission: " + e.getPermission().getName(), message.getChannel());
+        } catch (Throwable e) {
+            OffsetDateTime timeCreated = message.getTimeCreated();
+            ZonedDateTime zonedDateTime = timeCreated.atZoneSameInstant(ZoneId.systemDefault());
+            LoggerFactory.getLogger(getClass()).warn(String.format("Cannot delete queue widget message from %s for channel %s on guild %s",
+                zonedDateTime, message.getChannel(), message.getGuild()), e);
         }
 
-        EmbedBuilder embedBuilder = audioPlayback.getAudioQueue().buildMessageEmbed(audioPlayback, getMessage().getGuild());
-        CompletableFuture<Message> futureMessage = messageService.sendWithLogo(embedBuilder, getMessage().getChannel());
+        EmbedBuilder embedBuilder = audioPlayback.getAudioQueue().buildMessageEmbed(audioPlayback, message.getGuild());
+        CompletableFuture<Message> futureMessage = messageService.sendWithLogo(embedBuilder, message.getChannel());
         getCommandManager().registerWidget(new QueueWidget(getCommandManager(), futureMessage.get(), audioManager, audioPlayback));
     }
 

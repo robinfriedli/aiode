@@ -194,6 +194,18 @@ public class MessageService {
         return futureMessage;
     }
 
+    public CompletableFuture<Message> sendTemporary(EmbedBuilder embedBuilder, MessageChannel messageChannel) {
+        CompletableFuture<Message> futureMessage = send(embedBuilder, messageChannel);
+        futureMessage.thenAccept(message -> new TempMessageDeletionTask(message).schedule());
+        return futureMessage;
+    }
+
+    public CompletableFuture<Message> sendTemporary(String message, MessageChannel messageChannel) {
+        CompletableFuture<Message> futureMessage = send(message, messageChannel);
+        futureMessage.thenAccept(msg -> new TempMessageDeletionTask(msg).schedule());
+        return futureMessage;
+    }
+
     public void sendWrapped(String message, String wrapper, MessageChannel channel) {
         if (message.length() < limit) {
             sendInternal(channel, wrapper + message + wrapper);
