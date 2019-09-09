@@ -30,7 +30,7 @@ public class AnalyticsCommand extends AbstractCommand {
     }
 
     @Override
-    public void doRun() throws Exception {
+    public void doRun() {
         JDA jda = getContext().getJda();
         List<Guild> guilds = jda.getGuilds();
         Botify botify = Botify.get();

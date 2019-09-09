@@ -129,7 +129,7 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
         sendMessage(responseBuilder.toString());
     }
 
-    private void listLocalList() throws IOException {
+    private void listLocalList() {
         if (getCommandInput().isBlank()) {
             Session session = getContext().getSession();
             List<Playlist> playlists;

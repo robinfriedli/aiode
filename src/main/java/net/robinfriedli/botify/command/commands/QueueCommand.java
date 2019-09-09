@@ -54,7 +54,7 @@ public class QueueCommand extends AbstractPlayableLoadingCommand {
         AudioPlayback playback = audioManager.getPlaybackForGuild(guild);
         AudioQueue audioQueue = playback.getAudioQueue();
 
-        CompletableFuture<Message> futureMessage = sendWithLogo(audioQueue.buildMessageEmbed(playback, guild));
+        CompletableFuture<Message> futureMessage = sendMessage(audioQueue.buildMessageEmbed(playback, guild));
         getManager().registerWidget(new QueueWidget(getManager(), futureMessage.get(), audioManager, playback));
     }
 

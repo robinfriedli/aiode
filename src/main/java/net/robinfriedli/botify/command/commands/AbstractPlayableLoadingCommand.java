@@ -272,7 +272,6 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
             }
         } else {
             YouTubeVideo youTubeVideo = youTubeService.searchVideo(getCommandInput());
-            audioManager.getQueue(getContext().getGuild()).add(youTubeVideo);
             handleResults(Lists.newArrayList(youTubeVideo));
             loadedTrack = youTubeVideo;
         }
