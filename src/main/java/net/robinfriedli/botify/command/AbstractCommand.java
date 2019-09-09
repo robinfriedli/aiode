@@ -1,6 +1,5 @@
 package net.robinfriedli.botify.command;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -293,7 +292,7 @@ public abstract class AbstractCommand {
         return messageService.send(messageBuilder, file, fileName, getContext().getChannel());
     }
 
-    protected CompletableFuture<Message> sendWithLogo(EmbedBuilder embedBuilder) throws IOException {
+    protected CompletableFuture<Message> sendWithLogo(EmbedBuilder embedBuilder) {
         return messageService.sendWithLogo(embedBuilder, getContext().getChannel());
     }
 

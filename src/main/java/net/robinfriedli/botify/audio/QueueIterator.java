@@ -202,8 +202,12 @@ public class QueueIterator extends AudioEventAdapter {
         appendIfTrue(footerBuilder, EmojiConstants.REPEAT_ONE, playback.isRepeatOne());
         footerBuilder.append(" | ").append("View the queue using the queue command");
 
-        String baseUri = PropertiesLoadingService.requireProperty("BASE_URI");
-        embedBuilder.setFooter(footerBuilder.toString(), baseUri + "/resources-public/img/botify-logo-small.png");
+        String albumCoverUrl = currentTrack.getAlbumCoverUrl();
+        if (albumCoverUrl == null) {
+            String baseUri = PropertiesLoadingService.requireProperty("BASE_URI");
+            albumCoverUrl = baseUri + "/resources-public/img/botify-logo-small.png";
+        }
+        embedBuilder.setFooter(footerBuilder.toString(), albumCoverUrl);
 
         Guild guild = playback.getGuild();
         Color color = StaticSessionProvider.invokeWithSession(session -> {

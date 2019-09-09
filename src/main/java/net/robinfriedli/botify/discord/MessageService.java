@@ -1,10 +1,8 @@
 package net.robinfriedli.botify.discord;
 
 import java.awt.Color;
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.SocketTimeoutException;
-import java.net.URL;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
@@ -118,24 +116,18 @@ public class MessageService {
         return send(embedBuilder.build(), guild);
     }
 
-    public CompletableFuture<Message> sendWithLogo(EmbedBuilder embedBuilder, MessageChannel channel) throws IOException {
-        MessageBuilder messageBuilder = new MessageBuilder();
+    public CompletableFuture<Message> sendWithLogo(EmbedBuilder embedBuilder, MessageChannel channel) {
         String baseUri = PropertiesLoadingService.requireProperty("BASE_URI");
-        InputStream file = new URL(baseUri + "/resources-public/img/botify-logo-small.png").openStream();
-        embedBuilder.setThumbnail("attachment://logo.png");
+        embedBuilder.setThumbnail(baseUri + "/resources-public/img/botify-logo-small.png");
         embedBuilder.setColor(ColorSchemeProperty.getColor());
-        messageBuilder.setEmbed(embedBuilder.build());
-        return send(messageBuilder, file, "logo.png", channel);
+        return send(embedBuilder.build(), channel);
     }
 
-    public CompletableFuture<Message> sendWithLogo(EmbedBuilder embedBuilder, Guild guild) throws IOException {
-        MessageBuilder messageBuilder = new MessageBuilder();
+    public CompletableFuture<Message> sendWithLogo(EmbedBuilder embedBuilder, Guild guild) {
         String baseUri = PropertiesLoadingService.requireProperty("BASE_URI");
-        InputStream file = new URL(baseUri + "/resources-public/img/botify-logo.png").openStream();
-        embedBuilder.setThumbnail("attachment://logo.png");
+        embedBuilder.setThumbnail(baseUri + "/resources-public/img/botify-logo.png");
         embedBuilder.setColor(ColorSchemeProperty.getColor());
-        messageBuilder.setEmbed(embedBuilder.build());
-        return send(messageBuilder, file, "logo.png", guild);
+        return send(embedBuilder, guild);
     }
 
     public CompletableFuture<Message> send(MessageBuilder messageBuilder, InputStream file, String fileName, MessageChannel messageChannel) {

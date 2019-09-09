@@ -134,6 +134,9 @@ public interface Playable {
         }
     }
 
+    @Nullable
+    String getAlbumCoverUrl();
+
     /**
      * Exports this playable as a persistable {@link PlaylistItem}
      *

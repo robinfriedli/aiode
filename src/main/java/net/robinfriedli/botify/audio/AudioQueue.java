@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -197,6 +198,9 @@ public class AudioQueue {
             if (!nextBuilder.toString().isEmpty()) {
                 embedBuilder.addField("Next", nextBuilder.toString(), false);
             }
+
+            String albumCoverUrl = current.getAlbumCoverUrl();
+            embedBuilder.setThumbnail(Objects.requireNonNullElseGet(albumCoverUrl, () -> baseUri + "/resources-public/img/botify-logo.png"));
         }
 
         Color color = StaticSessionProvider.invokeWithSession(session -> {

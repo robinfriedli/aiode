@@ -5,6 +5,8 @@ import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nullable;
 
+import com.wrapper.spotify.model_objects.specification.AlbumSimplified;
+import com.wrapper.spotify.model_objects.specification.Image;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.audio.Playable;
@@ -91,6 +93,22 @@ public interface YouTubeVideo extends Playable {
     @Override
     default long getDurationNow(long alternativeValue) throws UnavailableResourceException {
         return getDuration();
+    }
+
+    @Nullable
+    @Override
+    default String getAlbumCoverUrl() {
+        if (getRedirectedSpotifyTrack() != null) {
+            AlbumSimplified album = getRedirectedSpotifyTrack().getAlbum();
+            if (album != null) {
+                Image[] images = album.getImages();
+                if (images.length > 0) {
+                    return images[0].getUrl();
+                }
+            }
+        }
+
+        return null;
     }
 
     @Override

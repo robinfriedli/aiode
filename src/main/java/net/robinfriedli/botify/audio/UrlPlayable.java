@@ -77,6 +77,12 @@ public class UrlPlayable implements Playable {
         return getDurationMs();
     }
 
+    @Nullable
+    @Override
+    public String getAlbumCoverUrl() {
+        return null;
+    }
+
     @Override
     public PlaylistItem export(Playlist playlist, User user, Session session) {
         return new UrlTrack(this, user, playlist);

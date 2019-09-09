@@ -66,7 +66,7 @@ public class QueueWidget extends AbstractWidget {
         }
 
         EmbedBuilder embedBuilder = audioPlayback.getAudioQueue().buildMessageEmbed(audioPlayback, message.getGuild());
-        CompletableFuture<Message> futureMessage = messageService.sendWithLogo(embedBuilder, message.getChannel());
+        CompletableFuture<Message> futureMessage = messageService.send(embedBuilder, message.getChannel());
         getCommandManager().registerWidget(new QueueWidget(getCommandManager(), futureMessage.get(), audioManager, audioPlayback));
     }
 

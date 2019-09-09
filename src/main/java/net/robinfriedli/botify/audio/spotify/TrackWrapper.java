@@ -2,7 +2,11 @@ package net.robinfriedli.botify.audio.spotify;
 
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.Nullable;
+
+import com.wrapper.spotify.model_objects.specification.AlbumSimplified;
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
+import com.wrapper.spotify.model_objects.specification.Image;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.audio.AbstractSoftCachedPlayable;
@@ -68,6 +72,20 @@ public class TrackWrapper extends AbstractSoftCachedPlayable implements Playable
     @Override
     public long getDurationNow(long alternativeValue) {
         return getDurationMs();
+    }
+
+    @Nullable
+    @Override
+    public String getAlbumCoverUrl() {
+        AlbumSimplified album = track.getAlbum();
+        if (album != null) {
+            Image[] images = album.getImages();
+            if (images.length > 0) {
+                return images[0].getUrl();
+            }
+        }
+
+        return null;
     }
 
     @Override
