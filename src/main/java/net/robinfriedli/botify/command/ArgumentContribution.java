@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
 
@@ -87,8 +88,12 @@ public class ArgumentContribution {
      * @return true if the user used the provided argument when calling the command
      */
     public boolean argumentSet(String argument) {
-        Argument arg = require(argument, IllegalArgumentException.class);
-        return arg.isSet();
+        Argument arg = get(argument);
+        if (arg != null) {
+            return arg.isSet();
+        }
+
+        return false;
     }
 
     /**
@@ -138,16 +143,36 @@ public class ArgumentContribution {
         return definedArguments.isEmpty();
     }
 
+    public static class Rule {
+
+        private final Predicate<ArgumentContribution> rule;
+        private final String errorMessage;
+
+        public Rule(Predicate<ArgumentContribution> rule, String errorMessage) {
+            this.rule = rule;
+            this.errorMessage = errorMessage;
+        }
+
+        public Predicate<ArgumentContribution> getRule() {
+            return rule;
+        }
+
+        public String getErrorMessage() {
+            return errorMessage;
+        }
+    }
+
     /**
      * A single argument that may be described in this ArgumentContribution
      */
     public class Argument {
 
         private final String identifier;
-        private String value;
-        private Set<String> excludedArguments;
-        private Set<String> neededArguments;
+        private final List<Rule> rules;
+        private final Set<String> excludedArguments;
+        private final Set<String> neededArguments;
         private String description;
+        private String value;
         private boolean set;
         private boolean requiresValue;
         // useful for commands that only require input if a certain argument is set
@@ -155,6 +180,7 @@ public class ArgumentContribution {
 
         Argument(String identifier) {
             this.identifier = identifier;
+            this.rules = Lists.newArrayList();
             this.excludedArguments = Sets.newHashSet();
             this.neededArguments = Sets.newHashSet();
             description = "";
@@ -229,6 +255,22 @@ public class ArgumentContribution {
             return this;
         }
 
+        /**
+         * Apply a custom rule that needs to evaluate to true when using the command and this argument is set or throws
+         * the given error message.
+         *
+         * @param rule         the custom rule
+         * @param errorMessage to message to throw when the rule evaluates to false
+         */
+        public Argument addRule(Predicate<ArgumentContribution> rule, String errorMessage) {
+            return addRule(new Rule(rule, errorMessage));
+        }
+
+        public Argument addRule(Rule rule) {
+            rules.add(rule);
+            return this;
+        }
+
         Set<String> getExcludedArguments() {
             return excludedArguments;
         }
@@ -241,8 +283,9 @@ public class ArgumentContribution {
             return description;
         }
 
-        public void setDescription(String description) {
+        public Argument setDescription(String description) {
             this.description = description;
+            return this;
         }
 
         /**
@@ -250,6 +293,12 @@ public class ArgumentContribution {
          */
         void check() {
             if (isSet()) {
+                for (Rule rule : rules) {
+                    if (!rule.getRule().test(ArgumentContribution.this)) {
+                        throw new InvalidCommandException(rule.getErrorMessage());
+                    }
+                }
+
                 for (String neededArgument : getNeededArguments()) {
                     Argument argument = require(neededArgument);
                     if (!argument.isSet()) {
@@ -283,6 +332,8 @@ public class ArgumentContribution {
         public void setSet(boolean set) {
             this.set = set;
         }
+
+
     }
 
 }

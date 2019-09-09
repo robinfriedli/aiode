@@ -93,10 +93,10 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
 
     private void searchYouTubeVideo() throws UnavailableResourceException, IOException {
         YouTubeService youTubeService = Botify.get().getAudioManager().getYouTubeService();
-        if (argumentSet("limit")) {
-            int limit = getArgumentValue("limit", Integer.class);
-            if (!(limit > 0 && limit <= 10)) {
-                throw new InvalidCommandException("Limit must be between 1 and 10");
+        if (argumentSet("select")) {
+            int limit = getArgumentValue("select", Integer.class, 10);
+            if (!(limit > 0 && limit <= 20)) {
+                throw new InvalidCommandException("Limit must be between 1 and 20");
             }
 
             List<YouTubeVideo> youTubeVideos = youTubeService.searchSeveralVideos(limit, getCommandInput());
@@ -194,8 +194,8 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
 
     private void listYouTubePlaylists() throws IOException {
         YouTubeService youTubeService = Botify.get().getAudioManager().getYouTubeService();
-        if (argumentSet("limit")) {
-            int limit = getArgumentValue("limit", Integer.class);
+        if (argumentSet("select")) {
+            int limit = getArgumentValue("select", Integer.class, 10);
             if (!(limit > 0 && limit <= 10)) {
                 throw new InvalidCommandException("Limit must be between 1 and 10");
             }
@@ -348,12 +348,22 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
             .setDescription("Search for a playlist.");
         argumentContribution.map("local").needsArguments("list").excludesArguments("youtube", "spotify")
             .setDescription("Search for a local playlist or list all of them. This is default when searching for lists.");
-        argumentContribution.map("own").needsArguments("spotify")
-            .setDescription("Limit search to Spotify tracks or playlists in the current user's library. This requires a Spotify login.");
-        argumentContribution.map("limit").needsArguments("youtube").setRequiresValue(true)
-            .setDescription("Show a selection of YouTube playlists or videos to chose from. Requires value from 1 to 10: $limit=5");
-        argumentContribution.map("album").needsArguments("spotify").excludesArguments("list").setRequiresInput(true)
-            .setDescription("Search for a Spotify album. Note that this argument is only required when searching, not when entering a URL.");
+        argumentContribution.map("own")
+            .setDescription("Limit search to Spotify tracks or playlists in the current user's library. This requires a Spotify login.")
+            .addRule(ac -> getSource().isSpotify(), "Argument 'own' may only be used with Spotify.");
+        argumentContribution.map("select").excludesArguments("album")
+            .setDescription("Show a selection of YouTube playlists / videos or Spotify tracks to chose from. May be assigned a value from 1 to 20: $select=5")
+            .addRule(ac -> {
+                Source source = getSource();
+                if (ac.argumentSet("list")) {
+                    return source.isYouTube();
+                }
+
+                return source.isYouTube() || source.isSpotify();
+            }, "Argument 'select' may only be used with YouTube videos / playlists or Spotify tracks.");
+        argumentContribution.map("album").excludesArguments("list").setRequiresInput(true)
+            .setDescription("Search for a Spotify album. Note that this argument is only required when searching, not when entering a URL.")
+            .addRule(ac -> getSource().isSpotify(), "Argument 'album' may only be used with Spotify.");
         return argumentContribution;
     }
 

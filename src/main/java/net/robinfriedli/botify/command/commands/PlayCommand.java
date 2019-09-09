@@ -11,14 +11,13 @@ import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.audio.AudioQueue;
 import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.audio.PlayableFactory;
-import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 
-public class PlayCommand extends AbstractQueueLoadingCommand {
+public class PlayCommand extends AbstractPlayableLoadingCommand {
 
     public PlayCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
         super(commandContribution, context, commandManager, commandString, false, identifier, description, Category.PLAYBACK, true);
@@ -78,25 +77,4 @@ public class PlayCommand extends AbstractQueueLoadingCommand {
         audioManager.startPlayback(guild, getContext().getVoiceChannel());
     }
 
-    @Override
-    public ArgumentContribution setupArguments() {
-        ArgumentContribution argumentContribution = new ArgumentContribution(this);
-        argumentContribution.map("list").setRequiresInput(true)
-            .setDescription("Search for a list.");
-        argumentContribution.map("preview").excludesArguments("youtube")
-            .setDescription("Play the short preview mp3 directly from Spotify instead of the full track from YouTube.");
-        argumentContribution.map("spotify").setRequiresInput(true).excludesArguments("youtube")
-            .setDescription("Search for a Spotify track or list. This supports Spotify query syntax (i.e. the filters \"artist:\", \"album:\", etc.). Note that this argument is only required when searching, not when entering a URL.");
-        argumentContribution.map("youtube").setRequiresInput(true).excludesArguments("spotify")
-            .setDescription("Play a YouTube video or playlist. Note that this argument is only required when searching, not when entering a URL.");
-        argumentContribution.map("own").needsArguments("spotify")
-            .setDescription("Limit search to Spotify tracks or lists that are in the current user's library. This requires a Spotify login.");
-        argumentContribution.map("local").needsArguments("list").excludesArguments("spotify", "youtube")
-            .setDescription("Play a local list.");
-        argumentContribution.map("limit").needsArguments("youtube").setRequiresValue(true)
-            .setDescription("Show a selection of YouTube playlists or videos to chose from. Requires value from 1 to 10: $limit=5");
-        argumentContribution.map("album").needsArguments("spotify").excludesArguments("list").setRequiresInput(true)
-            .setDescription("Search for a Spotify album. Note that this argument is only required when searching, not when entering a URL.");
-        return argumentContribution;
-    }
 }

@@ -17,10 +17,12 @@ import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.audio.PlayableFactory;
 import net.robinfriedli.botify.audio.spotify.SpotifyService;
+import net.robinfriedli.botify.audio.spotify.SpotifyTrackResultHandler;
 import net.robinfriedli.botify.audio.spotify.SpotifyUri;
 import net.robinfriedli.botify.audio.youtube.YouTubePlaylist;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
+import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.Playlist;
@@ -32,7 +34,7 @@ import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.botify.util.SearchEngine;
 import net.robinfriedli.stringlist.StringListImpl;
 
-public abstract class AbstractQueueLoadingCommand extends AbstractSourceDecidingCommand {
+public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecidingCommand {
 
     private final boolean mayInterrupt;
     int loadedAmount;
@@ -42,15 +44,15 @@ public abstract class AbstractQueueLoadingCommand extends AbstractSourceDeciding
     Playable loadedTrack;
     AlbumSimplified loadedAlbum;
 
-    public AbstractQueueLoadingCommand(CommandContribution commandContribution,
-                                       CommandContext context,
-                                       CommandManager commandManager,
-                                       String commandString,
-                                       boolean requiresInput,
-                                       String identifier,
-                                       String description,
-                                       Category category,
-                                       boolean mayInterrupt) {
+    public AbstractPlayableLoadingCommand(CommandContribution commandContribution,
+                                          CommandContext context,
+                                          CommandManager commandManager,
+                                          String commandString,
+                                          boolean requiresInput,
+                                          String identifier,
+                                          String description,
+                                          Category category,
+                                          boolean mayInterrupt) {
         super(commandContribution, context, commandManager, commandString, requiresInput, identifier, description, category);
         this.mayInterrupt = mayInterrupt;
     }
@@ -129,10 +131,10 @@ public abstract class AbstractQueueLoadingCommand extends AbstractSourceDeciding
         YouTubeService youTubeService = audioManager.getYouTubeService();
         PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild(), getSpotifyService());
 
-        if (argumentSet("limit")) {
-            int limit = getArgumentValue("limit", Integer.class);
-            if (!(limit > 0 && limit <= 10)) {
-                throw new InvalidCommandException("Limit must be between 1 and 10");
+        if (argumentSet("select")) {
+            int limit = getArgumentValue("select", Integer.class, 10);
+            if (!(limit > 0 && limit <= 20)) {
+                throw new InvalidCommandException("Limit must be between 1 and 20");
             }
 
             List<YouTubePlaylist> playlists = youTubeService.searchSeveralPlaylists(limit, getCommandInput());
@@ -210,7 +212,8 @@ public abstract class AbstractQueueLoadingCommand extends AbstractSourceDeciding
     }
 
     private void loadTrack(AudioManager audioManager) throws Exception {
-        Callable<List<Track>> loadTrackCallable = () -> getSpotifyService().searchTrack(getCommandInput(), argumentSet("own"));
+        int limit = argumentSet("select") ? getArgumentValue("select", Integer.class, 20) : 20;
+        Callable<List<Track>> loadTrackCallable = () -> getSpotifyService().searchTrack(getCommandInput(), argumentSet("own"), limit);
         List<Track> found;
         if (argumentSet("own")) {
             found = runWithLogin(loadTrackCallable);
@@ -219,24 +222,33 @@ public abstract class AbstractQueueLoadingCommand extends AbstractSourceDeciding
         }
 
         if (found.size() == 1) {
-            PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild(), getSpotifyService());
-            Playable track = playableFactory.createPlayable(!argumentSet("preview"), found.get(0));
-            handleResults(Lists.newArrayList(track));
-            loadedTrack = track;
+            createPlayableForTrack(found.get(0), audioManager);
         } else if (found.isEmpty()) {
             throw new NoSpotifyResultsFoundException(String.format("No Spotify track found for '%s'", getCommandInput()));
         } else {
-            askQuestion(found, track -> {
-                String artistString = StringListImpl.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", ");
-                return String.format("%s by %s", track.getName(), artistString);
-            }, track -> track.getAlbum().getName());
+            if (argumentSet("select")) {
+                askQuestion(found, track -> {
+                    String artistString = StringListImpl.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", ");
+                    return String.format("%s by %s", track.getName(), artistString);
+                }, track -> track.getAlbum().getName());
+            } else {
+                SpotifyTrackResultHandler resultHandler = new SpotifyTrackResultHandler(getContext().getGuild(), getContext().getSession());
+                createPlayableForTrack(resultHandler.getBestResult(getCommandInput(), found), audioManager);
+            }
         }
+    }
+
+    private void createPlayableForTrack(Track track, AudioManager audioManager) throws IOException {
+        PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild(), getSpotifyService());
+        Playable playable = playableFactory.createPlayable(!argumentSet("preview"), track);
+        handleResults(Lists.newArrayList(playable));
+        loadedTrack = playable;
     }
 
     private void loadYouTubeVideo(AudioManager audioManager) throws IOException {
         YouTubeService youTubeService = audioManager.getYouTubeService();
-        if (argumentSet("limit")) {
-            int limit = getArgumentValue("limit", Integer.class);
+        if (argumentSet("select")) {
+            int limit = getArgumentValue("select", Integer.class, 10);
             if (!(limit > 0 && limit <= 10)) {
                 throw new InvalidCommandException("Limit must be between 1 and 10");
             }
@@ -264,6 +276,39 @@ public abstract class AbstractQueueLoadingCommand extends AbstractSourceDeciding
             handleResults(Lists.newArrayList(youTubeVideo));
             loadedTrack = youTubeVideo;
         }
+    }
+
+    @Override
+    public ArgumentContribution setupArguments() {
+        ArgumentContribution argumentContribution = new ArgumentContribution(this);
+        argumentContribution.map("list").setRequiresInput(true)
+            .setDescription("Search for a youtube, spotify or botify playlist. Note that this argument is only required when searching, not when entering a URL.");
+        argumentContribution.map("preview").setRequiresInput(true)
+            .setDescription("Load the short preview mp3 directly from Spotify instead of the full track from YouTube.")
+            .addRule(ac -> getSource().isSpotify(), "Argument 'preview' may only be used with Spotify.");
+        argumentContribution.map("spotify").setRequiresInput(true).excludesArguments("youtube")
+            .setDescription("Search for a Spotify track, list or album. This supports Spotify query syntax (i.e. the filters \"artist:\", \"album:\", etc.). Note that this argument is only required when searching, not when entering a URL.");
+        argumentContribution.map("youtube").setRequiresInput(true).excludesArguments("spotify")
+            .setDescription("Play a YouTube video or playlist. Note that this argument is only required when searching, not when entering a URL.");
+        argumentContribution.map("own").setRequiresInput(true)
+            .setDescription("Limit search to Spotify tracks, lists or albums that are in the current user's library. This requires a Spotify login.")
+            .addRule(ac -> getSource().isSpotify(), "Argument 'own' may only be used with Spotify.");
+        argumentContribution.map("local").needsArguments("list").excludesArguments("spotify", "youtube")
+            .setDescription("Search for a local botify playlist.");
+        argumentContribution.map("album").excludesArguments("list").setRequiresInput(true)
+            .setDescription("Search for a Spotify album. Note that this argument is only required when searching, not when entering a URL.")
+            .addRule(ac -> getSource().isSpotify(), "Argument 'album' may only be used with Spotify.");
+        argumentContribution.map("select").excludesArguments("album").setRequiresInput(true)
+            .setDescription("Show a selection of YouTube playlists / videos or Spotify tracks to chose from. May be assigned a value from 1 to 20: $select=5")
+            .addRule(ac -> {
+                Source source = getSource();
+                if (ac.argumentSet("list")) {
+                    return source.isYouTube();
+                }
+
+                return source.isYouTube() || source.isSpotify();
+            }, "Argument 'select' may only be used with YouTube videos / playlists or Spotify tracks.");
+        return argumentContribution;
     }
 
 }
