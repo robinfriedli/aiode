@@ -194,6 +194,10 @@ public abstract class AbstractCommand {
     }
 
     protected <E> E getArgumentValue(String argument, Class<E> type) {
+        return getArgumentValue(argument, type, null);
+    }
+
+    protected <E> E getArgumentValue(String argument, Class<E> type, E alternativeValue) {
         if (!argumentSet(argument)) {
             throw new InvalidCommandException("Expected argument: " + argument);
         }
@@ -201,7 +205,11 @@ public abstract class AbstractCommand {
         ArgumentContribution.Argument arg = argumentContribution.require(argument, IllegalArgumentException.class);
 
         if (!arg.hasValue()) {
-            throw new InvalidCommandException("Argument '" + argument + "' requires an assigned value!");
+            if (alternativeValue != null) {
+                return alternativeValue;
+            } else {
+                throw new InvalidCommandException("Argument '" + argument + "' requires an assigned value!");
+            }
         }
 
         return arg.getValue(type);

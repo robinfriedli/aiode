@@ -26,21 +26,21 @@ public class CommandInterceptorChain implements CommandInterceptor {
     }
 
     @SuppressWarnings("unchecked")
-    private static AbstractChainableCommandInterceptor instantiate(CommandInterceptorContribution interceptorContribution,
-                                                                   Iterator<CommandInterceptorContribution> next) {
-        Class<? extends AbstractChainableCommandInterceptor> interceptorClass = interceptorContribution.getImplementationClass();
+    private static CommandInterceptor instantiate(CommandInterceptorContribution interceptorContribution,
+                                                  Iterator<CommandInterceptorContribution> next) {
+        Class<? extends CommandInterceptor> interceptorClass = interceptorContribution.getImplementationClass();
         Constructor<?>[] constructors = interceptorClass.getConstructors();
         if (constructors.length == 0) {
             throw new IllegalStateException(interceptorClass.getSimpleName() + " does not have any public constructors");
         }
 
-        Constructor<AbstractChainableCommandInterceptor> constructor = (Constructor<AbstractChainableCommandInterceptor>) constructors[0];
+        Constructor<CommandInterceptor> constructor = (Constructor<CommandInterceptor>) constructors[0];
         Class<?>[] parameterTypes = constructor.getParameterTypes();
         int parameterCount = constructor.getParameterCount();
         Object[] parameters = new Object[parameterCount];
         for (int i = 0; i < parameterCount; i++) {
             Class<?> parameterType = parameterTypes[i];
-            if (parameterType.isAssignableFrom(AbstractChainableCommandInterceptor.class)) {
+            if (parameterType.isAssignableFrom(CommandInterceptor.class)) {
                 if (next.hasNext()) {
                     parameters[i] = instantiate(next.next(), next);
                 } else {

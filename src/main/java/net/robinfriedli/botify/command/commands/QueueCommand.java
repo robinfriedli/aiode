@@ -18,14 +18,13 @@ import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.audio.PlayableFactory;
 import net.robinfriedli.botify.audio.youtube.YouTubePlaylist;
 import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
-import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.command.widgets.QueueWidget;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 
-public class QueueCommand extends AbstractQueueLoadingCommand {
+public class QueueCommand extends AbstractPlayableLoadingCommand {
 
     public QueueCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
         super(commandContribution, context, commandManager, commandString, false, identifier, description, Category.PLAYBACK, false);
@@ -124,28 +123,6 @@ public class QueueCommand extends AbstractQueueLoadingCommand {
         }
 
         throw new UnsupportedOperationException("Unsupported chosen option type: " + chosenOption.getClass());
-    }
-
-    @Override
-    public ArgumentContribution setupArguments() {
-        ArgumentContribution argumentContribution = new ArgumentContribution(this);
-        argumentContribution.map("preview").needsArguments("spotify").excludesArguments("youtube")
-            .setDescription("Queue the preview mp3 directly from Spotify rather than the full track from YouTube");
-        argumentContribution.map("youtube").setRequiresInput(true).excludesArguments("preview")
-            .setDescription("Queue a YouTube video. Note that this argument is only required when searching, not when entering a URL.");
-        argumentContribution.map("list").setRequiresInput(true)
-            .setDescription("Add the elements from a Spotify, YouTube or local Playlist to the current queue. Adds items from the default list source according to the set property if none of those 3 are set.");
-        argumentContribution.map("spotify").setRequiresInput(true).excludesArguments("youtube")
-            .setDescription("Queue Spotify track, playlist or album. This supports Spotify query syntax (i.e. the filters \"artist:\", \"album:\", etc.). Note that this argument is only required when searching, not when entering a URL.");
-        argumentContribution.map("own").needsArguments("spotify")
-            .setDescription("Limit search to Spotify tracks and playlists in the current users library. This requires a Spotify login.");
-        argumentContribution.map("local").needsArguments("list").excludesArguments("spotify", "youtube")
-            .setDescription("Queue local playlist.");
-        argumentContribution.map("limit").needsArguments("youtube").setRequiresValue(true)
-            .setDescription("Show a selection of YouTube playlists or videos to chose from. Requires value from 1 to 10: $limit=5");
-        argumentContribution.map("album").needsArguments("spotify").excludesArguments("list").setRequiresInput(true)
-            .setDescription("Search for a Spotify album. Note that this argument is only required when searching, not when entering a URL.");
-        return argumentContribution;
     }
 
 }
