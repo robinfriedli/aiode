@@ -90,9 +90,11 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
 
     protected abstract void handleResults(List<Playable> playables);
 
+    protected abstract boolean shouldRedirectSpotify();
+
     private void loadUrlItems(AudioManager audioManager, AudioPlayback playback) throws IOException {
         PlayableFactory playableFactory = audioManager.createPlayableFactory(playback.getGuild(), getSpotifyService());
-        List<Playable> playables = playableFactory.createPlayables(getCommandInput(), getContext().getSpotifyApi(), !argumentSet("preview"), mayInterrupt);
+        List<Playable> playables = playableFactory.createPlayables(getCommandInput(), getContext().getSpotifyApi(), shouldRedirectSpotify(), mayInterrupt);
         if (playables.isEmpty()) {
             throw new NoResultsFoundException("Result is empty!");
         }
@@ -104,7 +106,7 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
         SpotifyUri spotifyUri = SpotifyUri.parse(getCommandInput());
         SpotifyService spotifyService = getContext().getSpotifyService();
         PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild(), getSpotifyService());
-        List<Playable> playables = spotifyUri.loadPlayables(playableFactory, spotifyService, !argumentSet("preview"), mayInterrupt);
+        List<Playable> playables = spotifyUri.loadPlayables(playableFactory, spotifyService, shouldRedirectSpotify(), mayInterrupt);
         handleResults(playables);
         loadedAmount = playables.size();
     }
@@ -122,7 +124,7 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
         }
 
         PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild(), getSpotifyService());
-        List<Playable> playables = playableFactory.createPlayables(!argumentSet("preview"), items, mayInterrupt);
+        List<Playable> playables = playableFactory.createPlayables(shouldRedirectSpotify(), items, mayInterrupt);
         handleResults(playables);
         loadedLocalList = playlist;
     }
@@ -169,7 +171,7 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
                 PlaylistSimplified playlist = found.get(0);
                 List<Track> playlistTracks = getSpotifyService().getPlaylistTracks(playlist);
                 PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild(), getSpotifyService());
-                List<Playable> playables = playableFactory.createPlayables(!argumentSet("preview"), playlistTracks, mayInterrupt);
+                List<Playable> playables = playableFactory.createPlayables(shouldRedirectSpotify(), playlistTracks, mayInterrupt);
                 handleResults(playables);
                 loadedSpotifyPlaylist = playlist;
             } else if (found.isEmpty()) {
@@ -201,7 +203,7 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
             AlbumSimplified album = albums.get(0);
             List<Track> tracks = runWithCredentials(() -> getSpotifyService().getAlbumTracks(album.getId()));
             PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild(), getSpotifyService());
-            List<Playable> playables = playableFactory.createPlayables(!argumentSet("preview"), tracks, mayInterrupt);
+            List<Playable> playables = playableFactory.createPlayables(shouldRedirectSpotify(), tracks, mayInterrupt);
             handleResults(playables);
             loadedAlbum = album;
         } else if (albums.isEmpty()) {
@@ -240,7 +242,7 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
 
     private void createPlayableForTrack(Track track, AudioManager audioManager) throws IOException {
         PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild(), getSpotifyService());
-        Playable playable = playableFactory.createPlayable(!argumentSet("preview"), track);
+        Playable playable = playableFactory.createPlayable(shouldRedirectSpotify(), track);
         handleResults(Lists.newArrayList(playable));
         loadedTrack = playable;
     }
@@ -282,9 +284,6 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
         ArgumentContribution argumentContribution = new ArgumentContribution(this);
         argumentContribution.map("list").setRequiresInput(true)
             .setDescription("Search for a youtube, spotify or botify playlist. Note that this argument is only required when searching, not when entering a URL.");
-        argumentContribution.map("preview").setRequiresInput(true)
-            .setDescription("Load the short preview mp3 directly from Spotify instead of the full track from YouTube.")
-            .addRule(ac -> getSource().isSpotify(), "Argument 'preview' may only be used with Spotify.");
         argumentContribution.map("spotify").setRequiresInput(true).excludesArguments("youtube")
             .setDescription("Search for a Spotify track, list or album. This supports Spotify query syntax (i.e. the filters \"artist:\", \"album:\", etc.). Note that this argument is only required when searching, not when entering a URL.");
         argumentContribution.map("youtube").setRequiresInput(true).excludesArguments("spotify")

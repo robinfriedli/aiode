@@ -24,10 +24,10 @@ import net.robinfriedli.botify.command.widgets.QueueWidget;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 
-public class QueueCommand extends AbstractPlayableLoadingCommand {
+public class QueueCommand extends AbstractQueueLoadingCommand {
 
     public QueueCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContribution, context, commandManager, commandString, false, identifier, description, Category.PLAYBACK, false);
+        super(commandContribution, context, commandManager, commandString, identifier, description, Category.PLAYBACK, false);
     }
 
     @Override

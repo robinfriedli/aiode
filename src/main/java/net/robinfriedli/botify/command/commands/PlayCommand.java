@@ -17,10 +17,10 @@ import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 
-public class PlayCommand extends AbstractPlayableLoadingCommand {
+public class PlayCommand extends AbstractQueueLoadingCommand {
 
     public PlayCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContribution, context, commandManager, commandString, false, identifier, description, Category.PLAYBACK, true);
+        super(commandContribution, context, commandManager, commandString, identifier, description, Category.PLAYBACK, true);
     }
 
     @Override
