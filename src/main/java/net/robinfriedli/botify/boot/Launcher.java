@@ -22,12 +22,14 @@ import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.command.SecurityManager;
+import net.robinfriedli.botify.cron.CronJobService;
 import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
+import net.robinfriedli.botify.entities.xml.CronJobContribution;
 import net.robinfriedli.botify.entities.xml.EmbedDocumentContribution;
 import net.robinfriedli.botify.entities.xml.GuildPropertyContribution;
 import net.robinfriedli.botify.entities.xml.HttpHandlerContribution;
@@ -79,6 +81,8 @@ public class Launcher {
                 .mapClass("embedDocument", EmbedDocumentContribution.class)
                 .mapClass("startupTask", StartupTaskContribution.class)
                 .mapClass("guildProperty", GuildPropertyContribution.class)
+                .mapClass("cronJob", CronJobContribution.class)
+                .mapClass("cronParameter", CronJobContribution.CronParameter.class)
                 .build();
 
             StandardServiceRegistry serviceRegistry = new StandardServiceRegistryBuilder().configure(new File(hibernateConfigurationPath)).build();
@@ -131,7 +135,7 @@ public class Launcher {
 
             CommandManager commandManager = new CommandManager(commandContributionContext, commandInterceptorContext);
             GuildPropertyManager guildPropertyManager = new GuildPropertyManager(guildPropertyContext);
-            GuildManager guildManager = new GuildManager(mode);
+            GuildManager guildManager = new GuildManager(jxpBackend, mode);
             AudioManager audioManager = new AudioManager(youTubeService, sessionFactory, commandManager, guildManager);
             CommandExecutionQueueManager executionQueueManager = new CommandExecutionQueueManager();
             SecurityManager securityManager = new SecurityManager(guildManager);
@@ -175,6 +179,9 @@ public class Launcher {
             for (StartupTaskContribution element : context.getInstancesOf(StartupTaskContribution.class)) {
                 element.instantiate().perform();
             }
+
+            CronJobService cronJobService = new CronJobService(jxpBackend.getContext(PropertiesLoadingService.requireProperty("CRON_JOBS_PATH")));
+            cronJobService.scheduleAll();
 
             Botify.registerListeners();
             jda.getPresence().setStatus(OnlineStatus.ONLINE);

@@ -24,6 +24,7 @@ import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.exceptions.UserException;
+import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
@@ -50,7 +51,11 @@ public class CommandListener extends ListenerAdapter {
                            SpotifyApi.Builder spotifyApiBuilder) {
         this.executionQueueManager = executionQueueManager;
         this.commandManager = commandManager;
-        this.commandConceptionPool = Executors.newCachedThreadPool();
+        this.commandConceptionPool = Executors.newCachedThreadPool(r -> {
+            Thread thread = new Thread(r);
+            thread.setUncaughtExceptionHandler(new LoggingExceptionHandler());
+            return thread;
+        });
         this.guildManager = guildManager;
         this.messageService = messageService;
         this.sessionFactory = sessionFactory;
