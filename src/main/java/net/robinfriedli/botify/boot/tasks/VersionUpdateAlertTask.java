@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.utils.MarkdownUtil;
 import net.robinfriedli.botify.boot.StartupTask;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.function.CheckedConsumer;
