@@ -74,6 +74,11 @@ public class AddCommand extends AbstractPlayableLoadingCommand {
         addPlayables(playlist, playables);
     }
 
+    @Override
+    protected boolean shouldRedirectSpotify() {
+        return false;
+    }
+
     protected void addToList(Playlist playlist, List<PlaylistItem> items) {
         if (items.isEmpty()) {
             throw new NoResultsFoundException("Result is empty!");
