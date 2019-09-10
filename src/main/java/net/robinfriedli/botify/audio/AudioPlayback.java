@@ -1,8 +1,11 @@
 package net.robinfriedli.botify.audio;
 
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +32,10 @@ public class AudioPlayback {
     private MessageChannel communicationChannel;
     private Message lastPlaybackNotification;
     private QueueIterator currentQueueIterator;
+
+    // time the bot has been alone in the voice channel since
+    @Nullable
+    private LocalDateTime aloneSince;
 
     public AudioPlayback(AudioPlayer player, Guild guild) {
         this.guild = guild;
@@ -128,6 +135,17 @@ public class AudioPlayback {
         audioPlayer.setVolume(volume);
     }
 
+    /**
+     * Clear the queue and reset all options
+     */
+    public void clear() {
+        getAudioQueue().clear();
+        setVolume(100);
+        setShuffle(false);
+        setRepeatAll(false);
+        setRepeatOne(false);
+    }
+
     public void setLastPlaybackNotification(Message message) {
         if (lastPlaybackNotification != null) {
             try {
@@ -154,5 +172,14 @@ public class AudioPlayback {
 
         currentQueueIterator = queueIterator;
         audioPlayer.addListener(queueIterator);
+    }
+
+    @Nullable
+    public LocalDateTime getAloneSince() {
+        return aloneSince;
+    }
+
+    public void setAloneSince(@Nullable LocalDateTime aloneSince) {
+        this.aloneSince = aloneSince;
     }
 }

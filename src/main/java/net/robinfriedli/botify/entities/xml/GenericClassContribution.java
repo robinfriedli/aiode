@@ -26,7 +26,7 @@ public abstract class GenericClassContribution<E> extends AbstractXmlElement {
     }
 
     @SuppressWarnings("unchecked")
-    public E instantiate() {
+    public Class<E> getImplementationClass() {
         Class<E> implementation;
         String className = getAttribute("implementation").getValue();
         try {
@@ -37,9 +37,16 @@ public abstract class GenericClassContribution<E> extends AbstractXmlElement {
             throw new IllegalStateException("Could not cast class " + className + " to the target class", e);
         }
 
+        return implementation;
+    }
+
+    @SuppressWarnings("unchecked")
+    public E instantiate() {
+        Class<E> implementation = getImplementationClass();
+
         Constructor<?>[] constructors = implementation.getConstructors();
         if (constructors.length == 0) {
-            throw new IllegalStateException("Class " + className + " does not have any public constructors");
+            throw new IllegalStateException("Class " + implementation + " does not have any public constructors");
         }
 
         Constructor<E> constructor = (Constructor<E>) constructors[0];

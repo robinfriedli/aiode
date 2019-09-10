@@ -118,7 +118,7 @@ public class MessageService {
 
     public CompletableFuture<Message> sendWithLogo(EmbedBuilder embedBuilder, MessageChannel channel) {
         String baseUri = PropertiesLoadingService.requireProperty("BASE_URI");
-        embedBuilder.setThumbnail(baseUri + "/resources-public/img/botify-logo-small.png");
+        embedBuilder.setThumbnail(baseUri + "/resources-public/img/botify-logo.png");
         embedBuilder.setColor(ColorSchemeProperty.getColor());
         return send(embedBuilder.build(), channel);
     }
@@ -127,7 +127,7 @@ public class MessageService {
         String baseUri = PropertiesLoadingService.requireProperty("BASE_URI");
         embedBuilder.setThumbnail(baseUri + "/resources-public/img/botify-logo.png");
         embedBuilder.setColor(ColorSchemeProperty.getColor());
-        return send(embedBuilder, guild);
+        return send(embedBuilder.build(), guild);
     }
 
     public CompletableFuture<Message> send(MessageBuilder messageBuilder, InputStream file, String fileName, MessageChannel messageChannel) {

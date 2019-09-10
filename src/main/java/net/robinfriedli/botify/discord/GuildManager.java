@@ -1,9 +1,12 @@
 package net.robinfriedli.botify.discord;
 
+import java.io.File;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -13,8 +16,13 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.collect.Sets;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
+import com.wrapper.spotify.SpotifyApi;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -26,10 +34,24 @@ import net.robinfriedli.botify.entities.AccessConfiguration;
 import net.robinfriedli.botify.entities.CommandHistory;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.PlaybackHistory;
+import net.robinfriedli.botify.entities.Playlist;
+import net.robinfriedli.botify.entities.PlaylistItem;
+import net.robinfriedli.botify.entities.xml.EmbedDocumentContribution;
 import net.robinfriedli.botify.function.Invoker;
+import net.robinfriedli.botify.interceptors.InterceptorChain;
+import net.robinfriedli.botify.interceptors.PlaylistItemTimestampListener;
+import net.robinfriedli.botify.interceptors.VerifyPlaylistListener;
+import net.robinfriedli.botify.tasks.HibernatePlaylistMigrator;
 import net.robinfriedli.botify.util.ISnowflakeMap;
+import net.robinfriedli.botify.util.PropertiesLoadingService;
+import net.robinfriedli.botify.util.SearchEngine;
 import net.robinfriedli.botify.util.StaticSessionProvider;
+import net.robinfriedli.jxp.api.JxpBackend;
+import net.robinfriedli.jxp.persist.Context;
 import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+
+import static net.robinfriedli.jxp.queries.Conditions.*;
 
 /**
  * Manages the {@link GuildContext} for all guilds.
@@ -41,11 +63,15 @@ public class GuildManager {
     // invoker used in mode shared, so that all guilds are synchronised
     @Nullable
     private final Invoker sharedInvoker;
+    private final JxpBackend jxpBackend;
+    private final Logger logger;
     private final Mode mode;
     private AudioManager audioManager;
 
-    public GuildManager(Mode mode) {
+    public GuildManager(JxpBackend jxpBackend, Mode mode) {
         internalInvoker = new Invoker();
+        this.jxpBackend = jxpBackend;
+        logger = LoggerFactory.getLogger(getClass());
         this.mode = mode;
         if (mode == Mode.SHARED) {
             sharedInvoker = new Invoker();
@@ -104,6 +130,19 @@ public class GuildManager {
     }
 
     public Set<Guild> getActiveGuilds(Session session) {
+        // consider all guilds were active within the last 10 minutes to be active
+        return getActiveGuilds(session, 600000);
+    }
+
+    /**
+     * Return guilds that are active now (playing music) or were active withing the specified amount of milliseconds
+     * (by entering a command or listening a song).
+     *
+     * @param session the hibernate session
+     * @param delayMs the maximum amount of time since the last action for a guild to be considered active in milliseconds
+     * @return all active guilds
+     */
+    public Set<Guild> getActiveGuilds(Session session, long delayMs) {
         JDA jda = Botify.get().getJda();
         Set<Guild> activeGuilds = Sets.newHashSet();
         Set<String> activeGuildIds = Sets.newHashSet();
@@ -121,18 +160,16 @@ public class GuildManager {
 
         CriteriaBuilder cb = session.getCriteriaBuilder();
 
-        // consider all guilds that issued a command within the last 10 minutes to be active
-        long millis10MinutesAgo = System.currentTimeMillis() - 600000;
+        long startMillis = System.currentTimeMillis() - delayMs;
         CriteriaQuery<String> recentCommandGuildsQuery = cb.createQuery(String.class);
         Root<CommandHistory> commandsQueryRoot = recentCommandGuildsQuery.from(CommandHistory.class);
         recentCommandGuildsQuery
             .select(commandsQueryRoot.get("guildId"))
-            .where(cb.greaterThan(commandsQueryRoot.get("startMillis"), millis10MinutesAgo));
+            .where(cb.greaterThan(commandsQueryRoot.get("startMillis"), startMillis));
         Set<String> recentCommandGuildIds = session.createQuery(recentCommandGuildsQuery).getResultStream().collect(Collectors.toSet());
         activeGuildIds.addAll(recentCommandGuildIds);
 
-        // consider all guilds that played a track withing the last 10 minutes to be active
-        LocalDateTime dateTime10MinutesAgo = LocalDateTime.ofInstant(Instant.ofEpochMilli(millis10MinutesAgo), ZoneId.systemDefault());
+        LocalDateTime dateTime10MinutesAgo = LocalDateTime.ofInstant(Instant.ofEpochMilli(startMillis), ZoneId.systemDefault());
         CriteriaQuery<String> recentPlaybackGuildsQuery = cb.createQuery(String.class);
         Root<PlaybackHistory> playbackHistoryRoot = recentPlaybackGuildsQuery.from(PlaybackHistory.class);
         recentPlaybackGuildsQuery
@@ -187,9 +224,58 @@ public class GuildManager {
                 GuildContext guildContext = new GuildContext(guild, new AudioPlayback(player, guild), newSpecification.getPk(), sharedInvoker);
                 guildContexts.put(guild, guildContext);
 
+                handleNewGuild(guild);
                 return guildContext;
             }
         });
+    }
+
+    private void handleNewGuild(Guild guild) {
+        Botify botify = Botify.get();
+        MessageService messageService = botify.getMessageService();
+        try (Context context = jxpBackend.createLazyContext(PropertiesLoadingService.requireProperty("EMBED_DOCUMENTS_PATH"))) {
+            EmbedDocumentContribution embedDocumentContribution = context
+                .query(attribute("name").is("getting-started"), EmbedDocumentContribution.class)
+                .requireOnlyResult();
+            EmbedBuilder embedBuilder = embedDocumentContribution.buildEmbed();
+            messageService.sendWithLogo(embedBuilder, guild);
+        } catch (Throwable e) {
+            logger.error("Error sending getting started message", e);
+        }
+
+        SessionFactory sessionFactory = StaticSessionProvider.getSessionFactory();
+        SpotifyApi.Builder spotifyApiBuilder = botify.getSpotifyApiBuilder();
+        try (Session session = sessionFactory.withOptions().interceptor(InterceptorChain.of(
+            PlaylistItemTimestampListener.class, VerifyPlaylistListener.class)).openSession()) {
+            String playlistsPath = PropertiesLoadingService.requireProperty("PLAYLISTS_PATH");
+            File file = new File(playlistsPath);
+            if (file.exists()) {
+                Context context = jxpBackend.getContext(file);
+                HibernatePlaylistMigrator hibernatePlaylistMigrator = new HibernatePlaylistMigrator(context, guild, spotifyApiBuilder.build(), session);
+                Map<Playlist, List<PlaylistItem>> playlistMap;
+                try {
+                    playlistMap = hibernatePlaylistMigrator.perform();
+                } catch (Exception e) {
+                    logger.error("Exception while migrating hibernate playlists", e);
+                    session.close();
+                    return;
+                }
+
+                Mode mode = getMode();
+                session.beginTransaction();
+                for (Playlist playlist : playlistMap.keySet()) {
+                    Playlist existingList = SearchEngine.searchLocalList(session, playlist.getName(), mode == GuildManager.Mode.PARTITIONED, guild.getId());
+                    if (existingList == null) {
+                        playlistMap.get(playlist).forEach(item -> {
+                            item.add();
+                            session.persist(item);
+                        });
+                        session.persist(playlist);
+                    }
+                }
+                session.getTransaction().commit();
+            }
+        }
     }
 
     public enum Mode {

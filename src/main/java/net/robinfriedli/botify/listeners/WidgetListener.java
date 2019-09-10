@@ -1,6 +1,8 @@
 package net.robinfriedli.botify.listeners;
 
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,8 +21,10 @@ import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.exceptions.CommandRuntimeException;
 import net.robinfriedli.botify.exceptions.UserException;
+import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
 import net.robinfriedli.botify.exceptions.handlers.WidgetExceptionHandler;
 import net.robinfriedli.botify.util.StaticSessionProvider;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Listener responsible for handling reaction events and widget execution
@@ -28,32 +32,39 @@ import net.robinfriedli.botify.util.StaticSessionProvider;
 public class WidgetListener extends ListenerAdapter {
 
     private final CommandManager commandManager;
+    private final ExecutorService executorService;
     private final Logger logger;
     private final MessageService messageService;
 
     public WidgetListener(CommandManager commandManager, MessageService messageService) {
         this.commandManager = commandManager;
         this.messageService = messageService;
+        executorService = Executors.newCachedThreadPool(r -> {
+            Thread thread = new Thread(r);
+            thread.setUncaughtExceptionHandler(new LoggingExceptionHandler());
+            return thread;
+        });
         logger = LoggerFactory.getLogger(getClass());
     }
 
     @Override
     public void onGuildMessageReactionAdd(GuildMessageReactionAddEvent event) {
         if (!event.getUser().isBot()) {
+            executorService.execute(() -> {
+                String messageId = event.getMessageId();
 
-            String messageId = event.getMessageId();
-
-            Optional<AbstractWidget> activeWidget = commandManager.getActiveWidget(messageId);
-            activeWidget.ifPresent(abstractWidget -> handleWidgetExecution(event, messageId, abstractWidget));
+                Optional<AbstractWidget> activeWidget = commandManager.getActiveWidget(messageId);
+                activeWidget.ifPresent(abstractWidget -> handleWidgetExecution(event, messageId, abstractWidget));
+            });
         }
     }
 
     @Override
-    public void onGuildMessageDelete(GuildMessageDeleteEvent event) {
-        commandManager.getActiveWidget(event.getMessageId()).ifPresent(widget -> {
+    public void onGuildMessageDelete(@NotNull GuildMessageDeleteEvent event) {
+        executorService.execute(() -> commandManager.getActiveWidget(event.getMessageId()).ifPresent(widget -> {
             widget.setMessageDeleted(true);
             widget.destroy();
-        });
+        }));
     }
 
     private void handleWidgetExecution(GuildMessageReactionAddEvent event, String messageId, AbstractWidget activeWidget) {
