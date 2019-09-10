@@ -67,7 +67,8 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
             throw new InvalidCommandException("No search term entered");
         }
 
-        Callable<List<Track>> loadTrackCallable = () -> getSpotifyService().searchTrack(getCommandInput(), argumentSet("own"));
+        int limit = argumentSet("select") ? getArgumentValue("select", Integer.class, 20) : 20;
+        Callable<List<Track>> loadTrackCallable = () -> getSpotifyService().searchTrack(getCommandInput(), argumentSet("own"), limit);
         List<Track> found;
         if (argumentSet("own")) {
             found = runWithLogin(loadTrackCallable);
