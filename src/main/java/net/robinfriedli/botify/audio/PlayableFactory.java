@@ -162,6 +162,7 @@ public class PlayableFactory {
                     for (YouTubePlaylist youTubePlaylist : youTubePlaylistsToLoad) {
                         if (Thread.currentThread().isInterrupted()) {
                             youTubePlaylistsToLoad.forEach(YouTubePlaylist::cancelLoading);
+                            break;
                         }
 
                         youTubeService.populateList(youTubePlaylist);

@@ -16,8 +16,9 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.AbstractWidget;
 import net.robinfriedli.botify.command.CommandContext;
-import net.robinfriedli.botify.command.CommandManager;
+import net.robinfriedli.botify.command.widgets.WidgetManager;
 import net.robinfriedli.botify.discord.GuildContext;
+import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.exceptions.CommandRuntimeException;
 import net.robinfriedli.botify.exceptions.UserException;
@@ -31,13 +32,13 @@ import org.jetbrains.annotations.NotNull;
  */
 public class WidgetListener extends ListenerAdapter {
 
-    private final CommandManager commandManager;
+    private final GuildManager guildManager;
     private final ExecutorService executorService;
     private final Logger logger;
     private final MessageService messageService;
 
-    public WidgetListener(CommandManager commandManager, MessageService messageService) {
-        this.commandManager = commandManager;
+    public WidgetListener(GuildManager guildManager, MessageService messageService) {
+        this.guildManager = guildManager;
         this.messageService = messageService;
         executorService = Executors.newCachedThreadPool(r -> {
             Thread thread = new Thread(r);
@@ -52,8 +53,9 @@ public class WidgetListener extends ListenerAdapter {
         if (!event.getUser().isBot()) {
             executorService.execute(() -> {
                 String messageId = event.getMessageId();
+                WidgetManager widgetManager = guildManager.getContextForGuild(event.getGuild()).getWidgetManager();
 
-                Optional<AbstractWidget> activeWidget = commandManager.getActiveWidget(messageId);
+                Optional<AbstractWidget> activeWidget = widgetManager.getActiveWidget(messageId);
                 activeWidget.ifPresent(abstractWidget -> handleWidgetExecution(event, messageId, abstractWidget));
             });
         }
@@ -61,10 +63,13 @@ public class WidgetListener extends ListenerAdapter {
 
     @Override
     public void onGuildMessageDelete(@NotNull GuildMessageDeleteEvent event) {
-        executorService.execute(() -> commandManager.getActiveWidget(event.getMessageId()).ifPresent(widget -> {
-            widget.setMessageDeleted(true);
-            widget.destroy();
-        }));
+        executorService.execute(() -> {
+            WidgetManager widgetManager = guildManager.getContextForGuild(event.getGuild()).getWidgetManager();
+            widgetManager.getActiveWidget(event.getMessageId()).ifPresent(widget -> {
+                widget.setMessageDeleted(true);
+                widget.destroy();
+            });
+        });
     }
 
     private void handleWidgetExecution(GuildMessageReactionAddEvent event, String messageId, AbstractWidget activeWidget) {

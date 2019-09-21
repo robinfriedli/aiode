@@ -19,11 +19,12 @@ import net.dv8tion.jda.api.entities.VoiceChannel;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.robinfriedli.botify.audio.spotify.SpotifyService;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
-import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.command.widgets.NowPlayingWidget;
+import net.robinfriedli.botify.command.widgets.WidgetManager;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.entities.PlaybackHistory;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
+import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
@@ -38,19 +39,21 @@ public class AudioManager {
     private final YouTubeService youTubeService;
     private final Logger logger;
     private final SessionFactory sessionFactory;
-    private final CommandManager commandManager;
     private final GuildManager guildManager;
     private final ExecutorService executorService;
     private final UrlAudioLoader urlAudioLoader;
 
-    public AudioManager(YouTubeService youTubeService, SessionFactory sessionFactory, CommandManager commandManager, GuildManager guildManager) {
+    public AudioManager(YouTubeService youTubeService, SessionFactory sessionFactory, GuildManager guildManager) {
         playerManager = new DefaultAudioPlayerManager();
         this.youTubeService = youTubeService;
         this.guildManager = guildManager;
         this.logger = LoggerFactory.getLogger(getClass());
         this.sessionFactory = sessionFactory;
-        this.commandManager = commandManager;
-        executorService = Executors.newFixedThreadPool(5);
+        executorService = Executors.newFixedThreadPool(5, r -> {
+            Thread thread = new Thread(r);
+            thread.setUncaughtExceptionHandler(new LoggingExceptionHandler());
+            return thread;
+        });
         urlAudioLoader = new UrlAudioLoader(playerManager);
         AudioSourceManagers.registerRemoteSources(playerManager);
         guildManager.setAudioManager(this);
@@ -121,7 +124,8 @@ public class AudioManager {
     }
 
     void createNowPlayingWidget(CompletableFuture<Message> futureMessage, AudioPlayback playback) {
-        futureMessage.thenAccept(message -> commandManager.registerWidget(new NowPlayingWidget(commandManager, message, playback, this)));
+        WidgetManager widgetManager = guildManager.getContextForGuild(playback.getGuild()).getWidgetManager();
+        futureMessage.thenAccept(message -> widgetManager.registerWidget(new NowPlayingWidget(widgetManager, message, playback, this)));
     }
 
     private void setChannel(AudioPlayback audioPlayback, VoiceChannel channel) {

@@ -15,7 +15,6 @@ import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.Preset;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
-import net.robinfriedli.botify.exceptions.UserException;
 import net.robinfriedli.botify.exceptions.handlers.CommandExceptionHandler;
 import net.robinfriedli.botify.listeners.CommandListener;
 import net.robinfriedli.jxp.persist.Context;
@@ -38,10 +37,6 @@ public class CommandManager {
     private final Logger logger;
 
     /**
-     * all widgets that currently listen for reactions. Only one widget of the same type per guild may be active.
-     */
-    private List<AbstractWidget> activeWidgets;
-    /**
      * The chain of interceptors to process the command
      */
     private CommandInterceptorChain interceptorChain;
@@ -51,7 +46,6 @@ public class CommandManager {
         this.commandContributionContext = commandContributionContext;
         this.commandInterceptorContext = commandInterceptorContext;
         this.logger = LoggerFactory.getLogger(getClass());
-        activeWidgets = Lists.newArrayList();
     }
 
     public void runCommand(AbstractCommand command, ThreadExecutionQueue executionQueue) {
@@ -150,34 +144,6 @@ public class CommandManager {
             instanceOf(CommandContribution.class),
             attribute("identifier").is(name)
         ), CommandContribution.class).getOnlyResult();
-    }
-
-    public void registerWidget(AbstractWidget widget) {
-        List<AbstractWidget> toRemove = Lists.newArrayList();
-        try {
-            activeWidgets.stream()
-                .filter(w -> widget.getGuildId().equals(w.getGuildId()))
-                .filter(w -> w.getClass().equals(widget.getClass()))
-                .forEach(toRemove::add);
-        } catch (Throwable e) {
-            // JDA weak reference might cause garbage collection issues when getting guild of message
-            logger.warn("Exception while removing existing widget", e);
-        }
-        try {
-            widget.setup();
-            activeWidgets.add(widget);
-            toRemove.forEach(AbstractWidget::destroy);
-        } catch (UserException e) {
-            Botify.get().getMessageService().sendError(e.getMessage(), widget.getMessage().getChannel());
-        }
-    }
-
-    public Optional<AbstractWidget> getActiveWidget(String messageId) {
-        return activeWidgets.stream().filter(widget -> widget.getMessage().getId().equals(messageId)).findAny();
-    }
-
-    public void removeWidget(AbstractWidget widget) {
-        activeWidgets.remove(widget);
     }
 
     public void initializeInterceptorChain() {

@@ -1,6 +1,7 @@
 package net.robinfriedli.botify.audio.youtube;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
@@ -19,6 +20,7 @@ import com.google.api.services.youtube.model.SearchResult;
 import com.google.api.services.youtube.model.Video;
 import com.google.api.services.youtube.model.VideoContentDetails;
 import com.google.api.services.youtube.model.VideoListResponse;
+import com.google.api.services.youtube.model.VideoStatistics;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
@@ -97,7 +99,7 @@ public class YouTubeService {
             Integer maxEditDistance = null;
             LevenshteinDistance levenshteinDistance = new LevenshteinDistance();
             for (Video v : videos) {
-                long viewCount = v.getStatistics().getViewCount().longValue();
+                long viewCount = getViewCount(v);
                 String title = v.getSnippet().getTitle();
                 Integer editDistance = levenshteinDistance.apply(searchTerm.toLowerCase(), title.toLowerCase());
                 if (highestViewCount == null || highestViewCount < viewCount) {
@@ -118,7 +120,7 @@ public class YouTubeService {
                 })) {
                     artistMatchScore = 5;
                 }
-                long viewCount = v.getStatistics().getViewCount().longValue();
+                long viewCount = getViewCount(v);
                 String title = v.getSnippet().getTitle().toLowerCase();
                 Integer editDistance = levenshteinDistance.apply(searchTerm.toLowerCase(), title);
                 viewScore = highestViewCount == 0 ? 10 : (int) (viewCount * 10 / highestViewCount);
@@ -139,6 +141,18 @@ public class YouTubeService {
         youTubeVideo.setTitle(title);
         youTubeVideo.setId(videoId);
         youTubeVideo.setDuration(durationMillis);
+    }
+
+    private long getViewCount(Video video) {
+        VideoStatistics statistics = video.getStatistics();
+        if (statistics != null) {
+            BigInteger viewCount = statistics.getViewCount();
+            if (viewCount != null) {
+                return viewCount.longValue();
+            }
+        }
+
+        return 0;
     }
 
     public YouTubeVideo searchVideo(String searchTerm) throws IOException {

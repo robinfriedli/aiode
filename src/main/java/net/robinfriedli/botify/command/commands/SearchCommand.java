@@ -96,9 +96,6 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
         YouTubeService youTubeService = Botify.get().getAudioManager().getYouTubeService();
         if (argumentSet("select")) {
             int limit = getArgumentValue("select", Integer.class, 10);
-            if (!(limit > 0 && limit <= 20)) {
-                throw new InvalidCommandException("Limit must be between 1 and 20");
-            }
 
             List<YouTubeVideo> youTubeVideos = youTubeService.searchSeveralVideos(limit, getCommandInput());
             if (youTubeVideos.size() == 1) {
@@ -197,9 +194,6 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
         YouTubeService youTubeService = Botify.get().getAudioManager().getYouTubeService();
         if (argumentSet("select")) {
             int limit = getArgumentValue("select", Integer.class, 10);
-            if (!(limit > 0 && limit <= 10)) {
-                throw new InvalidCommandException("Limit must be between 1 and 10");
-            }
 
             List<YouTubePlaylist> playlists = youTubeService.searchSeveralPlaylists(limit, getCommandInput());
             if (playlists.size() == 1) {
@@ -361,7 +355,8 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
                 }
 
                 return source.isYouTube() || source.isSpotify();
-            }, "Argument 'select' may only be used with YouTube videos / playlists or Spotify tracks.");
+            }, "Argument 'select' may only be used with YouTube videos / playlists or Spotify tracks.")
+            .verifyValue(Integer.class, limit -> limit > 0 && limit <= 20, "Limit must be between 1 and 20");
         argumentContribution.map("album").excludesArguments("list").setRequiresInput(true)
             .setDescription("Search for a Spotify album. Note that this argument is only required when searching, not when entering a URL.")
             .addRule(ac -> getSource().isSpotify(), "Argument 'album' may only be used with Spotify.");

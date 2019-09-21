@@ -1,17 +1,16 @@
 package net.robinfriedli.botify.discord;
 
-import java.util.List;
-import java.util.Optional;
-
 import javax.annotation.Nullable;
 
-import com.google.api.client.util.Lists;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioPlayback;
+import net.robinfriedli.botify.command.AbstractWidget;
 import net.robinfriedli.botify.command.ClientQuestionEvent;
+import net.robinfriedli.botify.command.ClientQuestionEventManager;
 import net.robinfriedli.botify.command.CommandContext;
+import net.robinfriedli.botify.command.widgets.WidgetManager;
 import net.robinfriedli.botify.concurrent.GuildTrackLoadingExecutor;
 import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
@@ -23,7 +22,7 @@ import org.hibernate.Session;
 /**
  * Provides context for a guild by storing and loading the guild's {@link GuildSpecification}, holding the guild's
  * {@link AudioPlayback} and {@link Invoker} / {@link GuildTrackLoadingExecutor} to manage concurrent operations per guild.
- * Holds all open {@link ClientQuestionEvent} for this guild.
+ * Holds the managers for all open {@link ClientQuestionEvent} and active {@link AbstractWidget} for this guild.
  */
 public class GuildContext {
 
@@ -32,11 +31,8 @@ public class GuildContext {
     private final Invoker invoker;
     private final long specificationPk;
     private final GuildTrackLoadingExecutor trackLoadingExecutor;
-    /**
-     * all unanswered Questions. Questions get removed after 5 minutes or after the same user enters a different command
-     * that triggers a question.
-     */
-    private final List<ClientQuestionEvent> pendingQuestions;
+    private final WidgetManager widgetManager;
+    private final ClientQuestionEventManager clientQuestionEventManager;
 
     public GuildContext(Guild guild, AudioPlayback playback, long specificationPk, @Nullable Invoker sharedInvoker) {
         this.guild = guild;
@@ -44,7 +40,8 @@ public class GuildContext {
         this.specificationPk = specificationPk;
         invoker = sharedInvoker == null ? new Invoker() : sharedInvoker;
         trackLoadingExecutor = new GuildTrackLoadingExecutor(this);
-        pendingQuestions = Lists.newArrayList();
+        widgetManager = new WidgetManager();
+        clientQuestionEventManager = new ClientQuestionEventManager();
     }
 
     public Guild getGuild() {
@@ -123,25 +120,15 @@ public class GuildContext {
         });
     }
 
-    public void addQuestion(ClientQuestionEvent question) {
-        Optional<ClientQuestionEvent> existingQuestion = getQuestion(question.getCommandContext());
-        existingQuestion.ifPresent(ClientQuestionEvent::destroy);
-
-        pendingQuestions.add(question);
-    }
-
-    public void removeQuestion(ClientQuestionEvent question) {
-        pendingQuestions.remove(question);
-    }
-
-    public Optional<ClientQuestionEvent> getQuestion(CommandContext commandContext) {
-        return pendingQuestions
-            .stream()
-            .filter(question -> question.getUser().getId().equals(commandContext.getUser().getId()))
-            .findFirst();
-    }
-
     public GuildTrackLoadingExecutor getTrackLoadingExecutor() {
         return trackLoadingExecutor;
+    }
+
+    public WidgetManager getWidgetManager() {
+        return widgetManager;
+    }
+
+    public ClientQuestionEventManager getClientQuestionEventManager() {
+        return clientQuestionEventManager;
     }
 }

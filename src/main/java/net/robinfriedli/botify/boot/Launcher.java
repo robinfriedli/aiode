@@ -136,13 +136,13 @@ public class Launcher {
             CommandManager commandManager = new CommandManager(commandContributionContext, commandInterceptorContext);
             GuildPropertyManager guildPropertyManager = new GuildPropertyManager(guildPropertyContext);
             GuildManager guildManager = new GuildManager(jxpBackend, mode);
-            AudioManager audioManager = new AudioManager(youTubeService, sessionFactory, commandManager, guildManager);
+            AudioManager audioManager = new AudioManager(youTubeService, sessionFactory, guildManager);
             CommandExecutionQueueManager executionQueueManager = new CommandExecutionQueueManager();
             SecurityManager securityManager = new SecurityManager(guildManager);
 
             CommandListener commandListener = new CommandListener(executionQueueManager, commandManager, guildManager, messageService, sessionFactory, spotifyApiBuilder);
             GuildJoinListener guildJoinListener = new GuildJoinListener(executionQueueManager, discordBotListAPI, guildManager, jxpBackend, messageService, sessionFactory, spotifyApiBuilder);
-            WidgetListener widgetListener = new WidgetListener(commandManager, messageService);
+            WidgetListener widgetListener = new WidgetListener(guildManager, messageService);
             VoiceChannelListener voiceChannelListener = new VoiceChannelListener(audioManager);
 
             Botify botify = new Botify(audioManager,
