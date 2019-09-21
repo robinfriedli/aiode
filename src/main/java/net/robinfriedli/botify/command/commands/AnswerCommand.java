@@ -23,7 +23,7 @@ public class AnswerCommand extends AbstractCommand {
 
     @Override
     public void doRun() {
-        getContext().getGuildContext().getQuestion(getContext()).ifPresentOrElse(question -> {
+        getContext().getGuildContext().getClientQuestionEventManager().getQuestion(getContext()).ifPresentOrElse(question -> {
             sourceCommand = question.getSourceCommand();
 
             String commandInput = getCommandInput();

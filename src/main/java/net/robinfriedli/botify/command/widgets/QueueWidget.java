@@ -17,7 +17,6 @@ import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.command.AbstractWidget;
-import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.command.widgets.actions.PlayPauseAction;
 import net.robinfriedli.botify.command.widgets.actions.RewindAction;
 import net.robinfriedli.botify.command.widgets.actions.SkipAction;
@@ -29,8 +28,8 @@ public class QueueWidget extends AbstractWidget {
     private final AudioManager audioManager;
     private final AudioPlayback audioPlayback;
 
-    public QueueWidget(CommandManager commandManager, Message message, AudioManager audioManager, AudioPlayback audioPlayback) {
-        super(commandManager, message);
+    public QueueWidget(WidgetManager widgetManager, Message message, AudioManager audioManager, AudioPlayback audioPlayback) {
+        super(widgetManager, message);
         this.audioManager = audioManager;
         this.audioPlayback = audioPlayback;
     }
@@ -67,7 +66,7 @@ public class QueueWidget extends AbstractWidget {
 
         EmbedBuilder embedBuilder = audioPlayback.getAudioQueue().buildMessageEmbed(audioPlayback, message.getGuild());
         CompletableFuture<Message> futureMessage = messageService.send(embedBuilder, message.getChannel());
-        getCommandManager().registerWidget(new QueueWidget(getCommandManager(), futureMessage.get(), audioManager, audioPlayback));
+        getWidgetManager().registerWidget(new QueueWidget(getWidgetManager(), futureMessage.get(), audioManager, audioPlayback));
     }
 
     private AbstractWidgetAction shuffleAction() {

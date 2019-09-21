@@ -40,7 +40,6 @@ public abstract class AbstractAdminCommand extends AbstractCommand {
         question.mapOption("y", true, "Yes");
         question.mapOption("n", false, "No");
         setFailed(true);
-        getContext().getGuildContext().addQuestion(question);
         question.ask("Continue?", description);
     }
 

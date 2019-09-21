@@ -15,6 +15,7 @@ import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.widgets.AbstractWidgetAction;
+import net.robinfriedli.botify.command.widgets.WidgetManager;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.exceptions.UserException;
 
@@ -24,7 +25,7 @@ import net.robinfriedli.botify.exceptions.UserException;
  */
 public abstract class AbstractWidget {
 
-    private final CommandManager commandManager;
+    private final WidgetManager widgetManager;
     private final Message message;
     private final String guildId;
     private final Logger logger;
@@ -32,8 +33,8 @@ public abstract class AbstractWidget {
     // if the message has been deleted by a widget action that does not always require a reset
     private boolean messageDeleted;
 
-    protected AbstractWidget(CommandManager commandManager, Message message) {
-        this.commandManager = commandManager;
+    protected AbstractWidget(WidgetManager widgetManager, Message message) {
+        this.widgetManager = widgetManager;
         this.message = message;
         this.guildId = message.getGuild().getId();
         logger = LoggerFactory.getLogger(getClass());
@@ -103,7 +104,7 @@ public abstract class AbstractWidget {
     }
 
     public void destroy() {
-        commandManager.removeWidget(this);
+        widgetManager.removeWidget(this);
         if (!isMessageDeleted()) {
             try {
                 try {
@@ -137,8 +138,8 @@ public abstract class AbstractWidget {
         }
     }
 
-    public CommandManager getCommandManager() {
-        return commandManager;
+    public WidgetManager getWidgetManager() {
+        return widgetManager;
     }
 
     public boolean isMessageDeleted() {

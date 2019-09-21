@@ -63,6 +63,7 @@ public class ClientQuestionEvent {
     }
 
     public void ask(String title, String description) {
+        sourceCommand.getContext().getGuildContext().getClientQuestionEventManager().addQuestion(this);
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle(title);
         embedBuilder.setDescription(description);
@@ -79,7 +80,7 @@ public class ClientQuestionEvent {
     }
 
     public void destroy() {
-        sourceCommand.getContext().getGuildContext().removeQuestion(this);
+        sourceCommand.getContext().getGuildContext().getClientQuestionEventManager().removeQuestion(this);
         destructionTimer.cancel();
 
         questionMessage.thenAccept(message -> {

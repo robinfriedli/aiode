@@ -267,7 +267,6 @@ public abstract class AbstractCommand {
 
     protected void askQuestion(ClientQuestionEvent question) {
         setFailed(true);
-        getContext().getGuildContext().addQuestion(question);
         question.ask();
     }
 

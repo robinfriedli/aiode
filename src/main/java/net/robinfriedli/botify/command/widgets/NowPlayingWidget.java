@@ -7,7 +7,6 @@ import net.dv8tion.jda.api.entities.Message;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.command.AbstractWidget;
-import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.command.widgets.actions.PlayPauseAction;
 import net.robinfriedli.botify.command.widgets.actions.RewindAction;
 import net.robinfriedli.botify.command.widgets.actions.SkipAction;
@@ -17,8 +16,8 @@ public class NowPlayingWidget extends AbstractWidget {
     private final AudioPlayback audioPlayback;
     private final AudioManager audioManager;
 
-    public NowPlayingWidget(CommandManager commandManager, Message message, AudioPlayback audioPlayback, AudioManager audioManager) {
-        super(commandManager, message);
+    public NowPlayingWidget(WidgetManager widgetManager, Message message, AudioPlayback audioPlayback, AudioManager audioManager) {
+        super(widgetManager, message);
         this.audioPlayback = audioPlayback;
         this.audioManager = audioManager;
     }
@@ -43,6 +42,6 @@ public class NowPlayingWidget extends AbstractWidget {
 
     @Override
     public void destroy() {
-        getCommandManager().removeWidget(this);
+        getWidgetManager().removeWidget(this);
     }
 }
