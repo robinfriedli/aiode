@@ -271,6 +271,17 @@ public class ArgumentContribution {
             return this;
         }
 
+        public <T> Argument verifyValue(Class<T> type, Predicate<T> predicate, String message) {
+            Predicate<ArgumentContribution> p = argumentContribution -> {
+                if (hasValue()) {
+                    return predicate.test(getValue(type));
+                }
+                return true;
+            };
+
+            return addRule(p, message);
+        }
+
         Set<String> getExcludedArguments() {
             return excludedArguments;
         }

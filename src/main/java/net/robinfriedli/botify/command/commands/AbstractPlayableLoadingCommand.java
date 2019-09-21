@@ -27,7 +27,6 @@ import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
-import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 import net.robinfriedli.botify.exceptions.NoSpotifyResultsFoundException;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
@@ -135,9 +134,6 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
 
         if (argumentSet("select")) {
             int limit = getArgumentValue("select", Integer.class, 10);
-            if (!(limit > 0 && limit <= 20)) {
-                throw new InvalidCommandException("Limit must be between 1 and 20");
-            }
 
             List<YouTubePlaylist> playlists = youTubeService.searchSeveralPlaylists(limit, getCommandInput());
             if (playlists.size() == 1) {
@@ -251,9 +247,6 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
         YouTubeService youTubeService = audioManager.getYouTubeService();
         if (argumentSet("select")) {
             int limit = getArgumentValue("select", Integer.class, 10);
-            if (!(limit > 0 && limit <= 10)) {
-                throw new InvalidCommandException("Limit must be between 1 and 10");
-            }
 
             List<YouTubeVideo> youTubeVideos = youTubeService.searchSeveralVideos(limit, getCommandInput());
             if (youTubeVideos.size() == 1) {
@@ -305,7 +298,8 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
                 }
 
                 return source.isYouTube() || source.isSpotify();
-            }, "Argument 'select' may only be used with YouTube videos / playlists or Spotify tracks.");
+            }, "Argument 'select' may only be used with YouTube videos / playlists or Spotify tracks.")
+            .verifyValue(Integer.class, limit -> limit > 0 && limit <= 20, "Limit must be between 1 and 20");
         return argumentContribution;
     }
 
