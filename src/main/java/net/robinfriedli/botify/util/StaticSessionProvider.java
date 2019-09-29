@@ -54,6 +54,9 @@ public class StaticSessionProvider {
         } catch (Throwable e) {
             if (commitRequired) {
                 session.getTransaction().rollback();
+                // make sure this transaction is not committed in the finally block, which would throw an exception that
+                // overrides the current exception
+                commitRequired = false;
             }
             throw e;
         } finally {

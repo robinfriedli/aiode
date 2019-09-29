@@ -11,7 +11,12 @@ import org.hibernate.Session;
 
 /**
  * Invoker to run code either in a hibernate transaction or with Spotify credentials.
+ *
+ * @deprecated replaced by usages of the JXP {@link net.robinfriedli.jxp.exec.Invoker} using
+ * {@link net.robinfriedli.jxp.exec.Invoker.ModeWrapper}s. See {@link HibernateInvoker} or {@link SpotifyInvoker}.
  */
+@SuppressWarnings("DuplicatedCode")
+@Deprecated
 public class Invoker {
 
     public void invoke(Session session, CheckedRunnable runnable) {

@@ -9,7 +9,7 @@ import com.wrapper.spotify.model_objects.specification.Track;
 import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.audio.PlayableFactory;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
-import net.robinfriedli.botify.function.Invoker;
+import net.robinfriedli.botify.function.SpotifyInvoker;
 
 /**
  * class to recognise, parse and load Spotify URIs. Currently Spotify URIs that point directly to a track, playlist or
@@ -72,10 +72,10 @@ public class SpotifyUri {
                                                 SpotifyUri uri,
                                                 boolean redirect,
                                                 boolean mayInterrupt) throws Exception {
-                Invoker invoker = new Invoker();
+                SpotifyInvoker invoker = SpotifyInvoker.create(spotifyService.getSpotifyApi());
                 Track track;
                 try {
-                    track = invoker.runWithCredentials(spotifyService.getSpotifyApi(), () -> spotifyService.getTrack(uri.getId()));
+                    track = invoker.invoke(() -> spotifyService.getTrack(uri.getId()));
                 } catch (NotFoundException e) {
                     throw new InvalidCommandException("Invalid id " + uri.getId());
                 }
@@ -89,10 +89,10 @@ public class SpotifyUri {
                                                 SpotifyUri uri,
                                                 boolean redirect,
                                                 boolean mayInterrupt) throws Exception {
-                Invoker invoker = new Invoker();
+                SpotifyInvoker invoker = SpotifyInvoker.create(spotifyService.getSpotifyApi());
                 List<Track> tracks;
                 try {
-                    tracks = invoker.runWithCredentials(spotifyService.getSpotifyApi(), () -> spotifyService.getAlbumTracks(uri.getId()));
+                    tracks = invoker.invoke(() -> spotifyService.getAlbumTracks(uri.getId()));
                 } catch (NotFoundException e) {
                     throw new InvalidCommandException("Invalid id " + uri.getId());
                 }
@@ -106,10 +106,10 @@ public class SpotifyUri {
                                                 SpotifyUri uri,
                                                 boolean redirect,
                                                 boolean mayInterrupt) throws Exception {
-                Invoker invoker = new Invoker();
+                SpotifyInvoker invoker = SpotifyInvoker.create(spotifyService.getSpotifyApi());
                 List<Track> tracks;
                 try {
-                    tracks = invoker.runWithCredentials(spotifyService.getSpotifyApi(), () -> spotifyService.getPlaylistTracks(uri.getId()));
+                    tracks = invoker.invoke(() -> spotifyService.getPlaylistTracks(uri.getId()));
                 } catch (NotFoundException e) {
                     throw new InvalidCommandException("Invalid id " + uri.getId());
                 }

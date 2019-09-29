@@ -37,7 +37,7 @@ import net.robinfriedli.botify.entities.PlaybackHistory;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
 import net.robinfriedli.botify.entities.xml.EmbedDocumentContribution;
-import net.robinfriedli.botify.function.Invoker;
+import net.robinfriedli.botify.function.HibernateInvoker;
 import net.robinfriedli.botify.interceptors.InterceptorChain;
 import net.robinfriedli.botify.interceptors.PlaylistItemTimestampListener;
 import net.robinfriedli.botify.interceptors.VerifyPlaylistListener;
@@ -59,25 +59,15 @@ import static net.robinfriedli.jxp.queries.Conditions.*;
 public class GuildManager {
 
     private final ISnowflakeMap<GuildContext> guildContexts = new ISnowflakeMap<>();
-    private final Invoker internalInvoker;
-    // invoker used in mode shared, so that all guilds are synchronised
-    @Nullable
-    private final Invoker sharedInvoker;
     private final JxpBackend jxpBackend;
     private final Logger logger;
     private final Mode mode;
     private AudioManager audioManager;
 
     public GuildManager(JxpBackend jxpBackend, Mode mode) {
-        internalInvoker = new Invoker();
         this.jxpBackend = jxpBackend;
         logger = LoggerFactory.getLogger(getClass());
         this.mode = mode;
-        if (mode == Mode.SHARED) {
-            sharedInvoker = new Invoker();
-        } else {
-            sharedInvoker = null;
-        }
     }
 
     public void addGuild(Guild guild) {
@@ -208,11 +198,11 @@ public class GuildManager {
                 + " where guildId = '" + guild.getId() + "'", Long.class).uniqueResultOptional();
 
             if (existingSpecification.isPresent()) {
-                GuildContext guildContext = new GuildContext(guild, new AudioPlayback(player, guild), existingSpecification.get(), sharedInvoker);
+                GuildContext guildContext = new GuildContext(guild, new AudioPlayback(player, guild), existingSpecification.get());
                 guildContexts.put(guild, guildContext);
                 return guildContext;
             } else {
-                GuildSpecification newSpecification = internalInvoker.invoke(session, () -> {
+                GuildSpecification newSpecification = HibernateInvoker.create().invoke(() -> {
                     GuildSpecification specification = new GuildSpecification(guild);
                     AccessConfiguration permissionConfiguration = new AccessConfiguration("permission");
                     session.persist(permissionConfiguration);
@@ -221,7 +211,7 @@ public class GuildManager {
                     return specification;
                 });
 
-                GuildContext guildContext = new GuildContext(guild, new AudioPlayback(player, guild), newSpecification.getPk(), sharedInvoker);
+                GuildContext guildContext = new GuildContext(guild, new AudioPlayback(player, guild), newSpecification.getPk());
                 guildContexts.put(guild, guildContext);
 
                 handleNewGuild(guild);

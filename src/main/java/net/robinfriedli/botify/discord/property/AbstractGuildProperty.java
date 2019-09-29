@@ -4,6 +4,7 @@ import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.xml.GuildPropertyContribution;
+import net.robinfriedli.botify.function.HibernateInvoker;
 import net.robinfriedli.botify.util.StaticSessionProvider;
 
 /**
@@ -49,7 +50,7 @@ public abstract class AbstractGuildProperty {
 
     public void set(String value, GuildContext guildContext) {
         StaticSessionProvider.invokeWithSession(session -> {
-            guildContext.getInvoker().invoke(session, () -> {
+            HibernateInvoker.create().invoke(() -> {
                 GuildSpecification guildSpecification = guildContext.getSpecification(session);
                 setValue(value, guildSpecification);
             });

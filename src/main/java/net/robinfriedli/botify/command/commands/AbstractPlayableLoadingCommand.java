@@ -236,7 +236,7 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
         }
     }
 
-    private void createPlayableForTrack(Track track, AudioManager audioManager) throws IOException {
+    private void createPlayableForTrack(Track track, AudioManager audioManager) {
         PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild(), getSpotifyService());
         Playable playable = playableFactory.createPlayable(shouldRedirectSpotify(), track);
         handleResults(Lists.newArrayList(playable));

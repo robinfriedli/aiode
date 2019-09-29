@@ -137,13 +137,33 @@ public class AudioPlayback {
 
     /**
      * Clear the queue and reset all options
+     *
+     * @return true if anything change
      */
-    public void clear() {
-        getAudioQueue().clear();
-        setVolume(100);
-        setShuffle(false);
-        setRepeatAll(false);
-        setRepeatOne(false);
+    public boolean clear() {
+        boolean changedAnything = false;
+        if (!audioQueue.isEmpty()) {
+            audioQueue.clear();
+            changedAnything = true;
+        }
+        if (getVolume() != 100) {
+            setVolume(100);
+            changedAnything = true;
+        }
+        if (isShuffle()) {
+            setShuffle(false);
+            changedAnything = true;
+        }
+        if (isRepeatAll()) {
+            setRepeatAll(false);
+            changedAnything = true;
+        }
+        if (isRepeatOne()) {
+            setRepeatOne(false);
+            changedAnything = true;
+        }
+
+        return changedAnything;
     }
 
     public void setLastPlaybackNotification(Message message) {

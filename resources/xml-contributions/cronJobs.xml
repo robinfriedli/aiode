@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <cronJobs xmlns="cronJobSpace">
-  <cronJob id="playbackCleanup" cron="0 */15 * * * ? *" implementation="net.robinfriedli.botify.cron.PlaybackCleanupTask">
-    <cronParameter name="audioManager" implementation="net.robinfriedli.botify.audio.AudioManager"/>
-    <cronParameter name="guildManager" implementation="net.robinfriedli.botify.discord.GuildManager"/>
-    <cronParameter name="jda" implementation="net.dv8tion.jda.api.JDA"/>
-  </cronJob>
+  <cronJob id="playbackCleanup" cron="0 */15 * * * ? *" implementation="net.robinfriedli.botify.cron.tasks.PlaybackCleanupTask"/>
+  <cronJob id="spotifyRedirectIndexRefresh" cron="0 0 3 * * ? *" implementation="net.robinfriedli.botify.cron.tasks.RefreshSpotifyRedirectIndicesTask"/>
 </cronJobs>
