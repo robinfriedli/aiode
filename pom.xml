@@ -40,7 +40,7 @@
     <dependency>
       <groupId>com.sedmelluq</groupId>
       <artifactId>lavaplayer</artifactId>
-      <version>1.3.21</version>
+      <version>1.3.22</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
@@ -86,7 +86,7 @@
     <dependency>
       <groupId>net.robinfriedli.JXP</groupId>
       <artifactId>JXP</artifactId>
-      <version>1.2</version>
+      <version>1.2.1</version>
     </dependency>
     <dependency>
       <groupId>net.robinfriedli.StringList</groupId>

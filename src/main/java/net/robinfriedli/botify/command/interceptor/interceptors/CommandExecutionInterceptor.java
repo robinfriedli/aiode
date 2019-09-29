@@ -18,6 +18,7 @@ import net.robinfriedli.botify.exceptions.AmbiguousCommandException;
 import net.robinfriedli.botify.exceptions.CommandRuntimeException;
 import net.robinfriedli.botify.exceptions.NoLoginException;
 import net.robinfriedli.botify.exceptions.UserException;
+import net.robinfriedli.botify.function.HibernateInvoker;
 import org.hibernate.Session;
 
 public class CommandExecutionInterceptor implements CommandInterceptor {
@@ -115,7 +116,7 @@ public class CommandExecutionInterceptor implements CommandInterceptor {
             history.setErrorMessage(errorMessage);
 
             Session session = context.getSession();
-            context.getGuildContext().getInvoker().invoke(session, () -> session.persist(history));
+            HibernateInvoker.create().invoke(() -> session.persist(history));
         } else {
             logger.warn("Command " + command + " has no history");
         }

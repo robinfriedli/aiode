@@ -8,15 +8,8 @@
     </xs:sequence>
   </xs:complexType>
   <xs:complexType name="cronJob">
-    <xs:sequence>
-      <xs:element name="cronParameter" type="cronParameter"/>
-    </xs:sequence>
     <xs:attribute name="id" type="xs:string"/>
     <xs:attribute name="cron" type="xs:string"/>
-    <xs:attribute name="implementation" type="xs:string"/>
-  </xs:complexType>
-  <xs:complexType name="cronParameter">
-    <xs:attribute name="name" type="xs:string"/>
     <xs:attribute name="implementation" type="xs:string"/>
   </xs:complexType>
 

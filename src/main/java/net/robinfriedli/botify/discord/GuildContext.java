@@ -1,7 +1,5 @@
 package net.robinfriedli.botify.discord;
 
-import javax.annotation.Nullable;
-
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.robinfriedli.botify.Botify;
@@ -15,30 +13,28 @@ import net.robinfriedli.botify.concurrent.GuildTrackLoadingExecutor;
 import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.entities.GuildSpecification;
-import net.robinfriedli.botify.function.Invoker;
+import net.robinfriedli.botify.function.HibernateInvoker;
 import net.robinfriedli.botify.util.StaticSessionProvider;
 import org.hibernate.Session;
 
 /**
  * Provides context for a guild by storing and loading the guild's {@link GuildSpecification}, holding the guild's
- * {@link AudioPlayback} and {@link Invoker} / {@link GuildTrackLoadingExecutor} to manage concurrent operations per guild.
+ * {@link AudioPlayback} and {@link GuildTrackLoadingExecutor} to manage concurrent operations per guild.
  * Holds the managers for all open {@link ClientQuestionEvent} and active {@link AbstractWidget} for this guild.
  */
 public class GuildContext {
 
     private final Guild guild;
     private final AudioPlayback playback;
-    private final Invoker invoker;
     private final long specificationPk;
     private final GuildTrackLoadingExecutor trackLoadingExecutor;
     private final WidgetManager widgetManager;
     private final ClientQuestionEventManager clientQuestionEventManager;
 
-    public GuildContext(Guild guild, AudioPlayback playback, long specificationPk, @Nullable Invoker sharedInvoker) {
+    public GuildContext(Guild guild, AudioPlayback playback, long specificationPk) {
         this.guild = guild;
         this.playback = playback;
         this.specificationPk = specificationPk;
-        invoker = sharedInvoker == null ? new Invoker() : sharedInvoker;
         trackLoadingExecutor = new GuildTrackLoadingExecutor(this);
         widgetManager = new WidgetManager();
         clientQuestionEventManager = new ClientQuestionEventManager();
@@ -50,10 +46,6 @@ public class GuildContext {
 
     public AudioPlayback getPlayback() {
         return playback;
-    }
-
-    public Invoker getInvoker() {
-        return invoker;
     }
 
     public GuildSpecification getSpecification(Session session) {
@@ -88,7 +80,7 @@ public class GuildContext {
         StaticSessionProvider.invokeWithSession(session -> {
             GuildSpecification guildSpecification = getSpecification(session);
 
-            getInvoker().invoke(session, () -> guildSpecification.setBotName(name));
+            HibernateInvoker.create().invoke(() -> guildSpecification.setBotName(name));
         });
         try {
             guild.getSelfMember().modifyNickname(name).queue();
@@ -116,7 +108,7 @@ public class GuildContext {
         StaticSessionProvider.invokeWithSession(session -> {
             GuildSpecification guildSpecification = getSpecification(session);
 
-            getInvoker().invoke(session, () -> guildSpecification.setPrefix(prefix));
+            HibernateInvoker.create().invoke(() -> guildSpecification.setPrefix(prefix));
         });
     }
 

@@ -12,6 +12,7 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
+import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.command.SecurityManager;
@@ -20,7 +21,6 @@ import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
-import net.robinfriedli.botify.function.Invoker;
 import net.robinfriedli.botify.login.LoginManager;
 import net.robinfriedli.jxp.api.JxpBackend;
 import org.hibernate.SessionFactory;
@@ -44,13 +44,6 @@ public class Cache {
         }));
         EXTRACTORS.add(new Extractor<>(GuildManager.class, () -> Botify.get().getGuildManager()));
         EXTRACTORS.add(new Extractor<>(GuildPropertyManager.class, () -> Botify.get().getGuildPropertyManager()));
-        EXTRACTORS.add(new Extractor<>(Invoker.class, () -> {
-            if (CommandContext.Current.isSet()) {
-                return CommandContext.Current.require().getGuildContext().getInvoker();
-            } else {
-                return new Invoker();
-            }
-        }));
         EXTRACTORS.add(new Extractor<>(JDA.class, () -> Botify.get().getJda()));
         EXTRACTORS.add(new Extractor<>(JxpBackend.class, () -> Botify.get().getJxpBackend()));
         EXTRACTORS.add(new Extractor<>(Logger.class, () -> Botify.LOGGER));
@@ -67,6 +60,7 @@ public class Cache {
         EXTRACTORS.add(new Extractor<>(SessionFactory.class, () -> Botify.get().getSessionFactory()));
         EXTRACTORS.add(new Extractor<>(SpotifyApi.class, () -> Botify.get().getSpotifyApiBuilder().build()));
         EXTRACTORS.add(new Extractor<>(SpotifyApi.Builder.class, () -> Botify.get().getSpotifyApiBuilder()));
+        EXTRACTORS.add(new Extractor<>(YouTubeService.class, () -> Botify.get().getAudioManager().getYouTubeService()));
     }
 
     @SuppressWarnings("unchecked")

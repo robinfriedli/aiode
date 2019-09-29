@@ -15,7 +15,7 @@ import net.robinfriedli.botify.entities.PlaylistItem;
 import net.robinfriedli.botify.entities.Song;
 import net.robinfriedli.botify.entities.UrlTrack;
 import net.robinfriedli.botify.entities.Video;
-import net.robinfriedli.botify.function.Invoker;
+import net.robinfriedli.botify.function.SpotifyInvoker;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
 import org.hibernate.Session;
@@ -102,8 +102,7 @@ public class HibernatePlaylistMigrator implements PersistTask<Map<Playlist, List
                 }
             }
 
-            Invoker invoker = new Invoker();
-            invoker.runWithCredentials(spotifyApi, () -> {
+            SpotifyInvoker.create(spotifyApi).invoke(() -> {
                 spotifyBulkLoadingService.perform();
                 return null;
             });

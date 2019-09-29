@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import javax.annotation.Nullable;
+
 import org.apache.commons.text.similarity.LevenshteinDistance;
 
 import com.google.api.services.youtube.YouTube;
@@ -167,9 +169,7 @@ public class YouTubeService {
             .execute();
         Video video = videoListResponse.getItems().get(0);
 
-        return new YouTubeVideoImpl(video.getSnippet().getTitle(),
-            videoId,
-            Duration.parse(video.getContentDetails().getDuration()).get(ChronoUnit.SECONDS) * 1000);
+        return new YouTubeVideoImpl(video.getSnippet().getTitle(), videoId, parseDuration(video));
     }
 
     public List<YouTubeVideo> searchSeveralVideos(long limit, String searchTerm) throws IOException {
@@ -181,7 +181,7 @@ public class YouTubeService {
         for (Video video : youtubeVideos) {
             String videoId = video.getId();
             String title = video.getSnippet().getTitle();
-            long duration = Duration.parse(video.getContentDetails().getDuration()).get(ChronoUnit.SECONDS) * 1000;
+            long duration = parseDuration(video);
 
             videos.add(new YouTubeVideoImpl(title, videoId, duration));
         }
@@ -474,7 +474,18 @@ public class YouTubeService {
         }
     }
 
-    public YouTubeVideo videoForId(String id) throws IOException {
+    public YouTubeVideoImpl requireVideoForId(String id) throws IOException {
+        YouTubeVideoImpl videoForId = getVideoForId(id);
+
+        if (videoForId == null) {
+            throw new NoResultsFoundException(String.format("No YouTube video found for id '%s'", id));
+        }
+
+        return videoForId;
+    }
+
+    @Nullable
+    public YouTubeVideoImpl getVideoForId(String id) throws IOException {
         YouTube.Videos.List videoRequest = youTube.videos().list("snippet");
         videoRequest.setId(id);
         videoRequest.setFields("items(contentDetails/duration,snippet/title)");
@@ -483,7 +494,7 @@ public class YouTubeService {
         List<Video> items = videoRequest.execute().getItems();
 
         if (items.isEmpty()) {
-            throw new NoResultsFoundException(String.format("No YouTube video found for id '%s'", id));
+            return null;
         }
 
         Video video = items.get(0);
@@ -525,11 +536,7 @@ public class YouTubeService {
         VideoListResponse videoListResponse = videosRequest.execute();
         List<Video> items = videoListResponse.getItems();
         if (items.size() == 1) {
-            String iso8601Duration = items.get(0).getContentDetails().getDuration();
-            if (!Strings.isNullOrEmpty(iso8601Duration)) {
-                // ChronoUnit.MILLIS not supported because of the accuracy YouTube returns
-                return Duration.parse(iso8601Duration).get(ChronoUnit.SECONDS) * 1000;
-            }
+            return parseDuration(items.get(0));
         }
 
         // video detail might not get found if the video is unavailable
@@ -549,17 +556,22 @@ public class YouTubeService {
 
         Map<String, Long> durationMap = new HashMap<>();
         for (Video video : videos) {
-            VideoContentDetails contentDetails = video.getContentDetails();
             String id = video.getId();
-            if (contentDetails != null) {
-                String iso8601Duration = contentDetails.getDuration();
-                durationMap.put(id, Duration.parse(iso8601Duration).get(ChronoUnit.SECONDS) * 1000);
-            } else {
-                durationMap.put(id, 0L);
-            }
+            durationMap.put(id, parseDuration(video));
         }
 
         return durationMap;
+    }
+
+    private long parseDuration(Video video) {
+        VideoContentDetails contentDetails = video.getContentDetails();
+        if (contentDetails != null) {
+            String duration = contentDetails.getDuration();
+            // ChronoUnit.MILLIS not supported because of the accuracy YouTube returns
+            return Strings.isNullOrEmpty(duration) ? 0 : Duration.parse(duration).get(ChronoUnit.SECONDS) * 1000;
+        }
+
+        return 0;
     }
 
 }

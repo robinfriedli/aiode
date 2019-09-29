@@ -82,7 +82,6 @@ public class Launcher {
                 .mapClass("startupTask", StartupTaskContribution.class)
                 .mapClass("guildProperty", GuildPropertyContribution.class)
                 .mapClass("cronJob", CronJobContribution.class)
-                .mapClass("cronParameter", CronJobContribution.CronParameter.class)
                 .build();
 
             StandardServiceRegistry serviceRegistry = new StandardServiceRegistryBuilder().configure(new File(hibernateConfigurationPath)).build();

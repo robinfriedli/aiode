@@ -3,6 +3,8 @@ package net.robinfriedli.botify.command.parser;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.discord.property.properties.ArgumentPrefixProperty;
+import net.robinfriedli.botify.exceptions.CommandParseException;
+import net.robinfriedli.botify.exceptions.UserException;
 
 /**
  * Mode implementation that is used to build one argument per instance. This mode is typically switched to if the last
@@ -20,6 +22,7 @@ public class ArgumentBuildingMode implements CommandParser.Mode {
     private final CommandParser commandParser;
     private final char argumentPrefix;
     private final boolean isInline;
+    private final int conceptionIndex;
 
     private StringBuilder argumentBuilder;
     private StringBuilder argumentValueBuilder;
@@ -35,6 +38,7 @@ public class ArgumentBuildingMode implements CommandParser.Mode {
         this.commandParser = commandParser;
         this.argumentPrefix = argumentPrefix;
         this.isInline = isInline;
+        conceptionIndex = CommandParser.currentPosition.get();
         argumentBuilder = new StringBuilder();
         argumentValueBuilder = new StringBuilder();
     }
@@ -84,10 +88,14 @@ public class ArgumentBuildingMode implements CommandParser.Mode {
 
     @Override
     public void terminate() {
-        ArgumentContribution argumentContribution = command.getArgumentContribution();
-        String argument = argumentBuilder.toString().trim();
-        String argumentValue = argumentValueBuilder.toString().trim();
-        argumentContribution.setArgument(argument, argumentValue);
-        commandParser.fireOnArgumentParsed(argument, argumentValue);
+        try {
+            ArgumentContribution argumentContribution = command.getArgumentContribution();
+            String argument = argumentBuilder.toString().trim();
+            String argumentValue = argumentValueBuilder.toString().trim();
+            argumentContribution.setArgument(argument, argumentValue);
+            commandParser.fireOnArgumentParsed(argument, argumentValue);
+        } catch (UserException e) {
+            throw new CommandParseException(e.getMessage(), command.getCommandBody(), e, conceptionIndex);
+        }
     }
 }

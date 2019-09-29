@@ -1,28 +1,30 @@
 package net.robinfriedli.botify.cron;
 
-import java.util.Optional;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.robinfriedli.jxp.exec.BaseInvoker;
+import net.robinfriedli.jxp.exec.Invoker;
 import org.quartz.Job;
-import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 
 public abstract class AbstractCronTask implements Job {
 
+    private final Invoker invoker;
     private final Logger logger;
-    private JobExecutionContext jobExecutionContext;
 
     public AbstractCronTask() {
+        invoker = new BaseInvoker();
         logger = LoggerFactory.getLogger(getClass());
     }
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) {
-        this.jobExecutionContext = jobExecutionContext;
         try {
-            run(jobExecutionContext);
+            invoker.invoke(getMode(), () -> {
+                run(jobExecutionContext);
+                return null;
+            });
         } catch (Throwable e) {
             logger.error("Error in cron job", e);
         }
@@ -30,11 +32,6 @@ public abstract class AbstractCronTask implements Job {
 
     protected abstract void run(JobExecutionContext jobExecutionContext) throws Exception;
 
-    @SuppressWarnings("unchecked")
-    protected <E> E getParameter(Class<E> type) {
-        JobDataMap jobDataMap = jobExecutionContext.getMergedJobDataMap();
-        Optional<Object> mappedParameter = jobDataMap.values().stream().filter(type::isInstance).findFirst();
-        return (E) mappedParameter.orElseThrow();
-    }
+    protected abstract Invoker.Mode getMode();
 
 }

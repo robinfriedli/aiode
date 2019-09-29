@@ -160,7 +160,7 @@ public class ChartsCommand extends AbstractCommand {
                 });
             case "YouTube":
                 YouTubeService youTubeService = Botify.get().getAudioManager().getYouTubeService();
-                return youTubeService.videoForId(id);
+                return youTubeService.requireVideoForId(id);
             case "Url":
                 AudioManager audioManager = Botify.get().getAudioManager();
                 PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild(), getSpotifyService());

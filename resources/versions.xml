@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <versions xmlns="versionSpace">
-  <version launched="false" version="1.6.4">
+  <version launched="false" version="1.6.5">
+    <feature>final version of botify 1.6 that offers remaining improvements and optimisations</feature>
+  </version>
+  <version launched="true" version="1.6.4">
     <feature>when searching a Spotify track, botify now automatically picks the best result based on likeness of the track names, track popularity and how popular each artist is in this guild; to get a selection of results like in previous versions you may use the "select" argument</feature>
     <feature>added album covers to the queue and "now playing..." widgets for Spotify tracks</feature>
     <feature>added a periodic task that resets playback settings and queues after an hour of inactivity to preserve resources and ensure long term stability</feature>

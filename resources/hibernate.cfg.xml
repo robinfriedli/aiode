@@ -38,5 +38,6 @@
     <mapping class="net.robinfriedli.botify.entities.GuildSpecification"/>
     <mapping class="net.robinfriedli.botify.entities.AccessConfiguration"/>
     <mapping class="net.robinfriedli.botify.entities.GrantedRole"/>
+    <mapping class="net.robinfriedli.botify.entities.SpotifyRedirectIndex"/>
   </session-factory>
 </hibernate-configuration>

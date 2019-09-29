@@ -30,9 +30,11 @@ import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.function.CheckedRunnable;
-import net.robinfriedli.botify.function.Invoker;
+import net.robinfriedli.botify.function.HibernateInvoker;
+import net.robinfriedli.botify.function.SpotifyInvoker;
 import net.robinfriedli.botify.login.Login;
 import net.robinfriedli.botify.util.Util;
+import net.robinfriedli.jxp.exec.modes.SynchronisationMode;
 import net.robinfriedli.stringlist.StringList;
 import net.robinfriedli.stringlist.StringListImpl;
 
@@ -124,13 +126,24 @@ public abstract class AbstractCommand {
     }
 
     public void invoke(CheckedRunnable runnable) {
-        Invoker invoker = getContext().getGuildContext().getInvoker();
-        invoker.invoke(getContext().getSession(), runnable);
+        invoke(() -> {
+            runnable.doRun();
+            return null;
+        });
     }
 
+    /**
+     * Invoke a task in a hibernate transaction. This uses the {@link SynchronisationMode} with the current guild
+     * as lock to make sure the same guild cannot invoke the task concurrently. This is to counteract the
+     * spamming of a command that uses this method, e.g. spamming the add command concurrently could evade the playlist
+     * size limit.
+     *
+     * @param callable
+     * @param <E>
+     * @return
+     */
     public <E> E invoke(Callable<E> callable) {
-        Invoker invoker = getContext().getGuildContext().getInvoker();
-        return invoker.invoke(getContext().getSession(), callable);
+        return HibernateInvoker.create(getContext().getGuild()).invoke(callable);
     }
 
     public CommandContext getContext() {
@@ -171,17 +184,15 @@ public abstract class AbstractCommand {
      * @param callable the code to run
      */
     protected <E> E runWithLogin(Callable<E> callable) throws Exception {
-        Invoker invoker = getContext().getGuildContext().getInvoker();
         Login login = Botify.get().getLoginManager().requireLoginForUser(getContext().getUser());
-        return invoker.runForUser(login, getContext().getSpotifyApi(), callable);
+        return SpotifyInvoker.create(getContext().getSpotifyApi(), login).invoke(callable);
     }
 
     /**
      * Run a callable with the default spotify credentials. Used for spotify api queries in commands.
      */
     protected <E> E runWithCredentials(Callable<E> callable) throws Exception {
-        Invoker invoker = getContext().getGuildContext().getInvoker();
-        return invoker.runWithCredentials(getContext().getSpotifyApi(), callable);
+        return SpotifyInvoker.create(getContext().getSpotifyApi()).invoke(callable);
     }
 
     protected boolean argumentSet(String argument) {

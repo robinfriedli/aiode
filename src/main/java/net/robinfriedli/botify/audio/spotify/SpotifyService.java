@@ -16,13 +16,13 @@ import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
 import com.wrapper.spotify.model_objects.specification.PlaylistTrack;
 import com.wrapper.spotify.model_objects.specification.Track;
 import com.wrapper.spotify.model_objects.specification.TrackSimplified;
-import net.robinfriedli.botify.function.Invoker;
+import net.robinfriedli.botify.function.SpotifyInvoker;
 
 import static net.robinfriedli.botify.util.SearchEngine.*;
 
 /**
  * Service to request data from the Spotify API. Be sure to call these methods with the appropriate Spotify credentials,
- * see {@link Invoker}. If you use these methods in a command you can use the runWithLogin or runWithCredentials method
+ * see {@link SpotifyInvoker}. If you use these methods in a command you can use the runWithLogin or runWithCredentials method
  * of the AbstractCommand
  */
 public class SpotifyService {
