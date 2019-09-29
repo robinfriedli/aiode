@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import javax.annotation.Nullable;
 
@@ -99,11 +100,11 @@ public class YouTubeService {
             Map<Integer, Video> videosByScore = new HashMap<>();
             Long highestViewCount = null;
             Integer maxEditDistance = null;
-            LevenshteinDistance levenshteinDistance = new LevenshteinDistance();
+            Map<Video, Integer> videosWithEditDistance = new HashMap<>();
             for (Video v : videos) {
                 long viewCount = getViewCount(v);
-                String title = v.getSnippet().getTitle();
-                Integer editDistance = levenshteinDistance.apply(searchTerm.toLowerCase(), title.toLowerCase());
+                Integer editDistance = getBestEditDistance(spotifyTrack, v);
+                videosWithEditDistance.put(v, editDistance);
                 if (highestViewCount == null || highestViewCount < viewCount) {
                     highestViewCount = viewCount;
                 }
@@ -123,8 +124,7 @@ public class YouTubeService {
                     artistMatchScore = 5;
                 }
                 long viewCount = getViewCount(v);
-                String title = v.getSnippet().getTitle().toLowerCase();
-                Integer editDistance = levenshteinDistance.apply(searchTerm.toLowerCase(), title);
+                int editDistance = videosWithEditDistance.get(v);
                 viewScore = highestViewCount == 0 ? 10 : (int) (viewCount * 10 / highestViewCount);
                 editDistanceScore = maxEditDistance == 0 ? 10 : 10 - (editDistance * 10 / maxEditDistance);
                 videosByScore.putIfAbsent(artistMatchScore + viewScore + editDistanceScore, v);
@@ -143,6 +143,34 @@ public class YouTubeService {
         youTubeVideo.setTitle(title);
         youTubeVideo.setId(videoId);
         youTubeVideo.setDuration(durationMillis);
+    }
+
+    private int getBestEditDistance(Track track, Video video) {
+        LevenshteinDistance levenshteinDistance = LevenshteinDistance.getDefaultInstance();
+        String trackName = track.getName().toLowerCase();
+        String videoTitle = video.getSnippet().getTitle().toLowerCase();
+        ArtistSimplified[] artists = track.getArtists();
+        String firstArtist = artists.length > 0 ? artists[0].getName().toLowerCase() : "";
+        StringList artistNames = StringListImpl.create(artists, ArtistSimplified::getName);
+        String artistString = artistNames
+            .toSeparatedString(", ")
+            .toLowerCase();
+        String featuringArtistString = artistNames.size() > 1
+            ? artistNames.subList(1).toSeparatedString(", ").toLowerCase()
+            : "";
+
+        int distancePlain = levenshteinDistance.apply(trackName, videoTitle);
+        int distanceFirstArtistFront = levenshteinDistance.apply(firstArtist + " " + trackName, videoTitle);
+        int distanceFirstArtistBack = levenshteinDistance.apply(trackName + " " + firstArtist, videoTitle);
+        int distanceArtistsFront = levenshteinDistance.apply(artistString + " " + trackName, videoTitle);
+        int distanceArtistsBack = levenshteinDistance.apply(trackName + " " + artistString, videoTitle);
+        String featuringArtistsString = firstArtist + " " + trackName + " " + featuringArtistString;
+        int distanceFirstArtistFrontFeaturingArtistsBack = levenshteinDistance.apply(featuringArtistsString, videoTitle);
+
+        return IntStream
+            .of(distancePlain, distanceFirstArtistFront, distanceFirstArtistBack, distanceArtistsFront, distanceArtistsBack, distanceFirstArtistFrontFeaturingArtistsBack)
+            .min()
+            .getAsInt();
     }
 
     private long getViewCount(Video video) {
