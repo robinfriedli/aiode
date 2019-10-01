@@ -21,12 +21,12 @@ import net.robinfriedli.botify.audio.youtube.HollowYouTubeVideo;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.cron.AbstractCronTask;
 import net.robinfriedli.botify.entities.SpotifyRedirectIndex;
+import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.botify.function.modes.HibernateTransactionMode;
 import net.robinfriedli.botify.function.modes.SpotifyAuthorizationMode;
 import net.robinfriedli.botify.util.StaticSessionProvider;
 import net.robinfriedli.jxp.exec.Invoker;
 import org.hibernate.Session;
-import org.hibernate.exception.ConstraintViolationException;
 import org.quartz.JobExecutionContext;
 
 /**
@@ -59,16 +59,12 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
             query.where(cb.lessThan(root.get("lastUpdated"), date2WeeksAgo));
             List<SpotifyRedirectIndex> indices = session.createQuery(query).getResultList();
 
-            RegenerateSpotifyRedirectIndexTask task = new RegenerateSpotifyRedirectIndexTask(session, youTubeService);
             int updateCount = 0;
             for (SpotifyRedirectIndex index : indices) {
-                session.delete(index);
+                RefreshTrackIndexTask task = new RefreshTrackIndexTask(session, index, youTubeService);
                 spotifyTrackBulkLoadingService.add(index.getSpotifyId(), task);
                 ++updateCount;
             }
-            // make sure the deletion of the old indices are flushed to the database before creating the new indices
-            // so as to not violate the unique constraints
-            session.flush();
             spotifyTrackBulkLoadingService.perform();
 
             stopwatch.stop();
@@ -81,13 +77,15 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
         return Invoker.Mode.create().with(new HibernateTransactionMode()).with(new SpotifyAuthorizationMode(spotifyApi));
     }
 
-    private class RegenerateSpotifyRedirectIndexTask implements Consumer<Track> {
+    private class RefreshTrackIndexTask implements Consumer<Track> {
 
         private final Session session;
+        private final SpotifyRedirectIndex index;
         private final YouTubeService youTubeService;
 
-        private RegenerateSpotifyRedirectIndexTask(Session session, YouTubeService youTubeService) {
+        private RefreshTrackIndexTask(Session session, SpotifyRedirectIndex index, YouTubeService youTubeService) {
             this.session = session;
+            this.index = index;
             this.youTubeService = youTubeService;
         }
 
@@ -96,25 +94,17 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
             try {
                 HollowYouTubeVideo hollowYouTubeVideo = new HollowYouTubeVideo(youTubeService, track);
                 youTubeService.redirectSpotify(hollowYouTubeVideo);
-                String videoId = hollowYouTubeVideo.getVideoId();
-                SpotifyRedirectIndex spotifyRedirectIndex = new SpotifyRedirectIndex(track.getId(), videoId);
-                session.persist(spotifyRedirectIndex);
-            } catch (Throwable e) {
-                Throwable errorCause = e;
-                boolean isUniqueConstraintException = false;
-                do {
-                    if (errorCause instanceof ConstraintViolationException) {
-                        isUniqueConstraintException = true;
-                        break;
-                    }
-                    errorCause = errorCause.getCause();
-                } while (errorCause != null);
-                if (isUniqueConstraintException) {
-                    logger.warn(String.format("Encountered constraint violation while updating redirect index for track '%s', index was probably created in other thread.",
-                        track.getId()));
+                if (!hollowYouTubeVideo.isCanceled()) {
+                    String videoId = hollowYouTubeVideo.getVideoId();
+                    index.setYouTubeId(videoId);
+                    index.setLastUpdated(LocalDate.now());
                 } else {
-                    logger.error("Exception while updating SpotifyRedirectIndex", e);
+                    session.delete(index);
                 }
+            } catch (UnavailableResourceException e) {
+                logger.warn("Tried creating a SpotifyRedirectIndex for an unavailable Video for track id " + track.getId());
+            } catch (Throwable e) {
+                logger.error("Exception while updating SpotifyRedirectIndex for track id " + track.getId(), e);
             }
         }
     }
