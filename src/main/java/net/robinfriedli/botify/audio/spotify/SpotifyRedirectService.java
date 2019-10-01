@@ -15,6 +15,7 @@ import net.robinfriedli.botify.audio.youtube.HollowYouTubeVideo;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.audio.youtube.YouTubeVideoImpl;
 import net.robinfriedli.botify.entities.SpotifyRedirectIndex;
+import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.botify.function.HibernateInvoker;
 import net.robinfriedli.botify.util.StaticSessionProvider;
 import net.robinfriedli.stringlist.StringListImpl;
@@ -68,18 +69,22 @@ public class SpotifyRedirectService {
         }
 
         youTubeService.redirectSpotify(youTubeVideo);
-        SINGE_THREAD_EXECUTOR_SERVICE.execute(() -> StaticSessionProvider.invokeWithSession(otherThreadSession -> {
-            try {
-                String videoId = youTubeVideo.getVideoId();
-                SpotifyRedirectIndex spotifyRedirectIndex = new SpotifyRedirectIndex(spotifyTrack.getId(), videoId);
-                // check again if the index was not created by other thread
-                if (queryExistingIndex(otherThreadSession, spotifyTrack.getId()).isEmpty()) {
-                    invoker.invoke(() -> otherThreadSession.persist(spotifyRedirectIndex));
+        if (!youTubeVideo.isCanceled()) {
+            SINGE_THREAD_EXECUTOR_SERVICE.execute(() -> StaticSessionProvider.invokeWithSession(otherThreadSession -> {
+                try {
+                    String videoId = youTubeVideo.getVideoId();
+                    SpotifyRedirectIndex spotifyRedirectIndex = new SpotifyRedirectIndex(spotifyTrack.getId(), videoId);
+                    // check again if the index was not created by other thread
+                    if (queryExistingIndex(otherThreadSession, spotifyTrack.getId()).isEmpty()) {
+                        invoker.invoke(() -> otherThreadSession.persist(spotifyRedirectIndex));
+                    }
+                } catch (UnavailableResourceException e) {
+                    logger.warn("Tried creating a SpotifyRedirectIndex for an unavailable Track");
+                } catch (Throwable e) {
+                    logger.error("Exception while creating SpotifyRedirectIndex", e);
                 }
-            } catch (Throwable e) {
-                logger.error("Exception while creating SpotifyRedirectIndex", e);
-            }
-        }));
+            }));
+        }
     }
 
 }

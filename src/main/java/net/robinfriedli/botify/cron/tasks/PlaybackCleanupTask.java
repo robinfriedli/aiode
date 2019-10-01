@@ -42,7 +42,6 @@ public class PlaybackCleanupTask extends AbstractCronTask {
                 Duration oneHour = Duration.ofHours(1);
                 if (aloneSinceDuration.compareTo(oneHour) > 0) {
                     playback.stop();
-                    audioManager.leaveChannel(playback);
                     playback.setAloneSince(null);
                     playback.clear();
                     ++clearedAlone;

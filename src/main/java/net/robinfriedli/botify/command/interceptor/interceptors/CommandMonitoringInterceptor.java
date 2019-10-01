@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
-import net.robinfriedli.botify.command.AbstractCommand;
+import net.robinfriedli.botify.command.Command;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.interceptor.AbstractChainableCommandInterceptor;
 import net.robinfriedli.botify.command.interceptor.CommandInterceptor;
@@ -31,7 +31,7 @@ public class CommandMonitoringInterceptor extends AbstractChainableCommandInterc
     }
 
     @Override
-    public void performChained(AbstractCommand command) {
+    public void performChained(Command command) {
         CommandContext context = command.getContext();
         Thread monitoringThread = new Thread(() -> {
             CommandExecutionThread commandExecutionThread = command.getThread();

@@ -97,11 +97,6 @@ public class AudioManager {
         return youTubeService;
     }
 
-    public void leaveChannel(AudioPlayback playback) {
-        playback.getGuild().getAudioManager().closeAudioConnection();
-        playback.setVoiceChannel(null);
-    }
-
     public AudioPlayerManager getPlayerManager() {
         return playerManager;
     }
@@ -125,7 +120,7 @@ public class AudioManager {
 
     void createNowPlayingWidget(CompletableFuture<Message> futureMessage, AudioPlayback playback) {
         WidgetManager widgetManager = guildManager.getContextForGuild(playback.getGuild()).getWidgetManager();
-        futureMessage.thenAccept(message -> widgetManager.registerWidget(new NowPlayingWidget(widgetManager, message, playback, this)));
+        futureMessage.thenAccept(message -> widgetManager.registerWidget(new NowPlayingWidget(widgetManager, message)));
     }
 
     private void setChannel(AudioPlayback audioPlayback, VoiceChannel channel) {

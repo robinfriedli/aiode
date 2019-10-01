@@ -3,7 +3,13 @@ package net.robinfriedli.botify.exceptions;
 import java.awt.Color;
 
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.MessageChannel;
+import net.robinfriedli.botify.discord.MessageService;
 
+/**
+ * Superclass for all exceptions that are based on user fault and should be sent to discord as error message via
+ * {@link MessageService#sendError(String, MessageChannel)}
+ */
 public class UserException extends RuntimeException {
 
     public UserException() {

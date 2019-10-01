@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="widgetSpace">
+
+  <xs:element name="widgets" type="widgets"/>
+  <xs:complexType name="widgets">
+    <xs:sequence>
+      <xs:element name="widget" type="widget"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="widget">
+    <xs:sequence>
+      <xs:element name="widgetAction" type="widgetAction"/>
+    </xs:sequence>
+    <xs:attribute name="implementation" type="xs:string"/>
+  </xs:complexType>
+  <xs:complexType name="widgetAction">
+    <xs:attribute name="identifier" type="xs:string"/>
+    <xs:attribute name="emojiUnicode" type="xs:string"/>
+    <xs:attribute name="resetRequired" type="xs:boolean"/>
+    <xs:attribute name="implementation" type="xs:string"/>
+  </xs:complexType>
+
+</xs:schema>

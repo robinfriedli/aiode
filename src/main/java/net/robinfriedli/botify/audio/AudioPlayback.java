@@ -64,6 +64,8 @@ public class AudioPlayback {
 
     public void stop() {
         audioPlayer.stopTrack();
+        setLastPlaybackNotification(null);
+        leaveChannel();
     }
 
     public Guild getGuild() {
@@ -135,6 +137,11 @@ public class AudioPlayback {
         audioPlayer.setVolume(volume);
     }
 
+    public void leaveChannel() {
+        guild.getAudioManager().closeAudioConnection();
+        voiceChannel = null;
+    }
+
     /**
      * Clear the queue and reset all options
      *
@@ -144,6 +151,10 @@ public class AudioPlayback {
         boolean changedAnything = false;
         if (!audioQueue.isEmpty()) {
             audioQueue.clear();
+            changedAnything = true;
+        }
+        if (isPaused()) {
+            audioPlayer.stopTrack();
             changedAnything = true;
         }
         if (getVolume() != 100) {
@@ -162,7 +173,13 @@ public class AudioPlayback {
             setRepeatOne(false);
             changedAnything = true;
         }
+        if (voiceChannel != null) {
+            guild.getAudioManager().closeAudioConnection();
+            voiceChannel = null;
+            changedAnything = true;
+        }
 
+        setLastPlaybackNotification(null);
         return changedAnything;
     }
 

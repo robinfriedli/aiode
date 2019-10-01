@@ -13,6 +13,8 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.VoiceChannel;
+import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
+import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
 import net.robinfriedli.botify.audio.spotify.SpotifyService;
 import net.robinfriedli.botify.concurrent.CommandExecutionThread;
 import net.robinfriedli.botify.discord.GuildContext;
@@ -35,23 +37,53 @@ import org.hibernate.SessionFactory;
  */
 public class CommandContext {
 
-    private final String commandBody;
+    private final Guild guild;
+    private final GuildContext guildContext;
+    private final Member member;
     private final Message message;
     private final SessionFactory sessionFactory;
     private final SpotifyApi spotifyApi;
-    private final GuildContext guildContext;
+    private final String commandBody;
     private final String id;
+    private final User user;
     private Session session;
     private CommandHistory commandHistory;
     private Thread monitoringThread;
     private SpotifyService spotifyService;
 
-    public CommandContext(String commandBody, Message message, SessionFactory sessionFactory, SpotifyApi spotifyApi, GuildContext guildContext) {
+    public CommandContext(GuildMessageReceivedEvent event,
+                          GuildContext guildContext,
+                          SessionFactory sessionFactory,
+                          SpotifyApi spotifyApi,
+                          String commandBody) {
+        this(event.getGuild(), guildContext, event.getMember(), event.getMessage(), sessionFactory, spotifyApi, commandBody, event.getAuthor());
+    }
+
+    public CommandContext(GuildMessageReactionAddEvent event,
+                          GuildContext guildContext,
+                          Message message,
+                          SessionFactory sessionFactory,
+                          SpotifyApi spotifyApi,
+                          String commandBody) {
+        this(event.getGuild(), guildContext, event.getMember(), message, sessionFactory, spotifyApi, commandBody, event.getUser());
+    }
+
+    public CommandContext(Guild guild,
+                          GuildContext guildContext,
+                          Member member,
+                          Message message,
+                          SessionFactory sessionFactory,
+                          SpotifyApi spotifyApi,
+                          String commandBody,
+                          User user) {
+        this.guild = guild;
+        this.guildContext = guildContext;
+        this.member = member;
+        this.message = message;
         this.sessionFactory = sessionFactory;
         this.spotifyApi = spotifyApi;
-        this.guildContext = guildContext;
         this.commandBody = commandBody;
-        this.message = message;
+        this.user = user;
         id = UUID.randomUUID().toString();
     }
 
@@ -60,11 +92,11 @@ public class CommandContext {
     }
 
     public User getUser() {
-        return message.getAuthor();
+        return user;
     }
 
     public Member getMember() {
-        return message.getMember();
+        return member;
     }
 
     @Nullable
@@ -79,7 +111,7 @@ public class CommandContext {
     }
 
     public Guild getGuild() {
-        return message.getGuild();
+        return guild;
     }
 
     public MessageChannel getChannel() {

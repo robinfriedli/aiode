@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<widgets xmlns="widgetSpace">
+  <widget implementation="net.robinfriedli.botify.command.widgets.NowPlayingWidget">
+    <widgetAction identifier="rewind" emojiUnicode="⏮" resetRequired="true" implementation="net.robinfriedli.botify.command.widgets.actions.RewindAction"/>
+    <widgetAction identifier="play" emojiUnicode="⏯" resetRequired="false" implementation="net.robinfriedli.botify.command.widgets.actions.PlayPauseAction"/>
+    <widgetAction identifier="skip" emojiUnicode="⏭" resetRequired="true" implementation="net.robinfriedli.botify.command.widgets.actions.SkipAction"/>
+  </widget>
+  <widget implementation="net.robinfriedli.botify.command.widgets.QueueWidget">
+    <widgetAction identifier="shuffle" emojiUnicode="🔀" resetRequired="true" implementation="net.robinfriedli.botify.command.widgets.actions.ShuffleAction"/>
+    <widgetAction identifier="rewind" emojiUnicode="⏮" resetRequired="true" implementation="net.robinfriedli.botify.command.widgets.actions.RewindAction"/>
+    <widgetAction identifier="play" emojiUnicode="⏯" resetRequired="true" implementation="net.robinfriedli.botify.command.widgets.actions.PlayPauseAction"/>
+    <widgetAction identifier="skip" emojiUnicode="⏭" resetRequired="true" implementation="net.robinfriedli.botify.command.widgets.actions.SkipAction"/>
+    <widgetAction identifier="repeat" emojiUnicode="🔁" resetRequired="true" implementation="net.robinfriedli.botify.command.widgets.actions.RepeatAllAction"/>
+    <widgetAction identifier="repeat" emojiUnicode="🔂" resetRequired="true" implementation="net.robinfriedli.botify.command.widgets.actions.RepeatOneAction"/>
+  </widget>
+</widgets>

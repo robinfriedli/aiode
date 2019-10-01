@@ -5,7 +5,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Iterator;
 import java.util.List;
 
-import net.robinfriedli.botify.command.AbstractCommand;
+import net.robinfriedli.botify.command.Command;
 import net.robinfriedli.botify.command.interceptor.interceptors.CommandExecutionInterceptor;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
@@ -65,7 +65,7 @@ public class CommandInterceptorChain implements CommandInterceptor {
     }
 
     @Override
-    public void intercept(AbstractCommand command) {
+    public void intercept(Command command) {
         first.intercept(command);
     }
 }

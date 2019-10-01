@@ -3,7 +3,7 @@ package net.robinfriedli.botify.command.interceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.robinfriedli.botify.command.AbstractCommand;
+import net.robinfriedli.botify.command.Command;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 
 /**
@@ -21,7 +21,7 @@ public abstract class AbstractChainableCommandInterceptor implements CommandInte
     }
 
     @Override
-    public void intercept(AbstractCommand command) {
+    public void intercept(Command command) {
         try {
             performChained(command);
         } catch (Throwable e) {
@@ -39,6 +39,6 @@ public abstract class AbstractChainableCommandInterceptor implements CommandInte
     /**
      * Perform the task of this interceptor handling exceptions according to the CommandInterceptor's contribution
      */
-    public abstract void performChained(AbstractCommand command);
+    public abstract void performChained(Command command);
 
 }

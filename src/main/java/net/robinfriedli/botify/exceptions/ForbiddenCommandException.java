@@ -18,7 +18,7 @@ public class ForbiddenCommandException extends UserException {
             commandIdentifier,
             roles.isEmpty()
                 ? "Only available to guild owner"
-                : "Required roles: " + StringListImpl.create(roles, Role::getName).toSeparatedString(", ")));
+                : "Requires any of these roles: " + StringListImpl.create(roles, Role::getName).toSeparatedString(", ")));
     }
 
     public ForbiddenCommandException(User user, String commandIdentifier, String availableTo) {
