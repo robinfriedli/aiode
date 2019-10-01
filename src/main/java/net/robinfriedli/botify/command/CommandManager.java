@@ -48,7 +48,7 @@ public class CommandManager {
         this.logger = LoggerFactory.getLogger(getClass());
     }
 
-    public void runCommand(AbstractCommand command, ThreadExecutionQueue executionQueue) {
+    public void runCommand(Command command, ThreadExecutionQueue executionQueue) {
         CommandContext context = command.getContext();
         CommandExecutionThread commandExecutionThread = new CommandExecutionThread(command, executionQueue, () -> {
             try {
@@ -58,7 +58,7 @@ public class CommandManager {
             }
         });
 
-        commandExecutionThread.setUncaughtExceptionHandler(new CommandExceptionHandler(context, logger));
+        commandExecutionThread.setUncaughtExceptionHandler(new CommandExceptionHandler(command, logger));
         commandExecutionThread.setName("botify command execution: " + context);
         boolean queued = !executionQueue.add(commandExecutionThread);
 

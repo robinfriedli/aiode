@@ -120,7 +120,7 @@ public class AudioManager {
 
     void createNowPlayingWidget(CompletableFuture<Message> futureMessage, AudioPlayback playback) {
         WidgetManager widgetManager = guildManager.getContextForGuild(playback.getGuild()).getWidgetManager();
-        futureMessage.thenAccept(message -> widgetManager.registerWidget(new NowPlayingWidget(widgetManager, message, playback, this)));
+        futureMessage.thenAccept(message -> widgetManager.registerWidget(new NowPlayingWidget(widgetManager, message)));
     }
 
     private void setChannel(AudioPlayback audioPlayback, VoiceChannel channel) {

@@ -1,9 +1,8 @@
 package net.robinfriedli.botify.command.interceptor.interceptors;
 
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.User;
-import net.robinfriedli.botify.command.AbstractCommand;
+import net.robinfriedli.botify.command.Command;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.SecurityManager;
 import net.robinfriedli.botify.command.interceptor.AbstractChainableCommandInterceptor;
@@ -25,12 +24,11 @@ public class SecurityInterceptor extends AbstractChainableCommandInterceptor {
     }
 
     @Override
-    public void performChained(AbstractCommand command) {
+    public void performChained(Command command) {
         CommandContext context = command.getContext();
         User user = context.getUser();
         Guild guild = context.getGuild();
-        Member member = guild.getMember(user);
-        if (!securityManager.askPermission(command.getIdentifier(), member)) {
+        if (!securityManager.askPermission(command.getIdentifier(), context.getMember())) {
             // if accessConfiguration were null we would not have got here
             AccessConfiguration accessConfiguration = guildManager.getAccessConfiguration(command.getIdentifier(), guild);
             //noinspection ConstantConditions

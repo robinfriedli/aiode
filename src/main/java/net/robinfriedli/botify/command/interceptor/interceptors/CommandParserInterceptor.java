@@ -1,6 +1,7 @@
 package net.robinfriedli.botify.command.interceptor.interceptors;
 
 import net.robinfriedli.botify.command.AbstractCommand;
+import net.robinfriedli.botify.command.Command;
 import net.robinfriedli.botify.command.interceptor.AbstractChainableCommandInterceptor;
 import net.robinfriedli.botify.command.interceptor.CommandInterceptor;
 import net.robinfriedli.botify.command.parser.CommandParser;
@@ -14,8 +15,11 @@ public class CommandParserInterceptor extends AbstractChainableCommandIntercepto
     }
 
     @Override
-    public void performChained(AbstractCommand command) {
-        CommandParser commandParser = new CommandParser(command, ArgumentPrefixProperty.getForCurrentContext());
-        commandParser.parse();
+    public void performChained(Command command) {
+        if (command instanceof AbstractCommand) {
+            AbstractCommand textBasedCommand = (AbstractCommand) command;
+            CommandParser commandParser = new CommandParser(textBasedCommand, ArgumentPrefixProperty.getForCurrentContext());
+            commandParser.parse();
+        }
     }
 }

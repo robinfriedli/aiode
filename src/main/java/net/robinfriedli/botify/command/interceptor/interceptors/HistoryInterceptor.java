@@ -5,9 +5,11 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 
 import net.robinfriedli.botify.command.AbstractCommand;
+import net.robinfriedli.botify.command.Command;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.interceptor.AbstractChainableCommandInterceptor;
 import net.robinfriedli.botify.command.interceptor.CommandInterceptor;
+import net.robinfriedli.botify.command.widgets.AbstractWidgetAction;
 import net.robinfriedli.botify.entities.CommandHistory;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 
@@ -18,7 +20,7 @@ public class HistoryInterceptor extends AbstractChainableCommandInterceptor {
     }
 
     @Override
-    public void performChained(AbstractCommand command) {
+    public void performChained(Command command) {
         CommandContext context = command.getContext();
         CommandHistory history = new CommandHistory();
         long currentTimeMillis = System.currentTimeMillis();
@@ -26,7 +28,8 @@ public class HistoryInterceptor extends AbstractChainableCommandInterceptor {
         history.setTimestamp(LocalDateTime.ofInstant(Instant.ofEpochMilli(currentTimeMillis), ZoneId.systemDefault()));
         history.setCommandContextId(command.getContext().getId());
         history.setCommandIdentifier(command.getIdentifier());
-        history.setCommandBody(command.getCommandInput());
+        history.setWidget(command instanceof AbstractWidgetAction);
+        history.setCommandBody(command instanceof AbstractCommand ? ((AbstractCommand) command).getCommandInput() : command.getCommandBody());
         history.setInput(context.getMessage().getContentDisplay());
         history.setGuild(context.getGuild().getName());
         history.setGuildId(context.getGuild().getId());

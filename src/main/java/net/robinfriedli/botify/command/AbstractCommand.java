@@ -44,7 +44,7 @@ import net.robinfriedli.stringlist.StringListImpl;
  * the user input. This is handled by the {@link CommandManager} which then passes the initialized AbstractCommand
  * instance to the {@link CommandInterceptorChain} for execution. Processes used arguments and command body on creation.
  */
-public abstract class AbstractCommand {
+public abstract class AbstractCommand implements Command {
 
     private final CommandContribution commandContribution;
     private final CommandContext context;
@@ -82,18 +82,9 @@ public abstract class AbstractCommand {
         commandInput = "";
     }
 
-    /**
-     * The actual logic to run for this command
-     *
-     * @throws Exception any exception thrown during execution
-     */
-    public abstract void doRun() throws Exception;
-
-    /**
-     * Method called when {@link #isFailed()} is false and no exception has been thrown. Usually sends a success message
-     * to Discord.
-     */
-    public abstract void onSuccess();
+    @Override
+    public void onFailure() {
+    }
 
     /**
      * Run logic with the given user choice after a {@link ClientQuestionEvent} has been completed. Called by
@@ -146,6 +137,7 @@ public abstract class AbstractCommand {
         return HibernateInvoker.create(getContext().getGuild()).invoke(callable);
     }
 
+    @Override
     public CommandContext getContext() {
         return context;
     }
@@ -158,6 +150,7 @@ public abstract class AbstractCommand {
      * @return whether or not the command is privileged, meaning it skips the ThreadExecutionQueue and gets executed
      * regardless of the queue being full
      */
+    @Override
     public boolean isPrivileged() {
         return false;
     }
@@ -165,6 +158,7 @@ public abstract class AbstractCommand {
     /**
      * @return the thread that is executing this command
      */
+    @Override
     public CommandExecutionThread getThread() {
         return thread;
     }
@@ -172,6 +166,7 @@ public abstract class AbstractCommand {
     /**
      * @param thread the thread that is executing this command
      */
+    @Override
     public void setThread(CommandExecutionThread thread) {
         this.thread = thread;
     }
@@ -360,6 +355,7 @@ public abstract class AbstractCommand {
      * @return the string following the command identifier. This represents the command string used to parse the
      * arguments and command input
      */
+    @Override
     public String getCommandBody() {
         return commandBody;
     }
@@ -367,8 +363,24 @@ public abstract class AbstractCommand {
     /**
      * @return the String this command gets referenced with
      */
+    @Override
     public String getIdentifier() {
         return identifier;
+    }
+
+    @Override
+    public boolean isFailed() {
+        return isFailed;
+    }
+
+    public void setFailed(boolean isFailed) {
+        this.isFailed = isFailed;
+    }
+
+    @Override
+    public String display() {
+        String contentDisplay = context.getMessage().getContentDisplay();
+        return contentDisplay.length() > 150 ? contentDisplay.substring(0, 150) + "[...]" : contentDisplay;
     }
 
     public Category getCategory() {
@@ -389,14 +401,6 @@ public abstract class AbstractCommand {
 
     public void setCommandInput(String commandInput) {
         this.commandInput = commandInput;
-    }
-
-    public boolean isFailed() {
-        return isFailed;
-    }
-
-    public void setFailed(boolean isFailed) {
-        this.isFailed = isFailed;
     }
 
     public boolean requiresInput() {

@@ -34,6 +34,7 @@ import net.robinfriedli.botify.entities.xml.EmbedDocumentContribution;
 import net.robinfriedli.botify.entities.xml.GuildPropertyContribution;
 import net.robinfriedli.botify.entities.xml.HttpHandlerContribution;
 import net.robinfriedli.botify.entities.xml.StartupTaskContribution;
+import net.robinfriedli.botify.entities.xml.WidgetContribution;
 import net.robinfriedli.botify.listeners.CommandListener;
 import net.robinfriedli.botify.listeners.GuildJoinListener;
 import net.robinfriedli.botify.listeners.VoiceChannelListener;
@@ -82,6 +83,8 @@ public class Launcher {
                 .mapClass("startupTask", StartupTaskContribution.class)
                 .mapClass("guildProperty", GuildPropertyContribution.class)
                 .mapClass("cronJob", CronJobContribution.class)
+                .mapClass("widget", WidgetContribution.class)
+                .mapClass("widgetAction", WidgetContribution.WidgetActionContribution.class)
                 .build();
 
             StandardServiceRegistry serviceRegistry = new StandardServiceRegistryBuilder().configure(new File(hibernateConfigurationPath)).build();

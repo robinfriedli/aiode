@@ -9,7 +9,12 @@ import org.slf4j.LoggerFactory;
 import com.google.api.client.util.Lists;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.AbstractWidget;
+import net.robinfriedli.botify.entities.xml.WidgetContribution;
 import net.robinfriedli.botify.exceptions.UserException;
+import net.robinfriedli.botify.util.PropertiesLoadingService;
+import net.robinfriedli.jxp.persist.Context;
+
+import static net.robinfriedli.jxp.queries.Conditions.*;
 
 public class WidgetManager {
 
@@ -18,6 +23,20 @@ public class WidgetManager {
      */
     private final List<AbstractWidget> activeWidgets = Lists.newArrayList();
     private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Context widgetConfigurationContext = Botify.get().getJxpBackend().getContext(PropertiesLoadingService.requireProperty("WIDGETS_PATH"));
+
+    public WidgetContribution getContributionForWidget(Class<? extends AbstractWidget> type) {
+        WidgetContribution widgetContribution = widgetConfigurationContext.query(and(
+            attribute("implementation").is(type.getName()),
+            instanceOf(WidgetContribution.class)
+        ), WidgetContribution.class).getOnlyResult();
+
+        if (widgetContribution == null) {
+            throw new IllegalStateException("No widget configuration for " + type + ". Add to widgets.xml");
+        }
+
+        return widgetContribution;
+    }
 
     public synchronized void registerWidget(AbstractWidget widget) {
         List<AbstractWidget> toRemove = com.google.common.collect.Lists.newArrayList();

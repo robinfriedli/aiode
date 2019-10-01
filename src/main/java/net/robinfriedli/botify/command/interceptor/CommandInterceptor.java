@@ -1,6 +1,6 @@
 package net.robinfriedli.botify.command.interceptor;
 
-import net.robinfriedli.botify.command.AbstractCommand;
+import net.robinfriedli.botify.command.Command;
 
 /**
  * Interface for classes that intercept and run the command execution. Its implementations are added and configured in
@@ -8,6 +8,6 @@ import net.robinfriedli.botify.command.AbstractCommand;
  */
 public interface CommandInterceptor {
 
-    void intercept(AbstractCommand command);
+    void intercept(Command command);
 
 }

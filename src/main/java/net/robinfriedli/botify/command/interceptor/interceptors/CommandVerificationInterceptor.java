@@ -1,6 +1,7 @@
 package net.robinfriedli.botify.command.interceptor.interceptors;
 
 import net.robinfriedli.botify.command.AbstractCommand;
+import net.robinfriedli.botify.command.Command;
 import net.robinfriedli.botify.command.interceptor.AbstractChainableCommandInterceptor;
 import net.robinfriedli.botify.command.interceptor.CommandInterceptor;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
@@ -13,11 +14,14 @@ public class CommandVerificationInterceptor extends AbstractChainableCommandInte
     }
 
     @Override
-    public void performChained(AbstractCommand command) {
-        command.verify();
+    public void performChained(Command command) {
+        if (command instanceof AbstractCommand) {
+            AbstractCommand textBasedCommand = (AbstractCommand) command;
+            textBasedCommand.verify();
 
-        if (command.getCommandInput().length() > 1000) {
-            throw new InvalidCommandException("Command input exceeds maximum length of 1000 characters.");
+            if (textBasedCommand.getCommandInput().length() > 1000) {
+                throw new InvalidCommandException("Command input exceeds maximum length of 1000 characters.");
+            }
         }
     }
 }

@@ -24,6 +24,8 @@ public class CommandHistory implements Serializable {
     private long startMillis;
     @Column(name = "command_identifier")
     private String commandIdentifier;
+    @Column(name = "is_widget")
+    private boolean isWidget;
     @Column(name = "command_context_id")
     private String commandContextId;
     @Column(name = "command_body", length = 2000)
@@ -176,5 +178,13 @@ public class CommandHistory implements Serializable {
 
     public void setCommandContextId(String commandContextId) {
         this.commandContextId = commandContextId;
+    }
+
+    public boolean isWidget() {
+        return isWidget;
+    }
+
+    public void setWidget(boolean widget) {
+        isWidget = widget;
     }
 }

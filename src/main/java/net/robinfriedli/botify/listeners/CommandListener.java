@@ -81,7 +81,7 @@ public class CommandListener extends ListenerAdapter {
                     boolean startsWithName = !Strings.isNullOrEmpty(botName) && lowerCaseMsg.startsWith(botName.toLowerCase());
                     if (startsWithPrefix || startsWithName || lowerCaseMsg.startsWith("$botify")) {
                         String usedPrefix = extractUsedPrefix(message, lowerCaseMsg, botName, prefix, startsWithName, startsWithPrefix);
-                        startCommandExecution(usedPrefix, message, guild, guildContext, session);
+                        startCommandExecution(usedPrefix, message, guild, guildContext, session, event);
                     }
                 }
             });
@@ -116,10 +116,10 @@ public class CommandListener extends ListenerAdapter {
         return namePrefix;
     }
 
-    private void startCommandExecution(String namePrefix, Message message, Guild guild, GuildContext guildContext, Session session) {
+    private void startCommandExecution(String namePrefix, Message message, Guild guild, GuildContext guildContext, Session session, GuildMessageReceivedEvent event) {
         ThreadExecutionQueue queue = executionQueueManager.getForGuild(guild);
         String commandBody = message.getContentDisplay().substring(namePrefix.length()).trim();
-        CommandContext commandContext = new CommandContext(commandBody, message, sessionFactory, spotifyApiBuilder.build(), guildContext);
+        CommandContext commandContext = new CommandContext(event, guildContext, sessionFactory, spotifyApiBuilder.build(), commandBody);
         CommandContext.Current.set(commandContext);
         try {
             Optional<AbstractCommand> commandInstance = commandManager.instantiateCommandForContext(commandContext, session);

@@ -9,14 +9,15 @@ import org.slf4j.LoggerFactory;
 
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageReaction;
-import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.widgets.AbstractWidgetAction;
 import net.robinfriedli.botify.command.widgets.WidgetManager;
+import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
 import net.robinfriedli.botify.discord.MessageService;
+import net.robinfriedli.botify.entities.xml.WidgetContribution;
 import net.robinfriedli.botify.exceptions.UserException;
 
 /**
@@ -25,27 +26,31 @@ import net.robinfriedli.botify.exceptions.UserException;
  */
 public abstract class AbstractWidget {
 
+    private final CommandManager commandManager;
+    private final CommandExecutionQueueManager executionQueueManager;
+    private final WidgetContribution widgetContribution;
     private final WidgetManager widgetManager;
     private final Message message;
     private final String guildId;
     private final Logger logger;
-    private List<AbstractWidgetAction> actions;
     // if the message has been deleted by a widget action that does not always require a reset
     private boolean messageDeleted;
 
     protected AbstractWidget(WidgetManager widgetManager, Message message) {
+        Botify botify = Botify.get();
+        this.commandManager = botify.getCommandManager();
+        this.executionQueueManager = botify.getExecutionQueueManager();
         this.widgetManager = widgetManager;
         this.message = message;
         this.guildId = message.getGuild().getId();
+        widgetContribution = widgetManager.getContributionForWidget(getClass());
         logger = LoggerFactory.getLogger(getClass());
     }
-
-    public abstract List<AbstractWidgetAction> setupActions();
 
     /**
      * Resets (i.e. re-sends) the message output after the widget action has been executed
      */
-    public abstract void reset() throws Exception;
+    public abstract void reset();
 
     public Message getMessage() {
         return message;
@@ -55,14 +60,15 @@ public abstract class AbstractWidget {
      * Adds the reactions representing each available action to the message and prepares all actions
      */
     public void setup() {
-        this.actions = setupActions();
+        List<WidgetContribution.WidgetActionContribution> actionContributions =
+            widgetContribution.getSubElementsWithType(WidgetContribution.WidgetActionContribution.class);
         try {
             CompletableFuture<RuntimeException> futureException = new CompletableFuture<>();
-            for (int i = 0; i < actions.size(); i++) {
-                AbstractWidgetAction action = actions.get(i);
+            for (int i = 0; i < actionContributions.size(); i++) {
+                WidgetContribution.WidgetActionContribution action = actionContributions.get(i);
                 int finalI = i;
                 message.addReaction(action.getEmojiUnicode()).queue(aVoid -> {
-                    if (finalI == actions.size() - 1 && !futureException.isDone()) {
+                    if (finalI == actionContributions.size() - 1 && !futureException.isDone()) {
                         futureException.cancel(false);
                     }
                 }, throwable -> {
@@ -117,25 +123,16 @@ public abstract class AbstractWidget {
         }
     }
 
-    public void handleReaction(GuildMessageReactionAddEvent event) throws Exception {
+    public void handleReaction(GuildMessageReactionAddEvent event, CommandContext context) {
         MessageReaction reaction = event.getReaction();
-        User sourceUser = event.getUser();
-        Optional<AbstractWidgetAction> actionOptional = actions.stream()
-            .filter(widgetAction -> widgetAction.getEmojiUnicode().equals(reaction.getReactionEmote().getName()))
-            .findAny();
-        if (actionOptional.isPresent()) {
-            AbstractWidgetAction widgetAction = actionOptional.get();
-            widgetAction.run(event);
-            if (widgetAction.isResetRequired()) {
-                reset();
-            } else if (!isMessageDeleted()) {
-                try {
-                    reaction.removeReaction(sourceUser).queue();
-                } catch (InsufficientPermissionException e) {
-                    throw new UserException("Bot is missing permission: " + e.getPermission().getName());
-                }
-            }
-        }
+        Optional<AbstractWidgetAction> actionOptional = widgetContribution
+            .getSubElementsWithType(WidgetContribution.WidgetActionContribution.class)
+            .stream()
+            .filter(actionContribution -> actionContribution.getEmojiUnicode().equals(reaction.getReactionEmote().getName()))
+            .findAny()
+            .map(actionContribution -> actionContribution.instantiate(context, this, event));
+        actionOptional.ifPresent(abstractWidgetAction ->
+            commandManager.runCommand(abstractWidgetAction, executionQueueManager.getForGuild(event.getGuild())));
     }
 
     public WidgetManager getWidgetManager() {

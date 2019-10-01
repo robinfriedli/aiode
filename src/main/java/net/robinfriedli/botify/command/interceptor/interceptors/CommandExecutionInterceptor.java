@@ -10,6 +10,7 @@ import com.wrapper.spotify.exceptions.detailed.UnauthorizedException;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.command.AbstractCommand;
+import net.robinfriedli.botify.command.Command;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.interceptor.CommandInterceptor;
 import net.robinfriedli.botify.discord.MessageService;
@@ -32,21 +33,31 @@ public class CommandExecutionInterceptor implements CommandInterceptor {
     }
 
     @Override
-    public void intercept(AbstractCommand command) {
+    public void intercept(Command command) {
         boolean completedSuccessfully = false;
         boolean failedManually = false;
         String errorMessage = null;
         boolean unexpectedException = false;
         try {
-            command.doRun();
+            try {
+                command.doRun();
+            } catch (Throwable e) {
+                command.onFailure();
+                throw e;
+            }
             if (!command.isFailed()) {
                 command.onSuccess();
                 completedSuccessfully = true;
             } else {
+                command.onFailure();
                 failedManually = true;
             }
         } catch (AmbiguousCommandException e) {
-            command.askQuestion(e.getOptions(), e.getDisplayFunc());
+            if (command instanceof AbstractCommand) {
+                ((AbstractCommand) command).askQuestion(e.getOptions(), e.getDisplayFunc());
+            } else {
+                throw e;
+            }
         } catch (NoLoginException e) {
             MessageChannel channel = command.getContext().getChannel();
             User user = command.getContext().getUser();
@@ -100,7 +111,7 @@ public class CommandExecutionInterceptor implements CommandInterceptor {
         }
     }
 
-    private void postCommand(AbstractCommand command,
+    private void postCommand(Command command,
                              boolean completedSuccessfully,
                              boolean failedManually,
                              String errorMessage,

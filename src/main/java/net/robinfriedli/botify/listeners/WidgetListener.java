@@ -20,10 +20,8 @@ import net.robinfriedli.botify.command.widgets.WidgetManager;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.MessageService;
-import net.robinfriedli.botify.exceptions.CommandRuntimeException;
 import net.robinfriedli.botify.exceptions.UserException;
 import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
-import net.robinfriedli.botify.exceptions.handlers.WidgetExceptionHandler;
 import net.robinfriedli.botify.util.StaticSessionProvider;
 import org.jetbrains.annotations.NotNull;
 
@@ -56,7 +54,7 @@ public class WidgetListener extends ListenerAdapter {
                 WidgetManager widgetManager = guildManager.getContextForGuild(event.getGuild()).getWidgetManager();
 
                 Optional<AbstractWidget> activeWidget = widgetManager.getActiveWidget(messageId);
-                activeWidget.ifPresent(abstractWidget -> handleWidgetExecution(event, messageId, abstractWidget));
+                activeWidget.ifPresent(abstractWidget -> handleWidgetExecution(event, abstractWidget));
             });
         }
     }
@@ -72,27 +70,29 @@ public class WidgetListener extends ListenerAdapter {
         });
     }
 
-    private void handleWidgetExecution(GuildMessageReactionAddEvent event, String messageId, AbstractWidget activeWidget) {
+    private void handleWidgetExecution(GuildMessageReactionAddEvent event, AbstractWidget activeWidget) {
         TextChannel channel = event.getChannel();
         Guild guild = event.getGuild();
         Botify botify = Botify.get();
         SpotifyApi spotifyApi = botify.getSpotifyApiBuilder().build();
         GuildContext guildContext = botify.getGuildManager().getContextForGuild(guild);
-        CommandContext commandContext = new CommandContext("", activeWidget.getMessage(), StaticSessionProvider.getSessionFactory(), spotifyApi, guildContext);
+        String emojiUnicode = event.getReaction().getReactionEmote().getName();
+        CommandContext commandContext = new CommandContext(
+            event,
+            guildContext,
+            activeWidget.getMessage(),
+            StaticSessionProvider.getSessionFactory(),
+            spotifyApi,
+            emojiUnicode
+        );
 
-        Thread widgetExecutionThread = new Thread(() -> {
-            CommandContext.Current.set(commandContext);
-            try {
-                activeWidget.handleReaction(event);
-            } catch (UserException e) {
-                messageService.sendError(e.getMessage(), channel);
-            } catch (Exception e) {
-                throw new CommandRuntimeException(e);
-            }
-        });
-        widgetExecutionThread.setName("Widget execution thread " + messageId);
-        widgetExecutionThread.setUncaughtExceptionHandler(new WidgetExceptionHandler(channel, logger));
-        widgetExecutionThread.start();
+        try {
+            activeWidget.handleReaction(event, commandContext);
+        } catch (UserException e) {
+            messageService.sendError(e.getMessage(), channel);
+        } catch (Throwable e) {
+            logger.error("Exception while preparing WidgetAction execution.", e);
+        }
     }
 
 }
