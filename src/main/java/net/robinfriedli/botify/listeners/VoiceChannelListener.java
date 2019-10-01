@@ -49,7 +49,7 @@ public class VoiceChannelListener extends ListenerAdapter {
                     && noOtherMembersLeft(channel, guild)) {
                     if (isAutoPauseEnabled(guild)) {
                         playback.pause();
-                        audioManager.leaveChannel(playback);
+                        playback.leaveChannel();
                     } else {
                         playback.setAloneSince(LocalDateTime.now());
                     }

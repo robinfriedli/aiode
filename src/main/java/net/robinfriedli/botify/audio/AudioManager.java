@@ -97,11 +97,6 @@ public class AudioManager {
         return youTubeService;
     }
 
-    public void leaveChannel(AudioPlayback playback) {
-        playback.getGuild().getAudioManager().closeAudioConnection();
-        playback.setVoiceChannel(null);
-    }
-
     public AudioPlayerManager getPlayerManager() {
         return playerManager;
     }

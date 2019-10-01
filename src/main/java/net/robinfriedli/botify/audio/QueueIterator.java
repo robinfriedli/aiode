@@ -103,7 +103,6 @@ public class QueueIterator extends AudioEventAdapter {
             embedBuilder.setDescription("Queue contains too many unplayable tracks subsequently for automatic skipping. You can skip to the next valid track manually.");
             messageService.sendTemporary(embedBuilder.build(), playback.getCommunicationChannel());
             playback.stop();
-            audioManager.leaveChannel(playback);
             resetRetryCount();
             return;
         }
@@ -166,7 +165,7 @@ public class QueueIterator extends AudioEventAdapter {
                 playNext();
             } else {
                 queue.reset();
-                audioManager.leaveChannel(playback);
+                playback.leaveChannel();
             }
         } else {
             playNext();

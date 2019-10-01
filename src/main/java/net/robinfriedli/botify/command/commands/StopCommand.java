@@ -23,8 +23,6 @@ public class StopCommand extends AbstractCommand {
         getContext().getGuildContext().getTrackLoadingExecutor().interruptTrackLoading();
         playback.stop();
         playback.getAudioQueue().clear();
-        playback.setLastPlaybackNotification(null);
-        audioManager.leaveChannel(playback);
     }
 
     @Override

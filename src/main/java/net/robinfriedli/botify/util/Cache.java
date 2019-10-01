@@ -12,6 +12,7 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
+import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
@@ -32,6 +33,13 @@ public class Cache {
 
     static {
         EXTRACTORS.add(new Extractor<>(AudioManager.class, () -> Botify.get().getAudioManager()));
+        EXTRACTORS.add(new Extractor<>(AudioPlayback.class, () -> {
+            if (CommandContext.Current.isSet()) {
+                return CommandContext.Current.require().getGuildContext().getPlayback();
+            } else {
+                return null;
+            }
+        }));
         EXTRACTORS.add(new Extractor<>(CommandContext.class, CommandContext.Current::get));
         EXTRACTORS.add(new Extractor<>(CommandExecutionQueueManager.class, () -> Botify.get().getExecutionQueueManager()));
         EXTRACTORS.add(new Extractor<>(CommandManager.class, () -> Botify.get().getCommandManager()));
