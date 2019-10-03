@@ -30,7 +30,7 @@ public class HistoryInterceptor extends AbstractChainableCommandInterceptor {
         history.setCommandIdentifier(command.getIdentifier());
         history.setWidget(command instanceof AbstractWidgetAction);
         history.setCommandBody(command instanceof AbstractCommand ? ((AbstractCommand) command).getCommandInput() : command.getCommandBody());
-        history.setInput(context.getMessage().getContentDisplay());
+        history.setInput(command instanceof AbstractCommand ? context.getMessage().getContentDisplay() : command.getCommandBody());
         history.setGuild(context.getGuild().getName());
         history.setGuildId(context.getGuild().getId());
         history.setUser(context.getUser().getName());

@@ -14,6 +14,7 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 
+import com.google.common.base.Strings;
 import org.hibernate.Session;
 
 /**
@@ -46,6 +47,9 @@ public class SpotifyRedirectIndex implements Serializable {
     }
 
     public static Optional<SpotifyRedirectIndex> queryExistingIndex(Session session, String spotifyTrackId) {
+        if (Strings.isNullOrEmpty(spotifyTrackId)) {
+            return Optional.empty();
+        }
         CriteriaBuilder cb = session.getCriteriaBuilder();
         CriteriaQuery<SpotifyRedirectIndex> query = cb.createQuery(SpotifyRedirectIndex.class);
         Root<SpotifyRedirectIndex> root = query.from(SpotifyRedirectIndex.class);

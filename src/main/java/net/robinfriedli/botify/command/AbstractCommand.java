@@ -310,7 +310,7 @@ public abstract class AbstractCommand implements Command {
     }
 
     protected void sendToActiveGuilds(MessageEmbed message) {
-        messageService.sendToActiveGuilds(message, getContext().getJda(), Botify.get().getAudioManager(), getContext().getSession());
+        messageService.sendToActiveGuilds(message, getContext().getSession());
     }
 
     /**
