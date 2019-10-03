@@ -9,6 +9,7 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Strings;
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.robinfriedli.botify.audio.youtube.HollowYouTubeVideo;
@@ -69,7 +70,7 @@ public class SpotifyRedirectService {
         }
 
         youTubeService.redirectSpotify(youTubeVideo);
-        if (!youTubeVideo.isCanceled()) {
+        if (!youTubeVideo.isCanceled() && !Strings.isNullOrEmpty(spotifyTrack.getId())) {
             SINGE_THREAD_EXECUTOR_SERVICE.execute(() -> StaticSessionProvider.invokeWithSession(otherThreadSession -> {
                 try {
                     String videoId = youTubeVideo.getVideoId();

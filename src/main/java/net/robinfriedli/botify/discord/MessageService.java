@@ -19,7 +19,6 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.ChannelType;
@@ -33,7 +32,6 @@ import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.requests.restaction.MessageAction;
 import net.robinfriedli.botify.Botify;
-import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
@@ -204,7 +202,7 @@ public class MessageService {
         }
     }
 
-    public void sendToActiveGuilds(MessageEmbed message, JDA jda, AudioManager audioManager, Session session) {
+    public void sendToActiveGuilds(MessageEmbed message, Session session) {
         GuildManager guildManager = Botify.get().getGuildManager();
         Set<Guild> activeGuilds = guildManager.getActiveGuilds(session);
 

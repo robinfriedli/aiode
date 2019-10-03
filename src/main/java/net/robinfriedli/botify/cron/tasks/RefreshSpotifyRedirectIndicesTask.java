@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.base.Strings;
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.robinfriedli.botify.Botify;
@@ -62,7 +63,12 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
             int updateCount = 0;
             for (SpotifyRedirectIndex index : indices) {
                 RefreshTrackIndexTask task = new RefreshTrackIndexTask(session, index, youTubeService);
-                spotifyTrackBulkLoadingService.add(index.getSpotifyId(), task);
+                String spotifyId = index.getSpotifyId();
+                if (!Strings.isNullOrEmpty(spotifyId)) {
+                    spotifyTrackBulkLoadingService.add(spotifyId, task);
+                } else {
+                    session.delete(index);
+                }
                 ++updateCount;
             }
             spotifyTrackBulkLoadingService.perform();
@@ -94,7 +100,7 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
             try {
                 HollowYouTubeVideo hollowYouTubeVideo = new HollowYouTubeVideo(youTubeService, track);
                 youTubeService.redirectSpotify(hollowYouTubeVideo);
-                if (!hollowYouTubeVideo.isCanceled()) {
+                if (!hollowYouTubeVideo.isCanceled() && !Strings.isNullOrEmpty(track.getId())) {
                     String videoId = hollowYouTubeVideo.getVideoId();
                     index.setYouTubeId(videoId);
                     index.setLastUpdated(LocalDate.now());
