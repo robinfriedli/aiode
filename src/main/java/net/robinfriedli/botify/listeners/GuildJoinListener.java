@@ -5,21 +5,14 @@ import java.util.concurrent.Executors;
 
 import javax.annotation.Nullable;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.wrapper.spotify.SpotifyApi;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
 import net.robinfriedli.botify.discord.GuildManager;
-import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
-import net.robinfriedli.jxp.api.JxpBackend;
 import org.discordbots.api.client.DiscordBotListAPI;
-import org.hibernate.SessionFactory;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -32,19 +25,10 @@ public class GuildJoinListener extends ListenerAdapter {
     private final DiscordBotListAPI discordBotListAPI;
     private final ExecutorService guildJoinExecutorService;
     private final GuildManager guildManager;
-    private final JxpBackend jxpBackend;
-    private final Logger logger;
-    private final MessageService messageService;
-    private final SessionFactory sessionFactory;
-    private final SpotifyApi.Builder spotifyApiBuilder;
 
     public GuildJoinListener(CommandExecutionQueueManager executionQueueManager,
                              @Nullable DiscordBotListAPI discordBotListAPI,
-                             GuildManager guildManager,
-                             JxpBackend jxpBackend,
-                             MessageService messageService,
-                             SessionFactory sessionFactory,
-                             SpotifyApi.Builder spotifyApiBuilder) {
+                             GuildManager guildManager) {
         this.executionQueueManager = executionQueueManager;
         this.discordBotListAPI = discordBotListAPI;
         guildJoinExecutorService = Executors.newFixedThreadPool(3, r -> {
@@ -53,11 +37,6 @@ public class GuildJoinListener extends ListenerAdapter {
             return thread;
         });
         this.guildManager = guildManager;
-        this.jxpBackend = jxpBackend;
-        this.messageService = messageService;
-        this.sessionFactory = sessionFactory;
-        this.spotifyApiBuilder = spotifyApiBuilder;
-        logger = LoggerFactory.getLogger(getClass());
     }
 
     @Override

@@ -19,6 +19,7 @@ import net.dv8tion.jda.api.entities.VoiceChannel;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.robinfriedli.botify.audio.spotify.SpotifyService;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
+import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.widgets.NowPlayingWidget;
 import net.robinfriedli.botify.command.widgets.WidgetManager;
 import net.robinfriedli.botify.discord.GuildManager;
@@ -74,6 +75,10 @@ public class AudioManager {
             setChannel(playback, channel);
         } else if (playback.getVoiceChannel() == null) {
             throw new InvalidCommandException("Not in a voice channel");
+        }
+
+        if (CommandContext.Current.isSet()) {
+            playback.setCommunicationChannel(CommandContext.Current.require().getChannel());
         }
 
         if (playback.isPaused() && resumePaused) {

@@ -2,15 +2,15 @@ package net.robinfriedli.botify.cron.tasks;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.Lists;
 import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.botify.Botify;
-import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.cron.AbstractCronTask;
 import net.robinfriedli.botify.discord.GuildContext;
@@ -29,9 +29,8 @@ public class PlaybackCleanupTask extends AbstractCronTask {
     public void run(JobExecutionContext jobExecutionContext) {
         Logger logger = LoggerFactory.getLogger(getClass());
         Botify botify = Botify.get();
-        AudioManager audioManager = botify.getAudioManager();
         GuildManager guildManager = botify.getGuildManager();
-        Collection<GuildContext> guildContexts = guildManager.getGuildContexts();
+        List<GuildContext> guildContexts = Lists.newArrayList(guildManager.getGuildContexts());
 
         int clearedAlone = 0;
         for (GuildContext guildContext : guildContexts) {
@@ -63,7 +62,9 @@ public class PlaybackCleanupTask extends AbstractCronTask {
             }
         }
 
-        logger.info(String.format("Cleared %s stale playbacks and stopped %s lone playbacks", playbacksCleared, clearedAlone));
+        if (clearedAlone > 0 || playbacksCleared > 0) {
+            logger.info(String.format("Cleared %s stale playbacks and stopped %s lone playbacks", playbacksCleared, clearedAlone));
+        }
     }
 
     @Override

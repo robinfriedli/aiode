@@ -60,7 +60,6 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
     public void doRun() throws Exception {
         AudioManager audioManager = Botify.get().getAudioManager();
         AudioPlayback playback = audioManager.getPlaybackForGuild(getContext().getGuild());
-        playback.setCommunicationChannel(getContext().getChannel());
 
         if (UrlValidator.getInstance().isValid(getCommandInput())) {
             loadUrlItems(audioManager, playback);

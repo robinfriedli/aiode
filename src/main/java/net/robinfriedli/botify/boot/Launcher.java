@@ -143,7 +143,7 @@ public class Launcher {
             SecurityManager securityManager = new SecurityManager(guildManager);
 
             CommandListener commandListener = new CommandListener(executionQueueManager, commandManager, guildManager, messageService, sessionFactory, spotifyApiBuilder);
-            GuildJoinListener guildJoinListener = new GuildJoinListener(executionQueueManager, discordBotListAPI, guildManager, jxpBackend, messageService, sessionFactory, spotifyApiBuilder);
+            GuildJoinListener guildJoinListener = new GuildJoinListener(executionQueueManager, discordBotListAPI, guildManager);
             WidgetListener widgetListener = new WidgetListener(guildManager, messageService);
             VoiceChannelListener voiceChannelListener = new VoiceChannelListener(audioManager);
 
