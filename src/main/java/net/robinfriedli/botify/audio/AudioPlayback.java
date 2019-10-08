@@ -145,7 +145,7 @@ public class AudioPlayback {
     /**
      * Clear the queue and reset all options
      *
-     * @return true if anything change
+     * @return true if anything changed
      */
     public boolean clear() {
         boolean changedAnything = false;
@@ -178,6 +178,11 @@ public class AudioPlayback {
             voiceChannel = null;
             changedAnything = true;
         }
+        if (communicationChannel != null) {
+            communicationChannel = null;
+            changedAnything = true;
+        }
+
 
         setLastPlaybackNotification(null);
         return changedAnything;

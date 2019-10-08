@@ -33,6 +33,7 @@ public class SkipAction extends AbstractWidgetAction {
                 audioManager.startPlayback(guild, voiceState != null ? voiceState.getChannel() : null);
             } else {
                 audioPlayback.stop();
+                queue.reset();
             }
         }
     }
