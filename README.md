@@ -33,7 +33,7 @@ router's public ip and setup port forwarding for your router.
 #### 3.1 Go to https://console.developers.google.com/ and create a project for the YouTube Data API and create and copy the credentials
 
 ### 4. Setup botify settings
-#### 4.1 Navigate to your cloned project and go to ./resources and open the settings.properties file and fill in the blanks, it should look like this:
+#### 4.1 Navigate to your cloned project and go to `./resources` and open the `settings.properties` file and fill in the blanks, it should look like this:
 #### 4.2 To take advantage of the admin commands that can perform administrative actions, such as updating and restarting the bot, be sure to add your Discord user id to the `ADMIN_USERS` property. To find your Discord user id, enable Developer Mode in the App Settings > Appearance. Then go to any guild, right click your user and click "Copy ID".
 ```properties
 ###################
@@ -66,6 +66,9 @@ ERROR_PAGE_PATH=./resources/html/default_error_page.html
 QUEUE_PAGE_PATH=./resources/html/queue_view.html
 EMBED_DOCUMENTS_PATH=./resources/xml-contributions/embedDocuments.xml
 GUILD_PROPERTIES_PATH=./resources/xml-contributions/guildProperties.xml
+CRON_JOBS_PATH=./resources/xml-contributions/cronJobs.xml
+WIDGETS_PATH=./resources/xml-contributions/widgets.xml
+VERSIONS_PATH=./resources/versions.xml
 ###############
 # preferences #
 ###############
@@ -85,7 +88,7 @@ ADMIN_USERS=#define user ids (comma separated) that may access admin commands. T
 
 ### 5. Setup database
 #### 5.1 Setup hibernate configuration
-Navigate to ./resources/hibernate.cfg.xml and adjust the settings, if you use a local postgres server and name your
+Navigate to `./resources/hibernate.cfg.xml` and adjust the settings, if you use a local postgres server and name your
 database botify_playlists you can leave it like this:
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -128,7 +131,21 @@ database botify_playlists you can leave it like this:
     <mapping class="net.robinfriedli.botify.entities.GuildSpecification"/>
     <mapping class="net.robinfriedli.botify.entities.AccessConfiguration"/>
     <mapping class="net.robinfriedli.botify.entities.GrantedRole"/>
+    <mapping class="net.robinfriedli.botify.entities.SpotifyRedirectIndex"/>
   </session-factory>
 </hibernate-configuration>
 ```
+
+#### 5.2 setup liquibase properties
+Go to `src/main/resources/liquibase/liquibase.properties` and adjust the liquibase properties according to the changes you made
+to the hibernate configuration above. If you left it as it is you can leave the liquibase.properties like this:
+```properties
+driver=org.postgresql.Driver
+url=jdbc:postgresql://localhost:5432/botify_playlists
+username=postgres
+password=postgres
+changeLogFile=src/main/resources/liquibase/dbchangelog.xml
+```
+
+
 If you need help setting up your postgres server, please refer to their official documentation: http://www.postgresqltutorial.com/
