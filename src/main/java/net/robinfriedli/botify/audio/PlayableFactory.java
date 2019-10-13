@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 
@@ -238,6 +240,7 @@ public class PlayableFactory {
      * and uses the familiar methods to load the Playables, otherwise this method uses the {@link UrlAudioLoader}
      * to load the {@link AudioTrack}s using lavaplayer and wraps them in {@link UrlPlayable}s
      */
+    @Nullable
     public Playable createPlayable(String url, SpotifyApi spotifyApi, boolean redirectSpotify) throws IOException {
         URI uri;
         try {
@@ -249,7 +252,7 @@ public class PlayableFactory {
             Map<String, String> parameterMap = getParameterMap(uri);
             String videoId = parameterMap.get("v");
             if (videoId != null) {
-                return youTubeService.requireVideoForId(videoId);
+                return youTubeService.getVideoForId(videoId);
             } else {
                 throw new IllegalArgumentException("Detected YouTube URL but no video id provided");
             }
@@ -284,7 +287,7 @@ public class PlayableFactory {
             } else if (o != null) {
                 throw new IllegalArgumentException("Loading provided url did not result in an AudioTrack but " + o.getClass().toString());
             } else {
-                throw new IllegalStateException("Loading provided url yielded no results");
+                return null;
             }
         }
     }

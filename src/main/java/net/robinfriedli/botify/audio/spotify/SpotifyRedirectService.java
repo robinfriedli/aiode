@@ -14,7 +14,7 @@ import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.robinfriedli.botify.audio.youtube.HollowYouTubeVideo;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
-import net.robinfriedli.botify.audio.youtube.YouTubeVideoImpl;
+import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
 import net.robinfriedli.botify.entities.SpotifyRedirectIndex;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.botify.function.HibernateInvoker;
@@ -54,10 +54,15 @@ public class SpotifyRedirectService {
 
         if (persistedSpotifyRedirectIndex.isPresent()) {
             SpotifyRedirectIndex spotifyRedirectIndex = persistedSpotifyRedirectIndex.get();
-            YouTubeVideoImpl video = youTubeService.getVideoForId(spotifyRedirectIndex.getYouTubeId());
+            YouTubeVideo video = youTubeService.getVideoForId(spotifyRedirectIndex.getYouTubeId());
             if (video != null) {
-                youTubeVideo.setId(video.getVideoId());
-                youTubeVideo.setDuration(video.getDuration());
+                try {
+                    youTubeVideo.setId(video.getVideoId());
+                    youTubeVideo.setDuration(video.getDuration());
+                } catch (UnavailableResourceException e) {
+                    // never happens for YouTubeVideoImpl instances
+                    throw new RuntimeException(e);
+                }
                 String name = spotifyTrack.getName();
                 String artistString = StringListImpl.create(spotifyTrack.getArtists(), ArtistSimplified::getName).toSeparatedString(", ");
                 String title = String.format("%s by %s", name, artistString);

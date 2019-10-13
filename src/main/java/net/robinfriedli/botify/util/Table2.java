@@ -45,7 +45,7 @@ public class Table2 {
         columns.add(new Column(title, elements.stream().map(displayFunc).collect(Collectors.toList())));
     }
 
-    public class Column {
+    public static class Column {
 
         private final String title;
         private final List<String> fields;

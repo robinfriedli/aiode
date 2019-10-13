@@ -4,7 +4,6 @@ import java.io.File;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -178,8 +177,8 @@ public class GuildManager {
         return activeGuilds;
     }
 
-    public Collection<GuildContext> getGuildContexts() {
-        return guildContexts.values();
+    public Set<GuildContext> getGuildContexts() {
+        return Sets.newHashSet(guildContexts.values());
     }
 
     public void setAudioManager(AudioManager audioManager) {

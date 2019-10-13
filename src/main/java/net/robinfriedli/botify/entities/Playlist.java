@@ -17,6 +17,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
+import javax.validation.constraints.Size;
 
 import com.google.api.client.util.Sets;
 import com.google.common.base.Joiner;
@@ -40,6 +41,7 @@ public class Playlist implements Serializable {
     @Column(name = "pk")
     private long pk;
     @Column(name = "name")
+    @Size(min = 1, max = 30, message = "Invalid length of playlist name. Needs to be between 1 and 30.")
     private String name;
     @Column(name = "created_user")
     private String createdUser;

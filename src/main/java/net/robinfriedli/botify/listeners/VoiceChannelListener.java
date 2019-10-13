@@ -73,7 +73,7 @@ public class VoiceChannelListener extends ListenerAdapter {
 
     private boolean noOtherMembersLeft(VoiceChannel channel, Guild guild) {
         return channel.getMembers().stream()
-            .allMatch(member -> member.equals(guild.getSelfMember()));
+            .allMatch(member -> member.equals(guild.getSelfMember()) || member.getUser().isBot());
     }
 
     private boolean isAutoPauseEnabled(Guild guild) {

@@ -2,13 +2,11 @@ package net.robinfriedli.botify.cron.tasks;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Lists;
 import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioPlayback;
@@ -30,9 +28,15 @@ public class PlaybackCleanupTask extends AbstractCronTask {
         Logger logger = LoggerFactory.getLogger(getClass());
         Botify botify = Botify.get();
         GuildManager guildManager = botify.getGuildManager();
-        List<GuildContext> guildContexts = Lists.newArrayList(guildManager.getGuildContexts());
+        Set<GuildContext> guildContexts = guildManager.getGuildContexts();
+
+        Set<Guild> activeGuilds = StaticSessionProvider.invokeWithSession(session -> {
+            return guildManager.getActiveGuilds(session, 3600000);
+        });
 
         int clearedAlone = 0;
+        int playbacksCleared = 0;
+
         for (GuildContext guildContext : guildContexts) {
             AudioPlayback playback = guildContext.getPlayback();
             LocalDateTime aloneSince = playback.getAloneSince();
@@ -44,17 +48,10 @@ public class PlaybackCleanupTask extends AbstractCronTask {
                     playback.setAloneSince(null);
                     playback.clear();
                     ++clearedAlone;
+                    continue;
                 }
             }
-        }
 
-        Set<Guild> activeGuilds = StaticSessionProvider.invokeWithSession(session -> {
-            return guildManager.getActiveGuilds(session, 3600000);
-        });
-
-        int playbacksCleared = 0;
-        for (GuildContext guildContext : guildContexts) {
-            AudioPlayback playback = guildContext.getPlayback();
             if (!activeGuilds.contains(playback.getGuild())) {
                 if (playback.clear()) {
                     ++playbacksCleared;

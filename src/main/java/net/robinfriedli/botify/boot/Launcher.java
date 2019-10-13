@@ -34,6 +34,7 @@ import net.robinfriedli.botify.entities.xml.EmbedDocumentContribution;
 import net.robinfriedli.botify.entities.xml.GuildPropertyContribution;
 import net.robinfriedli.botify.entities.xml.HttpHandlerContribution;
 import net.robinfriedli.botify.entities.xml.StartupTaskContribution;
+import net.robinfriedli.botify.entities.xml.Version;
 import net.robinfriedli.botify.entities.xml.WidgetContribution;
 import net.robinfriedli.botify.listeners.CommandListener;
 import net.robinfriedli.botify.listeners.GuildJoinListener;
@@ -85,6 +86,8 @@ public class Launcher {
                 .mapClass("cronJob", CronJobContribution.class)
                 .mapClass("widget", WidgetContribution.class)
                 .mapClass("widgetAction", WidgetContribution.WidgetActionContribution.class)
+                .mapClass("version", Version.class)
+                .mapClass("feature", Version.Feature.class)
                 .build();
 
             StandardServiceRegistry serviceRegistry = new StandardServiceRegistryBuilder().configure(new File(hibernateConfigurationPath)).build();
@@ -146,6 +149,7 @@ public class Launcher {
             GuildJoinListener guildJoinListener = new GuildJoinListener(executionQueueManager, discordBotListAPI, guildManager);
             WidgetListener widgetListener = new WidgetListener(guildManager, messageService);
             VoiceChannelListener voiceChannelListener = new VoiceChannelListener(audioManager);
+            VersionManager versionManager = new VersionManager(jxpBackend.getContext(PropertiesLoadingService.requireProperty("VERSIONS_PATH")));
 
             Botify botify = new Botify(audioManager,
                 executionQueueManager,
@@ -159,6 +163,7 @@ public class Launcher {
                 securityManager,
                 sessionFactory,
                 spotifyApiBuilder,
+                versionManager,
                 commandListener, guildJoinListener, widgetListener, voiceChannelListener);
             commandManager.initializeInterceptorChain();
 

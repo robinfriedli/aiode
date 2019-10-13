@@ -26,7 +26,7 @@ public abstract class CollectingInterceptor extends ChainableInterceptor {
         super(next, logger);
     }
 
-    public abstract void afterCommit();
+    public abstract void afterCommit() throws Exception;
 
     @Override
     public void onSaveChained(Object entity, Serializable id, Object[] state, String[] propertyNames, Type[] types) {
@@ -44,7 +44,7 @@ public abstract class CollectingInterceptor extends ChainableInterceptor {
     }
 
     @Override
-    public void afterTransactionCompletionChained(Transaction tx) {
+    public void afterTransactionCompletionChained(Transaction tx) throws Exception {
         if (!tx.getRollbackOnly()) {
             afterCommit();
         }

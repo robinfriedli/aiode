@@ -22,6 +22,7 @@ import net.robinfriedli.botify.entities.CommandHistory;
 import net.robinfriedli.botify.interceptors.AlertAccessConfigurationModificationInterceptor;
 import net.robinfriedli.botify.interceptors.AlertPlaylistModificationInterceptor;
 import net.robinfriedli.botify.interceptors.AlertPresetCreationInterceptor;
+import net.robinfriedli.botify.interceptors.EntityValidationInterceptor;
 import net.robinfriedli.botify.interceptors.GuildPropertyInterceptor;
 import net.robinfriedli.botify.interceptors.InterceptorChain;
 import net.robinfriedli.botify.interceptors.PlaylistItemTimestampListener;
@@ -154,7 +155,8 @@ public class CommandContext {
                     AlertAccessConfigurationModificationInterceptor.class,
                     AlertPlaylistModificationInterceptor.class,
                     AlertPresetCreationInterceptor.class,
-                    GuildPropertyInterceptor.class
+                    GuildPropertyInterceptor.class,
+                    EntityValidationInterceptor.class
                 ))
                 .openSession();
             this.session = session;
