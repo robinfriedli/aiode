@@ -9,6 +9,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.validation.constraints.Size;
 
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.User;
@@ -31,8 +32,10 @@ public class Preset implements Serializable {
     @Column(name = "pk")
     private long pk;
     @Column(name = "name")
+    @Size(min = 1, max = 30, message = "Invalid length of preset name. Needs to be between 1 and 30.")
     private String name;
-    @Column(name = "preset")
+    @Column(name = "preset", length = 1000)
+    @Size(min = 1, max = 1000, message = "Length of preset must be between 1 and 1000.")
     private String preset;
     @Column(name = "guild")
     private String guild;

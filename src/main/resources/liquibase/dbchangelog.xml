@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+All changeSets that should be run on startup need to have the context attribute set to one of the following values that
+will be executed int order in which they are listed here. Changesets that have been executed will be registered in the
+databasechangelog table by liquibase, to rerun change the id.
+
+1.: definition  : The context for schema definition changes that create or alter a table or column
+2.: initialvalue: The context for statements that insert or remove data
+3.: constraint  : The context for adding schema constraints, such as unique constraints
+
+See RunLiquibaseUpdateTask
+-->
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+  <changeSet id="add_guild_specification_guild_id_unique_constr-dJJE3/1.6.5" author="robinfriedli" context="constraint">
+    <preConditions onFail="MARK_RAN">
+      <columnExists tableName="guild_specification" columnName="guild_id"/>
+      <not>
+        <sqlCheck expectedResult="1">select count(*) from pg_constraint where conname = 'guild_specification_guild_id_key'</sqlCheck>
+      </not>
+    </preConditions>
+    <addUniqueConstraint tableName="guild_specification" columnNames="guild_id" constraintName="guild_specification_guild_id_key"/>
+  </changeSet>
+  <changeSet id="change_length_of_preset_string-sdGRE4/1.6.5" author="robinfriedli" context="definition">
+    <preConditions onFail="MARK_RAN">
+      <columnExists tableName="preset" columnName="preset"/>
+      <not>
+        <sqlCheck expectedResult="1000">select character_maximum_length from information_schema.columns where column_name = 'preset' and table_name = 'preset'</sqlCheck>
+      </not>
+    </preConditions>
+    <modifyDataType tableName="preset" columnName="preset" newDataType="varchar(1000)"/>
+  </changeSet>
+</databaseChangeLog>

@@ -32,7 +32,7 @@ public class GuildSpecification implements Serializable {
     private long pk;
     @Column(name = "guild_name")
     private String guildName;
-    @Column(name = "guild_id")
+    @Column(name = "guild_id", unique = true)
     private String guildId;
     @Column(name = "bot_name")
     private String botName;
