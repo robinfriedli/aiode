@@ -26,11 +26,12 @@ public class VersionManager {
     }
 
     /**
-     * Compare two versions to determine the lower and later versions
+     * Compare two versions to determine the lower and later versions, used by {@link Version#compareTo(Version)}
      *
      * @param version1 the first version
      * @param version2 the second verion
-     * @return -1 if version1 is lower (e.g. 1.4), +1 if version1 is higher (e.g. 1.6) or 0 if they are equal
+     * @return a negative integer if version1 is lower (e.g. 1.4), a positive integer if version1 is higher (e.g. 1.6)
+     * or 0 if they are equal. See {@link Comparable#compareTo(Object)}.
      */
     public static int compareVersionString(String version1, String version2) {
         String[] split1 = version1.split("\\.");

@@ -7,6 +7,9 @@ import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.xml.GuildPropertyContribution;
 import net.robinfriedli.botify.exceptions.InvalidPropertyValueException;
 
+/**
+ * Property that defines the argument prefix
+ */
 public class ArgumentPrefixProperty extends AbstractGuildProperty {
 
     public static final char DEFAULT = '$';

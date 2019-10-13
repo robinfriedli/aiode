@@ -22,6 +22,7 @@ import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.spotify.SpotifyService;
 import net.robinfriedli.botify.command.commands.AnswerCommand;
 import net.robinfriedli.botify.command.interceptor.CommandInterceptorChain;
+import net.robinfriedli.botify.command.interceptor.interceptors.CommandParserInterceptor;
 import net.robinfriedli.botify.command.parser.CommandParser;
 import net.robinfriedli.botify.concurrent.CommandExecutionThread;
 import net.robinfriedli.botify.discord.GuildManager;
@@ -39,10 +40,11 @@ import net.robinfriedli.stringlist.StringList;
 import net.robinfriedli.stringlist.StringListImpl;
 
 /**
- * Abstract class to extend for any command implementation. Implementations need to be added and configured in the
+ * Abstract class to extend for any text based command implementation. Implementations need to be added and configured in the
  * commands.xml file, those will then be instantiated reflectively based on the configured command identifier and
  * the user input. This is handled by the {@link CommandManager} which then passes the initialized AbstractCommand
- * instance to the {@link CommandInterceptorChain} for execution. Processes used arguments and command body on creation.
+ * instance to the {@link CommandInterceptorChain} for execution. The used arguments and command input are parsed by the
+ * {@link CommandParserInterceptor} by calling the {@link CommandParser}.
  */
 public abstract class AbstractCommand implements Command {
 

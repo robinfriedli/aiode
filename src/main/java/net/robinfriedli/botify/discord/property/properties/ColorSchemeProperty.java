@@ -10,6 +10,9 @@ import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.xml.GuildPropertyContribution;
 import net.robinfriedli.botify.exceptions.InvalidPropertyValueException;
 
+/**
+ * Property that customises the colour scheme of embed messages
+ */
 public class ColorSchemeProperty extends AbstractGuildProperty {
 
     public static final Color DEFAULT_FALLBACK = Color.decode("#1DB954");

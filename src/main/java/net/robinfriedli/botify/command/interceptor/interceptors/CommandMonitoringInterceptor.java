@@ -19,6 +19,10 @@ import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
 
+/**
+ * Interceptor that monitors a command execution and sends a "Still loading..." message if the command takes longer than
+ * 5 seconds to signal to the user that the bot is still execution the command
+ */
 public class CommandMonitoringInterceptor extends AbstractChainableCommandInterceptor {
 
     private final MessageService messageService;

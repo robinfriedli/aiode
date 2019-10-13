@@ -5,7 +5,8 @@ import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.ForbiddenCommandException;
 
 /**
- * Commands that manage the application only administrators defined in the settings.properties file can use
+ * Command extension for administrative commands only users defined as admin user by the ADMIN_USERS property
+ * in the settings.properties file are allowed to use
  */
 public abstract class AbstractAdminCommand extends AbstractCommand {
 

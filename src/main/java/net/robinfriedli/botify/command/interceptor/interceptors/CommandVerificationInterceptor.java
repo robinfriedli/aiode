@@ -7,6 +7,9 @@ import net.robinfriedli.botify.command.interceptor.CommandInterceptor;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 
+/**
+ * Interceptor that verifies a command by checking all argument rules and command input
+ */
 public class CommandVerificationInterceptor extends AbstractChainableCommandInterceptor {
 
     public CommandVerificationInterceptor(CommandInterceptorContribution contribution, CommandInterceptor next) {

@@ -12,6 +12,9 @@ import net.robinfriedli.botify.entities.AccessConfiguration;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 import net.robinfriedli.botify.exceptions.ForbiddenCommandException;
 
+/**
+ * Interceptor that checks whether a member is allowed to use the current command
+ */
 public class SecurityInterceptor extends AbstractChainableCommandInterceptor {
 
     private final GuildManager guildManager;

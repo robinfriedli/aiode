@@ -15,6 +15,10 @@ import org.quartz.SchedulerException;
 import org.quartz.TriggerBuilder;
 import org.quartz.impl.StdSchedulerFactory;
 
+/**
+ * service that schedules all cron tasks registered in the cronJobs.xml file and starts and shuts down the quartz
+ * {@link Scheduler}, waiting for current tasks to finish on shut down.
+ */
 public class CronJobService {
 
     private final Context contributionContext;

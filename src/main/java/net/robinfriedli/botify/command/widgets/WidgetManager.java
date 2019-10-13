@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import com.google.api.client.util.Lists;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.AbstractWidget;
+import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.entities.xml.WidgetContribution;
 import net.robinfriedli.botify.exceptions.UserException;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
@@ -16,6 +17,9 @@ import net.robinfriedli.jxp.persist.Context;
 
 import static net.robinfriedli.jxp.queries.Conditions.*;
 
+/**
+ * Manager that holds active widgets, each {@link GuildContext} has one instance of this manager
+ */
 public class WidgetManager {
 
     /**
