@@ -14,6 +14,7 @@ import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
+import net.robinfriedli.botify.boot.VersionManager;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.command.SecurityManager;
@@ -69,6 +70,7 @@ public class Cache {
         EXTRACTORS.add(new Extractor<>(SpotifyApi.class, () -> Botify.get().getSpotifyApiBuilder().build()));
         EXTRACTORS.add(new Extractor<>(SpotifyApi.Builder.class, () -> Botify.get().getSpotifyApiBuilder()));
         EXTRACTORS.add(new Extractor<>(YouTubeService.class, () -> Botify.get().getAudioManager().getYouTubeService()));
+        EXTRACTORS.add(new Extractor<>(VersionManager.class, () -> Botify.get().getVersionManager()));
     }
 
     @SuppressWarnings("unchecked")

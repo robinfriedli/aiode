@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.robinfriedli.botify.audio.AudioManager;
+import net.robinfriedli.botify.boot.VersionManager;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.command.SecurityManager;
 import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
@@ -39,6 +40,7 @@ public class Botify {
     private final SecurityManager securityManager;
     private final SessionFactory sessionFactory;
     private final SpotifyApi.Builder spotifyApiBuilder;
+    private final VersionManager versionManager;
 
     public Botify(AudioManager audioManager,
                   CommandExecutionQueueManager executionQueueManager,
@@ -52,6 +54,7 @@ public class Botify {
                   SecurityManager securityManager,
                   SessionFactory sessionFactory,
                   SpotifyApi.Builder spotifyApiBuilder,
+                  VersionManager versionManager,
                   ListenerAdapter... listeners) {
         this.audioManager = audioManager;
         this.executionQueueManager = executionQueueManager;
@@ -65,6 +68,7 @@ public class Botify {
         this.securityManager = securityManager;
         this.sessionFactory = sessionFactory;
         this.spotifyApiBuilder = spotifyApiBuilder;
+        this.versionManager = versionManager;
         this.registeredListeners = listeners;
         instance = this;
     }
@@ -190,5 +194,9 @@ public class Botify {
 
     public SpotifyApi.Builder getSpotifyApiBuilder() {
         return spotifyApiBuilder;
+    }
+
+    public VersionManager getVersionManager() {
+        return versionManager;
     }
 }
