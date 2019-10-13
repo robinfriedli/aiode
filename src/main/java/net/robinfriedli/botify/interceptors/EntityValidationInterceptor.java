@@ -6,6 +6,7 @@ import java.util.Set;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
+import javax.validation.constraints.Size;
 
 import org.slf4j.Logger;
 
@@ -13,6 +14,10 @@ import net.robinfriedli.botify.exceptions.InvalidPropertyValueException;
 import org.hibernate.Interceptor;
 import org.hibernate.type.Type;
 
+/**
+ * Interceptor that validates constraints defined by JPA validation annotations (e.g. {@link Size}) and throws an
+ * {@link InvalidPropertyValueException} if one is violated.
+ */
 public class EntityValidationInterceptor extends ChainableInterceptor {
 
     private final Validator validator;

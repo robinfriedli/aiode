@@ -22,6 +22,10 @@ import net.robinfriedli.botify.exceptions.UserException;
 import net.robinfriedli.botify.function.HibernateInvoker;
 import org.hibernate.Session;
 
+/**
+ * CommandInterceptor that runs the commands logic by calling {@link Command#doRun()} and handles exceptions thrown
+ * during execution
+ */
 public class CommandExecutionInterceptor implements CommandInterceptor {
 
     private final MessageService messageService;
@@ -111,6 +115,15 @@ public class CommandExecutionInterceptor implements CommandInterceptor {
         }
     }
 
+    /**
+     * Finalize and persist the {@link CommandHistory} entry for this command execution.
+     *
+     * @param command               the executed command
+     * @param completedSuccessfully whether the command completed sucessfully
+     * @param failedManually        whether the command failed because {@link Command#isFailed()} returned true
+     * @param errorMessage          the error message if an exception was thrown
+     * @param unexpectedException   whether an unexpected exception was thrown, this excludes {@link UserException}
+     */
     private void postCommand(Command command,
                              boolean completedSuccessfully,
                              boolean failedManually,

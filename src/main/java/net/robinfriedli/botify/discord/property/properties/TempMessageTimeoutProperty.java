@@ -5,6 +5,9 @@ import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.xml.GuildPropertyContribution;
 import net.robinfriedli.botify.exceptions.InvalidPropertyValueException;
 
+/**
+ * Property that defines the time after which to delete temporary messages in seconds. 0 means no timeout.
+ */
 public class TempMessageTimeoutProperty extends AbstractGuildProperty {
 
     public static final int DEFAULT_FALLBACK = 20;

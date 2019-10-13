@@ -13,6 +13,9 @@ import net.robinfriedli.botify.command.widgets.AbstractWidgetAction;
 import net.robinfriedli.botify.entities.CommandHistory;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 
+/**
+ * Interceptor that creates a commands {@link CommandHistory} entry
+ */
 public class HistoryInterceptor extends AbstractChainableCommandInterceptor {
 
     public HistoryInterceptor(CommandInterceptorContribution contribution, CommandInterceptor next) {

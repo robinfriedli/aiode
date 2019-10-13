@@ -5,6 +5,9 @@ import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.xml.GuildPropertyContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 
+/**
+ * Property that defines the custom command prefix
+ */
 public class PrefixProperty extends AbstractGuildProperty {
 
     public PrefixProperty(GuildPropertyContribution contribution) {

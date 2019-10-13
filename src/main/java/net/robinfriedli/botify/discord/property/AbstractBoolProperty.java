@@ -4,6 +4,9 @@ import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.xml.GuildPropertyContribution;
 import net.robinfriedli.botify.exceptions.InvalidPropertyValueException;
 
+/**
+ * Property extension for properties that have a boolean value.
+ */
 public abstract class AbstractBoolProperty extends AbstractGuildProperty {
 
     public AbstractBoolProperty(GuildPropertyContribution contribution) {

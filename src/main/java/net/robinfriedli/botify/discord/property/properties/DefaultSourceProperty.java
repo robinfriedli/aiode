@@ -5,6 +5,9 @@ import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.xml.GuildPropertyContribution;
 import net.robinfriedli.botify.exceptions.InvalidPropertyValueException;
 
+/**
+ * Property that defines the default source to use for track search, "spotify" or "youtube"
+ */
 public class DefaultSourceProperty extends AbstractGuildProperty {
 
     public DefaultSourceProperty(GuildPropertyContribution contribution) {

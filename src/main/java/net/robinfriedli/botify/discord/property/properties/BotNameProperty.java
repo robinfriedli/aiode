@@ -5,6 +5,9 @@ import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.xml.GuildPropertyContribution;
 import net.robinfriedli.botify.exceptions.InvalidPropertyValueException;
 
+/**
+ * Property that customised the bot name that may be used as command prefix.
+ */
 public class BotNameProperty extends AbstractGuildProperty {
 
     public BotNameProperty(GuildPropertyContribution contribution) {

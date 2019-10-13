@@ -12,6 +12,10 @@ import net.robinfriedli.botify.entities.xml.GuildPropertyContribution;
 import net.robinfriedli.botify.exceptions.AmbiguousCommandException;
 import net.robinfriedli.botify.exceptions.InvalidPropertyValueException;
 
+/**
+ * Property that defines the default text channel to use for each guild when no explicit channel is specified, for example
+ * when sending update announcements.
+ */
 public class DefaultTextChannelProperty extends AbstractGuildProperty {
 
     public DefaultTextChannelProperty(GuildPropertyContribution contribution) {

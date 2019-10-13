@@ -9,7 +9,11 @@ import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.command.AbstractWidget;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.widgets.AbstractWidgetAction;
+import net.robinfriedli.botify.util.EmojiConstants;
 
+/**
+ * Action registered on the {@link EmojiConstants#PLAY_PAUSE} emoji that plays or pauses the current track in the queue
+ */
 public class PlayPauseAction extends AbstractWidgetAction {
 
     private final AudioPlayback audioPlayback;

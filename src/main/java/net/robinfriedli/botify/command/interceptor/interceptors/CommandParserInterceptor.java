@@ -8,6 +8,9 @@ import net.robinfriedli.botify.command.parser.CommandParser;
 import net.robinfriedli.botify.discord.property.properties.ArgumentPrefixProperty;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 
+/**
+ * Interceptor that parses the used arguments and command input for text based commands by calling the {@link CommandParser}
+ */
 public class CommandParserInterceptor extends AbstractChainableCommandInterceptor {
 
     public CommandParserInterceptor(CommandInterceptorContribution contribution, CommandInterceptor next) {

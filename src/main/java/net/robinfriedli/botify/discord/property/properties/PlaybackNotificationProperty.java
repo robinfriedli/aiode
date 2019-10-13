@@ -4,6 +4,9 @@ import net.robinfriedli.botify.discord.property.AbstractBoolProperty;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.xml.GuildPropertyContribution;
 
+/**
+ * Property that toggles "Now playing..." messages
+ */
 public class PlaybackNotificationProperty extends AbstractBoolProperty {
 
     public PlaybackNotificationProperty(GuildPropertyContribution contribution) {
