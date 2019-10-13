@@ -17,6 +17,7 @@ import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
+import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.entities.AccessConfiguration;
 import net.robinfriedli.botify.entities.GrantedRole;
 import net.robinfriedli.botify.entities.GuildSpecification;
@@ -87,6 +88,8 @@ public class CleanDbCommand extends AbstractAdminCommand {
         Session session = getContext().getSession();
 
         Set<String> activeGuildIds = jda.getGuilds().stream().map(ISnowflake::getId).collect(Collectors.toSet());
+        GuildManager guildManager = Botify.get().getGuildManager();
+        activeGuildIds.addAll(guildManager.getGuildContexts().stream().map(g -> g.getGuild().getId()).collect(Collectors.toSet()));
         CriteriaBuilder cb = session.getCriteriaBuilder();
         Set<Long> stalePlaylistIds = getStalePlaylistIds(cb, activeGuildIds, session);
         Set<Long> staleGuildSpecificationIds = getStaleGuildSpecificationIds(cb, activeGuildIds, session);

@@ -2,7 +2,6 @@ package net.robinfriedli.botify.cron.tasks;
 
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Lists;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.botify.Botify;
@@ -28,7 +27,7 @@ public class ClearAbandonedGuildContextsTask extends AbstractCronTask {
         CommandExecutionQueueManager executionQueueManager = botify.getExecutionQueueManager();
 
         int removedGuilds = 0;
-        for (GuildContext guildContext : Lists.newArrayList(guildManager.getGuildContexts())) {
+        for (GuildContext guildContext : guildManager.getGuildContexts()) {
             Guild guild = guildContext.getGuild();
             if (jda.getGuildById(guild.getIdLong()) == null) {
                 guildManager.removeGuild(guild);

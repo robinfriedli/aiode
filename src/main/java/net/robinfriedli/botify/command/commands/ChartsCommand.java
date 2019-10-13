@@ -104,8 +104,10 @@ public class ChartsCommand extends AbstractCommand {
         for (Object[] record : queryResults) {
             long playedAmount = (Long) record[2];
             Playable track = getTrackForRecord(record);
-            tracksWithPlayedAmount.put(track, playedAmount);
-            tracks.add(track);
+            if (track != null) {
+                tracksWithPlayedAmount.put(track, playedAmount);
+                tracks.add(track);
+            }
         }
 
         String title = period + " - Track Charts";
@@ -160,7 +162,7 @@ public class ChartsCommand extends AbstractCommand {
                 });
             case "YouTube":
                 YouTubeService youTubeService = Botify.get().getAudioManager().getYouTubeService();
-                return youTubeService.requireVideoForId(id);
+                return youTubeService.getVideoForId(id);
             case "Url":
                 AudioManager audioManager = Botify.get().getAudioManager();
                 PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild(), getSpotifyService());

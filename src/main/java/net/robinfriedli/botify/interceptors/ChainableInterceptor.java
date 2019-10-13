@@ -14,13 +14,18 @@ import org.hibernate.Transaction;
 import org.hibernate.type.Type;
 
 /**
- * Enables chaining of hibernate interceptors
+ * Interceptor extension that enables simple chaining of hibernate interceptors that comes with methods that call the
+ * next interceptor in the chain automatically. See {@link InterceptorChain}.
  */
 @SuppressWarnings({"unused", "RedundantThrows", "WeakerAccess"})
 public class ChainableInterceptor extends EmptyInterceptor {
 
     private final Interceptor next;
     private final Logger logger;
+
+    public ChainableInterceptor(Interceptor next) {
+        this(next, null);
+    }
 
     public ChainableInterceptor(Interceptor next, Logger logger) {
         this.next = next;
@@ -31,7 +36,7 @@ public class ChainableInterceptor extends EmptyInterceptor {
         }
     }
 
-    Interceptor next() {
+    protected Interceptor next() {
         return next;
     }
 

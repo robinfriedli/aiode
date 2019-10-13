@@ -377,10 +377,12 @@ public class YouTubeService {
             for (PlaylistItem item : items) {
                 String videoTitle = item.getSnippet().getTitle();
                 String videoId = item.getSnippet().getResourceId().getVideoId();
-                HollowYouTubeVideo hollowVideo = hollowVideos.get(index);
-                hollowVideo.setTitle(videoTitle);
-                hollowVideo.setId(videoId);
-                currentVideos.add(hollowVideo);
+                if (index < hollowVideos.size() - 1) {
+                    HollowYouTubeVideo hollowVideo = hollowVideos.get(index);
+                    hollowVideo.setTitle(videoTitle);
+                    hollowVideo.setId(videoId);
+                    currentVideos.add(hollowVideo);
+                }
                 ++index;
             }
             loadDurationsAsync(currentVideos);
@@ -502,8 +504,8 @@ public class YouTubeService {
         }
     }
 
-    public YouTubeVideoImpl requireVideoForId(String id) throws IOException {
-        YouTubeVideoImpl videoForId = getVideoForId(id);
+    public YouTubeVideo requireVideoForId(String id) throws IOException {
+        YouTubeVideo videoForId = getVideoForId(id);
 
         if (videoForId == null) {
             throw new NoResultsFoundException(String.format("No YouTube video found for id '%s'", id));
@@ -513,7 +515,7 @@ public class YouTubeService {
     }
 
     @Nullable
-    public YouTubeVideoImpl getVideoForId(String id) throws IOException {
+    public YouTubeVideo getVideoForId(String id) throws IOException {
         YouTube.Videos.List videoRequest = youTube.videos().list("snippet");
         videoRequest.setId(id);
         videoRequest.setFields("items(contentDetails/duration,snippet/title)");
