@@ -7,7 +7,6 @@ import net.robinfriedli.botify.command.AbstractWidget;
 import net.robinfriedli.botify.command.Command;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.concurrent.CommandExecutionThread;
-import net.robinfriedli.botify.exceptions.UserException;
 
 /**
  * Abstract class to implement for any action that may be added to widget. Maps the action to the given emoji that will
@@ -118,8 +117,7 @@ public abstract class AbstractWidgetAction implements Command {
     private void removeReaction() {
         try {
             event.getReaction().removeReaction(getContext().getUser()).queue();
-        } catch (InsufficientPermissionException e) {
-            throw new UserException("Bot is missing permission: " + e.getPermission().getName());
+        } catch (InsufficientPermissionException ignored) {
         }
     }
 

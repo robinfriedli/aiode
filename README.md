@@ -35,6 +35,9 @@ router's public ip and setup port forwarding for your router.
 ### 4. Setup botify settings
 #### 4.1 Navigate to your cloned project and go to `./resources` and open the `settings.properties` file and fill in the blanks, it should look like this:
 #### 4.2 To take advantage of the admin commands that can perform administrative actions, such as updating and restarting the bot, be sure to add your Discord user id to the `ADMIN_USERS` property. To find your Discord user id, enable Developer Mode in the App Settings > Appearance. Then go to any guild, right click your user and click "Copy ID".
+#### 4.3 Change the `BASE_URI` property to your domain or public IP (without slash at the end) and adjust `REDIRECT_URI` to the corresponding endpoint for Spotify logins (normaly BASE_URI + "/login")
+Don't have a domain? You could either go without a web server all together and still use most of botify's features or use your
+router's public ip and setup port forwarding for your router to the machine where you're running botify via the port specified by the `SERVER_PORT` property.
 ```properties
 ###################
 # server settings #
@@ -89,7 +92,7 @@ ADMIN_USERS=#define user ids (comma separated) that may access admin commands. T
 ### 5. Setup database
 #### 5.1 Setup hibernate configuration
 Navigate to `./resources/hibernate.cfg.xml` and adjust the settings, if you use a local postgres server and name your
-database botify_playlists you can leave it like this:
+database "botify_playlists" you can leave it like this:
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE hibernate-configuration PUBLIC
@@ -135,8 +138,9 @@ database botify_playlists you can leave it like this:
   </session-factory>
 </hibernate-configuration>
 ```
+If you need help setting up your postgres server, please refer to their official documentation: http://www.postgresqltutorial.com/
 
-#### 5.2 setup liquibase properties
+#### 5.2 Setup liquibase properties
 Go to `src/main/resources/liquibase/liquibase.properties` and adjust the liquibase properties according to the changes you made
 to the hibernate configuration above. If you left it as it is you can leave the liquibase.properties like this:
 ```properties
@@ -147,5 +151,9 @@ password=postgres
 changeLogFile=src/main/resources/liquibase/dbchangelog.xml
 ```
 
-
-If you need help setting up your postgres server, please refer to their official documentation: http://www.postgresqltutorial.com/
+### 6 Compile and run botify
+Navigate to the project root directory and install botify by running `mvn clean install`. Then you can launch botify
+using the main class `net.robinfriedli.botify.boot.Launcher`. You can either run the bash script `resources/bash/launch.sh`
+or run `mvn exec:java -Dexec.mainClass=net.robinfriedli.botify.boot.Launcher` directly. Note that this command is written
+for Unix-like operating systems such as macOS and Linux. For windows you might need to adjust this command to
+`mvn exec:java -D"exec.mainClass"="net.robinfriedli.botify.boot.Launcher"`.

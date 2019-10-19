@@ -11,18 +11,22 @@ public class ExceptionUtils {
         Throwable exception = e instanceof CommandRuntimeException ? e.getCause() : e;
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setColor(Color.RED);
-        appendException(embedBuilder, exception, false);
+        appendException(embedBuilder, exception, false, 0);
         return embedBuilder;
     }
 
-    private static void appendException(EmbedBuilder embedBuilder, Throwable e, boolean isCause) {
+    private static void appendException(EmbedBuilder embedBuilder, Throwable e, boolean isCause, int counter) {
+        if (counter > 5) {
+            return;
+        }
+
         String message = e instanceof GoogleJsonResponseException
             ? ((GoogleJsonResponseException) e).getDetails().getMessage()
             : e.getMessage();
         embedBuilder.addField(isCause ? "Caused by" : "Exception", String.format("%s: %s", e.getClass().getSimpleName(), message), false);
 
         if (e.getCause() != null) {
-            appendException(embedBuilder, e.getCause(), true);
+            appendException(embedBuilder, e.getCause(), true, counter + 1);
         }
     }
 

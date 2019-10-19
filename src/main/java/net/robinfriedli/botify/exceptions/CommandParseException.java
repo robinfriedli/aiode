@@ -28,7 +28,7 @@ public class CommandParseException extends UserException {
         embedBuilder.setTitle("Invalid command");
 
         StringBuilder builder = new StringBuilder(errorMessage);
-        builder.append(System.lineSeparator()).append("```");
+        builder.append(System.lineSeparator()).append("```").append(System.lineSeparator());
 
         if (commandString.length() <= 50) {
             builder.append(commandString).append(System.lineSeparator())
@@ -60,7 +60,7 @@ public class CommandParseException extends UserException {
             }
             builder.append(System.lineSeparator()).append(" ".repeat(actualPosition)).append("^");
         }
-        builder.append("```").append("Failed at: ").append(index);
+        builder.append(System.lineSeparator()).append("```").append("Failed at: ").append(index);
 
         if (cause instanceof AdditionalInformationException) {
             builder.append(System.lineSeparator()).append(System.lineSeparator())

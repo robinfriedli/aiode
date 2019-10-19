@@ -51,9 +51,14 @@ public class SpotifyService {
 
     public List<Track> searchTrack(String searchTerm, boolean limitToLibrary, int limit) throws IOException, SpotifyWebApiException {
         Track[] tracks = spotifyApi.searchTracks(searchTerm).limit(limit).build().execute().getItems();
+
+        if (tracks.length == 0) {
+            return Lists.newArrayList();
+        }
+
         List<Track> trackList = Lists.newArrayList();
         if (limitToLibrary) {
-            String[] ids = Arrays.stream(tracks).map(Track::getId).toArray(String[]::new);
+            String[] ids = Arrays.stream(tracks).filter(t -> t != null && t.getId() != null).map(Track::getId).toArray(String[]::new);
             Boolean[] trackIsInLibraryArray = spotifyApi.checkUsersSavedTracks(ids).build().execute();
             for (int i = 0; i < tracks.length; i++) {
                 boolean trackIsInLibrary = trackIsInLibraryArray[i];
