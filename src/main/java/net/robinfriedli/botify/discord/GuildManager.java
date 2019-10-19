@@ -190,33 +190,35 @@ public class GuildManager {
     }
 
     private GuildContext initializeGuild(Guild guild) {
-        return StaticSessionProvider.invokeWithSession(session -> {
-            AudioPlayer player = audioManager.getPlayerManager().createPlayer();
+        synchronized (guild) {
+            return StaticSessionProvider.invokeWithSession(session -> {
+                AudioPlayer player = audioManager.getPlayerManager().createPlayer();
 
-            Optional<Long> existingSpecification = session.createQuery("select pk from " + GuildSpecification.class.getName()
-                + " where guildId = '" + guild.getId() + "'", Long.class).uniqueResultOptional();
+                Optional<Long> existingSpecification = session.createQuery("select pk from " + GuildSpecification.class.getName()
+                    + " where guildId = '" + guild.getId() + "'", Long.class).uniqueResultOptional();
 
-            if (existingSpecification.isPresent()) {
-                GuildContext guildContext = new GuildContext(guild, new AudioPlayback(player, guild), existingSpecification.get());
-                guildContexts.put(guild, guildContext);
-                return guildContext;
-            } else {
-                GuildSpecification newSpecification = HibernateInvoker.create().invoke(() -> {
-                    GuildSpecification specification = new GuildSpecification(guild);
-                    AccessConfiguration permissionConfiguration = new AccessConfiguration("permission");
-                    session.persist(permissionConfiguration);
-                    specification.addAccessConfiguration(permissionConfiguration);
-                    session.persist(specification);
-                    return specification;
-                });
+                if (existingSpecification.isPresent()) {
+                    GuildContext guildContext = new GuildContext(guild, new AudioPlayback(player, guild), existingSpecification.get());
+                    guildContexts.put(guild, guildContext);
+                    return guildContext;
+                } else {
+                    GuildSpecification newSpecification = HibernateInvoker.create().invoke(() -> {
+                        GuildSpecification specification = new GuildSpecification(guild);
+                        AccessConfiguration permissionConfiguration = new AccessConfiguration("permission");
+                        session.persist(permissionConfiguration);
+                        specification.addAccessConfiguration(permissionConfiguration);
+                        session.persist(specification);
+                        return specification;
+                    });
 
-                GuildContext guildContext = new GuildContext(guild, new AudioPlayback(player, guild), newSpecification.getPk());
-                guildContexts.put(guild, guildContext);
+                    GuildContext guildContext = new GuildContext(guild, new AudioPlayback(player, guild), newSpecification.getPk());
+                    guildContexts.put(guild, guildContext);
 
-                handleNewGuild(guild);
-                return guildContext;
-            }
-        });
+                    handleNewGuild(guild);
+                    return guildContext;
+                }
+            });
+        }
     }
 
     private void handleNewGuild(Guild guild) {
