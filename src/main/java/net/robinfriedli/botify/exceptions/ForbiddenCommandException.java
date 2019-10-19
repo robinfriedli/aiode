@@ -17,7 +17,7 @@ public class ForbiddenCommandException extends UserException {
             user.getName(),
             commandIdentifier,
             roles.isEmpty()
-                ? "Only available to guild owner"
+                ? "Only available to guild owner and administrator roles"
                 : "Requires any of these roles: " + StringListImpl.create(roles, Role::getName).toSeparatedString(", ")));
     }
 

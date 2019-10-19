@@ -63,7 +63,7 @@ public class PermissionCommand extends AbstractCommand {
                 AccessConfiguration ac = accessConfiguration.get();
                 List<Role> roles = ac.getRoles(getContext().getGuild());
                 if (roles.isEmpty()) {
-                    return "Available to guild owner only";
+                    return "Guild owner and administrator roles only";
                 } else {
                     return StringListImpl.create(roles, Role::getName).toSeparatedString(", ");
                 }
@@ -222,7 +222,7 @@ public class PermissionCommand extends AbstractCommand {
         });
 
         if (!lockedAnything) {
-            sendError("All selected commands are already only available to the guild owner");
+            sendError("All selected commands are already only available to the guild owner and administrator roles");
         }
     }
 

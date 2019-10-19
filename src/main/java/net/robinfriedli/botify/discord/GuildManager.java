@@ -23,6 +23,7 @@ import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.wrapper.spotify.SpotifyApi;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.robinfriedli.botify.Botify;
@@ -88,6 +89,10 @@ public class GuildManager {
 
     public boolean checkAccess(String commandIdentifier, Member member) {
         if (member.isOwner()) {
+            return true;
+        }
+
+        if (member.getRoles().stream().anyMatch(role -> role.hasPermission(Permission.ADMINISTRATOR))) {
             return true;
         }
 
