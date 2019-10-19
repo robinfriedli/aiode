@@ -12,6 +12,7 @@ import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
+import net.robinfriedli.botify.entities.Song;
 import net.robinfriedli.botify.entities.Video;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import org.hibernate.Session;
@@ -113,6 +114,9 @@ public interface YouTubeVideo extends Playable {
 
     @Override
     default PlaylistItem export(Playlist playlist, User user, Session session) {
+        if (getRedirectedSpotifyTrack() != null) {
+            return new Song(getRedirectedSpotifyTrack(), user, playlist, session);
+        }
         return new Video(this, user, playlist);
     }
 
