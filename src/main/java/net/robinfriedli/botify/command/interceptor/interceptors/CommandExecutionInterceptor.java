@@ -46,7 +46,11 @@ public class CommandExecutionInterceptor implements CommandInterceptor {
             try {
                 command.doRun();
             } catch (Throwable e) {
-                command.onFailure();
+                try {
+                    command.onFailure();
+                } catch (Throwable e1) {
+                    logger.error("Exception thrown in onFailure of command, logging this error and throwing the exception that caused the command to fail.", e1);
+                }
                 throw e;
             }
             if (!command.isFailed()) {
