@@ -224,7 +224,7 @@ public class MessageService {
             });
         } catch (InsufficientPermissionException e) {
             Permission permission = e.getPermission();
-            if (permission == Permission.MESSAGE_WRITE) {
+            if (permission == Permission.MESSAGE_WRITE || permission == Permission.MESSAGE_READ) {
                 if (channel instanceof TextChannel && canTalk(((TextChannel) channel).getGuild())) {
                     Guild guild = ((TextChannel) channel).getGuild();
                     send("I do not have permission to send any messages to channel " + channel.getName() + " so I'll send it here instead.", guild);
