@@ -9,13 +9,13 @@ import net.robinfriedli.botify.cron.AbstractCronTask;
 import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.GuildManager;
-import net.robinfriedli.botify.listeners.GuildJoinListener;
+import net.robinfriedli.botify.listeners.GuildManagementListener;
 import net.robinfriedli.jxp.exec.Invoker;
 import org.quartz.JobExecutionContext;
 
 /**
  * Task that periodically removes {@link GuildContext} instances belonging to guilds that are no longer associated with
- * this bot and whose exit was not picked up by the {@link GuildJoinListener}
+ * this bot and whose exit was not picked up by the {@link GuildManagementListener}
  */
 public class ClearAbandonedGuildContextsTask extends AbstractCronTask {
 

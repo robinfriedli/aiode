@@ -37,7 +37,7 @@ import net.robinfriedli.botify.entities.xml.StartupTaskContribution;
 import net.robinfriedli.botify.entities.xml.Version;
 import net.robinfriedli.botify.entities.xml.WidgetContribution;
 import net.robinfriedli.botify.listeners.CommandListener;
-import net.robinfriedli.botify.listeners.GuildJoinListener;
+import net.robinfriedli.botify.listeners.GuildManagementListener;
 import net.robinfriedli.botify.listeners.VoiceChannelListener;
 import net.robinfriedli.botify.listeners.WidgetListener;
 import net.robinfriedli.botify.login.LoginManager;
@@ -146,7 +146,7 @@ public class Launcher {
             SecurityManager securityManager = new SecurityManager(guildManager);
 
             CommandListener commandListener = new CommandListener(executionQueueManager, commandManager, guildManager, messageService, sessionFactory, spotifyApiBuilder);
-            GuildJoinListener guildJoinListener = new GuildJoinListener(executionQueueManager, discordBotListAPI, guildManager);
+            GuildManagementListener guildManagementListener = new GuildManagementListener(executionQueueManager, discordBotListAPI, guildManager);
             WidgetListener widgetListener = new WidgetListener(guildManager, messageService);
             VoiceChannelListener voiceChannelListener = new VoiceChannelListener(audioManager);
             VersionManager versionManager = new VersionManager(jxpBackend.getContext(PropertiesLoadingService.requireProperty("VERSIONS_PATH")));
@@ -164,7 +164,7 @@ public class Launcher {
                 sessionFactory,
                 spotifyApiBuilder,
                 versionManager,
-                commandListener, guildJoinListener, widgetListener, voiceChannelListener);
+                commandListener, guildManagementListener, widgetListener, voiceChannelListener);
             commandManager.initializeInterceptorChain();
 
             // start servers

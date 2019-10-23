@@ -1,5 +1,7 @@
 package net.robinfriedli.botify.cron.tasks;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -12,6 +14,7 @@ import javax.persistence.criteria.Root;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.wrapper.spotify.SpotifyApi;
@@ -48,7 +51,7 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
         Botify botify = Botify.get();
         Stopwatch stopwatch = Stopwatch.createStarted();
         YouTubeService youTubeService = botify.getAudioManager().getYouTubeService();
-        SpotifyTrackBulkLoadingService spotifyTrackBulkLoadingService = new SpotifyTrackBulkLoadingService(spotifyApi);
+        SpotifyTrackBulkLoadingService spotifyTrackBulkLoadingService = new SpotifyTrackBulkLoadingService(spotifyApi, true);
 
         LocalDate currentDate = LocalDate.now();
         LocalDate date2WeeksAgo = currentDate.minusDays(14);
@@ -58,7 +61,17 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
             CriteriaQuery<SpotifyRedirectIndex> query = cb.createQuery(SpotifyRedirectIndex.class);
             Root<SpotifyRedirectIndex> root = query.from(SpotifyRedirectIndex.class);
             query.where(cb.lessThan(root.get("lastUpdated"), date2WeeksAgo));
+            query.orderBy(cb.asc(root.get("lastUpdated")));
             List<SpotifyRedirectIndex> indices = session.createQuery(query).getResultList();
+
+            if (indices.isEmpty()) {
+                return;
+            }
+
+            BigDecimal averageDailyIndices = (BigDecimal) session
+                .createSQLQuery("select avg(count) from (select count(*) as count from spotify_redirect_index group by last_updated) as sub")
+                .uniqueResult();
+            int average = averageDailyIndices.setScale(0, RoundingMode.CEILING).intValue();
 
             int updateCount = 0;
             for (SpotifyRedirectIndex index : indices) {
@@ -70,7 +83,12 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
                     session.delete(index);
                 }
                 ++updateCount;
+
+                if (updateCount == average) {
+                    break;
+                }
             }
+
             spotifyTrackBulkLoadingService.perform();
 
             stopwatch.stop();
@@ -98,6 +116,11 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
         @Override
         public void accept(Track track) {
             try {
+                if (track == null) {
+                    session.delete(index);
+                    return;
+                }
+
                 HollowYouTubeVideo hollowYouTubeVideo = new HollowYouTubeVideo(youTubeService, track);
                 youTubeService.redirectSpotify(hollowYouTubeVideo);
                 if (!hollowYouTubeVideo.isCanceled() && !Strings.isNullOrEmpty(track.getId())) {
@@ -109,6 +132,9 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
                 }
             } catch (UnavailableResourceException e) {
                 logger.warn("Tried creating a SpotifyRedirectIndex for an unavailable Video for track id " + track.getId());
+            } catch (GoogleJsonResponseException e) {
+                String message = e.getDetails().getMessage();
+                logger.error(String.format("GoogleJsonResponse exception while refreshing index for track id %s: %s", track.getId(), message));
             } catch (Throwable e) {
                 logger.error("Exception while updating SpotifyRedirectIndex for track id " + track.getId(), e);
             }

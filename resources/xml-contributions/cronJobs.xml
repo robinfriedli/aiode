@@ -3,4 +3,5 @@
   <cronJob id="playbackCleanup" cron="0 */15 * * * ? *" implementation="net.robinfriedli.botify.cron.tasks.PlaybackCleanupTask"/>
   <cronJob id="spotifyRedirectIndexRefresh" cron="0 0 3 * * ? *" implementation="net.robinfriedli.botify.cron.tasks.RefreshSpotifyRedirectIndicesTask"/>
   <cronJob id="clearAbandonedGuildContexts" cron="0 */3 * * * ? *" implementation="net.robinfriedli.botify.cron.tasks.ClearAbandonedGuildContextsTask"/>
+  <cronJob id="deleteGrantedRolesForDeletedRoles" cron="0 0 */1 * * ? *" implementation="net.robinfriedli.botify.cron.tasks.DeleteGrantedRolesForDeletedRolesTask"/>
 </cronJobs>

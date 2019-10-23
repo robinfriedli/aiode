@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import com.google.common.collect.Lists;
 
 /**
@@ -21,14 +23,14 @@ public class BulkOperationService<K, V> {
     private final int size;
     // the function that executes loading the items, the provided list does not exceed the size defined by the size
     // parameter; if the amount of items loaded exceeds the size this function is called several times; returns the loaded
-    // items mapped to the key they were loaded with
-    private final Function<List<K>, Map<V, K>> loadFunc;
+    // items paired with the key they were loaded with
+    private final Function<List<K>, List<Pair<K, V>>> loadFunc;
     // the keys for all items that will be loaded
     private final List<K> keys = Lists.newArrayList();
     // the map containing all keys mapped to the action that should be performed with the loaded item
     private final Map<K, Consumer<V>> actionMap = new HashMap<>();
 
-    public BulkOperationService(int size, Function<List<K>, Map<V, K>> loadFunc) {
+    public BulkOperationService(int size, Function<List<K>, List<Pair<K, V>>> loadFunc) {
         this.size = size;
         this.loadFunc = loadFunc;
     }
@@ -36,10 +38,11 @@ public class BulkOperationService<K, V> {
     public void perform() {
         List<List<K>> batches = Lists.partition(keys, size);
         for (List<K> batch : batches) {
-            Map<V, K> loadedBatch = loadFunc.apply(batch);
-            for (V v : loadedBatch.keySet()) {
-                K k = loadedBatch.get(v);
-                actionMap.get(k).accept(v);
+            List<Pair<K, V>> loadedBatch = loadFunc.apply(batch);
+            for (Pair<K, V> keyValuePair : loadedBatch) {
+                K key = keyValuePair.getLeft();
+                V value = keyValuePair.getRight();
+                actionMap.get(key).accept(value);
             }
         }
     }
@@ -51,6 +54,10 @@ public class BulkOperationService<K, V> {
      * @param action the action to run with the loaded item
      */
     public void add(K key, Consumer<V> action) {
+        if (key == null || action == null) {
+            throw new NullPointerException();
+        }
+
         keys.add(key);
         actionMap.put(key, action);
     }

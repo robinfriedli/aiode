@@ -267,12 +267,6 @@ public class MessageService {
         Botify botify = Botify.get();
         GuildContext guildContext = botify.getGuildManager().getContextForGuild(guild);
 
-        // check if the guild's playback has a current communication text channel
-        MessageChannel playbackCommunicationChannel = guildContext.getPlayback().getCommunicationChannel();
-        if (playbackCommunicationChannel instanceof TextChannel && ((TextChannel) playbackCommunicationChannel).canTalk()) {
-            return (TextChannel) playbackCommunicationChannel;
-        }
-
         // fetch the default text channel from the customised property
         GuildPropertyManager guildPropertyManager = botify.getGuildPropertyManager();
         AbstractGuildProperty defaultTextChannelProperty = guildPropertyManager.getProperty("defaultTextChannelId");
@@ -287,6 +281,12 @@ public class MessageService {
                     return textChannelById;
                 }
             }
+        }
+
+        // check if the guild's playback has a current communication text channel
+        MessageChannel playbackCommunicationChannel = guildContext.getPlayback().getCommunicationChannel();
+        if (playbackCommunicationChannel instanceof TextChannel && ((TextChannel) playbackCommunicationChannel).canTalk()) {
+            return (TextChannel) playbackCommunicationChannel;
         }
 
         // use guild default defined by discord
