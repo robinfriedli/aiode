@@ -2,6 +2,7 @@ package net.robinfriedli.botify.entities;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -102,7 +103,7 @@ public class AccessConfiguration implements Serializable {
     }
 
     public List<Role> getRoles(Guild guild) {
-        return roles.stream().map(role -> role.getRole(guild)).collect(Collectors.toList());
+        return roles.stream().map(role -> role.getRole(guild)).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
     public GuildSpecification getGuildSpecification() {
