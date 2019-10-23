@@ -1,9 +1,10 @@
 package net.robinfriedli.botify.audio.spotify;
 
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
+import org.apache.commons.lang3.tuple.Pair;
+
+import com.google.common.collect.Lists;
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.robinfriedli.botify.function.CheckedFunction;
@@ -18,20 +19,26 @@ import net.robinfriedli.botify.util.BulkOperationService;
 public class SpotifyTrackBulkLoadingService extends BulkOperationService<String, Track> {
 
     public SpotifyTrackBulkLoadingService(SpotifyApi spotifyApi) {
-        super(50, (CheckedFunction<List<String>, Map<Track, String>>) ids -> {
+        this(spotifyApi, false);
+    }
+
+    public SpotifyTrackBulkLoadingService(SpotifyApi spotifyApi, boolean acceptNullValues) {
+        super(50, (CheckedFunction<List<String>, List<Pair<String, Track>>>) ids -> {
             String[] idArray = ids.toArray(new String[0]);
             Track[] loadedTracks = spotifyApi.getSeveralTracks(idArray).build().execute();
 
-            Map<Track, String> trackMap = new LinkedHashMap<>();
-            for (Track loadedTrack : loadedTracks) {
-                if (loadedTrack == null) {
-                    continue;
-                }
+            List<Pair<String, Track>> keyValuePairs = Lists.newArrayList();
+            for (int i = 0; i < loadedTracks.length; i++) {
+                Track loadedTrack = loadedTracks[i];
 
-                trackMap.put(loadedTrack, loadedTrack.getId());
+                if (loadedTrack != null) {
+                    keyValuePairs.add(Pair.of(loadedTrack.getId(), loadedTrack));
+                } else if (acceptNullValues) {
+                    keyValuePairs.add(Pair.of(idArray[i], loadedTrack));
+                }
             }
 
-            return trackMap;
+            return keyValuePairs;
         });
     }
 }
