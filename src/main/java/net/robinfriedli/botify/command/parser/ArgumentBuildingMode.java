@@ -38,7 +38,7 @@ public class ArgumentBuildingMode implements CommandParser.Mode {
         this.commandParser = commandParser;
         this.argumentPrefix = argumentPrefix;
         this.isInline = isInline;
-        conceptionIndex = CommandParser.currentPosition.get();
+        conceptionIndex = commandParser.getCurrentPosition();
         argumentBuilder = new StringBuilder();
         argumentValueBuilder = new StringBuilder();
     }
