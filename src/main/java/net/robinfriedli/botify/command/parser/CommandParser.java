@@ -29,7 +29,7 @@ public class CommandParser {
 
     private static final Set<Character> META = ImmutableSet.of(ArgumentPrefixProperty.DEFAULT, '"', '\\', '=', ' ');
 
-    static ThreadLocal<Integer> currentPosition = ThreadLocal.withInitial(() -> 0);
+    private int currentPosition = 0;
 
     private final AbstractCommand command;
     private final char argumentPrefix;
@@ -54,7 +54,7 @@ public class CommandParser {
     public void parse(String input) {
         char[] chars = input.toCharArray();
         for (int i = 0; i < chars.length; i++) {
-            currentPosition.set(i);
+            currentPosition = i;
             char character = chars[i];
             Mode previousMode = currentMode;
             try {
@@ -103,6 +103,10 @@ public class CommandParser {
         }
 
         fireOnParseFinished();
+    }
+
+    public int getCurrentPosition() {
+        return currentPosition;
     }
 
     void fireOnParseFinished() {
