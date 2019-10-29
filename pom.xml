@@ -55,12 +55,12 @@
     <dependency>
       <groupId>com.sedmelluq</groupId>
       <artifactId>lavaplayer</artifactId>
-      <version>1.3.22</version>
+      <version>1.3.23</version>
     </dependency>
     <dependency>
       <groupId>net.dv8tion</groupId>
       <artifactId>JDA</artifactId>
-      <version>4.0.0_46</version>
+      <version>4.0.0_54</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -81,7 +81,7 @@
     <dependency>
       <groupId>se.michaelthelin.spotify</groupId>
       <artifactId>spotify-web-api-java</artifactId>
-      <version>3.0.0</version>
+      <version>4.1.0</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
