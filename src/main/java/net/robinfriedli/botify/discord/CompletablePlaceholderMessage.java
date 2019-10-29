@@ -33,6 +33,7 @@ import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.requests.RestAction;
 import net.dv8tion.jda.api.requests.restaction.AuditableRestAction;
 import net.dv8tion.jda.api.requests.restaction.MessageAction;
+import net.dv8tion.jda.api.requests.restaction.pagination.ReactionPaginationAction;
 
 /**
  * Mocks a discord message that has not been loaded yet.
@@ -340,6 +341,60 @@ public class CompletablePlaceholderMessage implements Message {
     @Override
     public RestAction<Void> clearReactions() {
         return unwrap().clearReactions();
+    }
+
+    @Nonnull
+    @Override
+    public RestAction<Void> removeReaction(@Nonnull Emote emote) {
+        return unwrap().removeReaction(emote);
+    }
+
+    @Nonnull
+    @Override
+    public RestAction<Void> removeReaction(@Nonnull Emote emote, @Nonnull User user) {
+        return unwrap().removeReaction(emote, user);
+    }
+
+    @Nonnull
+    @Override
+    public RestAction<Void> removeReaction(@Nonnull String s) {
+        return unwrap().removeReaction(s);
+    }
+
+    @Nonnull
+    @Override
+    public RestAction<Void> removeReaction(@Nonnull String s, @Nonnull User user) {
+        return unwrap().removeReaction(s, user);
+    }
+
+    @Nonnull
+    @Override
+    public ReactionPaginationAction retrieveReactionUsers(@Nonnull Emote emote) {
+        return unwrap().retrieveReactionUsers(emote);
+    }
+
+    @Nonnull
+    @Override
+    public ReactionPaginationAction retrieveReactionUsers(@Nonnull String s) {
+        return unwrap().retrieveReactionUsers(s);
+    }
+
+    @Nullable
+    @Override
+    public MessageReaction.ReactionEmote getReactionByUnicode(@Nonnull String s) {
+        return unwrap().getReactionByUnicode(s);
+    }
+
+    @Nullable
+    @Override
+    public MessageReaction.ReactionEmote getReactionById(@Nonnull String s) {
+        return unwrap().getReactionById(s);
+    }
+
+    @Nullable
+    @Override
+    public MessageReaction.ReactionEmote getReactionById(long l) {
+        return unwrap().getReactionById(l);
     }
 
     @Nonnull
