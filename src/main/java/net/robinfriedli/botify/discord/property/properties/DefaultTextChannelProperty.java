@@ -2,9 +2,9 @@ package net.robinfriedli.botify.discord.property.properties;
 
 import java.util.List;
 
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.entities.GuildSpecification;
@@ -33,8 +33,8 @@ public class DefaultTextChannelProperty extends AbstractGuildProperty {
 
     @Override
     public void setValue(String value, GuildSpecification guildSpecification) {
-        JDA jda = Botify.get().getJda();
-        Guild guild = guildSpecification.getGuild(jda);
+        ShardManager shardManager = Botify.get().getShardManager();
+        Guild guild = guildSpecification.getGuild(shardManager);
         TextChannel textChannelById = null;
         try {
             textChannelById = guild.getTextChannelById(value);
@@ -71,7 +71,7 @@ public class DefaultTextChannelProperty extends AbstractGuildProperty {
     public String display(GuildSpecification guildSpecification) {
         Object persistedValue = extractPersistedValue(guildSpecification);
         if (persistedValue != null) {
-            Guild guild = guildSpecification.getGuild(Botify.get().getJda());
+            Guild guild = guildSpecification.getGuild(Botify.get().getShardManager());
             TextChannel textChannelById = guild.getTextChannelById((String) persistedValue);
             if (textChannelById != null) {
                 return textChannelById.getName();

@@ -6,9 +6,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.wrapper.spotify.SpotifyApi;
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.boot.VersionManager;
 import net.robinfriedli.botify.command.CommandManager;
@@ -32,13 +32,13 @@ public class Botify {
     private final CommandManager commandManager;
     private final GuildManager guildManager;
     private final GuildPropertyManager guildPropertyManager;
-    private final JDA jda;
     private final JxpBackend jxpBackend;
     private final ListenerAdapter[] registeredListeners;
     private final LoginManager loginManager;
     private final MessageService messageService;
     private final SecurityManager securityManager;
     private final SessionFactory sessionFactory;
+    private final ShardManager shardManager;
     private final SpotifyApi.Builder spotifyApiBuilder;
     private final VersionManager versionManager;
 
@@ -47,12 +47,12 @@ public class Botify {
                   CommandManager commandManager,
                   GuildManager guildManager,
                   GuildPropertyManager guildPropertyManager,
-                  JDA jda,
                   JxpBackend jxpBackend,
                   LoginManager loginManager,
                   MessageService messageService,
                   SecurityManager securityManager,
                   SessionFactory sessionFactory,
+                  ShardManager shardManager,
                   SpotifyApi.Builder spotifyApiBuilder,
                   VersionManager versionManager,
                   ListenerAdapter... listeners) {
@@ -61,12 +61,12 @@ public class Botify {
         this.commandManager = commandManager;
         this.guildManager = guildManager;
         this.guildPropertyManager = guildPropertyManager;
-        this.jda = jda;
         this.jxpBackend = jxpBackend;
         this.loginManager = loginManager;
         this.messageService = messageService;
         this.securityManager = securityManager;
         this.sessionFactory = sessionFactory;
+        this.shardManager = shardManager;
         this.spotifyApiBuilder = spotifyApiBuilder;
         this.versionManager = versionManager;
         this.registeredListeners = listeners;
@@ -89,20 +89,20 @@ public class Botify {
 
     public static void registerListeners() {
         Botify botify = get();
-        JDA jda = botify.getJda();
+        ShardManager shardManager = botify.getShardManager();
         ListenerAdapter[] registeredListeners = botify.getRegisteredListeners();
-        jda.addEventListener((Object[]) registeredListeners);
-        jda.getPresence().setStatus(OnlineStatus.ONLINE);
+        shardManager.addEventListener((Object[]) registeredListeners);
+        shardManager.setStatus(OnlineStatus.ONLINE);
         LOGGER.info("Registered listeners");
     }
 
     public static void shutdownListeners() {
         Botify botify = get();
         LOGGER.info("Shutting down listeners");
-        JDA jda = botify.getJda();
-        jda.getPresence().setStatus(OnlineStatus.IDLE);
+        ShardManager shardManager = botify.getShardManager();
+        shardManager.setStatus(OnlineStatus.IDLE);
         ListenerAdapter[] registeredListeners = botify.getRegisteredListeners();
-        jda.removeEventListener((Object[]) registeredListeners);
+        shardManager.removeEventListener((Object[]) registeredListeners);
     }
 
     /**
@@ -117,7 +117,7 @@ public class Botify {
     public static void shutdown(long millisToWait) {
         Botify botify = get();
         LOGGER.info("Shutting down");
-        JDA jda = botify.getJda();
+        ShardManager shardManager = botify.getShardManager();
         CommandExecutionQueueManager executionQueueManager = botify.getExecutionQueueManager();
         executionQueueManager.closeAll();
         Thread shutdownThread = new Thread(() -> {
@@ -129,7 +129,7 @@ public class Botify {
                 return;
             }
             LOGGER.info("Shutting down JDA");
-            jda.shutdown();
+            shardManager.shutdown();
         });
         shutdownThread.start();
 
@@ -164,10 +164,6 @@ public class Botify {
         return guildPropertyManager;
     }
 
-    public JDA getJda() {
-        return jda;
-    }
-
     public JxpBackend getJxpBackend() {
         return jxpBackend;
     }
@@ -190,6 +186,10 @@ public class Botify {
 
     public SessionFactory getSessionFactory() {
         return sessionFactory;
+    }
+
+    public ShardManager getShardManager() {
+        return shardManager;
     }
 
     public SpotifyApi.Builder getSpotifyApiBuilder() {

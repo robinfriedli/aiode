@@ -22,7 +22,7 @@ public class HttpServerStarter {
     }
 
     public void start() throws IOException {
-        int port = Integer.parseInt(PropertiesLoadingService.requireProperty("SERVER_PORT"));
+        int port = PropertiesLoadingService.requireProperty(Integer.class, "SERVER_PORT");
         HttpServer httpServer = HttpServer.create(new InetSocketAddress(port), 0);
         httpServer.setExecutor(null);
 

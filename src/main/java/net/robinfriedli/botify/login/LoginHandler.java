@@ -14,8 +14,8 @@ import com.sun.net.httpserver.HttpHandler;
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
 import com.wrapper.spotify.model_objects.credentials.AuthorizationCodeCredentials;
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.exceptions.InvalidRequestException;
 import net.robinfriedli.botify.servers.ServerUtil;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
@@ -25,12 +25,12 @@ import net.robinfriedli.botify.util.PropertiesLoadingService;
  */
 public class LoginHandler implements HttpHandler {
 
-    private final JDA jda;
+    private final ShardManager shardManager;
     private final SpotifyApi spotifyApi;
     private final LoginManager loginManager;
 
-    public LoginHandler(JDA jda, SpotifyApi spotifyApi, LoginManager loginManager) {
-        this.jda = jda;
+    public LoginHandler(ShardManager shardManager, SpotifyApi spotifyApi, LoginManager loginManager) {
+        this.shardManager = shardManager;
         this.spotifyApi = spotifyApi;
         this.loginManager = loginManager;
     }
@@ -48,7 +48,7 @@ public class LoginHandler implements HttpHandler {
 
             String response;
             if (accessCode != null) {
-                User user = jda.getUserById(userId);
+                User user = shardManager.getUserById(userId);
                 if (user == null) {
                     throw new InvalidRequestException(String.format("No user found for id '%s'", userId));
                 }

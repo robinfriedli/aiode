@@ -8,9 +8,9 @@ import java.util.Optional;
 
 import com.google.common.base.Splitter;
 import com.google.common.io.Files;
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.boot.StartupTask;
 import net.robinfriedli.botify.entities.AccessConfiguration;
 import net.robinfriedli.botify.entities.GrantedRole;
@@ -29,14 +29,14 @@ import static net.robinfriedli.jxp.queries.Conditions.*;
  */
 public class MigrateGuildSpecificationsTask implements StartupTask {
 
-    private final JDA jda;
+    private final ShardManager shardManager;
     private final JxpBackend jxpBackend;
     private final SessionFactory sessionFactory;
 
     private final Splitter splitter = Splitter.on(",").trimResults().omitEmptyStrings();
 
-    public MigrateGuildSpecificationsTask(JDA jda, JxpBackend jxpBackend, SessionFactory sessionFactory) {
-        this.jda = jda;
+    public MigrateGuildSpecificationsTask(ShardManager shardManager, JxpBackend jxpBackend, SessionFactory sessionFactory) {
+        this.shardManager = shardManager;
         this.jxpBackend = jxpBackend;
         this.sessionFactory = sessionFactory;
     }
@@ -72,7 +72,7 @@ public class MigrateGuildSpecificationsTask implements StartupTask {
     private void migrateSpecification(XmlElement specification, Session session) {
         String guildId = specification.getAttribute("guildId").getValue();
 
-        Guild guild = jda.getGuildById(guildId);
+        Guild guild = shardManager.getGuildById(guildId);
 
         if (guild != null) {
             Optional<GuildSpecification> existingGuildSpecification = session.createQuery("from " + GuildSpecification.class.getName() +

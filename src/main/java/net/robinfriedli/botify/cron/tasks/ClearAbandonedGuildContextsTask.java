@@ -2,8 +2,8 @@ package net.robinfriedli.botify.cron.tasks;
 
 import org.slf4j.LoggerFactory;
 
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.cron.AbstractCronTask;
 import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
@@ -22,14 +22,14 @@ public class ClearAbandonedGuildContextsTask extends AbstractCronTask {
     @Override
     protected void run(JobExecutionContext jobExecutionContext) {
         Botify botify = Botify.get();
-        JDA jda = botify.getJda();
+        ShardManager shardManager = botify.getShardManager();
         GuildManager guildManager = botify.getGuildManager();
         CommandExecutionQueueManager executionQueueManager = botify.getExecutionQueueManager();
 
         int removedGuilds = 0;
         for (GuildContext guildContext : guildManager.getGuildContexts()) {
             Guild guild = guildContext.getGuild();
-            if (jda.getGuildById(guild.getIdLong()) == null) {
+            if (shardManager.getGuildById(guild.getIdLong()) == null) {
                 guildManager.removeGuild(guild);
                 executionQueueManager.removeGuild(guild);
                 ++removedGuilds;

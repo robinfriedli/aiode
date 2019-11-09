@@ -40,6 +40,7 @@ public class CommandContext {
 
     private final Guild guild;
     private final GuildContext guildContext;
+    private final JDA jda;
     private final Member member;
     private final Message message;
     private final SessionFactory sessionFactory;
@@ -57,7 +58,7 @@ public class CommandContext {
                           SessionFactory sessionFactory,
                           SpotifyApi spotifyApi,
                           String commandBody) {
-        this(event.getGuild(), guildContext, event.getMember(), event.getMessage(), sessionFactory, spotifyApi, commandBody, event.getAuthor());
+        this(event.getGuild(), guildContext, event.getJDA(), event.getMember(), event.getMessage(), sessionFactory, spotifyApi, commandBody, event.getAuthor());
     }
 
     public CommandContext(GuildMessageReactionAddEvent event,
@@ -66,11 +67,12 @@ public class CommandContext {
                           SessionFactory sessionFactory,
                           SpotifyApi spotifyApi,
                           String commandBody) {
-        this(event.getGuild(), guildContext, event.getMember(), message, sessionFactory, spotifyApi, commandBody, event.getUser());
+        this(event.getGuild(), guildContext, event.getJDA(), event.getMember(), message, sessionFactory, spotifyApi, commandBody, event.getUser());
     }
 
     public CommandContext(Guild guild,
                           GuildContext guildContext,
+                          JDA jda,
                           Member member,
                           Message message,
                           SessionFactory sessionFactory,
@@ -79,6 +81,7 @@ public class CommandContext {
                           User user) {
         this.guild = guild;
         this.guildContext = guildContext;
+        this.jda = jda;
         this.member = member;
         this.message = message;
         this.sessionFactory = sessionFactory;
@@ -120,7 +123,7 @@ public class CommandContext {
     }
 
     public JDA getJda() {
-        return message.getJDA();
+        return jda;
     }
 
     public String getCommandBody() {

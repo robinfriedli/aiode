@@ -22,10 +22,10 @@ import com.google.common.collect.Sets;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.wrapper.spotify.SpotifyApi;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
@@ -137,7 +137,7 @@ public class GuildManager {
      * @return all active guilds
      */
     public Set<Guild> getActiveGuilds(Session session, long delayMs) {
-        JDA jda = Botify.get().getJda();
+        ShardManager shardManager = Botify.get().getShardManager();
         Set<Guild> activeGuilds = Sets.newHashSet();
         Set<String> activeGuildIds = Sets.newHashSet();
 
@@ -145,7 +145,7 @@ public class GuildManager {
             activeGuilds.add(CommandContext.Current.require().getGuild());
         }
 
-        for (Guild guild : jda.getGuilds()) {
+        for (Guild guild : shardManager.getGuilds()) {
             AudioPlayback playback = audioManager.getPlaybackForGuild(guild);
             if (playback.isPlaying()) {
                 activeGuilds.add(guild);
@@ -173,7 +173,7 @@ public class GuildManager {
         activeGuildIds.addAll(recentPlaybackGuildIds);
 
         for (String guildId : activeGuildIds) {
-            Guild guild = jda.getGuildById(guildId);
+            Guild guild = shardManager.getGuildById(guildId);
             if (guild != null) {
                 activeGuilds.add(guild);
             }
