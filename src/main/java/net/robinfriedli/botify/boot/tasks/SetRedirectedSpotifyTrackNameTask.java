@@ -11,8 +11,8 @@ import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
 import com.wrapper.spotify.model_objects.credentials.ClientCredentials;
 import com.wrapper.spotify.model_objects.specification.Track;
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.boot.StartupTask;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.jxp.api.JxpBackend;
@@ -28,12 +28,12 @@ import static net.robinfriedli.jxp.queries.Conditions.*;
  */
 public class SetRedirectedSpotifyTrackNameTask implements StartupTask {
 
-    private final JDA jda;
+    private final ShardManager shardManager;
     private final JxpBackend jxpBackend;
     private final SpotifyApi spotifyApi;
 
-    public SetRedirectedSpotifyTrackNameTask(JDA jda, JxpBackend jxpBackend, SpotifyApi spotifyApi) {
-        this.jda = jda;
+    public SetRedirectedSpotifyTrackNameTask(ShardManager shardManager, JxpBackend jxpBackend, SpotifyApi spotifyApi) {
+        this.shardManager = shardManager;
         this.jxpBackend = jxpBackend;
         this.spotifyApi = spotifyApi;
     }
@@ -45,7 +45,7 @@ public class SetRedirectedSpotifyTrackNameTask implements StartupTask {
         String playlistsPath = PropertiesLoadingService.requireProperty("PLAYLISTS_PATH");
         List<File> files = Lists.newArrayList();
         files.add(new File(playlistsPath));
-        for (Guild guild : jda.getGuilds()) {
+        for (Guild guild : shardManager.getGuilds()) {
             String guildPlaylistsPath = PropertiesLoadingService.requireProperty("GUILD_PLAYLISTS_PATH", guild.getId());
             files.add(new File(guildPlaylistsPath));
         }

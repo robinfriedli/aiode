@@ -11,8 +11,8 @@ import org.slf4j.LoggerFactory;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.entities.Playlist;
@@ -26,11 +26,11 @@ import org.hibernate.SessionFactory;
 
 public class PlaylistViewHandler implements HttpHandler {
 
-    private final JDA jda;
+    private final ShardManager shardManager;
     private final SessionFactory sessionFactory;
 
-    public PlaylistViewHandler(JDA jda, SessionFactory sessionFactory) {
-        this.jda = jda;
+    public PlaylistViewHandler(ShardManager shardManager, SessionFactory sessionFactory) {
+        this.shardManager = shardManager;
         this.sessionFactory = sessionFactory;
     }
 
@@ -54,7 +54,7 @@ public class PlaylistViewHandler implements HttpHandler {
                     if (createdUserId.equals("system")) {
                         createdUser = playlist.getCreatedUser();
                     } else {
-                        User userById = jda.getUserById(createdUserId);
+                        User userById = shardManager.getUserById(createdUserId);
                         createdUser = userById != null ? userById.getName() : playlist.getCreatedUser();
                     }
                     String htmlString = String.format(html,

@@ -15,8 +15,8 @@ import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import com.google.api.client.util.Sets;
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.sharding.ShardManager;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
@@ -126,8 +126,8 @@ public class GuildSpecification implements Serializable {
             .findAny();
     }
 
-    public Guild getGuild(JDA jda) {
-        return jda.getGuildById(getGuildId());
+    public Guild getGuild(ShardManager shardManager) {
+        return shardManager.getGuildById(getGuildId());
     }
 
     public Boolean isSendPlaybackNotification() {

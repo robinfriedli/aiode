@@ -12,8 +12,8 @@ import org.slf4j.LoggerFactory;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.audio.AudioQueue;
@@ -24,11 +24,11 @@ import net.robinfriedli.botify.util.Util;
 
 public class QueueViewHandler implements HttpHandler {
 
-    private final JDA jda;
+    private final ShardManager shardManager;
     private final AudioManager audioManager;
 
-    public QueueViewHandler(JDA jda, AudioManager audioManager) {
-        this.jda = jda;
+    public QueueViewHandler(ShardManager shardManager, AudioManager audioManager) {
+        this.shardManager = shardManager;
         this.audioManager = audioManager;
     }
 
@@ -41,7 +41,7 @@ public class QueueViewHandler implements HttpHandler {
             String guildId = parameterMap.get("guildId");
 
             if (guildId != null) {
-                Guild guild = jda.getGuildById(guildId);
+                Guild guild = shardManager.getGuildById(guildId);
                 if (guild != null) {
                     AudioPlayback playback = audioManager.getPlaybackForGuild(guild);
                     AudioQueue queue = playback.getAudioQueue();

@@ -6,8 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.boot.StartupTask;
 import net.robinfriedli.botify.boot.VersionManager;
 import net.robinfriedli.botify.discord.MessageService;
@@ -27,12 +27,12 @@ import static net.robinfriedli.jxp.queries.Conditions.*;
  */
 public class VersionUpdateAlertTask implements StartupTask {
 
-    private final JDA jda;
+    private final ShardManager shardManager;
     private final MessageService messageService;
     private final VersionManager versionManager;
 
-    public VersionUpdateAlertTask(JDA jda, MessageService messageService, VersionManager versionManager) {
-        this.jda = jda;
+    public VersionUpdateAlertTask(ShardManager shardManager, MessageService messageService, VersionManager versionManager) {
+        this.shardManager = shardManager;
         this.messageService = messageService;
         this.versionManager = versionManager;
     }
@@ -79,7 +79,7 @@ public class VersionUpdateAlertTask implements StartupTask {
 
             // setup current thread session and handle all guilds within one session instead of opening a new session for each
             StaticSessionProvider.invokeWithSession((CheckedConsumer<Session>) session -> {
-                for (Guild guild : jda.getGuilds()) {
+                for (Guild guild : shardManager.getGuilds()) {
                     messageService.sendWithLogo(embedBuilder, guild);
                 }
             });

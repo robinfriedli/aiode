@@ -7,9 +7,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Sets;
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.cron.AbstractCronTask;
 import net.robinfriedli.botify.entities.AccessConfiguration;
@@ -29,13 +29,13 @@ public class DeleteGrantedRolesForDeletedRolesTask extends AbstractCronTask {
 
     @Override
     protected void run(JobExecutionContext jobExecutionContext) {
-        JDA jda = Botify.get().getJda();
+        ShardManager shardManager = Botify.get().getShardManager();
         StaticSessionProvider.invokeWithSession(session -> {
             List<GuildSpecification> guildSpecifications = session.createQuery("from " + GuildSpecification.class.getName(), GuildSpecification.class).getResultList();
             int deletionCounter = 0;
 
             for (GuildSpecification guildSpecification : guildSpecifications) {
-                Guild guild = guildSpecification.getGuild(jda);
+                Guild guild = guildSpecification.getGuild(shardManager);
 
                 if (guild == null) {
                     continue;

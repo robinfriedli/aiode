@@ -7,8 +7,8 @@ import java.util.Objects;
 
 import com.google.common.io.Files;
 import com.wrapper.spotify.SpotifyApi;
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.boot.StartupTask;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
@@ -27,13 +27,13 @@ import org.hibernate.SessionFactory;
  */
 public class MigratePlaylistsTask implements StartupTask {
 
-    private final JDA jda;
+    private final ShardManager shardManager;
     private final JxpBackend jxpBackend;
     private final SessionFactory sessionFactory;
     private final SpotifyApi spotifyApi;
 
-    public MigratePlaylistsTask(JDA jda, JxpBackend jxpBackend, SessionFactory sessionFactory, SpotifyApi spotifyApi) {
-        this.jda = jda;
+    public MigratePlaylistsTask(ShardManager shardManager, JxpBackend jxpBackend, SessionFactory sessionFactory, SpotifyApi spotifyApi) {
+        this.shardManager = shardManager;
         this.jxpBackend = jxpBackend;
         this.sessionFactory = sessionFactory;
         this.spotifyApi = spotifyApi;
@@ -44,7 +44,7 @@ public class MigratePlaylistsTask implements StartupTask {
         try (Session session = sessionFactory.withOptions().interceptor(InterceptorChain.of(
             PlaylistItemTimestampListener.class, VerifyPlaylistListener.class)).openSession()) {
             session.beginTransaction();
-            for (Guild guild : jda.getGuilds()) {
+            for (Guild guild : shardManager.getGuilds()) {
                 String path = PropertiesLoadingService.requireProperty("GUILD_PLAYLISTS_PATH", guild.getId());
                 File xmlFile = new File(path);
                 if (xmlFile.exists()) {
