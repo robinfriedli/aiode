@@ -87,12 +87,14 @@ public class ChartsCommand extends AbstractCommand {
         embedBuilder.addField("Global", "Shows the charts across all guilds", false);
         addTrackCharts(globalResults, embedBuilder, "All time");
         addArtists(globalArtists, embedBuilder, "All time");
+        embedBuilder.addBlankField(true);
         addTrackCharts(globalMonthlyResults, embedBuilder, "Monthly");
         addArtists(globalArtistsMonthly, embedBuilder, "Monthly");
         embedBuilder.addBlankField(false);
         embedBuilder.addField("Guild", "Shows the charts for this guild", false);
         addTrackCharts(guildResults, embedBuilder, "All time");
         addArtists(guildArtists, embedBuilder, "All time");
+        embedBuilder.addBlankField(true);
         addTrackCharts(guildMonthlyResults, embedBuilder, "Monthly");
         addArtists(guildArtistMonthly, embedBuilder, "Monthly");
         sendMessage(embedBuilder);
