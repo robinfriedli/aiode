@@ -40,7 +40,7 @@ public class CronJobService {
 
             CronTrigger trigger = TriggerBuilder
                 .newTrigger()
-                .withSchedule(CronScheduleBuilder.cronSchedule(contribution.getCronExpression()))
+                .withSchedule(CronScheduleBuilder.cronSchedule(contribution.getCronExpression()).inTimeZone(contribution.getTimeZone()))
                 .build();
             scheduler.scheduleJob(jobDetail, trigger);
         }

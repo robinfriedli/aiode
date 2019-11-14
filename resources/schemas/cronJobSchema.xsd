@@ -10,6 +10,7 @@
   <xs:complexType name="cronJob">
     <xs:attribute name="id" type="xs:string"/>
     <xs:attribute name="cron" type="xs:string"/>
+    <xs:attribute name="timeZone" type="xs:string"/>
     <xs:attribute name="implementation" type="xs:string"/>
   </xs:complexType>
 

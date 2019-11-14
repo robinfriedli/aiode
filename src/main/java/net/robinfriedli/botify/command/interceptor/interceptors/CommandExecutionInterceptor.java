@@ -1,12 +1,16 @@
 package net.robinfriedli.botify.command.interceptor.interceptors;
 
+import java.awt.Color;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.common.base.Strings;
+import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.wrapper.spotify.exceptions.detailed.TooManyRequestsException;
 import com.wrapper.spotify.exceptions.detailed.UnauthorizedException;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.command.AbstractCommand;
@@ -75,6 +79,15 @@ public class CommandExecutionInterceptor implements CommandInterceptor {
         } catch (UserException e) {
             messageService.sendTemporary(e.buildEmbed().build(), command.getContext().getChannel());
             errorMessage = e.getMessage();
+        } catch (FriendlyException e) {
+            EmbedBuilder embedBuilder = new EmbedBuilder();
+            embedBuilder.setTitle("Could not load track");
+            if (e.getMessage() != null) {
+                embedBuilder.setDescription("Message returned by source: " + e.getMessage());
+            }
+            embedBuilder.setColor(Color.RED);
+
+            messageService.sendTemporary(embedBuilder.build(), command.getContext().getChannel());
         } catch (UnauthorizedException e) {
             String message = "Unauthorized: " + e.getMessage();
             messageService.sendException(message, command.getContext().getChannel());
