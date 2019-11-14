@@ -35,7 +35,8 @@ router's public ip and setup port forwarding for your router.
 ### 4. Setup botify settings
 #### 4.1 Navigate to your cloned project and go to `./resources` and open the `settings.properties` file and fill in the blanks, it should look like this:
 #### 4.2 To take advantage of the admin commands that can perform administrative actions, such as updating and restarting the bot, be sure to add your Discord user id to the `ADMIN_USERS` property. To find your Discord user id, enable Developer Mode in the App Settings > Appearance. Then go to any guild, right click your user and click "Copy ID".
-#### 4.3 Change the `BASE_URI` property to your domain or public IP (without slash at the end) and adjust `REDIRECT_URI` to the corresponding endpoint for Spotify logins (normaly BASE_URI + "/login")
+#### 4.3 For Botify to manage the YouTube API quota automatically, be sure to fill in the `YOUTUBE_API_DAILY_QUOTA` property; open the Google developer console and go to Library > YouTube Data API v3 > Manage > Quotas
+#### 4.4 Change the `BASE_URI` property to your domain or public IP (without slash at the end) and adjust `REDIRECT_URI` to the corresponding endpoint for Spotify logins (normaly BASE_URI + "/login")
 Don't have a domain? You could either go without a web server all together and still use most of botify's features or use your
 router's public ip and setup port forwarding for your router to the machine where you're running botify via the port specified by the `SERVER_PORT` property.
 ```properties
@@ -75,6 +76,8 @@ VERSIONS_PATH=./resources/versions.xml
 ###############
 # preferences #
 ###############
+# replace this value with your YouTube API Quota: open the Google developer console and go to Library > YouTube Data API v3 > Manage > Quotas
+YOUTUBE_API_DAILY_QUOTA=1000001
 MODE_PARTITIONED=true
 QUEUE_SIZE_MAX=10000
 # playlists per guild (if mode_partitioned = true, else playlist total)
