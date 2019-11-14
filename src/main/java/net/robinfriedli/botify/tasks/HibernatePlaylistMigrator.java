@@ -9,6 +9,8 @@ import java.util.stream.Collectors;
 import com.wrapper.spotify.SpotifyApi;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.sharding.ShardManager;
+import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.spotify.SpotifyTrackBulkLoadingService;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
@@ -41,6 +43,7 @@ public class HibernatePlaylistMigrator implements PersistTask<Map<Playlist, List
 
     @Override
     public Map<Playlist, List<PlaylistItem>> perform() throws Exception {
+        ShardManager shardManager = Botify.get().getShardManager();
         SpotifyTrackBulkLoadingService spotifyBulkLoadingService = new SpotifyTrackBulkLoadingService(spotifyApi);
         List<XmlElement> playlists = context.query(tagName("playlist")).collect();
         Map<Playlist, List<PlaylistItem>> playlistMap = new HashMap<>();
@@ -62,7 +65,7 @@ public class HibernatePlaylistMigrator implements PersistTask<Map<Playlist, List
                         int finalI = i;
                         spotifyBulkLoadingService.add(id, track -> {
                             String addedUserId = item.getAttribute("addedUserId").getValue();
-                            User userById = guild.getJDA().getUserById(addedUserId);
+                            User userById = shardManager.getUserById(addedUserId);
                             Song song = new Song(track, userById, newPlaylist, session);
                             if (userById == null) {
                                 song.setAddedUser(item.getAttribute("addedUser").getValue());
