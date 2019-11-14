@@ -12,6 +12,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.ManyToMany;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import com.google.api.client.util.Sets;
@@ -47,6 +48,8 @@ public class PlaybackHistory implements Serializable {
     private String guildId;
     @ManyToMany
     private Set<Artist> artists = Sets.newHashSet();
+    @OneToMany(mappedBy = "playbackHistory")
+    private Set<UserPlaybackHistory> userPlaybackHistories = Sets.newHashSet();
 
     public PlaybackHistory() {
     }
@@ -152,4 +155,17 @@ public class PlaybackHistory implements Serializable {
     public void setArtists(Set<Artist> artists) {
         this.artists = artists;
     }
+
+    public Set<UserPlaybackHistory> getUserPlaybackHistories() {
+        return userPlaybackHistories;
+    }
+
+    public void setUserPlaybackHistories(Set<UserPlaybackHistory> userPlaybackHistories) {
+        this.userPlaybackHistories = userPlaybackHistories;
+    }
+
+    public void addUserPlaybackHistory(UserPlaybackHistory userPlaybackHistory) {
+        userPlaybackHistories.add(userPlaybackHistory);
+    }
+
 }
