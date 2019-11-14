@@ -57,7 +57,7 @@ public class QueueIterator extends AudioEventAdapter {
         }
 
         Playable current = queue.getCurrent();
-        audioManager.createHistoryEntry(current, playback.getGuild());
+        audioManager.createHistoryEntry(current, playback.getGuild(), playback.getVoiceChannel());
         if (shouldSendPlaybackNotification()) {
             sendCurrentTrackNotification(current);
         }

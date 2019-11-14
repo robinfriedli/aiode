@@ -15,6 +15,7 @@ import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.VoiceChannel;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
@@ -25,6 +26,7 @@ import net.robinfriedli.botify.command.widgets.NowPlayingWidget;
 import net.robinfriedli.botify.command.widgets.WidgetManager;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.entities.PlaybackHistory;
+import net.robinfriedli.botify.entities.UserPlaybackHistory;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
 import org.hibernate.Session;
@@ -117,12 +119,23 @@ public class AudioManager {
         return new PlayableFactory(spotifyService, audioTrackLoader, youTubeService, guildManager.getContextForGuild(guild).getTrackLoadingExecutor());
     }
 
-    void createHistoryEntry(Playable playable, Guild guild) {
+    void createHistoryEntry(Playable playable, Guild guild, VoiceChannel voiceChannel) {
         executorService.execute(() -> {
             try (Session session = sessionFactory.openSession()) {
                 PlaybackHistory playbackHistory = new PlaybackHistory(LocalDateTime.now(), playable, guild, session);
                 session.beginTransaction();
+
                 session.persist(playbackHistory);
+                if (voiceChannel != null) {
+                    Member selfMember = guild.getSelfMember();
+                    for (Member member : voiceChannel.getMembers()) {
+                        if (!member.equals(selfMember)) {
+                            UserPlaybackHistory userPlaybackHistory = new UserPlaybackHistory(member.getUser(), playbackHistory);
+                            session.persist(userPlaybackHistory);
+                        }
+                    }
+                }
+
                 session.getTransaction().commit();
             } catch (Throwable e) {
                 logger.error("Exception while creating playback history entry", e);
