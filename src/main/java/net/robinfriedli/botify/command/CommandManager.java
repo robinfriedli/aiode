@@ -26,9 +26,8 @@ import static net.robinfriedli.jxp.queries.Conditions.*;
  * Starting point of a commands life cycle after being called by the {@link CommandListener}.
  * The {@link #instantiateCommandForContext(CommandContext, Session)} is responsible for finding a
  * {@link CommandContribution} or {@link Preset} for the given {@link CommandContext} as entered by the user and
- * instantiating the {@link AbstractCommand} based on the results and {@link #runCommand(AbstractCommand, ThreadExecutionQueue)}
+ * instantiating the {@link AbstractCommand} based on the results and {@link #runCommand(Command, ThreadExecutionQueue)}
  * passes it to the {@link CommandInterceptorChain} for execution.
- * Also serves as a registry for all active {@link AbstractWidget}.
  */
 public class CommandManager {
 
@@ -97,8 +96,8 @@ public class CommandManager {
                 commandInstance = commandContribution.instantiate(this, context, commandInput);
             }
         } else if (commandContribution != null) {
-            String selectedCommand = commandContribution.getAttribute("identifier").getValue();
-            String commandInput = commandBody.substring(selectedCommand.length()).trim();
+            String identifier = commandContribution.getIdentifier();
+            String commandInput = commandBody.substring(identifier.length()).trim();
             commandInstance = commandContribution.instantiate(this, context, commandInput);
         } else if (optionalPreset.isPresent()) {
             commandInstance = optionalPreset.get().instantiateCommand(this, context, commandBody);

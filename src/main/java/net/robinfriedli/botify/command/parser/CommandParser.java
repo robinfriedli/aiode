@@ -21,7 +21,7 @@ import net.robinfriedli.botify.exceptions.UserException;
  * returns the {@link Mode} with which to handle the next character.
  *
  * E.g. if the user enters '$botify add $list $youtube $limit=5 linkin park $to favs', the {@link CommandParserInterceptor}
- * will call {@link #parse()} with '$list youtube $limit=5 linkin park $to favs'.
+ * will call {@link #parse()} with '$list $youtube $limit=5 linkin park $to favs'.
  * The CommandParser will then recognise all used argument (list, youtube, limit and to) and assign the argument values
  * (limit = 5 and to = favs) and set the command input to 'linkin park'
  */
@@ -157,7 +157,7 @@ public class CommandParser {
 
         /**
          * Handles the current character as normal command input, ignoring meta characters. This method is called if the
-         * the last character was an escape character inside a quotation.
+         * the last character was an escape character or inside a quotation.
          *
          * @param character the current character
          * @return the mode to handle the next character with
