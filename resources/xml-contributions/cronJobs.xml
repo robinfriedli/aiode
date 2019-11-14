@@ -4,4 +4,5 @@
   <cronJob id="spotifyRedirectIndexRefresh" cron="0 0 3 * * ? *" implementation="net.robinfriedli.botify.cron.tasks.RefreshSpotifyRedirectIndicesTask"/>
   <cronJob id="clearAbandonedGuildContexts" cron="0 */3 * * * ? *" implementation="net.robinfriedli.botify.cron.tasks.ClearAbandonedGuildContextsTask"/>
   <cronJob id="deleteGrantedRolesForDeletedRoles" cron="0 0 */1 * * ? *" implementation="net.robinfriedli.botify.cron.tasks.DeleteGrantedRolesForDeletedRolesTask"/>
+  <cronJob id="resetCurrentYouTubeQuota" cron="0 0 0 * * ? *" timeZone="PST" implementation="net.robinfriedli.botify.cron.tasks.ResetCurrentYouTubeQuotaTask"/>
 </cronJobs>

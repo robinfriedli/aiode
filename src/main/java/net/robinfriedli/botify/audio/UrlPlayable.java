@@ -13,7 +13,7 @@ import org.hibernate.Session;
 
 /**
  * Playable implementation for any URL that is not from Spotify or YouTube. Can either be instantiated for an
- * {@link AudioTrack} loaded by lavaplayer using the {@link UrlAudioLoader} or for a persisted {@link UrlTrack}
+ * {@link AudioTrack} loaded by lavaplayer using the {@link AudioTrackLoader} or for a persisted {@link UrlTrack}
  */
 public class UrlPlayable implements Playable {
 

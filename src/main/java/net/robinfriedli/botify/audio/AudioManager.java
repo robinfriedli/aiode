@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
+import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.VoiceChannel;
@@ -42,7 +43,7 @@ public class AudioManager {
     private final SessionFactory sessionFactory;
     private final GuildManager guildManager;
     private final ExecutorService executorService;
-    private final UrlAudioLoader urlAudioLoader;
+    private final AudioTrackLoader audioTrackLoader;
 
     public AudioManager(YouTubeService youTubeService, SessionFactory sessionFactory, GuildManager guildManager) {
         playerManager = new DefaultAudioPlayerManager();
@@ -50,14 +51,20 @@ public class AudioManager {
         this.guildManager = guildManager;
         this.logger = LoggerFactory.getLogger(getClass());
         this.sessionFactory = sessionFactory;
+
         executorService = Executors.newFixedThreadPool(5, r -> {
             Thread thread = new Thread(r);
             thread.setUncaughtExceptionHandler(new LoggingExceptionHandler());
             return thread;
         });
-        urlAudioLoader = new UrlAudioLoader(playerManager);
+
+        audioTrackLoader = new AudioTrackLoader(playerManager);
         AudioSourceManagers.registerRemoteSources(playerManager);
         guildManager.setAudioManager(this);
+        YoutubeAudioSourceManager youtubeAudioSourceManager = playerManager.source(YoutubeAudioSourceManager.class);
+        // there is 100 videos per page and the maximum playlist size is 5000
+        youtubeAudioSourceManager.setPlaylistPageCount(50);
+
     }
 
     public void startPlayback(Guild guild, @Nullable VoiceChannel channel) {
@@ -107,7 +114,7 @@ public class AudioManager {
     }
 
     public PlayableFactory createPlayableFactory(Guild guild, SpotifyService spotifyService) {
-        return new PlayableFactory(spotifyService, urlAudioLoader, youTubeService, guildManager.getContextForGuild(guild).getTrackLoadingExecutor());
+        return new PlayableFactory(spotifyService, audioTrackLoader, youTubeService, guildManager.getContextForGuild(guild).getTrackLoadingExecutor());
     }
 
     void createHistoryEntry(Playable playable, Guild guild) {

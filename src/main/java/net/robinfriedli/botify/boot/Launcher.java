@@ -76,6 +76,7 @@ public class Launcher {
             String hibernateConfigurationPath = PropertiesLoadingService.requireProperty("HIBERNATE_CONFIGURATION");
             String discordBotId = PropertiesLoadingService.loadProperty("DISCORD_BOT_ID");
             String discordbotsToken = PropertiesLoadingService.loadProperty("DISCORDBOTS_TOKEN");
+            int youtubeApiDailyQuota = PropertiesLoadingService.requireProperty(Integer.class, "YOUTUBE_API_DAILY_QUOTA");
             // setup persistence
             JxpBackend jxpBackend = new JxpBuilder()
                 .mapClass("command", CommandContribution.class)
@@ -108,7 +109,7 @@ public class Launcher {
             YouTube youTube = new YouTube.Builder(httpTransport, jacksonFactory, httpRequest -> {
                 // no-op
             }).setApplicationName("botify-youtube-search").build();
-            YouTubeService youTubeService = new YouTubeService(youTube, youTubeCredentials);
+            YouTubeService youTubeService = new YouTubeService(youTube, youTubeCredentials, youtubeApiDailyQuota);
 
             // setup JDA
             ShardManager shardManager = new DefaultShardManagerBuilder()

@@ -8,11 +8,16 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import javax.annotation.Nullable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 
 import com.google.api.services.youtube.YouTube;
@@ -26,27 +31,59 @@ import com.google.api.services.youtube.model.VideoListResponse;
 import com.google.api.services.youtube.model.VideoStatistics;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
+import com.sedmelluq.discord.lavaplayer.track.AudioItem;
+import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
+import net.robinfriedli.botify.Botify;
+import net.robinfriedli.botify.audio.AudioTrackLoader;
 import net.robinfriedli.botify.audio.PlayableFactory;
 import net.robinfriedli.botify.command.commands.PlayCommand;
 import net.robinfriedli.botify.command.commands.QueueCommand;
+import net.robinfriedli.botify.entities.CurrentYouTubeQuotaUsage;
+import net.robinfriedli.botify.exceptions.CommandRuntimeException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
+import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
+import net.robinfriedli.botify.util.StaticSessionProvider;
 import net.robinfriedli.stringlist.StringList;
 import net.robinfriedli.stringlist.StringListImpl;
+import org.hibernate.Session;
 
 /**
  * Service to query data from YouTube via the YouTube Data API using the API key defined in settings.properties
  */
 public class YouTubeService {
 
+    private static final int QUOTA_COST_SEARCH = 100;
+    private static final int QUOTA_COST_1_FIELD = 3;
+    private static final int QUOTA_COST_2_FIELDS = 5;
+    private static final int QUOTA_COST_3_FIELDS = 7;
+    private static final ExecutorService UPDATE_QUOTA_SERVICE = Executors.newSingleThreadExecutor(r -> {
+        Thread thread = new Thread(r);
+        thread.setUncaughtExceptionHandler(new LoggingExceptionHandler());
+        return thread;
+    });
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
     private final YouTube youTube;
     private final String apiKey;
+    private final int quotaThreshold;
 
-    public YouTubeService(YouTube youTube, String apiKey) {
+    public YouTubeService(YouTube youTube, String apiKey, int hardQuotaLimit) {
         this.youTube = youTube;
         this.apiKey = apiKey;
+        double factor = hardQuotaLimit > 50000 ? 0.75 : 0.5;
+        quotaThreshold = (int) (hardQuotaLimit * factor);
+    }
+
+    public static CurrentYouTubeQuotaUsage getCurrentQuotaUsage(Session session) {
+        Class<CurrentYouTubeQuotaUsage> currentYouTubeQuotaUsageClass = CurrentYouTubeQuotaUsage.class;
+        return session.createQuery("from " + currentYouTubeQuotaUsageClass.getName(), currentYouTubeQuotaUsageClass).uniqueResult();
     }
 
     /**
@@ -69,25 +106,55 @@ public class YouTubeService {
             throw new IllegalArgumentException(youTubeVideo.toString() + " is not a placeholder for a redirected Spotify Track");
         }
 
-        YouTube.Search.List search = youTube.search().list("id,snippet");
-        search.setKey(apiKey);
-
         StringList artists = StringListImpl.create(spotifyTrack.getArtists(), ArtistSimplified::getName);
-        String searchTerm = artists.toSeparatedString(" ") + " - " + spotifyTrack.getName();
-        search.setQ(searchTerm);
-        // set topic to filter results to music video
-        search.setTopicId("/m/04rlf");
-        search.setType("video");
-        search.setFields("items(snippet/title,id/videoId)");
-        search.setMaxResults(3L);
+        String searchTerm = spotifyTrack.getName() + " " + artists.toSeparatedString(" ");
+        List<String> videoIds;
 
-        List<SearchResult> items = search.execute().getItems();
-        if (items.isEmpty()) {
-            youTubeVideo.cancel();
-            return;
+        if (getCurrentQuota() < quotaThreshold) {
+            YouTube.Search.List search = youTube.search().list("id,snippet");
+            search.setKey(apiKey);
+            search.setQ(searchTerm);
+            // set topic to filter results to music video
+            search.setTopicId("/m/04rlf");
+            search.setType("video");
+            search.setFields("items(snippet/title,id/videoId)");
+            search.setMaxResults(5L);
+
+            List<SearchResult> items = doWithQuota(QUOTA_COST_SEARCH, () -> search.execute().getItems());
+            if (items.isEmpty()) {
+                youTubeVideo.cancel();
+                return;
+            }
+
+            videoIds = items.stream().map(item -> item.getId().getVideoId()).collect(Collectors.toList());
+        } else {
+            AudioTrackLoader audioTrackLoader = new AudioTrackLoader(Botify.get().getAudioManager().getPlayerManager());
+            AudioItem audioItem;
+            try {
+                audioItem = audioTrackLoader.loadByIdentifier("ytsearch:" + searchTerm);
+            } catch (FriendlyException e) {
+                youTubeVideo.cancel();
+                return;
+            }
+
+            if (!(audioItem instanceof AudioPlaylist)) {
+                youTubeVideo.cancel();
+                return;
+            }
+
+            AudioPlaylist resultList = (AudioPlaylist) audioItem;
+            List<AudioTrack> tracks = resultList.getTracks();
+
+            if (tracks.isEmpty()) {
+                youTubeVideo.cancel();
+                return;
+            }
+
+            List<AudioTrack> audioTracks = tracks.subList(0, Math.min(tracks.size(), 5));
+            videoIds = audioTracks.stream().map(AudioTrack::getIdentifier).collect(Collectors.toList());
         }
 
-        List<Video> videos = getAllVideos(items.stream().map(item -> item.getId().getVideoId()).collect(Collectors.toList()));
+        List<Video> videos = getAllVideos(videoIds);
         if (videos.isEmpty()) {
             youTubeVideo.cancel();
             return;
@@ -126,7 +193,7 @@ public class YouTubeService {
                 long viewCount = getViewCount(v);
                 int editDistance = videosWithEditDistance.get(v);
                 viewScore = highestViewCount == 0 ? 10 : (int) (viewCount * 10 / highestViewCount);
-                editDistanceScore = maxEditDistance == 0 ? 10 : 10 - (editDistance * 10 / maxEditDistance);
+                editDistanceScore = maxEditDistance == 0 ? 15 : 15 - (editDistance * 15 / maxEditDistance);
                 videosByScore.putIfAbsent(artistMatchScore + viewScore + editDistanceScore, v);
             }
 
@@ -186,35 +253,65 @@ public class YouTubeService {
     }
 
     public YouTubeVideo searchVideo(String searchTerm) throws IOException {
-        List<SearchResult> items = searchVideos(1, searchTerm);
-        SearchResult searchResult = items.get(0);
-        String videoId = searchResult.getId().getVideoId();
-        VideoListResponse videoListResponse = youTube.videos().list("snippet,contentDetails")
-            .setKey(apiKey)
-            .setId(videoId)
-            .setFields("items(snippet/title,contentDetails/duration)")
-            .setMaxResults(1L)
-            .execute();
-        Video video = videoListResponse.getItems().get(0);
+        if (getCurrentQuota() < quotaThreshold) {
+            List<SearchResult> items = searchVideos(1, searchTerm);
+            SearchResult searchResult = items.get(0);
+            String videoId = searchResult.getId().getVideoId();
+            VideoListResponse videoListResponse = doWithQuota(QUOTA_COST_2_FIELDS, () -> youTube.videos().list("snippet,contentDetails")
+                .setKey(apiKey)
+                .setId(videoId)
+                .setFields("items(snippet/title,contentDetails/duration)")
+                .setMaxResults(1L)
+                .execute());
+            Video video = videoListResponse.getItems().get(0);
 
-        return new YouTubeVideoImpl(video.getSnippet().getTitle(), videoId, parseDuration(video));
+            return new YouTubeVideoImpl(video.getSnippet().getTitle(), videoId, parseDuration(video));
+        } else {
+            List<YouTubeVideo> youTubeVideos = searchVideosViaLavaplayer(searchTerm, 1);
+            return youTubeVideos.get(0);
+        }
     }
 
-    public List<YouTubeVideo> searchSeveralVideos(long limit, String searchTerm) throws IOException {
-        List<SearchResult> searchResults = searchVideos(limit, searchTerm);
-        List<String> videoIds = searchResults.stream().map(result -> result.getId().getVideoId()).collect(Collectors.toList());
-        List<Video> youtubeVideos = getAllVideos(videoIds);
-        List<YouTubeVideo> videos = Lists.newArrayList();
+    private List<YouTubeVideo> searchVideosViaLavaplayer(String searchTerm, int limit) {
+        AudioTrackLoader audioTrackLoader = new AudioTrackLoader(Botify.get().getAudioManager().getPlayerManager());
+        Object result = audioTrackLoader.loadByIdentifier("ytsearch:" + searchTerm);
 
-        for (Video video : youtubeVideos) {
-            String videoId = video.getId();
-            String title = video.getSnippet().getTitle();
-            long duration = parseDuration(video);
-
-            videos.add(new YouTubeVideoImpl(title, videoId, duration));
+        if (!(result instanceof AudioPlaylist) || ((AudioPlaylist) result).getTracks().isEmpty()) {
+            throw new NoResultsFoundException(String.format("No YouTube video found for '%s'", searchTerm));
         }
 
-        return videos;
+        List<AudioTrack> tracks = ((AudioPlaylist) result).getTracks();
+        List<YouTubeVideo> youTubeVideos = Lists.newArrayList();
+        for (int i = 0; i < tracks.size() && i < limit; i++) {
+            AudioTrack audioTrack = tracks.get(i);
+            AudioTrackInfo info = audioTrack.getInfo();
+            YouTubeVideo youTubeVideo = new YouTubeVideoImpl(info.title, audioTrack.getIdentifier(), audioTrack.getDuration());
+            youTubeVideo.setCached(audioTrack);
+            youTubeVideos.add(youTubeVideo);
+        }
+
+        return youTubeVideos;
+    }
+
+    public List<YouTubeVideo> searchSeveralVideos(int limit, String searchTerm) throws IOException {
+        if (getCurrentQuota() < quotaThreshold) {
+            List<SearchResult> searchResults = searchVideos(limit, searchTerm);
+            List<String> videoIds = searchResults.stream().map(result -> result.getId().getVideoId()).collect(Collectors.toList());
+            List<Video> youtubeVideos = getAllVideos(videoIds);
+            List<YouTubeVideo> videos = Lists.newArrayList();
+
+            for (Video video : youtubeVideos) {
+                String videoId = video.getId();
+                String title = video.getSnippet().getTitle();
+                long duration = parseDuration(video);
+
+                videos.add(new YouTubeVideoImpl(title, videoId, duration));
+            }
+
+            return videos;
+        } else {
+            return searchVideosViaLavaplayer(searchTerm, limit);
+        }
     }
 
     private List<SearchResult> searchVideos(long limit, String searchTerm) throws IOException {
@@ -225,7 +322,7 @@ public class YouTubeService {
         search.setMaxResults(limit);
         search.setKey(apiKey);
 
-        List<SearchResult> items = search.execute().getItems();
+        List<SearchResult> items = doWithQuota(QUOTA_COST_SEARCH, () -> search.execute().getItems());
         if (items.isEmpty()) {
             throw new NoResultsFoundException(String.format("No YouTube video found for '%s'", searchTerm));
         }
@@ -243,7 +340,7 @@ public class YouTubeService {
 
         String nextPageToken;
         do {
-            VideoListResponse response = query.execute();
+            VideoListResponse response = doWithQuota(QUOTA_COST_3_FIELDS, query::execute);
             videos.addAll(response.getItems());
             nextPageToken = response.getNextPageToken();
             query.setPageToken(nextPageToken);
@@ -269,7 +366,7 @@ public class YouTubeService {
         String title = searchResult.getSnippet().getTitle();
         String channelTitle = searchResult.getSnippet().getChannelTitle();
 
-        int itemCount = youTube
+        int itemCount = doWithQuota(QUOTA_COST_1_FIELD, () -> youTube
             .playlists()
             .list("contentDetails")
             .setKey(apiKey)
@@ -281,7 +378,7 @@ public class YouTubeService {
             .get(0)
             .getContentDetails()
             .getItemCount()
-            .intValue();
+            .intValue());
 
         // return hollow youtube videos so that the playlist items can be loaded asynchronously
         List<HollowYouTubeVideo> videos = Lists.newArrayListWithCapacity(itemCount);
@@ -323,7 +420,7 @@ public class YouTubeService {
         playlistSearch.setFields("items(id/playlistId,snippet/title,snippet/channelTitle)");
         playlistSearch.setMaxResults(limit);
 
-        List<SearchResult> items = playlistSearch.execute().getItems();
+        List<SearchResult> items = doWithQuota(QUOTA_COST_SEARCH, () -> playlistSearch.execute().getItems());
         if (items.isEmpty()) {
             throw new NoResultsFoundException(String.format("No YouTube playlist found for '%s'", searchTerm));
         }
@@ -335,13 +432,13 @@ public class YouTubeService {
         Map<String, Long> itemCounts = new HashMap<>();
         List<List<String>> sequences = Lists.partition(playlistIds, 50);
         for (List<String> sequence : sequences) {
-            List<Playlist> playlists = youTube
+            List<Playlist> playlists = doWithQuota(QUOTA_COST_1_FIELD, () -> youTube
                 .playlists()
                 .list("contentDetails")
                 .setKey(apiKey)
                 .setId(String.join(",", sequence))
                 .execute()
-                .getItems();
+                .getItems());
             for (Playlist playlist : playlists) {
                 itemCounts.put(playlist.getId(), playlist.getContentDetails().getItemCount());
             }
@@ -357,49 +454,62 @@ public class YouTubeService {
      * @param playlist the playlist to load
      */
     public void populateList(YouTubePlaylist playlist) throws IOException {
-        YouTube.PlaylistItems.List itemSearch = youTube.playlistItems().list("snippet");
-        itemSearch.setKey(apiKey);
-        itemSearch.setMaxResults(50L);
-        itemSearch.setFields("items(snippet/title,snippet/resourceId),nextPageToken");
-        itemSearch.setPlaylistId(playlist.getId());
+        if (getCurrentQuota() < quotaThreshold) {
+            YouTube.PlaylistItems.List itemSearch = youTube.playlistItems().list("snippet");
+            itemSearch.setKey(apiKey);
+            itemSearch.setMaxResults(50L);
+            itemSearch.setFields("items(snippet/title,snippet/resourceId),nextPageToken");
+            itemSearch.setPlaylistId(playlist.getId());
 
-        String nextPageToken;
-        List<PlaylistItem> playlistItems = Lists.newArrayList();
-        List<HollowYouTubeVideo> hollowVideos = playlist.getVideos();
-        int index = 0;
-        do {
-            PlaylistItemListResponse response = itemSearch.execute();
-            nextPageToken = response.getNextPageToken();
-            List<PlaylistItem> items = response.getItems();
-            playlistItems.addAll(items);
+            String nextPageToken;
+            List<HollowYouTubeVideo> hollowVideos = playlist.getVideos();
+            int index = 0;
+            do {
+                PlaylistItemListResponse response = doWithQuota(QUOTA_COST_1_FIELD, itemSearch::execute);
+                nextPageToken = response.getNextPageToken();
+                List<PlaylistItem> items = response.getItems();
 
-            List<HollowYouTubeVideo> currentVideos = Lists.newArrayList();
-            for (PlaylistItem item : items) {
-                String videoTitle = item.getSnippet().getTitle();
-                String videoId = item.getSnippet().getResourceId().getVideoId();
-                if (index < hollowVideos.size() - 1) {
-                    HollowYouTubeVideo hollowVideo = hollowVideos.get(index);
-                    hollowVideo.setTitle(videoTitle);
-                    hollowVideo.setId(videoId);
-                    currentVideos.add(hollowVideo);
+                List<HollowYouTubeVideo> currentVideos = Lists.newArrayList();
+                for (PlaylistItem item : items) {
+                    String videoTitle = item.getSnippet().getTitle();
+                    String videoId = item.getSnippet().getResourceId().getVideoId();
+                    if (index < hollowVideos.size() - 1) {
+                        HollowYouTubeVideo hollowVideo = hollowVideos.get(index);
+                        hollowVideo.setTitle(videoTitle);
+                        hollowVideo.setId(videoId);
+                        currentVideos.add(hollowVideo);
+                    }
+                    ++index;
                 }
-                ++index;
+                loadDurationsAsync(currentVideos);
+
+                itemSearch.setPageToken(nextPageToken);
+
+                if (Thread.currentThread().isInterrupted()) {
+                    playlist.cancelLoading();
+                    return;
+                }
+            } while (!Strings.isNullOrEmpty(nextPageToken));
+        } else {
+            AudioTrackLoader audioTrackLoader = new AudioTrackLoader(Botify.get().getAudioManager().getPlayerManager());
+            AudioItem audioItem = audioTrackLoader.loadByIdentifier(playlist.getUrl());
+
+            if (audioItem instanceof AudioPlaylist) {
+                List<HollowYouTubeVideo> videos = playlist.getVideos();
+                List<AudioTrack> tracks = ((AudioPlaylist) audioItem).getTracks();
+
+                for (int i = 0; i < videos.size() && i < tracks.size(); i++) {
+                    HollowYouTubeVideo video = videos.get(i);
+                    AudioTrack track = tracks.get(i);
+
+                    video.setTitle(track.getInfo().title);
+                    video.setId(track.getIdentifier());
+                    video.setDuration(track.getDuration());
+                    video.setCached(track);
+                }
             }
-            loadDurationsAsync(currentVideos);
-
-            itemSearch.setPageToken(nextPageToken);
-
-            if (Thread.currentThread().isInterrupted()) {
-                playlist.cancelLoading();
-                return;
-            }
-        } while (!Strings.isNullOrEmpty(nextPageToken));
-
-        if (playlistItems.isEmpty()) {
-            throw new NoResultsFoundException("Playlist " + playlist.getTitle() + " has no items");
         }
-
-        // finally cancel each video that could be loaded e.g. if it's private
+        // finally cancel each video that couldn't be loaded e.g. if it's private
         playlist.cancelLoading();
     }
 
@@ -516,19 +626,34 @@ public class YouTubeService {
 
     @Nullable
     public YouTubeVideo getVideoForId(String id) throws IOException {
-        YouTube.Videos.List videoRequest = youTube.videos().list("snippet");
-        videoRequest.setId(id);
-        videoRequest.setFields("items(contentDetails/duration,snippet/title)");
-        videoRequest.setKey(apiKey);
-        videoRequest.setMaxResults(1L);
-        List<Video> items = videoRequest.execute().getItems();
+        if (getCurrentQuota() < quotaThreshold) {
+            YouTube.Videos.List videoRequest = youTube.videos().list("snippet");
+            videoRequest.setId(id);
+            videoRequest.setFields("items(contentDetails/duration,snippet/title)");
+            videoRequest.setKey(apiKey);
+            videoRequest.setMaxResults(1L);
+            List<Video> items = doWithQuota(QUOTA_COST_1_FIELD, () -> videoRequest.execute().getItems());
 
-        if (items.isEmpty()) {
-            return null;
+            if (items.isEmpty()) {
+                return null;
+            }
+
+            Video video = items.get(0);
+            return new YouTubeVideoImpl(video.getSnippet().getTitle(), id, getDurationMillis(id));
+        } else {
+            AudioTrackLoader audioTrackLoader = new AudioTrackLoader(Botify.get().getAudioManager().getPlayerManager());
+            AudioItem result = audioTrackLoader.loadByIdentifier(String.format("https://www.youtube.com/watch?v=%s", id));
+
+            if (result instanceof AudioTrack) {
+                AudioTrack track = (AudioTrack) result;
+
+                YouTubeVideo youTubeVideo = new YouTubeVideoImpl(track.getInfo().title, track.getIdentifier(), track.getDuration());
+                youTubeVideo.setCached(track);
+                return youTubeVideo;
+            } else {
+                return null;
+            }
         }
-
-        Video video = items.get(0);
-        return new YouTubeVideoImpl(video.getSnippet().getTitle(), id, getDurationMillis(id));
     }
 
     public YouTubePlaylist playlistForId(String id) throws IOException {
@@ -536,7 +661,7 @@ public class YouTubeService {
         playlistRequest.setId(id);
         playlistRequest.setFields("items(contentDetails/itemCount,snippet/title,snippet/channelTitle)");
         playlistRequest.setKey(apiKey);
-        List<Playlist> items = playlistRequest.execute().getItems();
+        List<Playlist> items = doWithQuota(QUOTA_COST_2_FIELDS, () -> playlistRequest.execute().getItems());
 
         if (items.isEmpty()) {
             throw new NoResultsFoundException(String.format("No YouTube playlist found for id '%s'", id));
@@ -563,7 +688,7 @@ public class YouTubeService {
         videosRequest.setKey(apiKey);
         videosRequest.setId(videoId);
         videosRequest.setFields("items(contentDetails/duration)");
-        VideoListResponse videoListResponse = videosRequest.execute();
+        VideoListResponse videoListResponse = doWithQuota(QUOTA_COST_1_FIELD, videosRequest::execute);
         List<Video> items = videoListResponse.getItems();
         if (items.size() == 1) {
             return parseDuration(items.get(0));
@@ -582,7 +707,7 @@ public class YouTubeService {
         videosRequest.setKey(apiKey);
         videosRequest.setId(String.join(",", videoIds));
         videosRequest.setFields("items(contentDetails/duration,id)");
-        List<Video> videos = videosRequest.execute().getItems();
+        List<Video> videos = doWithQuota(QUOTA_COST_1_FIELD, () -> videosRequest.execute().getItems());
 
         Map<String, Long> durationMap = new HashMap<>();
         for (Video video : videos) {
@@ -602,6 +727,38 @@ public class YouTubeService {
         }
 
         return 0;
+    }
+
+    private <E> E doWithQuota(int cost, Callable<E> callable) {
+        try {
+            E retVal = callable.call();
+            UPDATE_QUOTA_SERVICE.execute(() -> incrementQuotaUsage(cost));
+            return retVal;
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new CommandRuntimeException(e);
+        }
+    }
+
+    private int getCurrentQuota() {
+        return StaticSessionProvider.invokeWithSession(session -> {
+            return getCurrentQuotaUsage(session).getQuota();
+        });
+    }
+
+    private void incrementQuotaUsage(int valueToAdd) {
+        StaticSessionProvider.invokeWithSession(session -> {
+            CurrentYouTubeQuotaUsage currentQuotaUsage = getCurrentQuotaUsage(session);
+            int currentQuota = currentQuotaUsage.getQuota();
+            int newQuota = currentQuota + valueToAdd;
+            if (currentQuota < quotaThreshold && newQuota >= quotaThreshold) {
+                logger.warn("Reached the YouTube quota threshold of " + quotaThreshold
+                    + ". From now on queries will no longer be executed via the YouTube API but by lavaplayer (except for playlists) " +
+                    "until the quota resets at midnight PT.");
+            }
+            currentQuotaUsage.setQuota(newQuota);
+        });
     }
 
 }

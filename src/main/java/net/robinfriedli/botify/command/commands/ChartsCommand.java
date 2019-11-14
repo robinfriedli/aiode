@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.Lists;
+import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
@@ -164,7 +165,11 @@ public class ChartsCommand extends AbstractCommand {
                 });
             case "YouTube":
                 YouTubeService youTubeService = Botify.get().getAudioManager().getYouTubeService();
-                return youTubeService.getVideoForId(id);
+                try {
+                    return youTubeService.getVideoForId(id);
+                } catch (FriendlyException e) {
+                    return null;
+                }
             case "Url":
                 AudioManager audioManager = Botify.get().getAudioManager();
                 PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild(), getSpotifyService());

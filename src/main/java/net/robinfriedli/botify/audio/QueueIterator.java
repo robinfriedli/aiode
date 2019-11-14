@@ -6,6 +6,7 @@ import java.util.concurrent.CompletableFuture;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.event.AudioEventAdapter;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
+import com.sedmelluq.discord.lavaplayer.track.AudioItem;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -33,7 +34,7 @@ public class QueueIterator extends AudioEventAdapter {
     private final AudioQueue queue;
     private final AudioManager audioManager;
     private final MessageService messageService;
-    private final UrlAudioLoader urlAudioLoader;
+    private final AudioTrackLoader audioTrackLoader;
     private Playable currentlyPlaying;
     private boolean isReplaced;
     // incremented when a track fails to load and is automatically skipped. This exists to define a maximum number of
@@ -46,7 +47,7 @@ public class QueueIterator extends AudioEventAdapter {
         this.queue = playback.getAudioQueue();
         this.audioManager = audioManager;
         messageService = Botify.get().getMessageService();
-        urlAudioLoader = new UrlAudioLoader(audioManager.getPlayerManager());
+        audioTrackLoader = new AudioTrackLoader(audioManager.getPlayerManager());
     }
 
     @Override
@@ -108,7 +109,7 @@ public class QueueIterator extends AudioEventAdapter {
         }
 
         Playable track = queue.getCurrent();
-        Object result = null;
+        AudioItem result = null;
         AudioTrack cachedTracked = track.getCached();
         if (cachedTracked != null) {
             result = cachedTracked.makeClone();
@@ -124,7 +125,14 @@ public class QueueIterator extends AudioEventAdapter {
                 return;
             }
 
-            result = urlAudioLoader.loadUrl(playbackUrl);
+            try {
+                result = audioTrackLoader.loadByIdentifier(playbackUrl);
+            } catch (FriendlyException e) {
+                sendError(track, e);
+
+                ++retryCount;
+                iterateQueue(playback, queue, true);
+            }
         }
         if (result != null) {
             if (result instanceof AudioTrack) {
@@ -132,11 +140,6 @@ public class QueueIterator extends AudioEventAdapter {
                 track.setCached(audioTrack);
                 playback.getAudioPlayer().playTrack(audioTrack);
                 currentlyPlaying = track;
-            } else if (result instanceof Throwable) {
-                sendError(track, (Throwable) result);
-
-                ++retryCount;
-                iterateQueue(playback, queue, true);
             } else {
                 throw new UnsupportedOperationException("Expected an AudioTrack or Throwable but got " + result.getClass());
             }
@@ -176,7 +179,11 @@ public class QueueIterator extends AudioEventAdapter {
         if (retryCount == 0) {
             EmbedBuilder embedBuilder = new EmbedBuilder();
             embedBuilder.setTitle("Could not load track " + track.display());
-            embedBuilder.setDescription(e.getMessage());
+
+            if (e.getMessage() != null) {
+                embedBuilder.setDescription("Message returned by source: " + e.getMessage());
+            }
+
             embedBuilder.setColor(Color.RED);
 
             if (queue.hasNext(true)) {
