@@ -12,11 +12,11 @@ import com.google.api.services.youtube.YouTube;
 import com.google.common.base.Strings;
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.SpotifyHttpManager;
-import net.dv8tion.jda.api.AccountType;
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder;
+import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
@@ -36,6 +36,7 @@ import net.robinfriedli.botify.entities.xml.HttpHandlerContribution;
 import net.robinfriedli.botify.entities.xml.StartupTaskContribution;
 import net.robinfriedli.botify.entities.xml.Version;
 import net.robinfriedli.botify.entities.xml.WidgetContribution;
+import net.robinfriedli.botify.function.CheckedConsumer;
 import net.robinfriedli.botify.listeners.CommandListener;
 import net.robinfriedli.botify.listeners.GuildManagementListener;
 import net.robinfriedli.botify.listeners.VoiceChannelListener;
@@ -75,6 +76,7 @@ public class Launcher {
             String hibernateConfigurationPath = PropertiesLoadingService.requireProperty("HIBERNATE_CONFIGURATION");
             String discordBotId = PropertiesLoadingService.loadProperty("DISCORD_BOT_ID");
             String discordbotsToken = PropertiesLoadingService.loadProperty("DISCORDBOTS_TOKEN");
+            int youtubeApiDailyQuota = PropertiesLoadingService.requireProperty(Integer.class, "YOUTUBE_API_DAILY_QUOTA");
             // setup persistence
             JxpBackend jxpBackend = new JxpBuilder()
                 .mapClass("command", CommandContribution.class)
@@ -107,14 +109,15 @@ public class Launcher {
             YouTube youTube = new YouTube.Builder(httpTransport, jacksonFactory, httpRequest -> {
                 // no-op
             }).setApplicationName("botify-youtube-search").build();
-            YouTubeService youTubeService = new YouTubeService(youTube, youTubeCredentials);
+            YouTubeService youTubeService = new YouTubeService(youTube, youTubeCredentials, youtubeApiDailyQuota);
 
             // setup JDA
-            JDA jda = new JDABuilder(AccountType.BOT)
+            ShardManager shardManager = new DefaultShardManagerBuilder()
                 .setToken(discordToken)
                 .setStatus(OnlineStatus.IDLE)
-                .build()
-                .awaitReady();
+                .build();
+
+            shardManager.getShards().forEach((CheckedConsumer<JDA>) JDA::awaitReady);
 
             // setup discordbots.org
             DiscordBotListAPI discordBotListAPI;
@@ -123,7 +126,10 @@ public class Launcher {
                     .botId(discordBotId)
                     .token(discordbotsToken)
                     .build();
-                discordBotListAPI.setStats(jda.getGuilds().size());
+                for (JDA shard : shardManager.getShards()) {
+                    JDA.ShardInfo shardInfo = shard.getShardInfo();
+                    discordBotListAPI.setStats(shardInfo.getShardId(), shardInfo.getShardTotal(), shard.getGuilds().size());
+                }
             } else {
                 logger.warn("discordbots.org api not set up, missing properties");
                 discordBotListAPI = null;
@@ -156,12 +162,12 @@ public class Launcher {
                 commandManager,
                 guildManager,
                 guildPropertyManager,
-                jda,
                 jxpBackend,
                 loginManager,
                 messageService,
                 securityManager,
                 sessionFactory,
+                shardManager,
                 spotifyApiBuilder,
                 versionManager,
                 commandListener, guildManagementListener, widgetListener, voiceChannelListener);
@@ -175,7 +181,7 @@ public class Launcher {
             // setup guilds
             StaticSessionProvider.invokeWithSession(session -> {
                 // setup current thread session and handle all guilds within one session instead of opening a new session for each
-                for (Guild guild : jda.getGuilds()) {
+                for (Guild guild : shardManager.getGuilds()) {
                     guildManager.addGuild(guild);
                     executionQueueManager.addGuild(guild);
                 }
@@ -191,7 +197,7 @@ public class Launcher {
             cronJobService.scheduleAll();
 
             Botify.registerListeners();
-            jda.getPresence().setStatus(OnlineStatus.ONLINE);
+            shardManager.setStatus(OnlineStatus.ONLINE);
             logger.info("All starters done");
         } catch (Throwable e) {
             logger.error("Exception in starter. Application will terminate.", e);

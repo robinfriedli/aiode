@@ -1,6 +1,8 @@
 package net.robinfriedli.botify.entities.xml;
 
+import java.time.ZoneId;
 import java.util.List;
+import java.util.TimeZone;
 
 import javax.annotation.Nonnull;
 
@@ -31,6 +33,13 @@ public class CronJobContribution extends GenericClassContribution<AbstractCronTa
 
     public String getCronExpression() {
         return getAttribute("cron").getValue();
+    }
+
+    public TimeZone getTimeZone() {
+        if (hasAttribute("timeZone")) {
+            return TimeZone.getTimeZone(ZoneId.of(getAttribute("timeZone").getValue(), ZoneId.SHORT_IDS));
+        }
+        return TimeZone.getTimeZone(ZoneId.systemDefault());
     }
 
 }

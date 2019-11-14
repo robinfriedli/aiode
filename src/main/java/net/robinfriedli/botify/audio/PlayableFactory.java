@@ -14,6 +14,7 @@ import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 
 import com.google.common.collect.Lists;
+import com.sedmelluq.discord.lavaplayer.track.AudioItem;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.wrapper.spotify.SpotifyApi;
@@ -49,14 +50,14 @@ import org.hibernate.Session;
 public class PlayableFactory {
 
     private final SpotifyService spotifyService;
-    private final UrlAudioLoader urlAudioLoader;
+    private final AudioTrackLoader audioTrackLoader;
     private final YouTubeService youTubeService;
     private final GuildTrackLoadingExecutor trackLoadingExecutor;
     private final SpotifyInvoker invoker;
 
-    public PlayableFactory(SpotifyService spotifyService, UrlAudioLoader urlAudioLoader, YouTubeService youTubeService, GuildTrackLoadingExecutor trackLoadingExecutor) {
+    public PlayableFactory(SpotifyService spotifyService, AudioTrackLoader audioTrackLoader, YouTubeService youTubeService, GuildTrackLoadingExecutor trackLoadingExecutor) {
         this.spotifyService = spotifyService;
-        this.urlAudioLoader = urlAudioLoader;
+        this.audioTrackLoader = audioTrackLoader;
         this.youTubeService = youTubeService;
         this.trackLoadingExecutor = trackLoadingExecutor;
         invoker = SpotifyInvoker.create(spotifyService.getSpotifyApi());
@@ -236,8 +237,8 @@ public class PlayableFactory {
     }
 
     /**
-     * Create a single for any url. If the url is either an open.spotify or YouTube URL this extracts the ID
-     * and uses the familiar methods to load the Playables, otherwise this method uses the {@link UrlAudioLoader}
+     * Create a single playable for any url. If the url is either an open.spotify or YouTube URL this extracts the ID
+     * and uses the familiar methods to load the Playables, otherwise this method uses the {@link AudioTrackLoader}
      * to load the {@link AudioTrack}s using lavaplayer and wraps them in {@link UrlPlayable}s
      */
     @Nullable
@@ -281,11 +282,11 @@ public class PlayableFactory {
                 throw new IllegalArgumentException("Detected Spotify URL but no track id provided");
             }
         } else {
-            Object o = urlAudioLoader.loadUrl(uri.toString());
-            if (o instanceof AudioTrack) {
-                return new UrlPlayable((AudioTrack) o);
-            } else if (o != null) {
-                throw new IllegalArgumentException("Loading provided url did not result in an AudioTrack but " + o.getClass().toString());
+            AudioItem audioItem = audioTrackLoader.loadByIdentifier(uri.toString());
+            if (audioItem instanceof AudioTrack) {
+                return new UrlPlayable((AudioTrack) audioItem);
+            } else if (audioItem != null) {
+                throw new IllegalArgumentException("Loading provided url did not result in an AudioTrack but " + audioItem.getClass().toString());
             } else {
                 return null;
             }
@@ -339,28 +340,22 @@ public class PlayableFactory {
 
     private List<Playable> createPlayablesFromUrl(String url) {
         List<Playable> playables;
-        Object result = urlAudioLoader.loadUrl(url);
+        AudioItem audioItem = audioTrackLoader.loadByIdentifier(url);
 
-        if (result == null || result instanceof Throwable) {
-            String errorMessage = "Could not load audio for provided URL.";
-
-            if (result != null) {
-                errorMessage = errorMessage + " " + ((Throwable) result).getMessage();
-            }
-
-            throw new NoResultsFoundException(errorMessage);
+        if (audioItem == null) {
+            throw new NoResultsFoundException("Could not load audio for provided URL.");
         }
 
-        if (result instanceof AudioTrack) {
-            playables = Lists.newArrayList(new UrlPlayable((AudioTrack) result));
-        } else if (result instanceof AudioPlaylist) {
-            AudioPlaylist playlist = (AudioPlaylist) result;
+        if (audioItem instanceof AudioTrack) {
+            playables = Lists.newArrayList(new UrlPlayable((AudioTrack) audioItem));
+        } else if (audioItem instanceof AudioPlaylist) {
+            AudioPlaylist playlist = (AudioPlaylist) audioItem;
             playables = Lists.newArrayList();
             for (AudioTrack track : playlist.getTracks()) {
                 playables.add(new UrlPlayable(track));
             }
         } else {
-            throw new UnsupportedOperationException("Expected an AudioTrack or AudioPlaylist but got " + result.getClass().getSimpleName());
+            throw new UnsupportedOperationException("Expected an AudioTrack or AudioPlaylist but got " + audioItem.getClass().getSimpleName());
         }
 
         return playables;

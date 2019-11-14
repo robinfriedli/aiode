@@ -30,4 +30,12 @@ See RunLiquibaseUpdateTask
     </preConditions>
     <modifyDataType tableName="preset" columnName="preset" newDataType="varchar(1000)"/>
   </changeSet>
+  <changeSet id="create_current_youtube_quota_usage-sd23d/1.6.LTS" author="robinfriedli" context="initialvalue" runAlways="true">
+    <preConditions onFail="MARK_RAN">
+      <sqlCheck expectedResult="0">select count(*) from current_youtube_quota_usage</sqlCheck>
+    </preConditions>
+    <insert tableName="current_youtube_quota_usage">
+      <column name="quota" value="0"/>
+    </insert>
+  </changeSet>
 </databaseChangeLog>

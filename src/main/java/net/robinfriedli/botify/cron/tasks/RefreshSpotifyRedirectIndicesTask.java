@@ -48,6 +48,7 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
 
     @Override
     protected void run(JobExecutionContext jobExecutionContext) {
+        logger.info("Starting SpotifyRedirectIndex refresh");
         Botify botify = Botify.get();
         Stopwatch stopwatch = Stopwatch.createStarted();
         YouTubeService youTubeService = botify.getAudioManager().getYouTubeService();

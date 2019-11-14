@@ -15,6 +15,7 @@ import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
+import com.sedmelluq.discord.lavaplayer.track.AudioItem;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 
@@ -22,20 +23,27 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
  * Loads an {@link AudioTrack} or {@link AudioPlaylist} from lavaplayer from any given URL which then can be played by
  * lavaplayer's {@link AudioPlayer}
  */
-class UrlAudioLoader {
+public class AudioTrackLoader {
 
     private final AudioPlayerManager playerManager;
     private final Logger logger;
 
-    UrlAudioLoader(AudioPlayerManager playerManager) {
+    public AudioTrackLoader(AudioPlayerManager playerManager) {
         this.playerManager = playerManager;
         logger = LoggerFactory.getLogger(getClass());
     }
 
+    /**
+     * Load an {@link AudioTrack} or {@link AudioPlaylist} via an identifier. This is usually its URL or a YouTube
+     * search query, if preceded by the prefix "ytsearch:"
+     *
+     * @param identifier the url or YouTube search query
+     * @return the loaded {@link AudioTrack} or {@link AudioPlaylist} or the resulting {@link FriendlyException} or null
+     */
     @Nullable
-    Object loadUrl(String playbackUrl) {
-        CompletableFuture<Object> result = new CompletableFuture<>();
-        playerManager.loadItem(playbackUrl, new AudioLoadResultHandler() {
+    public AudioItem loadByIdentifier(String identifier) {
+        CompletableFuture<AudioItem> result = new CompletableFuture<>();
+        playerManager.loadItem(identifier, new AudioLoadResultHandler() {
             @Override
             public void trackLoaded(AudioTrack audioTrack) {
                 result.complete(audioTrack);
@@ -53,16 +61,26 @@ class UrlAudioLoader {
 
             @Override
             public void loadFailed(FriendlyException e) {
-                result.complete(e);
+                result.completeExceptionally(e);
                 if (e.severity != FriendlyException.Severity.COMMON) {
-                    logger.error("lavaplayer threw an exception while loading track " + playbackUrl, e);
+                    logger.error("lavaplayer threw an exception while loading track " + identifier, e);
                 }
             }
         });
 
         try {
-            return result.get(30, TimeUnit.SECONDS);
-        } catch (InterruptedException | ExecutionException e) {
+            return result.get(2, TimeUnit.MINUTES);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return null;
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof RuntimeException) {
+                throw (RuntimeException) cause;
+            } else if (cause != null) {
+                throw new RuntimeException(cause);
+            }
+
             throw new RuntimeException(e);
         } catch (TimeoutException | CancellationException e) {
             return null;

@@ -8,8 +8,8 @@ import org.slf4j.Logger;
 
 import com.google.common.collect.Lists;
 import com.wrapper.spotify.SpotifyApi;
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
@@ -53,7 +53,7 @@ public class Cache {
         }));
         EXTRACTORS.add(new Extractor<>(GuildManager.class, () -> Botify.get().getGuildManager()));
         EXTRACTORS.add(new Extractor<>(GuildPropertyManager.class, () -> Botify.get().getGuildPropertyManager()));
-        EXTRACTORS.add(new Extractor<>(JDA.class, () -> Botify.get().getJda()));
+        EXTRACTORS.add(new Extractor<>(ShardManager.class, () -> Botify.get().getShardManager()));
         EXTRACTORS.add(new Extractor<>(JxpBackend.class, () -> Botify.get().getJxpBackend()));
         EXTRACTORS.add(new Extractor<>(Logger.class, () -> Botify.LOGGER));
         EXTRACTORS.add(new Extractor<>(LoginManager.class, () -> Botify.get().getLoginManager()));

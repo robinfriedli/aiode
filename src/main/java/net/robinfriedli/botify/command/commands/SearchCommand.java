@@ -274,7 +274,14 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
 
     private void listTracks(List<Track> tracks, String name, String owner, String artist, String path) {
         EmbedBuilder embedBuilder = new EmbedBuilder();
-        long totalDuration = tracks.stream().mapToLong(Track::getDurationMs).sum();
+        long totalDuration = tracks.stream().mapToInt(track -> {
+            Integer durationMs = track.getDurationMs();
+            if (durationMs != null) {
+                return durationMs;
+            } else {
+                return 0;
+            }
+        }).sum();
 
         embedBuilder.addField("Name", name, true);
         embedBuilder.addField("Song count", String.valueOf(tracks.size()), true);
@@ -295,7 +302,7 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
                 tracks.size() > 5 ? tracks.subList(0, 5) : tracks,
                 track -> track.getName() + " - " +
                     StringListImpl.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", ") + " - " +
-                    Util.normalizeMillis(track.getDurationMs()),
+                    Util.normalizeMillis(track.getDurationMs() != null ? track.getDurationMs() : 0),
                 "Track - Artist - Duration"
             );
         }
