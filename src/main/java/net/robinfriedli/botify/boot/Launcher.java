@@ -152,7 +152,7 @@ public class Launcher {
             SecurityManager securityManager = new SecurityManager(guildManager);
 
             CommandListener commandListener = new CommandListener(executionQueueManager, commandManager, guildManager, messageService, sessionFactory, spotifyApiBuilder);
-            GuildManagementListener guildManagementListener = new GuildManagementListener(executionQueueManager, discordBotListAPI, guildManager);
+            GuildManagementListener guildManagementListener = new GuildManagementListener(executionQueueManager, discordBotListAPI, guildManager, shardManager);
             WidgetListener widgetListener = new WidgetListener(guildManager, messageService);
             VoiceChannelListener voiceChannelListener = new VoiceChannelListener(audioManager);
             VersionManager versionManager = new VersionManager(jxpBackend.getContext(PropertiesLoadingService.requireProperty("VERSIONS_PATH")));

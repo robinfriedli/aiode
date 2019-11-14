@@ -13,6 +13,7 @@ import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.youtube.YouTubePlaylist;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
@@ -161,7 +162,8 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
             if (createdUserId.equals("system")) {
                 createdUser = playlist.getCreatedUser();
             } else {
-                User userById = getContext().getJda().getUserById(createdUserId);
+                ShardManager shardManager = Botify.get().getShardManager();
+                User userById = shardManager.getUserById(createdUserId);
                 createdUser = userById != null ? userById.getName() : playlist.getCreatedUser();
             }
 
