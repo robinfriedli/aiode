@@ -70,11 +70,10 @@ public class VersionUpdateAlertTask implements StartupTask {
 
             List<XmlElement> features = versionElem.query(tagName("feature")).collect();
             if (!features.isEmpty()) {
-                StringBuilder featuresBuilder = new StringBuilder();
+                embedBuilder.addField("**Features**", "Changes in this update", false);
                 for (XmlElement feature : features) {
-                    featuresBuilder.append("-\t").append(feature.getTextContent()).append(System.lineSeparator());
+                    embedBuilder.addField(feature.getAttribute("title").getValue(), feature.getTextContent(), false);
                 }
-                embedBuilder.addField("Features", featuresBuilder.toString(), false);
             }
 
             // setup current thread session and handle all guilds within one session instead of opening a new session for each

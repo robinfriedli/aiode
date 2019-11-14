@@ -9,11 +9,14 @@
   </xs:complexType>
   <xs:complexType name="version">
     <xs:sequence>
-      <xs:element name="feature"/>
+      <xs:element name="feature" type="feature"/>
     </xs:sequence>
     <xs:attribute name="version" type="xs:string"/>
     <xs:attribute name="launched" type="xs:boolean"/>
     <xs:attribute name="silent" type="xs:boolean" default="false"/>
+  </xs:complexType>
+  <xs:complexType name="feature">
+    <xs:attribute name="title" type="xs:string"/>
   </xs:complexType>
 
 </xs:schema>
