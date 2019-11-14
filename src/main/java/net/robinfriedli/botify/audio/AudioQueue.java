@@ -430,7 +430,7 @@ public class AudioQueue {
 
     private void appendIcon(StringBuilder builder, String unicode, boolean enabled) {
         if (enabled) {
-            builder.append(unicode);
+            builder.append(unicode).append(" ");
         }
     }
 
