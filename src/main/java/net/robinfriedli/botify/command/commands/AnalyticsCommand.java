@@ -5,8 +5,8 @@ import java.math.RoundingMode;
 import java.util.List;
 
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
@@ -31,8 +31,8 @@ public class AnalyticsCommand extends AbstractCommand {
 
     @Override
     public void doRun() {
-        JDA jda = getContext().getJda();
-        List<Guild> guilds = jda.getGuilds();
+        ShardManager shardManager = Botify.get().getShardManager();
+        List<Guild> guilds = shardManager.getGuilds();
         Botify botify = Botify.get();
         AudioManager audioManager = botify.getAudioManager();
         GuildManager guildManager = botify.getGuildManager();

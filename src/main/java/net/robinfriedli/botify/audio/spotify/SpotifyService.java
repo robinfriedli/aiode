@@ -3,6 +3,7 @@ package net.robinfriedli.botify.audio.spotify;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
@@ -104,7 +105,7 @@ public class SpotifyService {
         do {
             Paging<PlaylistTrack> paging = spotifyApi.getPlaylistsTracks(playlistId).offset(offset).limit(limit).build().execute();
             PlaylistTrack[] items = paging.getItems();
-            tracks.addAll(Arrays.stream(items).map(PlaylistTrack::getTrack).collect(Collectors.toList()));
+            tracks.addAll(Arrays.stream(items).map(PlaylistTrack::getTrack).filter(Objects::nonNull).collect(Collectors.toList()));
             offset = offset + limit;
             nextPage = paging.getNext();
         } while (nextPage != null);
@@ -147,7 +148,7 @@ public class SpotifyService {
             Paging<TrackSimplified> paging = spotifyApi.getAlbumsTracks(albumId).offset(offset).limit(limit).build().execute();
             TrackSimplified[] items = paging.getItems();
             Track[] albumTracks = spotifyApi
-                .getSeveralTracks(Arrays.stream(items).map(TrackSimplified::getId).toArray(String[]::new))
+                .getSeveralTracks(Arrays.stream(items).filter(Objects::nonNull).map(TrackSimplified::getId).toArray(String[]::new))
                 .build()
                 .execute();
             tracks.addAll(Arrays.asList(albumTracks));

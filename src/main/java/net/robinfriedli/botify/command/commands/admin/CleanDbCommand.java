@@ -9,8 +9,8 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.ISnowflake;
+import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.AbstractAdminCommand;
 import net.robinfriedli.botify.command.ArgumentContribution;
@@ -84,10 +84,10 @@ public class CleanDbCommand extends AbstractAdminCommand {
     }
 
     private void doClean() {
-        JDA jda = getContext().getJda();
+        ShardManager shardManager = Botify.get().getShardManager();
         Session session = getContext().getSession();
 
-        Set<String> activeGuildIds = jda.getGuilds().stream().map(ISnowflake::getId).collect(Collectors.toSet());
+        Set<String> activeGuildIds = shardManager.getGuilds().stream().map(ISnowflake::getId).collect(Collectors.toSet());
         GuildManager guildManager = Botify.get().getGuildManager();
         activeGuildIds.addAll(guildManager.getGuildContexts().stream().map(g -> g.getGuild().getId()).collect(Collectors.toSet()));
         CriteriaBuilder cb = session.getCriteriaBuilder();
