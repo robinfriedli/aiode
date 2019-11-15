@@ -120,7 +120,6 @@ public class QueueIterator extends AudioEventAdapter {
             try {
                 playbackUrl = track.getPlaybackUrl();
             } catch (UnavailableResourceException e) {
-                ++retryCount;
                 iterateQueue(playback, queue, true);
                 return;
             }
@@ -132,6 +131,7 @@ public class QueueIterator extends AudioEventAdapter {
 
                 ++retryCount;
                 iterateQueue(playback, queue, true);
+                return;
             }
         }
         if (result != null) {
