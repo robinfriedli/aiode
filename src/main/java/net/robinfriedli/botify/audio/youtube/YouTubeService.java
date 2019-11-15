@@ -642,7 +642,12 @@ public class YouTubeService {
             return new YouTubeVideoImpl(video.getSnippet().getTitle(), id, getDurationMillis(id));
         } else {
             AudioTrackLoader audioTrackLoader = new AudioTrackLoader(Botify.get().getAudioManager().getPlayerManager());
-            AudioItem result = audioTrackLoader.loadByIdentifier(String.format("https://www.youtube.com/watch?v=%s", id));
+            AudioItem result;
+            try {
+                result = audioTrackLoader.loadByIdentifier(String.format("https://www.youtube.com/watch?v=%s", id));
+            } catch (FriendlyException e) {
+                return null;
+            }
 
             if (result instanceof AudioTrack) {
                 AudioTrack track = (AudioTrack) result;
