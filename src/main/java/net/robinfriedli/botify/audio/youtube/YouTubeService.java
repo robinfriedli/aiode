@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -73,6 +74,7 @@ public class YouTubeService {
     private final YouTube youTube;
     private final String apiKey;
     private final int quotaThreshold;
+    private final AtomicInteger currentQuota = new AtomicInteger(getPersistentQuota());
 
     public YouTubeService(YouTube youTube, String apiKey, int hardQuotaLimit) {
         this.youTube = youTube;
@@ -84,6 +86,14 @@ public class YouTubeService {
     public static CurrentYouTubeQuotaUsage getCurrentQuotaUsage(Session session) {
         Class<CurrentYouTubeQuotaUsage> currentYouTubeQuotaUsageClass = CurrentYouTubeQuotaUsage.class;
         return session.createQuery("from " + currentYouTubeQuotaUsageClass.getName(), currentYouTubeQuotaUsageClass).uniqueResult();
+    }
+
+    public int getAtomicQuotaUsage() {
+        return currentQuota.get();
+    }
+
+    public void setAtomicQuotaUsage(int quota) {
+        currentQuota.set(quota);
     }
 
     /**
@@ -110,7 +120,7 @@ public class YouTubeService {
         String searchTerm = spotifyTrack.getName() + " " + artists.toSeparatedString(" ");
         List<String> videoIds;
 
-        if (getCurrentQuota() < quotaThreshold) {
+        if (currentQuota.get() < quotaThreshold) {
             YouTube.Search.List search = youTube.search().list("id,snippet");
             search.setKey(apiKey);
             search.setQ(searchTerm);
@@ -253,7 +263,7 @@ public class YouTubeService {
     }
 
     public YouTubeVideo searchVideo(String searchTerm) throws IOException {
-        if (getCurrentQuota() < quotaThreshold) {
+        if (currentQuota.get() < quotaThreshold) {
             List<SearchResult> items = searchVideos(1, searchTerm);
             SearchResult searchResult = items.get(0);
             String videoId = searchResult.getId().getVideoId();
@@ -294,7 +304,7 @@ public class YouTubeService {
     }
 
     public List<YouTubeVideo> searchSeveralVideos(int limit, String searchTerm) throws IOException {
-        if (getCurrentQuota() < quotaThreshold) {
+        if (currentQuota.get() < quotaThreshold) {
             List<SearchResult> searchResults = searchVideos(limit, searchTerm);
             List<String> videoIds = searchResults.stream().map(result -> result.getId().getVideoId()).collect(Collectors.toList());
             List<Video> youtubeVideos = getAllVideos(videoIds);
@@ -454,7 +464,7 @@ public class YouTubeService {
      * @param playlist the playlist to load
      */
     public void populateList(YouTubePlaylist playlist) throws IOException {
-        if (getCurrentQuota() < quotaThreshold) {
+        if (currentQuota.get() < quotaThreshold) {
             YouTube.PlaylistItems.List itemSearch = youTube.playlistItems().list("snippet");
             itemSearch.setKey(apiKey);
             itemSearch.setMaxResults(50L);
@@ -626,7 +636,7 @@ public class YouTubeService {
 
     @Nullable
     public YouTubeVideo getVideoForId(String id) throws IOException {
-        if (getCurrentQuota() < quotaThreshold) {
+        if (currentQuota.get() < quotaThreshold) {
             YouTube.Videos.List videoRequest = youTube.videos().list("snippet");
             videoRequest.setId(id);
             videoRequest.setFields("items(contentDetails/duration,snippet/title)");
@@ -737,7 +747,15 @@ public class YouTubeService {
     private <E> E doWithQuota(int cost, Callable<E> callable) {
         try {
             E retVal = callable.call();
-            UPDATE_QUOTA_SERVICE.execute(() -> incrementQuotaUsage(cost));
+            int prevVal = currentQuota.getAndAdd(cost);
+            int newVal = currentQuota.get();
+            if (prevVal < quotaThreshold && newVal >= quotaThreshold) {
+                logger.warn("Reached the YouTube quota threshold of " + quotaThreshold
+                    + ". From now on queries will no longer be executed via the YouTube API but by lavaplayer (except for playlists) " +
+                    "until the quota resets at midnight PT.");
+            }
+
+            UPDATE_QUOTA_SERVICE.execute(() -> updatePersistentQuota(newVal));
             return retVal;
         } catch (RuntimeException e) {
             throw e;
@@ -746,23 +764,18 @@ public class YouTubeService {
         }
     }
 
-    private int getCurrentQuota() {
-        return StaticSessionProvider.invokeWithSession(session -> {
+    private int getPersistentQuota() {
+        // read the value in a fresh session to ensure the current value in the database is returned, not the cached state
+        // of the current session
+        try (Session session = StaticSessionProvider.getSessionFactory().openSession()) {
             return getCurrentQuotaUsage(session).getQuota();
-        });
+        }
     }
 
-    private void incrementQuotaUsage(int valueToAdd) {
+    private void updatePersistentQuota(int newValue) {
         StaticSessionProvider.invokeWithSession(session -> {
             CurrentYouTubeQuotaUsage currentQuotaUsage = getCurrentQuotaUsage(session);
-            int currentQuota = currentQuotaUsage.getQuota();
-            int newQuota = currentQuota + valueToAdd;
-            if (currentQuota < quotaThreshold && newQuota >= quotaThreshold) {
-                logger.warn("Reached the YouTube quota threshold of " + quotaThreshold
-                    + ". From now on queries will no longer be executed via the YouTube API but by lavaplayer (except for playlists) " +
-                    "until the quota resets at midnight PT.");
-            }
-            currentQuotaUsage.setQuota(newQuota);
+            currentQuotaUsage.setQuota(newValue);
         });
     }
 
