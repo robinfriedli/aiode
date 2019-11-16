@@ -16,6 +16,12 @@ import net.robinfriedli.botify.util.StaticSessionProvider;
  */
 public class ResetOutdatedYouTubeQuotaTask implements StartupTask {
 
+    private final YouTubeService youTubeService;
+
+    public ResetOutdatedYouTubeQuotaTask(YouTubeService youTubeService) {
+        this.youTubeService = youTubeService;
+    }
+
     @Override
     public void perform() {
         StaticSessionProvider.invokeWithSession(session -> {
@@ -29,6 +35,7 @@ public class ResetOutdatedYouTubeQuotaTask implements StartupTask {
                 ZonedDateTime lastUpdated = lastUpdatedNoZone.atZone(ZoneId.systemDefault());
 
                 if (midnight.compareTo(lastUpdated) > 0) {
+                    youTubeService.setAtomicQuotaUsage(0);
                     currentQuotaUsage.setQuota(0);
                 }
             }
