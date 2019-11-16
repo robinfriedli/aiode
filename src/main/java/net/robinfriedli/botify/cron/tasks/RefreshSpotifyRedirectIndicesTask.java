@@ -25,6 +25,7 @@ import net.robinfriedli.botify.audio.youtube.HollowYouTubeVideo;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.cron.AbstractCronTask;
 import net.robinfriedli.botify.entities.SpotifyRedirectIndex;
+import net.robinfriedli.botify.exceptions.CommandRuntimeException;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.botify.function.modes.HibernateTransactionMode;
 import net.robinfriedli.botify.function.modes.SpotifyAuthorizationMode;
@@ -123,7 +124,11 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
                 }
 
                 HollowYouTubeVideo hollowYouTubeVideo = new HollowYouTubeVideo(youTubeService, track);
-                youTubeService.redirectSpotify(hollowYouTubeVideo);
+                try {
+                    youTubeService.redirectSpotify(hollowYouTubeVideo);
+                } catch (CommandRuntimeException e) {
+                    throw e.getCause();
+                }
                 if (!hollowYouTubeVideo.isCanceled() && !Strings.isNullOrEmpty(track.getId())) {
                     String videoId = hollowYouTubeVideo.getVideoId();
                     index.setYouTubeId(videoId);
