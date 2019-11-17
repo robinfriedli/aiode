@@ -38,4 +38,12 @@ See RunLiquibaseUpdateTask
       <column name="quota" value="0"/>
     </insert>
   </changeSet>
+  <changeSet id="delete_existing_spotify_redirect_index_modification_locks-sd23f/1.6.LTS" author="robinfriedli" context="initialvalue" runAlways="true">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <sqlCheck expectedResult="0">select count(*) from spotify_redirect_index_modification_lock</sqlCheck>
+      </not>
+    </preConditions>
+    <delete tableName="spotify_redirect_index_modification_lock"/>
+  </changeSet>
 </databaseChangeLog>

@@ -16,6 +16,7 @@ import net.robinfriedli.botify.audio.youtube.HollowYouTubeVideo;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
 import net.robinfriedli.botify.entities.SpotifyRedirectIndex;
+import net.robinfriedli.botify.entities.SpotifyRedirectIndexModificationLock;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.botify.function.HibernateInvoker;
 import net.robinfriedli.botify.util.StaticSessionProvider;
@@ -69,8 +70,14 @@ public class SpotifyRedirectService {
                 youTubeVideo.setTitle(title);
                 return;
             } else {
-                SINGE_THREAD_EXECUTOR_SERVICE.execute(() -> StaticSessionProvider.invokeWithSession((Consumer<Session>) otherThreadSession ->
-                    invoker.invoke(() -> otherThreadSession.delete(spotifyRedirectIndex))));
+                SINGE_THREAD_EXECUTOR_SERVICE.execute(() -> StaticSessionProvider.invokeWithSession(otherThreadSession -> {
+                    Long modificationLocks = otherThreadSession
+                        .createQuery("select count(*) from " + SpotifyRedirectIndexModificationLock.class.getName(), Long.class)
+                        .uniqueResult();
+                    if (modificationLocks == 0) {
+                        invoker.invoke(() -> otherThreadSession.delete(spotifyRedirectIndex));
+                    }
+                }));
             }
         }
 

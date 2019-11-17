@@ -3,6 +3,7 @@ package net.robinfriedli.botify.cron.tasks;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -25,13 +26,18 @@ import net.robinfriedli.botify.audio.youtube.HollowYouTubeVideo;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.cron.AbstractCronTask;
 import net.robinfriedli.botify.entities.SpotifyRedirectIndex;
+import net.robinfriedli.botify.entities.SpotifyRedirectIndexModificationLock;
 import net.robinfriedli.botify.exceptions.CommandRuntimeException;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.botify.function.modes.HibernateTransactionMode;
 import net.robinfriedli.botify.function.modes.SpotifyAuthorizationMode;
 import net.robinfriedli.botify.util.StaticSessionProvider;
 import net.robinfriedli.jxp.exec.Invoker;
+import org.hibernate.LockMode;
+import org.hibernate.LockOptions;
 import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
 import org.quartz.JobExecutionContext;
 
 /**
@@ -50,52 +56,72 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
     @Override
     protected void run(JobExecutionContext jobExecutionContext) {
         logger.info("Starting SpotifyRedirectIndex refresh");
-        Botify botify = Botify.get();
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        YouTubeService youTubeService = botify.getAudioManager().getYouTubeService();
-        SpotifyTrackBulkLoadingService spotifyTrackBulkLoadingService = new SpotifyTrackBulkLoadingService(spotifyApi, true);
+        SessionFactory sessionFactory = StaticSessionProvider.getSessionFactory();
+        SpotifyRedirectIndexModificationLock spotifyRedirectIndexModificationLock = new SpotifyRedirectIndexModificationLock();
+        spotifyRedirectIndexModificationLock.setCreationTimeStamp(LocalDateTime.now());
+        try (Session session = sessionFactory.openSession()) {
+            Transaction transaction = session.beginTransaction();
+            session.persist(spotifyRedirectIndexModificationLock);
+            transaction.commit();
+        }
 
-        LocalDate currentDate = LocalDate.now();
-        LocalDate date2WeeksAgo = currentDate.minusDays(14);
+        try {
+            Botify botify = Botify.get();
+            Stopwatch stopwatch = Stopwatch.createStarted();
+            YouTubeService youTubeService = botify.getAudioManager().getYouTubeService();
+            SpotifyTrackBulkLoadingService spotifyTrackBulkLoadingService = new SpotifyTrackBulkLoadingService(spotifyApi, true);
 
-        StaticSessionProvider.invokeWithSession(session -> {
-            CriteriaBuilder cb = session.getCriteriaBuilder();
-            CriteriaQuery<SpotifyRedirectIndex> query = cb.createQuery(SpotifyRedirectIndex.class);
-            Root<SpotifyRedirectIndex> root = query.from(SpotifyRedirectIndex.class);
-            query.where(cb.lessThan(root.get("lastUpdated"), date2WeeksAgo));
-            query.orderBy(cb.asc(root.get("lastUpdated")));
-            List<SpotifyRedirectIndex> indices = session.createQuery(query).getResultList();
+            LocalDate currentDate = LocalDate.now();
+            LocalDate date2WeeksAgo = currentDate.minusDays(14);
 
-            if (indices.isEmpty()) {
-                return;
-            }
+            StaticSessionProvider.invokeWithSession(session -> {
+                CriteriaBuilder cb = session.getCriteriaBuilder();
+                CriteriaQuery<SpotifyRedirectIndex> query = cb.createQuery(SpotifyRedirectIndex.class);
+                Root<SpotifyRedirectIndex> root = query.from(SpotifyRedirectIndex.class);
+                query.where(cb.lessThan(root.get("lastUpdated"), date2WeeksAgo));
+                query.orderBy(cb.asc(root.get("lastUpdated")));
+                List<SpotifyRedirectIndex> indices = session.createQuery(query).setLockOptions(new LockOptions(LockMode.PESSIMISTIC_WRITE)).getResultList();
 
-            BigDecimal averageDailyIndices = (BigDecimal) session
-                .createSQLQuery("select avg(count) from (select count(*) as count from spotify_redirect_index group by last_updated) as sub")
-                .uniqueResult();
-            int average = averageDailyIndices.setScale(0, RoundingMode.CEILING).intValue();
-
-            int updateCount = 0;
-            for (SpotifyRedirectIndex index : indices) {
-                RefreshTrackIndexTask task = new RefreshTrackIndexTask(session, index, youTubeService);
-                String spotifyId = index.getSpotifyId();
-                if (!Strings.isNullOrEmpty(spotifyId)) {
-                    spotifyTrackBulkLoadingService.add(spotifyId, task);
-                } else {
-                    session.delete(index);
+                if (indices.isEmpty()) {
+                    return;
                 }
-                ++updateCount;
 
-                if (updateCount == average) {
-                    break;
+                BigDecimal averageDailyIndices = (BigDecimal) session
+                    .createSQLQuery("select avg(count) from (select count(*) as count from spotify_redirect_index group by last_updated) as sub")
+                    .uniqueResult();
+                int average = averageDailyIndices.setScale(0, RoundingMode.CEILING).intValue();
+
+                int updateCount = 0;
+                for (SpotifyRedirectIndex index : indices) {
+                    RefreshTrackIndexTask task = new RefreshTrackIndexTask(session, index, youTubeService);
+                    String spotifyId = index.getSpotifyId();
+                    if (!Strings.isNullOrEmpty(spotifyId)) {
+                        spotifyTrackBulkLoadingService.add(spotifyId, task);
+                    } else {
+                        session.delete(index);
+                    }
+                    ++updateCount;
+
+                    if (updateCount == average) {
+                        break;
+                    }
                 }
+
+                spotifyTrackBulkLoadingService.perform();
+
+                stopwatch.stop();
+                logger.info(String.format("Regenerated %s spotify redirect indices in %s seconds", updateCount, stopwatch.elapsed(TimeUnit.SECONDS)));
+            });
+        } finally {
+            try (Session session = sessionFactory.openSession()) {
+                Transaction transaction = session.beginTransaction();
+                session.delete(spotifyRedirectIndexModificationLock);
+                transaction.commit();
+            } catch (Throwable e) {
+                // catch exceptions thrown in the finally block so as to not override exceptions thrown in the try block
+                logger.error("Exception thrown while deleting SpotifyRedirectIndexModificationLock", e);
             }
-
-            spotifyTrackBulkLoadingService.perform();
-
-            stopwatch.stop();
-            logger.info(String.format("Regenerated %s spotify redirect indices in %s seconds", updateCount, stopwatch.elapsed(TimeUnit.SECONDS)));
-        });
+        }
     }
 
     @Override
