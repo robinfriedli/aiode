@@ -2,6 +2,7 @@ package net.robinfriedli.botify.cron.tasks;
 
 import org.slf4j.LoggerFactory;
 
+import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.cron.AbstractCronTask;
 import net.robinfriedli.botify.entities.CurrentYouTubeQuotaUsage;
@@ -17,8 +18,10 @@ public class ResetCurrentYouTubeQuotaTask extends AbstractCronTask {
 
     @Override
     protected void run(JobExecutionContext jobExecutionContext) {
+        YouTubeService youTubeService = Botify.get().getAudioManager().getYouTubeService();
         StaticSessionProvider.invokeWithSession(session -> {
             CurrentYouTubeQuotaUsage currentQuotaUsage = YouTubeService.getCurrentQuotaUsage(session);
+            youTubeService.setAtomicQuotaUsage(0);
             currentQuotaUsage.setQuota(0);
         });
         LoggerFactory.getLogger(getClass()).info("Reset current YouTube API Quota counter");
