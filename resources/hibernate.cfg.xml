@@ -41,5 +41,6 @@
     <mapping class="net.robinfriedli.botify.entities.SpotifyRedirectIndex"/>
     <mapping class="net.robinfriedli.botify.entities.CurrentYouTubeQuotaUsage"/>
     <mapping class="net.robinfriedli.botify.entities.UserPlaybackHistory"/>
+    <mapping class="net.robinfriedli.botify.entities.SpotifyRedirectIndexModificationLock"/>
   </session-factory>
 </hibernate-configuration>
