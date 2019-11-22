@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +14,7 @@ import com.wrapper.spotify.model_objects.specification.Track;
 import net.robinfriedli.botify.audio.youtube.HollowYouTubeVideo;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
+import net.robinfriedli.botify.boot.AbstractShutdownable;
 import net.robinfriedli.botify.entities.SpotifyRedirectIndex;
 import net.robinfriedli.botify.entities.SpotifyRedirectIndexModificationLock;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
@@ -30,7 +30,7 @@ import static net.robinfriedli.botify.entities.SpotifyRedirectIndex.*;
  * of full tracks via its api. Checks if there is a persisted {@link SpotifyRedirectIndex} or loads the YouTube video
  * via {@link YouTubeService#redirectSpotify(HollowYouTubeVideo)} if not.
  */
-public class SpotifyRedirectService {
+public class SpotifyRedirectService extends AbstractShutdownable {
 
     private static final ExecutorService SINGE_THREAD_EXECUTOR_SERVICE = Executors.newSingleThreadExecutor();
 
@@ -100,4 +100,8 @@ public class SpotifyRedirectService {
         }
     }
 
+    @Override
+    public void shutdown(int delayMs) {
+        SINGE_THREAD_EXECUTOR_SERVICE.shutdown();
+    }
 }

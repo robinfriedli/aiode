@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.slf4j.LoggerFactory;
 
+import net.robinfriedli.botify.boot.AbstractShutdownable;
 import net.robinfriedli.botify.entities.xml.CronJobContribution;
 import net.robinfriedli.jxp.persist.Context;
 import org.quartz.CronScheduleBuilder;
@@ -19,7 +20,7 @@ import org.quartz.impl.StdSchedulerFactory;
  * service that schedules all cron tasks registered in the cronJobs.xml file and starts and shuts down the quartz
  * {@link Scheduler}, waiting for current tasks to finish on shut down.
  */
-public class CronJobService {
+public class CronJobService extends AbstractShutdownable {
 
     private final Context contributionContext;
     private final Scheduler scheduler;
@@ -28,7 +29,7 @@ public class CronJobService {
         this.contributionContext = contributionContext;
         this.scheduler = StdSchedulerFactory.getDefaultScheduler();
         scheduler.start();
-        Runtime.getRuntime().addShutdownHook(new Thread(new CronJobServiceShutdownHook()));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdown(0)));
     }
 
     public void scheduleAll() throws SchedulerException {
@@ -46,15 +47,12 @@ public class CronJobService {
         }
     }
 
-    private class CronJobServiceShutdownHook implements Runnable {
-
-        @Override
-        public void run() {
-            try {
-                scheduler.shutdown(true);
-            } catch (SchedulerException e) {
-                LoggerFactory.getLogger(getClass());
-            }
+    @Override
+    public void shutdown(int delay) {
+        try {
+            scheduler.shutdown(true);
+        } catch (SchedulerException e) {
+            LoggerFactory.getLogger(getClass()).error("Error while shutting down cron service", e);
         }
     }
 

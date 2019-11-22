@@ -42,6 +42,7 @@ import com.wrapper.spotify.model_objects.specification.Track;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioTrackLoader;
 import net.robinfriedli.botify.audio.PlayableFactory;
+import net.robinfriedli.botify.boot.AbstractShutdownable;
 import net.robinfriedli.botify.command.commands.PlayCommand;
 import net.robinfriedli.botify.command.commands.QueueCommand;
 import net.robinfriedli.botify.entities.CurrentYouTubeQuotaUsage;
@@ -57,7 +58,7 @@ import org.hibernate.Session;
 /**
  * Service to query data from YouTube via the YouTube Data API using the API key defined in settings.properties
  */
-public class YouTubeService {
+public class YouTubeService extends AbstractShutdownable {
 
     private static final int QUOTA_COST_SEARCH = 100;
     private static final int QUOTA_COST_1_FIELD = 3;
@@ -779,4 +780,8 @@ public class YouTubeService {
         });
     }
 
+    @Override
+    public void shutdown(int delayMs) {
+        UPDATE_QUOTA_SERVICE.shutdown();
+    }
 }

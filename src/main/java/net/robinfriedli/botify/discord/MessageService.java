@@ -32,6 +32,7 @@ import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.requests.restaction.MessageAction;
 import net.robinfriedli.botify.Botify;
+import net.robinfriedli.botify.boot.AbstractShutdownable;
 import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
@@ -43,7 +44,7 @@ import net.robinfriedli.stringlist.StringList;
 import net.robinfriedli.stringlist.StringListImpl;
 import org.hibernate.Session;
 
-public class MessageService {
+public class MessageService extends AbstractShutdownable {
 
     private static final ScheduledExecutorService TEMP_MESSAGE_DELETION_SCHEDULER = Executors.newScheduledThreadPool(3);
 
@@ -57,6 +58,11 @@ public class MessageService {
     public MessageService(int limit) {
         this.limit = limit;
         this.logger = LoggerFactory.getLogger(getClass());
+    }
+
+    @Override
+    public void shutdown(int delayMs) {
+        TEMP_MESSAGE_DELETION_SCHEDULER.shutdown();
     }
 
     public CompletableFuture<Message> send(String message, MessageChannel channel) {

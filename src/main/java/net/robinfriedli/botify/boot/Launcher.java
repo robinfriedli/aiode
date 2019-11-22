@@ -1,5 +1,7 @@
 package net.robinfriedli.botify.boot;
 
+import java.util.Collections;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,11 +42,13 @@ import net.robinfriedli.botify.listeners.GuildManagementListener;
 import net.robinfriedli.botify.listeners.VoiceChannelListener;
 import net.robinfriedli.botify.listeners.WidgetListener;
 import net.robinfriedli.botify.login.LoginManager;
-import net.robinfriedli.botify.servers.HttpServerStarter;
+import net.robinfriedli.botify.servers.HttpServerManager;
 import net.robinfriedli.botify.util.StaticSessionProvider;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.api.JxpBuilder;
 import net.robinfriedli.jxp.persist.Context;
+import okhttp3.OkHttpClient;
+import okhttp3.Protocol;
 import org.discordbots.api.client.DiscordBotListAPI;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.MetadataSources;
@@ -111,6 +115,7 @@ public class Launcher {
             // setup JDA
             ShardManager shardManager = new DefaultShardManagerBuilder()
                 .setToken(discordToken)
+                .setHttpClientBuilder(new OkHttpClient.Builder().protocols(Collections.singletonList(Protocol.HTTP_1_1)))
                 .setStatus(OnlineStatus.IDLE)
                 .build();
 
@@ -155,7 +160,7 @@ public class Launcher {
             VersionManager versionManager = new VersionManager(jxpBackend.getContext(requireResourceFile("versions.xml")));
 
             Context httpHanldersContext = jxpBackend.getContext(requireContributionFile("httpHandlers.xml"));
-            HttpServerStarter serverStarter = new HttpServerStarter(httpHanldersContext);
+            HttpServerManager serverManager = new HttpServerManager(httpHanldersContext);
             CronJobService cronJobService = new CronJobService(jxpBackend.getContext(requireContributionFile("cronJobs.xml")));
 
             Botify botify = new Botify(audioManager,
@@ -175,7 +180,7 @@ public class Launcher {
                 commandListener, guildManagementListener, widgetListener, voiceChannelListener);
 
             commandManager.initializeInterceptorChain();
-            serverStarter.start();
+            serverManager.start();
 
             // setup guilds
             StaticSessionProvider.invokeWithSession(session -> {

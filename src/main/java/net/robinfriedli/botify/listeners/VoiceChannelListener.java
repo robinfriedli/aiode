@@ -14,6 +14,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
+import net.robinfriedli.botify.boot.Shutdownable;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
@@ -24,7 +25,7 @@ import net.robinfriedli.botify.util.StaticSessionProvider;
 /**
  * Listener responsible for listening for VoiceChannel events; currently used for the auto pause feature
  */
-public class VoiceChannelListener extends ListenerAdapter {
+public class VoiceChannelListener extends ListenerAdapter implements Shutdownable {
 
     private final AudioManager audioManager;
     private final ExecutorService executorService;
@@ -36,6 +37,7 @@ public class VoiceChannelListener extends ListenerAdapter {
             thread.setUncaughtExceptionHandler(new LoggingExceptionHandler());
             return thread;
         });
+        register();
     }
 
     @Override
@@ -90,4 +92,8 @@ public class VoiceChannelListener extends ListenerAdapter {
         });
     }
 
+    @Override
+    public void shutdown(int delayMs) {
+        executorService.shutdown();
+    }
 }

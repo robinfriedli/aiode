@@ -21,9 +21,11 @@ import net.dv8tion.jda.api.entities.VoiceChannel;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.robinfriedli.botify.audio.spotify.SpotifyService;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
+import net.robinfriedli.botify.boot.AbstractShutdownable;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.widgets.NowPlayingWidget;
 import net.robinfriedli.botify.command.widgets.WidgetManager;
+import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.entities.PlaybackHistory;
 import net.robinfriedli.botify.entities.UserPlaybackHistory;
@@ -37,7 +39,7 @@ import org.hibernate.SessionFactory;
  * services, such as the {@link PlayableFactory} or {@link YouTubeService}, or methods to start a playback or
  * join / leave voice channels. Also manages the playback history and creates the {@link NowPlayingWidget}
  */
-public class AudioManager {
+public class AudioManager extends AbstractShutdownable {
 
     private final AudioPlayerManager playerManager;
     private final YouTubeService youTubeService;
@@ -159,4 +161,12 @@ public class AudioManager {
         }
     }
 
+    @Override
+    public void shutdown(int delayMs) {
+        for (GuildContext guildContext : guildManager.getGuildContexts()) {
+            guildContext.getPlayback().stop();
+        }
+        playerManager.shutdown();
+        executorService.shutdown();
+    }
 }

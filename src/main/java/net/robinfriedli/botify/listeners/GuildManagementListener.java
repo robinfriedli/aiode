@@ -19,6 +19,7 @@ import net.dv8tion.jda.api.events.guild.GuildLeaveEvent;
 import net.dv8tion.jda.api.events.role.RoleDeleteEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.sharding.ShardManager;
+import net.robinfriedli.botify.boot.Shutdownable;
 import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.entities.GrantedRole;
@@ -30,7 +31,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Listener responsible for handling the bot joining or leaving a guild or relevant changes to the guild configuration
  */
-public class GuildManagementListener extends ListenerAdapter {
+public class GuildManagementListener extends ListenerAdapter implements Shutdownable {
 
     private final CommandExecutionQueueManager executionQueueManager;
     @Nullable
@@ -54,6 +55,7 @@ public class GuildManagementListener extends ListenerAdapter {
         this.guildManager = guildManager;
         logger = LoggerFactory.getLogger(getClass());
         this.shardManager = shardManager;
+        register();
     }
 
     @Override
@@ -104,5 +106,10 @@ public class GuildManagementListener extends ListenerAdapter {
                 }
             });
         });
+    }
+
+    @Override
+    public void shutdown(int delayMs) {
+        guildEventHandlerExecutorService.shutdown();
     }
 }

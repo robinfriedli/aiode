@@ -2,15 +2,18 @@ package net.robinfriedli.botify;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.api.client.util.Sets;
 import com.wrapper.spotify.SpotifyApi;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.audio.AudioManager;
+import net.robinfriedli.botify.boot.Shutdownable;
 import net.robinfriedli.botify.boot.VersionManager;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.command.SecurityManager;
@@ -26,6 +29,8 @@ import org.hibernate.SessionFactory;
 public class Botify {
 
     public static final Logger LOGGER = LoggerFactory.getLogger(Botify.class);
+
+    public static final Set<Shutdownable> SHUTDOWNABLES = Sets.newHashSet();
 
     private static Botify instance;
 
@@ -119,34 +124,41 @@ public class Botify {
      * @param millisToWait time to wait for pending actions to complete in milliseconds, after this time the bot will
      *                     quit either way
      */
-    public static void shutdown(long millisToWait) {
+    public static void shutdown(int millisToWait) {
         Botify botify = get();
         LOGGER.info("Shutting down");
         ShardManager shardManager = botify.getShardManager();
         CommandExecutionQueueManager executionQueueManager = botify.getExecutionQueueManager();
-        executionQueueManager.closeAll();
-        Thread shutdownThread = new Thread(() -> {
+
+        // use a daemon thread to shutdown the bot after the provided time has elapsed without keeping the application
+        // running if all live threads terminate earlier
+        Thread forceShutdownThread = new Thread(() -> {
             try {
-                LOGGER.info("Waiting for commands to finish");
-                executionQueueManager.joinAll();
+                Thread.sleep(millisToWait);
             } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
                 return;
             }
-            LOGGER.info("Shutting down JDA");
-            shardManager.shutdown();
+            System.exit(0);
         });
-        shutdownThread.start();
+        forceShutdownThread.setDaemon(true);
+        forceShutdownThread.setName("force shutdown thread");
+        forceShutdownThread.start();
 
+        executionQueueManager.closeAll();
         try {
-            shutdownThread.join(millisToWait);
+            LOGGER.info("Waiting for commands to finish");
+            executionQueueManager.joinAll();
         } catch (InterruptedException e) {
-            LOGGER.error("Interrupted while waiting for pending actions to complete. Shutting down now");
-            System.exit(1);
+            Thread.currentThread().interrupt();
+            forceShutdownThread.interrupt();
+            return;
         }
-
-        LOGGER.info("Shutting down now");
-        System.exit(0);
+        LOGGER.info("Shutting down registered shutdownables");
+        SHUTDOWNABLES.forEach(shutdownable -> shutdownable.shutdown(millisToWait));
+        LOGGER.info("Shutting down JDA");
+        shardManager.shutdown();
+        LOGGER.info("Shutting down hibernate SessionFactory");
+        botify.getSessionFactory().close();
     }
 
     public AudioManager getAudioManager() {

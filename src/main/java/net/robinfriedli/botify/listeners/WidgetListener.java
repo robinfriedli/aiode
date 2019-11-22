@@ -14,6 +14,7 @@ import net.dv8tion.jda.api.events.message.guild.GuildMessageDeleteEvent;
 import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.robinfriedli.botify.Botify;
+import net.robinfriedli.botify.boot.Shutdownable;
 import net.robinfriedli.botify.command.AbstractWidget;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.widgets.WidgetManager;
@@ -28,7 +29,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Listener responsible for handling reaction events and widget execution
  */
-public class WidgetListener extends ListenerAdapter {
+public class WidgetListener extends ListenerAdapter implements Shutdownable {
 
     private final GuildManager guildManager;
     private final ExecutorService executorService;
@@ -44,6 +45,7 @@ public class WidgetListener extends ListenerAdapter {
             return thread;
         });
         logger = LoggerFactory.getLogger(getClass());
+        register();
     }
 
     @Override
@@ -95,4 +97,8 @@ public class WidgetListener extends ListenerAdapter {
         }
     }
 
+    @Override
+    public void shutdown(int delayMs) {
+        executorService.shutdown();
+    }
 }

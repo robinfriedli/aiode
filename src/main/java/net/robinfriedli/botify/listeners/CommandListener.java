@@ -14,6 +14,7 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.robinfriedli.botify.boot.Shutdownable;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
@@ -32,7 +33,7 @@ import org.hibernate.SessionFactory;
  * Listener responsible for filtering entered commands and creating a {@link CommandContext} to pass to the
  * {@link CommandManager}
  */
-public class CommandListener extends ListenerAdapter {
+public class CommandListener extends ListenerAdapter implements Shutdownable {
 
     private final CommandExecutionQueueManager executionQueueManager;
     private final CommandManager commandManager;
@@ -61,6 +62,7 @@ public class CommandListener extends ListenerAdapter {
         this.sessionFactory = sessionFactory;
         this.spotifyApiBuilder = spotifyApiBuilder;
         this.logger = LoggerFactory.getLogger(getClass());
+        register();
     }
 
     @Override
@@ -130,4 +132,8 @@ public class CommandListener extends ListenerAdapter {
         }
     }
 
+    @Override
+    public void shutdown(int delayMs) {
+        commandConceptionPool.shutdown();
+    }
 }

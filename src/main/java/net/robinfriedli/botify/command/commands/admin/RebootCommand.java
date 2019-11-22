@@ -74,7 +74,7 @@ public class RebootCommand extends AbstractAdminCommand {
             }));
 
             // runs in separate thread to avoid deadlock when waiting for commands to finish
-            Thread shutdownThread = new Thread(() -> Botify.shutdown(60000));
+            Thread shutdownThread = new Thread(() -> Botify.shutdown(getArgumentValue("await", Integer.class, 60) * 1000));
             shutdownThread.setName("Shutdown thread");
             shutdownThread.start();
         } catch (Throwable e) {
@@ -88,6 +88,10 @@ public class RebootCommand extends AbstractAdminCommand {
         ArgumentContribution argumentContribution = new ArgumentContribution(this);
         argumentContribution.map("silent")
             .setDescription("Disables alerting active guilds about the restart.");
+        argumentContribution.map("await")
+            .verifyValue(Integer.class, value -> value <= 600, "Maximum value is 600")
+            .verifyValue(Integer.class, value -> value >= 0, "Value needs to be 0 or greater")
+            .setDescription("The maximum amount of seconds to wait for pending actions to complete.");
         return argumentContribution;
     }
 }
