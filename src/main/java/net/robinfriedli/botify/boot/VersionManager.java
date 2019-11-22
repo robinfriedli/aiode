@@ -1,8 +1,9 @@
 package net.robinfriedli.botify.boot;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Predicate;
@@ -86,7 +87,8 @@ public class VersionManager {
 
     private String getCurrentVersionString() {
         try {
-            BufferedReader bufferedReader = new BufferedReader(new FileReader("./resources/current-version.txt"));
+            InputStream resourceAsStream = getClass().getResourceAsStream("/current-version.txt");
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(resourceAsStream));
             return bufferedReader.readLine();
         } catch (IOException e) {
             throw new RuntimeException("IOException occurred while trying to read current version", e);

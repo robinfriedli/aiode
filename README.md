@@ -33,7 +33,7 @@ router's public ip and setup port forwarding for your router.
 #### 3.1 Go to https://console.developers.google.com/ and create a project for the YouTube Data API and create and copy the credentials
 
 ### 4. Setup botify settings
-#### 4.1 Navigate to your cloned project and go to `./resources` and open the `settings.properties` file and fill in the blanks, it should look like this:
+#### 4.1 Navigate to your cloned project and go to `src/main/resources` and open the `settings.properties` file and fill in the blanks, it should look like this:
 #### 4.2 To take advantage of the admin commands that can perform administrative actions, such as updating and restarting the bot, be sure to add your Discord user id to the `ADMIN_USERS` property. To find your Discord user id, enable Developer Mode in the App Settings > Appearance. Then go to any guild, right click your user and click "Copy ID".
 #### 4.3 For Botify to manage the YouTube API quota automatically, be sure to fill in the `YOUTUBE_API_DAILY_QUOTA` property; open the Google developer console and go to Library > YouTube Data API v3 > Manage > Quotas
 #### 4.4 Change the `BASE_URI` property to your domain or public IP (without slash at the end) and adjust `REDIRECT_URI` to the corresponding endpoint for Spotify logins (normaly BASE_URI + "/login")
@@ -94,7 +94,7 @@ ADMIN_USERS=#define user ids (comma separated) that may access admin commands. T
 
 ### 5. Setup database
 #### 5.1 Setup hibernate configuration
-Navigate to `./resources/hibernate.cfg.xml` and adjust the settings, if you use a local postgres server and name your
+Navigate to `src/main/resources/hibernate.cfg.xml` and adjust the settings, if you use a local postgres server and name your
 database "botify_playlists" you can leave it like this:
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -155,8 +155,7 @@ changeLogFile=src/main/resources/liquibase/dbchangelog.xml
 ```
 
 ### 6 Compile and run botify
-Navigate to the project root directory and install botify by running `mvn clean install`. Then you can launch botify
-using the main class `net.robinfriedli.botify.boot.Launcher`. You can either run the bash script `resources/bash/launch.sh`
-or run `mvn exec:java -Dexec.mainClass=net.robinfriedli.botify.boot.Launcher` directly. Note that this command is written
-for Unix-like operating systems such as macOS and Linux. For windows you might need to adjust this command to
-`mvn exec:java -D"exec.mainClass"="net.robinfriedli.botify.boot.Launcher"`.
+Navigate to the project root directory and install botify by running `./gradlew build`. Then you can launch botify
+using the main class `net.robinfriedli.botify.boot.Launcher`. You can either run the bash script `bash/launch.sh`
+or run `./gradle run` directly. Note that those commands are written for Unix-like operating systems such as macOS and
+Linux. For windows you need to make adjustments to the `bash/launch.sh` file.

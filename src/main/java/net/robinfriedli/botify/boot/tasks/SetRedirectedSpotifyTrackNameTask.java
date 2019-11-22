@@ -42,9 +42,8 @@ public class SetRedirectedSpotifyTrackNameTask implements StartupTask {
     public void perform() throws Exception {
         ClientCredentials clientCredentials = spotifyApi.clientCredentials().build().execute();
         spotifyApi.setAccessToken(clientCredentials.getAccessToken());
-        String playlistsPath = PropertiesLoadingService.requireProperty("PLAYLISTS_PATH");
         List<File> files = Lists.newArrayList();
-        files.add(new File(playlistsPath));
+        files.add(PropertiesLoadingService.requireResourceFile("playlists.xml"));
         for (Guild guild : shardManager.getGuilds()) {
             String guildPlaylistsPath = PropertiesLoadingService.requireProperty("GUILD_PLAYLISTS_PATH", guild.getId());
             files.add(new File(guildPlaylistsPath));

@@ -362,7 +362,7 @@ public class MessageService {
                             if (word.length() < limit) {
                                 fillPart(outputParts, word);
                             } else {
-                                StringList chars = StringListImpl.charsToList(word);
+                                StringList chars = StringListImpl.splitChars(word);
                                 for (String charString : chars) {
                                     fillPart(outputParts, charString);
                                 }

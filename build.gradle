@@ -1,0 +1,64 @@
+plugins {
+    id "java"
+    id "maven-publish"
+    id "application"
+}
+
+repositories {
+    mavenLocal()
+    jcenter()
+    mavenCentral()
+
+    maven {
+        url = "https://jitpack.io"
+    }
+}
+
+compileJava.options.encoding = "UTF-8"
+
+dependencies {
+    compile "com.google.apis:google-api-services-youtube:v3-rev212-1.25.0"
+    compile "com.google.guava:guava:28.1-jre"
+    compile "com.sedmelluq:lavaplayer:1.3.25"
+    compile "net.dv8tion:JDA:4.0.0_61"
+    compile "net.robinfriedli:JXP:1.3"
+    compile "net.robinfriedli:StringList:1.5"
+    compile "commons-validator:commons-validator:1.4.0"
+    compile "se.michaelthelin.spotify:spotify-web-api-java:4.1.0"
+    compile "org.apache.commons:commons-collections4:4.1"
+    compile "org.apache.commons:commons-text:1.4"
+    compile "org.apache.logging.log4j:log4j-api:2.7"
+    compile "org.apache.logging.log4j:log4j-core:2.7"
+    compile "org.apache.logging.log4j:log4j-slf4j-impl:2.7"
+    compile "org.glassfish:javax.el:3.0.1-b09"
+    compile "org.postgresql:postgresql:42.2.2.jre7"
+    compile "org.quartz-scheduler:quartz:2.3.1"
+    compile "org.hibernate:hibernate-entitymanager:5.4.9.Final"
+    compile "org.ehcache:ehcache:3.8.0"
+    compile "org.hibernate:hibernate-core:5.4.9.Final"
+    compile "org.hibernate:hibernate-c3p0:5.4.9.Final"
+    compile "org.hibernate:hibernate-jcache:5.4.9.Final"
+    compile "org.hibernate:hibernate-validator:5.4.3.Final"
+    compile "org.hibernate:hibernate-validator-cdi:5.4.3.Final"
+    compile ("org.liquibase:liquibase-core:3.8.0") {
+        exclude group: "ch.qos.logback"
+    }
+    compile "org.discordbots:DBL-Java-Library:2.0.1"
+}
+
+group = "botify"
+version = "1.0-SNAPSHOT"
+description = "botify"
+sourceCompatibility = "11"
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from(components.java)
+        }
+    }
+}
+
+application {
+    mainClassName = "net.robinfriedli.botify.boot.Launcher"
+}

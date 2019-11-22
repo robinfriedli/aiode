@@ -1,5 +1,6 @@
 package net.robinfriedli.botify;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.slf4j.Logger;
@@ -13,6 +14,7 @@ import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.boot.VersionManager;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.command.SecurityManager;
+import net.robinfriedli.botify.cron.CronJobService;
 import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.MessageService;
@@ -30,6 +32,7 @@ public class Botify {
     private final AudioManager audioManager;
     private final CommandExecutionQueueManager executionQueueManager;
     private final CommandManager commandManager;
+    private final CronJobService cronJobService;
     private final GuildManager guildManager;
     private final GuildPropertyManager guildPropertyManager;
     private final JxpBackend jxpBackend;
@@ -45,6 +48,7 @@ public class Botify {
     public Botify(AudioManager audioManager,
                   CommandExecutionQueueManager executionQueueManager,
                   CommandManager commandManager,
+                  CronJobService cronJobService,
                   GuildManager guildManager,
                   GuildPropertyManager guildPropertyManager,
                   JxpBackend jxpBackend,
@@ -59,6 +63,7 @@ public class Botify {
         this.audioManager = audioManager;
         this.executionQueueManager = executionQueueManager;
         this.commandManager = commandManager;
+        this.cronJobService = cronJobService;
         this.guildManager = guildManager;
         this.guildPropertyManager = guildPropertyManager;
         this.jxpBackend = jxpBackend;
@@ -82,7 +87,7 @@ public class Botify {
     }
 
     public static void launch() throws IOException {
-        ProcessBuilder pb = new ProcessBuilder("bash", "./resources/bash/launch.sh");
+        ProcessBuilder pb = new ProcessBuilder("bash", "bash" + File.separator + "launch.sh");
         pb.inheritIO();
         pb.start();
     }
@@ -154,6 +159,10 @@ public class Botify {
 
     public CommandManager getCommandManager() {
         return commandManager;
+    }
+
+    public CronJobService getCronJobService() {
+        return cronJobService;
     }
 
     public GuildManager getGuildManager() {

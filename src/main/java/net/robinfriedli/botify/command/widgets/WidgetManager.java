@@ -27,7 +27,7 @@ public class WidgetManager {
      */
     private final List<AbstractWidget> activeWidgets = Lists.newArrayList();
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final Context widgetConfigurationContext = Botify.get().getJxpBackend().getContext(PropertiesLoadingService.requireProperty("WIDGETS_PATH"));
+    private final Context widgetConfigurationContext = Botify.get().getJxpBackend().getContext(PropertiesLoadingService.requireContributionFile("widgets.xml"));
 
     public WidgetContribution getContributionForWidget(Class<? extends AbstractWidget> type) {
         WidgetContribution widgetContribution = widgetConfigurationContext.query(and(

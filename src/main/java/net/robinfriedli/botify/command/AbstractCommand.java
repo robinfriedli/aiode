@@ -331,7 +331,7 @@ public abstract class AbstractCommand implements Command {
 
     @Deprecated
     protected Pair<String, String> splitInlineArgument(String part, String argument) {
-        StringList words = StringListImpl.create(part, " ");
+        StringList words = StringListImpl.createWithRegex(part, " ");
 
         List<Integer> positions = words.findPositionsOf("$" + argument, true);
         if (positions.isEmpty()) {

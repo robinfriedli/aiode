@@ -39,7 +39,7 @@ public class RemoveCommand extends AbstractCommand {
         }
 
         if (argumentSet("index")) {
-            StringList indices = StringListImpl.create(getCommandInput(), "-");
+            StringList indices = StringListImpl.createWithRegex(getCommandInput(), "-");
             if (indices.size() == 1 || indices.size() == 2) {
                 indices.applyForEach(String::trim);
                 if (indices.size() == 1) {

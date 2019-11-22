@@ -27,7 +27,7 @@ public class LoadDocumentCommand extends AbstractAdminCommand {
     public void runAdmin() {
         JxpBackend jxpBackend = Botify.get().getJxpBackend();
         EmbedBuilder embedBuilder;
-        try (Context context = jxpBackend.createLazyContext(PropertiesLoadingService.requireProperty("EMBED_DOCUMENTS_PATH"))) {
+        try (Context context = jxpBackend.createLazyContext(PropertiesLoadingService.requireContributionFile("embedDocuments.xml"))) {
             if (getCommandInput().isBlank()) {
                 List<EmbedDocumentContribution> documents = context.getInstancesOf(EmbedDocumentContribution.class);
                 embedBuilder = new EmbedBuilder();

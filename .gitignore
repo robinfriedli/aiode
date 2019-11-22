@@ -1,0 +1,8 @@
+/resources/logs/
+/resources/archive/
+/.idea/
+/.gradle/
+/target/
+/botify.iml
+/build/
+/logs/

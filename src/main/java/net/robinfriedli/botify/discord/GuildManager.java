@@ -229,7 +229,7 @@ public class GuildManager {
     private void handleNewGuild(Guild guild) {
         Botify botify = Botify.get();
         MessageService messageService = botify.getMessageService();
-        try (Context context = jxpBackend.createLazyContext(PropertiesLoadingService.requireProperty("EMBED_DOCUMENTS_PATH"))) {
+        try (Context context = jxpBackend.createLazyContext(PropertiesLoadingService.requireContributionFile("embedDocuments.xml"))) {
             EmbedDocumentContribution embedDocumentContribution = context
                 .query(attribute("name").is("getting-started"), EmbedDocumentContribution.class)
                 .requireOnlyResult();
@@ -243,8 +243,7 @@ public class GuildManager {
         SpotifyApi.Builder spotifyApiBuilder = botify.getSpotifyApiBuilder();
         try (Session session = sessionFactory.withOptions().interceptor(InterceptorChain.of(
             PlaylistItemTimestampListener.class, VerifyPlaylistListener.class)).openSession()) {
-            String playlistsPath = PropertiesLoadingService.requireProperty("PLAYLISTS_PATH");
-            File file = new File(playlistsPath);
+            File file = PropertiesLoadingService.requireResourceFile("playlists.xml");
             if (file.exists()) {
                 Context context = jxpBackend.getContext(file);
                 HibernatePlaylistMigrator hibernatePlaylistMigrator = new HibernatePlaylistMigrator(context, guild, spotifyApiBuilder.build(), session);

@@ -261,7 +261,7 @@ public class PlayableFactory {
             String[] parts = uri.getPath().split("/");
             return youTubeService.requireVideoForId(parts[parts.length - 1]);
         } else if (uri.getHost().equals("open.spotify.com")) {
-            StringList pathFragments = StringListImpl.create(uri.getPath(), "/");
+            StringList pathFragments = StringListImpl.createWithRegex(uri.getPath(), "/");
             if (pathFragments.contains("track")) {
                 String trackId = pathFragments.tryGet(pathFragments.indexOf("track") + 1);
                 if (trackId == null) {
@@ -362,7 +362,7 @@ public class PlayableFactory {
     }
 
     private List<Playable> createPlayablesFromSpotifyUrl(URI uri, SpotifyApi spotifyApi, boolean redirectSpotify, boolean mayInterrupt) {
-        StringList pathFragments = StringListImpl.create(uri.getPath(), "/");
+        StringList pathFragments = StringListImpl.createWithRegex(uri.getPath(), "/");
         SpotifyService spotifyService = new SpotifyService(spotifyApi);
         if (pathFragments.contains("playlist")) {
             String playlistId = pathFragments.tryGet(pathFragments.indexOf("playlist") + 1);
