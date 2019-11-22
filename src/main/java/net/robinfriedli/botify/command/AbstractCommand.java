@@ -206,6 +206,9 @@ public abstract class AbstractCommand implements Command {
 
     protected <E> E getArgumentValue(String argument, Class<E> type, E alternativeValue) {
         if (!argumentSet(argument)) {
+            if (alternativeValue != null) {
+                return alternativeValue;
+            }
             throw new InvalidCommandException("Expected argument: " + argument);
         }
 
