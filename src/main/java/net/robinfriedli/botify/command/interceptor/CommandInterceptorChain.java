@@ -9,7 +9,7 @@ import net.robinfriedli.botify.command.Command;
 import net.robinfriedli.botify.command.interceptor.interceptors.CommandExecutionInterceptor;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
-import net.robinfriedli.botify.util.Cache;
+import net.robinfriedli.botify.util.InjectorService;
 
 /**
  * Class used to create the chain of {@link CommandInterceptor}s that carry out a command execution. Its elements are
@@ -44,12 +44,12 @@ public class CommandInterceptorChain implements CommandInterceptor {
                 if (next.hasNext()) {
                     parameters[i] = instantiate(next.next(), next);
                 } else {
-                    parameters[i] = new CommandExecutionInterceptor(Cache.get(MessageService.class));
+                    parameters[i] = new CommandExecutionInterceptor(InjectorService.get(MessageService.class));
                 }
             } else if (parameterType.equals(CommandInterceptorContribution.class)) {
                 parameters[i] = interceptorContribution;
             } else {
-                parameters[i] = Cache.get(parameterType);
+                parameters[i] = InjectorService.get(parameterType);
             }
         }
 

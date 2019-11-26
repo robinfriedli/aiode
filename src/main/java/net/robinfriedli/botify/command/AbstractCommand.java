@@ -461,7 +461,7 @@ public abstract class AbstractCommand implements Command {
         CUSTOMISATION("customisation", "Commands to customise the bot"),
         SPOTIFY("spotify", "Commands that manage the Spotify login or upload playlists to Spotify"),
         SEARCH("search", "Commands that search for botify playlists or list all of them or search for Spotify and Youtube tracks, videos and playlists"),
-        ADMIN("admin", "Commands only available to administrators defined in settings.properties");
+        ADMIN("admin", "Commands only available to administrators defined in settings-private.properties");
 
         private final String name;
         private final String description;

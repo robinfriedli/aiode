@@ -19,7 +19,6 @@ import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.audio.AudioQueue;
 import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.exceptions.InvalidRequestException;
-import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.Util;
 
 public class QueueViewHandler implements HttpHandler {
@@ -35,8 +34,7 @@ public class QueueViewHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         try {
-            String queuePagePath = PropertiesLoadingService.requireProperty("QUEUE_PAGE_PATH");
-            String html = Files.readString(Path.of(queuePagePath));
+            String html = Files.readString(Path.of("html/queue_view.html"));
             Map<String, String> parameterMap = ServerUtil.getParameters(exchange);
             String guildId = parameterMap.get("guildId");
 

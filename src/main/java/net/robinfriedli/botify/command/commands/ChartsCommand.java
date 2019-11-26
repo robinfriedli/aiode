@@ -61,23 +61,23 @@ public class ChartsCommand extends AbstractCommand {
         List<Object[]> guildMonthlyResults = guildQueryMonthly.getResultList();
 
         @SuppressWarnings("unchecked")
-        Query<Object[]> globalArtistQuery = session.createSQLQuery("select artists_pk, count(*) as c " +
-            "from playback_history_artist group by artists_pk order by c desc limit 3");
+        Query<Object[]> globalArtistQuery = session.createSQLQuery("select artist_pk, count(*) as c " +
+            "from playback_history_artist group by artist_pk order by c desc limit 3");
         @SuppressWarnings("unchecked")
-        Query<Object[]> guildArtistQuery = session.createSQLQuery("select artists_pk, count(*) as c from " +
-            "playback_history_artist as p where p.playbackhistory_pk in(select pk from playback_history where guild_id = '" + guild.getId() + "') " +
-            "group by artists_pk order by c desc limit 3");
+        Query<Object[]> guildArtistQuery = session.createSQLQuery("select artist_pk, count(*) as c from " +
+            "playback_history_artist as p where p.playback_history_pk in(select pk from playback_history where guild_id = '" + guild.getId() + "') " +
+            "group by artist_pk order by c desc limit 3");
 
         @SuppressWarnings("unchecked")
-        Query<Object[]> globalArtistMonthlyQuery = session.createSQLQuery("select artists_pk, count(*) as c " +
+        Query<Object[]> globalArtistMonthlyQuery = session.createSQLQuery("select artist_pk, count(*) as c " +
             "from playback_history_artist as p " +
-            "where p.playbackhistory_pk in(select pk from playback_history where timestamp > '" + dateAtStartOfMonth.toString() + "') " +
-            "group by artists_pk order by c desc limit 3");
+            "where p.playback_history_pk in(select pk from playback_history where timestamp > '" + dateAtStartOfMonth.toString() + "') " +
+            "group by artist_pk order by c desc limit 3");
         @SuppressWarnings("unchecked")
-        Query<Object[]> guildArtistMonthlyQuery = session.createSQLQuery("select artists_pk, count(*) as c " +
-            "from playback_history_artist where playbackhistory_pk in(select pk from playback_history " +
+        Query<Object[]> guildArtistMonthlyQuery = session.createSQLQuery("select artist_pk, count(*) as c " +
+            "from playback_history_artist where playback_history_pk in(select pk from playback_history " +
             "where timestamp > '" + dateAtStartOfMonth.toString() + "' and guild_id = '" + guild.getId() + "') " +
-            "group by artists_pk order by c desc limit 3");
+            "group by artist_pk order by c desc limit 3");
 
         List<Object[]> globalArtists = globalArtistQuery.getResultList();
         List<Object[]> guildArtists = guildArtistQuery.getResultList();

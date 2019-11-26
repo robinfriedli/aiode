@@ -22,6 +22,7 @@ import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.robinfriedli.botify.audio.spotify.SpotifyService;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.boot.AbstractShutdownable;
+import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.widgets.NowPlayingWidget;
 import net.robinfriedli.botify.command.widgets.WidgetManager;
@@ -31,30 +32,27 @@ import net.robinfriedli.botify.entities.PlaybackHistory;
 import net.robinfriedli.botify.entities.UserPlaybackHistory;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
+import org.springframework.stereotype.Component;
 
 /**
  * Provides access to all {@link AudioPlayback} for all guilds and methods to retrieve all audio related factories and
  * services, such as the {@link PlayableFactory} or {@link YouTubeService}, or methods to start a playback or
  * join / leave voice channels. Also manages the playback history and creates the {@link NowPlayingWidget}
  */
+@Component
 public class AudioManager extends AbstractShutdownable {
 
     private final AudioPlayerManager playerManager;
-    private final YouTubeService youTubeService;
-    private final Logger logger;
-    private final SessionFactory sessionFactory;
-    private final GuildManager guildManager;
-    private final ExecutorService executorService;
     private final AudioTrackLoader audioTrackLoader;
+    private final ExecutorService executorService;
+    private final GuildManager guildManager;
+    private final HibernateComponent hibernateComponent;
+    private final Logger logger;
+    private final YouTubeService youTubeService;
 
-    public AudioManager(YouTubeService youTubeService, SessionFactory sessionFactory, GuildManager guildManager) {
+    public AudioManager(GuildManager guildManager, HibernateComponent hibernateComponent, YouTubeService youTubeService) {
         playerManager = new DefaultAudioPlayerManager();
-        this.youTubeService = youTubeService;
-        this.guildManager = guildManager;
-        this.logger = LoggerFactory.getLogger(getClass());
-        this.sessionFactory = sessionFactory;
+        audioTrackLoader = new AudioTrackLoader(playerManager);
 
         executorService = Executors.newFixedThreadPool(5, r -> {
             Thread thread = new Thread(r);
@@ -62,7 +60,11 @@ public class AudioManager extends AbstractShutdownable {
             return thread;
         });
 
-        audioTrackLoader = new AudioTrackLoader(playerManager);
+        this.guildManager = guildManager;
+        this.hibernateComponent = hibernateComponent;
+        this.logger = LoggerFactory.getLogger(getClass());
+        this.youTubeService = youTubeService;
+
         AudioSourceManagers.registerRemoteSources(playerManager);
         guildManager.setAudioManager(this);
         YoutubeAudioSourceManager youtubeAudioSourceManager = playerManager.source(YoutubeAudioSourceManager.class);
@@ -123,22 +125,22 @@ public class AudioManager extends AbstractShutdownable {
 
     void createHistoryEntry(Playable playable, Guild guild, VoiceChannel voiceChannel) {
         executorService.execute(() -> {
-            try (Session session = sessionFactory.openSession()) {
-                PlaybackHistory playbackHistory = new PlaybackHistory(LocalDateTime.now(), playable, guild, session);
-                session.beginTransaction();
+            try {
+                hibernateComponent.invokeWithSession(session -> {
+                    PlaybackHistory playbackHistory = new PlaybackHistory(LocalDateTime.now(), playable, guild, session);
 
-                session.persist(playbackHistory);
-                if (voiceChannel != null) {
-                    Member selfMember = guild.getSelfMember();
-                    for (Member member : voiceChannel.getMembers()) {
-                        if (!member.equals(selfMember)) {
-                            UserPlaybackHistory userPlaybackHistory = new UserPlaybackHistory(member.getUser(), playbackHistory);
-                            session.persist(userPlaybackHistory);
+                    session.persist(playbackHistory);
+                    if (voiceChannel != null) {
+                        Member selfMember = guild.getSelfMember();
+                        for (Member member : voiceChannel.getMembers()) {
+                            if (!member.equals(selfMember)) {
+                                UserPlaybackHistory userPlaybackHistory = new UserPlaybackHistory(member.getUser(), playbackHistory);
+                                session.persist(userPlaybackHistory);
+                            }
                         }
                     }
-                }
 
-                session.getTransaction().commit();
+                });
             } catch (Throwable e) {
                 logger.error("Exception while creating playback history entry", e);
             }

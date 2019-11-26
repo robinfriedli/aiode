@@ -33,31 +33,32 @@ import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.requests.restaction.MessageAction;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.boot.AbstractShutdownable;
+import net.robinfriedli.botify.boot.SpringPropertiesConfig;
+import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.discord.property.properties.TempMessageTimeoutProperty;
 import net.robinfriedli.botify.entities.GuildSpecification;
-import net.robinfriedli.botify.util.PropertiesLoadingService;
-import net.robinfriedli.botify.util.StaticSessionProvider;
 import net.robinfriedli.stringlist.StringList;
 import net.robinfriedli.stringlist.StringListImpl;
 import org.hibernate.Session;
+import org.springframework.stereotype.Component;
 
+@Component
 public class MessageService extends AbstractShutdownable {
 
     private static final ScheduledExecutorService TEMP_MESSAGE_DELETION_SCHEDULER = Executors.newScheduledThreadPool(3);
 
-    private final int limit;
+    private final int limit = 1000;
+    private final HibernateComponent hibernateComponent;
     private final Logger logger;
+    private final SpringPropertiesConfig springPropertiesConfig;
 
-    public MessageService() {
-        this(1000);
-    }
-
-    public MessageService(int limit) {
-        this.limit = limit;
+    public MessageService(HibernateComponent hibernateComponent, SpringPropertiesConfig springPropertiesConfig) {
+        this.hibernateComponent = hibernateComponent;
         this.logger = LoggerFactory.getLogger(getClass());
+        this.springPropertiesConfig = springPropertiesConfig;
     }
 
     @Override
@@ -121,14 +122,14 @@ public class MessageService extends AbstractShutdownable {
     }
 
     public CompletableFuture<Message> sendWithLogo(EmbedBuilder embedBuilder, MessageChannel channel) {
-        String baseUri = PropertiesLoadingService.requireProperty("BASE_URI");
+        String baseUri = springPropertiesConfig.requireApplicationProperty("botify.server.base_uri");
         embedBuilder.setThumbnail(baseUri + "/resources-public/img/botify-logo.png");
         embedBuilder.setColor(ColorSchemeProperty.getColor());
         return send(embedBuilder.build(), channel);
     }
 
     public CompletableFuture<Message> sendWithLogo(EmbedBuilder embedBuilder, Guild guild) {
-        String baseUri = PropertiesLoadingService.requireProperty("BASE_URI");
+        String baseUri = springPropertiesConfig.requireApplicationProperty("botify.server.base_uri");
         embedBuilder.setThumbnail(baseUri + "/resources-public/img/botify-logo.png");
         embedBuilder.setColor(ColorSchemeProperty.getColor());
         return send(embedBuilder.build(), guild);
@@ -277,7 +278,7 @@ public class MessageService extends AbstractShutdownable {
         GuildPropertyManager guildPropertyManager = botify.getGuildPropertyManager();
         AbstractGuildProperty defaultTextChannelProperty = guildPropertyManager.getProperty("defaultTextChannelId");
         if (defaultTextChannelProperty != null) {
-            String defaultTextChannelId = (String) StaticSessionProvider.invokeWithSession(session -> {
+            String defaultTextChannelId = (String) hibernateComponent.invokeWithSession(session -> {
                 return defaultTextChannelProperty.get(guildContext.getSpecification(session));
             });
 
@@ -432,7 +433,7 @@ public class MessageService extends AbstractShutdownable {
 
         private int getTimeout() {
             if (message.isFromType(ChannelType.TEXT)) {
-                return StaticSessionProvider.invokeWithSession(session -> {
+                return hibernateComponent.invokeWithSession(session -> {
                     Botify botify = Botify.get();
                     GuildPropertyManager guildPropertyManager = botify.getGuildPropertyManager();
                     AbstractGuildProperty tempMessageTimeoutProperty = guildPropertyManager.getProperty("tempMessageTimeout");

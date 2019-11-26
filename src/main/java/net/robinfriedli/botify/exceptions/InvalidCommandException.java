@@ -1,5 +1,7 @@
 package net.robinfriedli.botify.exceptions;
 
+import net.robinfriedli.botify.discord.property.properties.PrefixProperty;
+
 /**
  * Type of command thrown when the cause is user error. This exception typically gets caught and its message sent to
  * Discord.
@@ -24,7 +26,8 @@ public class InvalidCommandException extends AdditionalInformationException {
 
     @Override
     public String getAdditionalInformation() {
-        return "If you need help with a command you can use the help command. E.g. $botify help play";
+        String prefix = PrefixProperty.getEffectiveCommandStartForCurrentContext();
+        return String.format("If you need help with a command you can use the help command. E.g. %shelp play", prefix);
     }
 
 }

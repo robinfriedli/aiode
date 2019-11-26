@@ -15,6 +15,7 @@ import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEve
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.boot.Shutdownable;
+import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.command.AbstractWidget;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.widgets.WidgetManager;
@@ -23,21 +24,24 @@ import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.exceptions.UserException;
 import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
-import net.robinfriedli.botify.util.StaticSessionProvider;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.stereotype.Component;
 
 /**
  * Listener responsible for handling reaction events and widget execution
  */
+@Component
 public class WidgetListener extends ListenerAdapter implements Shutdownable {
 
     private final GuildManager guildManager;
     private final ExecutorService executorService;
+    private final HibernateComponent hibernateComponent;
     private final Logger logger;
     private final MessageService messageService;
 
-    public WidgetListener(GuildManager guildManager, MessageService messageService) {
+    public WidgetListener(GuildManager guildManager, HibernateComponent hibernateComponent, MessageService messageService) {
         this.guildManager = guildManager;
+        this.hibernateComponent = hibernateComponent;
         this.messageService = messageService;
         executorService = Executors.newCachedThreadPool(r -> {
             Thread thread = new Thread(r);
@@ -83,7 +87,7 @@ public class WidgetListener extends ListenerAdapter implements Shutdownable {
             event,
             guildContext,
             activeWidget.getMessage(),
-            StaticSessionProvider.getSessionFactory(),
+            hibernateComponent.getSessionFactory(),
             spotifyApi,
             emojiUnicode
         );

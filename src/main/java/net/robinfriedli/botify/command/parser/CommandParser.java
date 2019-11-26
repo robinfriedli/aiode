@@ -19,7 +19,7 @@ import net.robinfriedli.botify.exceptions.UserException;
  * Parses the body of a command and builds the used arguments and the command input. The CommandParser handles each
  * entered character individually with a certain {@link Mode}, starting with the {@link ScanningMode}. Each character
  * returns the {@link Mode} with which to handle the next character.
- *
+ * <p>
  * E.g. if the user enters '$botify add $list $youtube $limit=5 linkin park $to favs', the {@link CommandParserInterceptor}
  * will call {@link #parse()} with '$list $youtube $limit=5 linkin park $to favs'.
  * The CommandParser will then recognise all used argument (list, youtube, limit and to) and assign the argument values
@@ -28,13 +28,11 @@ import net.robinfriedli.botify.exceptions.UserException;
 public class CommandParser {
 
     private static final Set<Character> META = ImmutableSet.of(ArgumentPrefixProperty.DEFAULT, '"', '\\', '=', ' ');
-
-    private int currentPosition = 0;
-
     private final AbstractCommand command;
     private final char argumentPrefix;
     private final CommandParseListener[] listeners;
     private final Logger logger;
+    private int currentPosition = 0;
     private Mode currentMode;
     private boolean isEscaped;
     private boolean isOpenQuotation;

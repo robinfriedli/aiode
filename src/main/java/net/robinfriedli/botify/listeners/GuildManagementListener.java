@@ -20,17 +20,19 @@ import net.dv8tion.jda.api.events.role.RoleDeleteEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.boot.Shutdownable;
+import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.entities.GrantedRole;
 import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
-import net.robinfriedli.botify.util.StaticSessionProvider;
 import org.discordbots.api.client.DiscordBotListAPI;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.stereotype.Component;
 
 /**
  * Listener responsible for handling the bot joining or leaving a guild or relevant changes to the guild configuration
  */
+@Component
 public class GuildManagementListener extends ListenerAdapter implements Shutdownable {
 
     private final CommandExecutionQueueManager executionQueueManager;
@@ -38,12 +40,14 @@ public class GuildManagementListener extends ListenerAdapter implements Shutdown
     private final DiscordBotListAPI discordBotListAPI;
     private final ExecutorService guildEventHandlerExecutorService;
     private final GuildManager guildManager;
+    private final HibernateComponent hibernateComponent;
     private final Logger logger;
     private final ShardManager shardManager;
 
     public GuildManagementListener(CommandExecutionQueueManager executionQueueManager,
                                    @Nullable DiscordBotListAPI discordBotListAPI,
                                    GuildManager guildManager,
+                                   HibernateComponent hibernateComponent,
                                    ShardManager shardManager) {
         this.executionQueueManager = executionQueueManager;
         this.discordBotListAPI = discordBotListAPI;
@@ -53,6 +57,7 @@ public class GuildManagementListener extends ListenerAdapter implements Shutdown
             return thread;
         });
         this.guildManager = guildManager;
+        this.hibernateComponent = hibernateComponent;
         logger = LoggerFactory.getLogger(getClass());
         this.shardManager = shardManager;
         register();
@@ -94,7 +99,7 @@ public class GuildManagementListener extends ListenerAdapter implements Shutdown
     public void onRoleDelete(@Nonnull RoleDeleteEvent event) {
         guildEventHandlerExecutorService.execute(() -> {
             String roleId = event.getRole().getId();
-            StaticSessionProvider.invokeWithSession(session -> {
+            hibernateComponent.invokeWithSession(session -> {
                 CriteriaBuilder cb = session.getCriteriaBuilder();
                 CriteriaDelete<GrantedRole> deleteQuery = cb.createCriteriaDelete(GrantedRole.class);
                 Root<GrantedRole> queryRoot = deleteQuery.from(GrantedRole.class);

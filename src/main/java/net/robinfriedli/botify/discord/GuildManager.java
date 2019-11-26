@@ -1,6 +1,7 @@
 package net.robinfriedli.botify.discord;
 
 import java.io.File;
+import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -29,6 +30,7 @@ import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
+import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.entities.AccessConfiguration;
 import net.robinfriedli.botify.entities.CommandHistory;
@@ -43,31 +45,47 @@ import net.robinfriedli.botify.interceptors.PlaylistItemTimestampListener;
 import net.robinfriedli.botify.interceptors.VerifyPlaylistListener;
 import net.robinfriedli.botify.tasks.HibernatePlaylistMigrator;
 import net.robinfriedli.botify.util.ISnowflakeMap;
-import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.SearchEngine;
-import net.robinfriedli.botify.util.StaticSessionProvider;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.persist.Context;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.stereotype.Component;
 
 import static net.robinfriedli.jxp.queries.Conditions.*;
 
 /**
  * Manages the {@link GuildContext} for all guilds.
  */
+@Component
 public class GuildManager {
 
+    private final File embedDocumentFile;
+    private final File defaultPlaylistFile;
+    private final HibernateComponent hibernateComponent;
     private final ISnowflakeMap<GuildContext> guildContexts = new ISnowflakeMap<>();
     private final JxpBackend jxpBackend;
     private final Logger logger;
     private final Mode mode;
     private AudioManager audioManager;
 
-    public GuildManager(JxpBackend jxpBackend, Mode mode) {
-        this.jxpBackend = jxpBackend;
-        logger = LoggerFactory.getLogger(getClass());
-        this.mode = mode;
+    public GuildManager(@Value("classpath:xml-contributions/embedDocuments.xml") Resource embedDocumentsResource,
+                        @Value("classpath:playlists.xml") Resource playlistsResource,
+                        HibernateComponent hibernateComponent,
+                        JxpBackend jxpBackend,
+                        @Value("${botify.preferences.mode_partitioned}") boolean modePartitioned) {
+        try {
+            embedDocumentFile = embedDocumentsResource.getFile();
+            defaultPlaylistFile = playlistsResource.getFile();
+            this.hibernateComponent = hibernateComponent;
+            this.jxpBackend = jxpBackend;
+            logger = LoggerFactory.getLogger(getClass());
+            this.mode = modePartitioned ? GuildManager.Mode.PARTITIONED : GuildManager.Mode.SHARED;
+        } catch (IOException e) {
+            throw new RuntimeException("Could not instantiate " + getClass().getSimpleName(), e);
+        }
     }
 
     public void addGuild(Guild guild) {
@@ -102,7 +120,7 @@ public class GuildManager {
 
     @Nullable
     public AccessConfiguration getAccessConfiguration(String commandIdentifier, Guild guild) {
-        return StaticSessionProvider.invokeWithSession(session -> {
+        return hibernateComponent.invokeWithSession(session -> {
             Optional<AccessConfiguration> accessConfiguration = session.createQuery("from " + AccessConfiguration.class.getName()
                     + " where command_identifier = '" + commandIdentifier + "' and"
                     + " guild_specification_pk = (select pk from " + GuildSpecification.class.getName() + " where guild_id = '" + guild.getId() + "')"
@@ -196,7 +214,7 @@ public class GuildManager {
 
     private GuildContext initializeGuild(Guild guild) {
         synchronized (guild) {
-            return StaticSessionProvider.invokeWithSession(session -> {
+            return hibernateComponent.invokeWithSession(session -> {
                 AudioPlayer player = audioManager.getPlayerManager().createPlayer();
 
                 Optional<Long> existingSpecification = session.createQuery("select pk from " + GuildSpecification.class.getName()
@@ -229,7 +247,7 @@ public class GuildManager {
     private void handleNewGuild(Guild guild) {
         Botify botify = Botify.get();
         MessageService messageService = botify.getMessageService();
-        try (Context context = jxpBackend.createLazyContext(PropertiesLoadingService.requireContributionFile("embedDocuments.xml"))) {
+        try (Context context = jxpBackend.createLazyContext(embedDocumentFile)) {
             EmbedDocumentContribution embedDocumentContribution = context
                 .query(attribute("name").is("getting-started"), EmbedDocumentContribution.class)
                 .requireOnlyResult();
@@ -239,36 +257,36 @@ public class GuildManager {
             logger.error("Error sending getting started message", e);
         }
 
-        SessionFactory sessionFactory = StaticSessionProvider.getSessionFactory();
+        SessionFactory sessionFactory = hibernateComponent.getSessionFactory();
         SpotifyApi.Builder spotifyApiBuilder = botify.getSpotifyApiBuilder();
         try (Session session = sessionFactory.withOptions().interceptor(InterceptorChain.of(
             PlaylistItemTimestampListener.class, VerifyPlaylistListener.class)).openSession()) {
-            File file = PropertiesLoadingService.requireResourceFile("playlists.xml");
-            if (file.exists()) {
-                Context context = jxpBackend.getContext(file);
-                HibernatePlaylistMigrator hibernatePlaylistMigrator = new HibernatePlaylistMigrator(context, guild, spotifyApiBuilder.build(), session);
-                Map<Playlist, List<PlaylistItem>> playlistMap;
-                try {
-                    playlistMap = hibernatePlaylistMigrator.perform();
-                } catch (Exception e) {
-                    logger.error("Exception while migrating hibernate playlists", e);
-                    session.close();
-                    return;
-                }
-
-                Mode mode = getMode();
-                session.beginTransaction();
-                for (Playlist playlist : playlistMap.keySet()) {
-                    Playlist existingList = SearchEngine.searchLocalList(session, playlist.getName(), mode == GuildManager.Mode.PARTITIONED, guild.getId());
-                    if (existingList == null) {
-                        playlistMap.get(playlist).forEach(item -> {
-                            item.add();
-                            session.persist(item);
-                        });
-                        session.persist(playlist);
+            if (defaultPlaylistFile.exists()) {
+                try (Context context = jxpBackend.createLazyContext(defaultPlaylistFile)) {
+                    HibernatePlaylistMigrator hibernatePlaylistMigrator = new HibernatePlaylistMigrator(context, guild, spotifyApiBuilder.build(), session);
+                    Map<Playlist, List<PlaylistItem>> playlistMap;
+                    try {
+                        playlistMap = hibernatePlaylistMigrator.perform();
+                    } catch (Exception e) {
+                        logger.error("Exception while migrating hibernate playlists", e);
+                        session.close();
+                        return;
                     }
+
+                    Mode mode = getMode();
+                    session.beginTransaction();
+                    for (Playlist playlist : playlistMap.keySet()) {
+                        Playlist existingList = SearchEngine.searchLocalList(session, playlist.getName(), mode == GuildManager.Mode.PARTITIONED, guild.getId());
+                        if (existingList == null) {
+                            playlistMap.get(playlist).forEach(item -> {
+                                item.add();
+                                session.persist(item);
+                            });
+                            session.persist(playlist);
+                        }
+                    }
+                    session.getTransaction().commit();
                 }
-                session.getTransaction().commit();
             }
         }
     }

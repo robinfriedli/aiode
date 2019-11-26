@@ -14,7 +14,6 @@ import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.boot.StartupTask;
-import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
@@ -43,9 +42,10 @@ public class SetRedirectedSpotifyTrackNameTask implements StartupTask {
         ClientCredentials clientCredentials = spotifyApi.clientCredentials().build().execute();
         spotifyApi.setAccessToken(clientCredentials.getAccessToken());
         List<File> files = Lists.newArrayList();
-        files.add(PropertiesLoadingService.requireResourceFile("playlists.xml"));
+        String defaultPlaylistsFile = getClass().getResource("/playlists.xml").getFile();
+        files.add(new File(defaultPlaylistsFile));
         for (Guild guild : shardManager.getGuilds()) {
-            String guildPlaylistsPath = PropertiesLoadingService.requireProperty("GUILD_PLAYLISTS_PATH", guild.getId());
+            String guildPlaylistsPath = String.format("./resources/%splaylists.xml", guild.getId());
             files.add(new File(guildPlaylistsPath));
         }
 

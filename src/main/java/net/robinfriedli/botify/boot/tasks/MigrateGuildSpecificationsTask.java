@@ -15,7 +15,6 @@ import net.robinfriedli.botify.boot.StartupTask;
 import net.robinfriedli.botify.entities.AccessConfiguration;
 import net.robinfriedli.botify.entities.GrantedRole;
 import net.robinfriedli.botify.entities.GuildSpecification;
-import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
@@ -45,7 +44,7 @@ public class MigrateGuildSpecificationsTask implements StartupTask {
     public void perform() throws IOException {
         try (Session session = sessionFactory.openSession()) {
             session.beginTransaction();
-            File file = new File(PropertiesLoadingService.requireProperty("GUILD_SPECIFICATION_PATH"));
+            File file = new File("./resources/guildSpecifications.xml");
             if (file.exists()) {
                 migrateSpecifications(file, session);
             }

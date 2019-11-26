@@ -12,7 +12,7 @@ import net.robinfriedli.botify.command.AbstractWidget;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.entities.xml.WidgetContribution;
 import net.robinfriedli.botify.exceptions.UserException;
-import net.robinfriedli.botify.util.PropertiesLoadingService;
+import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.persist.Context;
 
 import static net.robinfriedli.jxp.queries.Conditions.*;
@@ -27,7 +27,14 @@ public class WidgetManager {
      */
     private final List<AbstractWidget> activeWidgets = Lists.newArrayList();
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final Context widgetConfigurationContext = Botify.get().getJxpBackend().getContext(PropertiesLoadingService.requireContributionFile("widgets.xml"));
+    private final Context widgetConfigurationContext;
+
+    public WidgetManager() {
+        Botify botify = Botify.get();
+        JxpBackend jxpBackend = botify.getJxpBackend();
+        String widgetsFile = getClass().getResource("/xml-contributions/widgets.xml").getFile();
+        widgetConfigurationContext = jxpBackend.getContext(widgetsFile);
+    }
 
     public WidgetContribution getContributionForWidget(Class<? extends AbstractWidget> type) {
         WidgetContribution widgetContribution = widgetConfigurationContext.query(and(

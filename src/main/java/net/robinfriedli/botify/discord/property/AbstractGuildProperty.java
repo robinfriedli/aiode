@@ -1,5 +1,7 @@
 package net.robinfriedli.botify.discord.property;
 
+import java.util.Optional;
+
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.entities.GuildSpecification;
@@ -43,6 +45,8 @@ public abstract class AbstractGuildProperty {
      * set the value of the property on the GuildSpecification. Mind that this implementation relies on this method
      * being called by a thread with a command context set up. Use {@link #set(String, GuildContext)} instead to
      * define the target GuildContext explicitly when this is not the case.
+     *
+     * @param value the value as entered by the user
      */
     public void set(String value) {
         set(value, CommandContext.Current.require().getGuildContext());
@@ -68,6 +72,10 @@ public abstract class AbstractGuildProperty {
         return get(CommandContext.Current.require().getGuildContext().getSpecification());
     }
 
+    public <E> E get(Class<E> type) {
+        return type.cast(get());
+    }
+
     public Object get(GuildSpecification specification) {
         Object persistedValue = extractPersistedValue(specification);
         if (persistedValue != null) {
@@ -75,6 +83,37 @@ public abstract class AbstractGuildProperty {
         } else {
             return process(getDefaultValue());
         }
+    }
+
+    public <E> E get(Class<E> type, GuildSpecification specification) {
+        Object persistedValue = extractPersistedValue(specification);
+        if (persistedValue != null) {
+            return type.cast(persistedValue);
+        } else {
+            return type.cast(process(getDefaultValue()));
+        }
+    }
+
+    /**
+     * Get the set value for the current context.
+     */
+    public Optional<Object> getSetValue() {
+        return getSetValue(CommandContext.Current.require().getGuildContext().getSpecification());
+    }
+
+    /**
+     * Return the persisted value, ignoring the default value, as optional
+     */
+    public Optional<Object> getSetValue(GuildSpecification guildSpecification) {
+        return Optional.ofNullable(extractPersistedValue(guildSpecification));
+    }
+
+    public <E> Optional<E> getSetValue(Class<E> type) {
+        return getSetValue(type, CommandContext.Current.require().getGuildContext().getSpecification());
+    }
+
+    public <E> Optional<E> getSetValue(Class<E> type, GuildSpecification guildSpecification) {
+        return Optional.ofNullable(type.cast(extractPersistedValue(guildSpecification)));
     }
 
     public abstract Object extractPersistedValue(GuildSpecification guildSpecification);

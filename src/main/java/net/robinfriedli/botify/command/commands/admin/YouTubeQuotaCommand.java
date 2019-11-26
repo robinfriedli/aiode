@@ -7,7 +7,6 @@ import net.robinfriedli.botify.command.AbstractAdminCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
-import net.robinfriedli.botify.util.PropertiesLoadingService;
 
 public class YouTubeQuotaCommand extends AbstractAdminCommand {
 
@@ -20,7 +19,7 @@ public class YouTubeQuotaCommand extends AbstractAdminCommand {
         YouTubeService youTubeService = Botify.get().getAudioManager().getYouTubeService();
         int atomic = youTubeService.getAtomicQuotaUsage();
         int persistent = YouTubeService.getCurrentQuotaUsage(getContext().getSession()).getQuota();
-        int limit = PropertiesLoadingService.requireProperty(Integer.class, "YOUTUBE_API_DAILY_QUOTA");
+        int limit = Botify.get().getSpringPropertiesConfig().requireApplicationProperty(Integer.class, "botify.preferences.youtube_api_daily_quota");
 
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle("YouTube API quota usage");

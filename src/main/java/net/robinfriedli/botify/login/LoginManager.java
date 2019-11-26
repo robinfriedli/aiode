@@ -7,10 +7,12 @@ import javax.annotation.Nullable;
 import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.exceptions.NoLoginException;
 import net.robinfriedli.botify.util.ISnowflakeMap;
+import org.springframework.stereotype.Component;
 
 /**
  * Manages all Spotify logins
  */
+@Component
 public class LoginManager {
 
     private ISnowflakeMap<Login> logins = new ISnowflakeMap<>();

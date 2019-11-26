@@ -13,13 +13,11 @@ import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 
 import com.sun.net.httpserver.HttpExchange;
-import net.robinfriedli.botify.util.PropertiesLoadingService;
 
 public class ServerUtil {
 
     public static void handleError(HttpExchange exchange, Throwable e) throws IOException {
-        String errorPagePath = PropertiesLoadingService.requireProperty("ERROR_PAGE_PATH");
-        String html = Files.readString(Path.of(errorPagePath));
+        String html = Files.readString(Path.of("html/default_error_page.html"));
         String response = String.format(html, e.getMessage());
         exchange.sendResponseHeaders(200, response.getBytes().length);
         OutputStream responseBody = exchange.getResponseBody();

@@ -4,7 +4,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
-import net.robinfriedli.botify.util.Cache;
+import net.robinfriedli.botify.util.InjectorService;
 import net.robinfriedli.jxp.api.AbstractXmlElement;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
@@ -58,7 +58,7 @@ public abstract class GenericClassContribution<E> extends AbstractXmlElement {
             if (parameterType.isAssignableFrom(getClass())) {
                 constructorParameters[i] = this;
             } else {
-                constructorParameters[i] = Cache.get(parameterType);
+                constructorParameters[i] = InjectorService.get(parameterType);
             }
         }
 

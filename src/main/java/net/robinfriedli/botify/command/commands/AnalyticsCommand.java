@@ -47,10 +47,11 @@ public class AnalyticsCommand extends AbstractCommand {
             + session.createQuery("select count(*) from " + Video.class.getName(), Long.class).uniqueResult()
             + session.createQuery("select count(*) from " + UrlTrack.class.getName(), Long.class).uniqueResult();
         long playedCount = session.createQuery("select count(*) from " + PlaybackHistory.class.getName(), Long.class).uniqueResult();
-        double maxMemory = runtime.maxMemory() / Math.pow(1024, 2);
-        double allocatedMemory = runtime.totalMemory() / Math.pow(1024, 2);
+        // convert to MB by right shifting by 20 bytes (same as dividing by 2^20)
+        double maxMemory = runtime.maxMemory() >> 20;
+        double allocatedMemory = runtime.totalMemory() >> 20;
         double unallocatedMemory = maxMemory - allocatedMemory;
-        double allocFreeMemory = runtime.freeMemory() / Math.pow(1024, 2);
+        double allocFreeMemory = runtime.freeMemory() >> 20;
         double usedMemory = allocatedMemory - allocFreeMemory;
         double totalFreeMemory = maxMemory - usedMemory;
 

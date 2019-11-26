@@ -2,15 +2,15 @@ package net.robinfriedli.botify.entities;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.Set;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FlushModeType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
@@ -24,7 +24,6 @@ import net.robinfriedli.botify.audio.spotify.TrackWrapper;
 import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import org.hibernate.Session;
-import org.hibernate.query.Query;
 
 @Entity
 @Table(name = "playback_history")
@@ -47,6 +46,7 @@ public class PlaybackHistory implements Serializable {
     @Column(name = "guild_id")
     private String guildId;
     @ManyToMany
+    @JoinTable(name = "playback_history_artist", joinColumns = {@JoinColumn(name = "playback_history_pk")}, inverseJoinColumns = {@JoinColumn(name = "artist_pk")})
     private Set<Artist> artists = Sets.newHashSet();
     @OneToMany(mappedBy = "playbackHistory")
     private Set<UserPlaybackHistory> userPlaybackHistories = Sets.newHashSet();
@@ -67,17 +67,8 @@ public class PlaybackHistory implements Serializable {
             if (track != null) {
                 title = track.getName();
                 for (ArtistSimplified artist : track.getArtists()) {
-                    Query<Artist> query = session
-                        .createQuery(" from " + Artist.class.getName() + " where id = '" + artist.getId() + "'", Artist.class);
-                    query.setFlushMode(FlushModeType.AUTO);
-                    Optional<Artist> optionalArtist = query.uniqueResultOptional();
-                    if (optionalArtist.isPresent()) {
-                        artists.add(optionalArtist.get());
-                    } else {
-                        Artist newArtist = new Artist(artist.getId(), artist.getName());
-                        session.persist(newArtist);
-                        artists.add(newArtist);
-                    }
+                    Artist artistEntity = Artist.getOrCreateArtist(artist, session);
+                    artists.add(artistEntity);
                 }
             } else {
                 title = playable.getDisplay();

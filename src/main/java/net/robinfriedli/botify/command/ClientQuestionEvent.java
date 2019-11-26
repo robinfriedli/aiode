@@ -13,13 +13,14 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
+import net.robinfriedli.botify.discord.property.properties.PrefixProperty;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.util.Util;
 
 /**
  * Represents a two sided conversation between user and bot triggered when a user enters an ambiguous command
  * E.g. a user enters a play command with a song name for which several tracks were found
- *
+ * <p>
  * This gets destroyed as soon as the user answers this question, enters a different command that triggers a question
  * or 5 minutes pass
  */
@@ -59,7 +60,8 @@ public class ClientQuestionEvent {
     }
 
     public void ask() {
-        ask("Several options found", "Choose an option using the answer command: $botify answer KEY (replace KEY with the key for your option). Depending on the command you may select several options comma separated.");
+        String prefix = PrefixProperty.getEffectiveCommandStartForCurrentContext();
+        ask("Several options found", String.format("Choose an option using the answer command: %sanswer KEY (replace KEY with the key for your option). Depending on the command you may select several options comma separated.", prefix));
     }
 
     public void ask(String title, String description) {

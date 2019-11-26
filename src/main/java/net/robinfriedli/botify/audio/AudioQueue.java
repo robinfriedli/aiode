@@ -14,12 +14,12 @@ import com.google.common.collect.Lists;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.botify.Botify;
+import net.robinfriedli.botify.boot.SpringPropertiesConfig;
 import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 import net.robinfriedli.botify.util.EmojiConstants;
-import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.StaticSessionProvider;
 import net.robinfriedli.botify.util.Util;
 
@@ -140,7 +140,8 @@ public class AudioQueue {
         int position = getPosition();
         List<Playable> tracks = getTracks();
         EmbedBuilder embedBuilder = new EmbedBuilder();
-        String baseUri = PropertiesLoadingService.requireProperty("BASE_URI");
+        SpringPropertiesConfig springPropertiesConfig = Botify.get().getSpringPropertiesConfig();
+        String baseUri = springPropertiesConfig.requireApplicationProperty("botify.server.base_uri");
 
         StringBuilder optionBuilder = new StringBuilder();
         appendIcon(optionBuilder, EmojiConstants.PLAY, playback.isPlaying());

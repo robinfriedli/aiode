@@ -16,7 +16,6 @@ import net.robinfriedli.botify.interceptors.InterceptorChain;
 import net.robinfriedli.botify.interceptors.PlaylistItemTimestampListener;
 import net.robinfriedli.botify.interceptors.VerifyPlaylistListener;
 import net.robinfriedli.botify.tasks.HibernatePlaylistMigrator;
-import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.persist.Context;
 import org.hibernate.Session;
@@ -45,7 +44,7 @@ public class MigratePlaylistsTask implements StartupTask {
             PlaylistItemTimestampListener.class, VerifyPlaylistListener.class)).openSession()) {
             session.beginTransaction();
             for (Guild guild : shardManager.getGuilds()) {
-                String path = PropertiesLoadingService.requireProperty("GUILD_PLAYLISTS_PATH", guild.getId());
+                String path = String.format("./resources/%splaylists.xml", guild.getId());
                 File xmlFile = new File(path);
                 if (xmlFile.exists()) {
                     try (Context context = jxpBackend.getContext(xmlFile)) {

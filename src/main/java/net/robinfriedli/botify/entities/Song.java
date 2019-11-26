@@ -1,16 +1,16 @@
 package net.robinfriedli.botify.entities;
 
 import java.io.IOException;
-import java.util.Optional;
 import java.util.Set;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
-import javax.persistence.FlushModeType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.Table;
 
@@ -22,7 +22,6 @@ import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.stringlist.StringListImpl;
 import org.hibernate.Session;
-import org.hibernate.query.Query;
 
 @Entity
 @Table(name = "song")
@@ -37,6 +36,7 @@ public class Song extends PlaylistItem {
     @Column(name = "name")
     private String name;
     @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "song_artist", joinColumns = {@JoinColumn(name = "song_pk")}, inverseJoinColumns = {@JoinColumn(name = "artist_pk")})
     private Set<Artist> artists = Sets.newHashSet();
 
     public Song() {
@@ -47,17 +47,7 @@ public class Song extends PlaylistItem {
         id = track.getId();
         name = track.getName();
         for (ArtistSimplified artist : track.getArtists()) {
-            Query<Artist> query = session
-                .createQuery(" from " + Artist.class.getName() + " where id = '" + artist.getId() + "'", Artist.class);
-            query.setFlushMode(FlushModeType.AUTO);
-            Optional<Artist> optionalArtist = query.uniqueResultOptional();
-            if (optionalArtist.isPresent()) {
-                artists.add(optionalArtist.get());
-            } else {
-                Artist newArtist = new Artist(artist.getId(), artist.getName());
-                session.persist(newArtist);
-                artists.add(newArtist);
-            }
+            artists.add(Artist.getOrCreateArtist(artist, session));
         }
         this.duration = track.getDurationMs();
     }

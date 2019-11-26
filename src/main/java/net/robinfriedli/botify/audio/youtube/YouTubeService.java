@@ -43,6 +43,7 @@ import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioTrackLoader;
 import net.robinfriedli.botify.audio.PlayableFactory;
 import net.robinfriedli.botify.boot.AbstractShutdownable;
+import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.command.commands.PlayCommand;
 import net.robinfriedli.botify.command.commands.QueueCommand;
 import net.robinfriedli.botify.entities.CurrentYouTubeQuotaUsage;
@@ -54,10 +55,15 @@ import net.robinfriedli.botify.util.StaticSessionProvider;
 import net.robinfriedli.stringlist.StringList;
 import net.robinfriedli.stringlist.StringListImpl;
 import org.hibernate.Session;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.DependsOn;
+import org.springframework.stereotype.Component;
 
 /**
- * Service to query data from YouTube via the YouTube Data API using the API key defined in settings.properties
+ * Service to query data from YouTube via the YouTube Data API using the API key defined in settings-private.properties
  */
+@Component
+@DependsOn("hibernateComponent")
 public class YouTubeService extends AbstractShutdownable {
 
     private static final int QUOTA_COST_SEARCH = 100;
@@ -69,19 +75,21 @@ public class YouTubeService extends AbstractShutdownable {
         thread.setUncaughtExceptionHandler(new LoggingExceptionHandler());
         return thread;
     });
-
     private final Logger logger = LoggerFactory.getLogger(getClass());
-
+    private final HibernateComponent hibernateComponent;
     private final YouTube youTube;
-    private final String apiKey;
     private final int quotaThreshold;
     private final AtomicInteger currentQuota = new AtomicInteger(getPersistentQuota());
+    @Value("${botify.tokens.youtube_credentials}")
+    private String apiKey;
+    @Value("${botify.preferences.youtube_api_daily_quota}")
+    private int youtubeApiDailyQuota;
 
-    public YouTubeService(YouTube youTube, String apiKey, int hardQuotaLimit) {
+    public YouTubeService(HibernateComponent hibernateComponent, YouTube youTube) {
+        this.hibernateComponent = hibernateComponent;
         this.youTube = youTube;
-        this.apiKey = apiKey;
-        double factor = hardQuotaLimit > 50000 ? 0.75 : 0.5;
-        quotaThreshold = (int) (hardQuotaLimit * factor);
+        double factor = youtubeApiDailyQuota > 50000 ? 0.75 : 0.5;
+        quotaThreshold = (int) (youtubeApiDailyQuota * factor);
     }
 
     public static CurrentYouTubeQuotaUsage getCurrentQuotaUsage(Session session) {
@@ -102,7 +110,7 @@ public class YouTubeService extends AbstractShutdownable {
      * reasons. Gets the metadata and searches the corresponding YouTube video. The only way to stream from Spotify
      * directly is by using the $preview argument with the {@link PlayCommand} or {@link QueueCommand} which plays the
      * provided mp3 preview.
-     *
+     * <p>
      * However Spotify MIGHT release an SDK supporting full playback of songs across all devices, not just browsers in
      * which case this method and the corresponding block in {@link PlayableFactory#createPlayable(boolean, Object)} should
      * be removed.
@@ -774,7 +782,7 @@ public class YouTubeService extends AbstractShutdownable {
     }
 
     private void updatePersistentQuota(int newValue) {
-        StaticSessionProvider.invokeWithSession(session -> {
+        hibernateComponent.invokeWithSession(session -> {
             CurrentYouTubeQuotaUsage currentQuotaUsage = getCurrentQuotaUsage(session);
             currentQuotaUsage.setQuota(newValue);
         });

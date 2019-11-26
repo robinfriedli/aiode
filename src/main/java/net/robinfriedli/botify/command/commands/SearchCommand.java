@@ -18,6 +18,7 @@ import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.youtube.YouTubePlaylist;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
+import net.robinfriedli.botify.boot.SpringPropertiesConfig;
 import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
@@ -28,7 +29,6 @@ import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 import net.robinfriedli.botify.exceptions.NoSpotifyResultsFoundException;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
-import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.SearchEngine;
 import net.robinfriedli.botify.util.Table2;
 import net.robinfriedli.botify.util.Util;
@@ -168,7 +168,8 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
             }
 
 
-            String baseUri = PropertiesLoadingService.requireProperty("BASE_URI");
+            SpringPropertiesConfig springPropertiesConfig = Botify.get().getSpringPropertiesConfig();
+            String baseUri = springPropertiesConfig.requireApplicationProperty("botify.server.base_uri");
             EmbedBuilder embedBuilder = new EmbedBuilder();
             embedBuilder.addField("Name", playlist.getName(), true);
             embedBuilder.addField("Duration", Util.normalizeMillis(playlist.getDuration()), true);

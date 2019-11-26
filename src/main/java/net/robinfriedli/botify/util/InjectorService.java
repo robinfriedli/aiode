@@ -1,12 +1,12 @@
 package net.robinfriedli.botify.util;
 
-import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 
-import com.google.common.collect.Lists;
+import com.google.api.client.util.Sets;
 import com.wrapper.spotify.SpotifyApi;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.sharding.ShardManager;
@@ -26,44 +26,31 @@ import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.login.LoginManager;
 import net.robinfriedli.jxp.api.JxpBackend;
 import org.hibernate.SessionFactory;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.ApplicationContext;
 
-public class Cache {
+/**
+ * Service to handle custom constructor injection. #get is used to inject non-spring botify components. This checks for
+ * custom Botify extractors and spring beans.
+ */
+public class InjectorService {
 
-    private static final List<Extractor<?>> EXTRACTORS = Lists.newArrayList();
-    private static final List<Object> CACHED_OBJECTS = Lists.newArrayList();
+    private static final Set<Extractor<?>> EXTRACTORS = Sets.newHashSet();
 
     static {
         EXTRACTORS.add(new Extractor<>(AudioManager.class, () -> Botify.get().getAudioManager()));
-        EXTRACTORS.add(new Extractor<>(AudioPlayback.class, () -> {
-            if (CommandContext.Current.isSet()) {
-                return CommandContext.Current.require().getGuildContext().getPlayback();
-            } else {
-                return null;
-            }
-        }));
+        EXTRACTORS.add(new Extractor<>(AudioPlayback.class, () -> CommandContext.Current.optional().map(ctx -> ctx.getGuildContext().getPlayback()).orElse(null)));
         EXTRACTORS.add(new Extractor<>(CommandContext.class, CommandContext.Current::get));
         EXTRACTORS.add(new Extractor<>(CommandExecutionQueueManager.class, () -> Botify.get().getExecutionQueueManager()));
         EXTRACTORS.add(new Extractor<>(CommandManager.class, () -> Botify.get().getCommandManager()));
-        EXTRACTORS.add(new Extractor<>(GuildContext.class, () -> {
-            if (CommandContext.Current.isSet()) {
-                return CommandContext.Current.require().getGuildContext();
-            } else {
-                return null;
-            }
-        }));
+        EXTRACTORS.add(new Extractor<>(GuildContext.class, () -> CommandContext.Current.optional().map(CommandContext::getGuildContext).orElse(null)));
         EXTRACTORS.add(new Extractor<>(GuildManager.class, () -> Botify.get().getGuildManager()));
         EXTRACTORS.add(new Extractor<>(GuildPropertyManager.class, () -> Botify.get().getGuildPropertyManager()));
         EXTRACTORS.add(new Extractor<>(ShardManager.class, () -> Botify.get().getShardManager()));
         EXTRACTORS.add(new Extractor<>(JxpBackend.class, () -> Botify.get().getJxpBackend()));
         EXTRACTORS.add(new Extractor<>(Logger.class, () -> Botify.LOGGER));
         EXTRACTORS.add(new Extractor<>(LoginManager.class, () -> Botify.get().getLoginManager()));
-        EXTRACTORS.add(new Extractor<>(MessageChannel.class, () -> {
-            if (CommandContext.Current.isSet()) {
-                return CommandContext.Current.require().getChannel();
-            } else {
-                return null;
-            }
-        }));
+        EXTRACTORS.add(new Extractor<>(MessageChannel.class, () -> CommandContext.Current.optional().map(CommandContext::getChannel).orElse(null)));
         EXTRACTORS.add(new Extractor<>(MessageService.class, () -> Botify.get().getMessageService()));
         EXTRACTORS.add(new Extractor<>(SecurityManager.class, () -> Botify.get().getSecurityManager()));
         EXTRACTORS.add(new Extractor<>(SessionFactory.class, () -> Botify.get().getSessionFactory()));
@@ -75,21 +62,14 @@ public class Cache {
 
     @SuppressWarnings("unchecked")
     public static <E> E get(Class<E> type) {
-        Optional<Object> cachedObject = CACHED_OBJECTS.stream().filter(o -> type.isAssignableFrom(o.getClass())).findAny();
-        if (cachedObject.isPresent()) {
-            return (E) cachedObject.get();
+        Optional<Extractor<?>> extractor = EXTRACTORS.stream().filter(e -> type.isAssignableFrom(e.getType())).findAny();
+        if (extractor.isPresent()) {
+            return extractor.map(value -> (E) value.getSupplier().get()).get();
         } else {
-            Optional<Extractor<?>> extractor = EXTRACTORS.stream().filter(e -> type.isAssignableFrom(e.getType())).findAny();
-            return extractor.map(value -> (E) value.getSupplier().get()).orElse(null);
+            ApplicationContext springBootContext = Botify.get().getSpringBootContext();
+            ObjectProvider<E> beanProvider = springBootContext.getBeanProvider(type);
+            return beanProvider.getIfAvailable();
         }
-    }
-
-    public static void cacheObject(Object o) {
-        CACHED_OBJECTS.add(o);
-    }
-
-    public static boolean removeObjet(Object o) {
-        return CACHED_OBJECTS.remove(o);
     }
 
     private static class Extractor<E> {

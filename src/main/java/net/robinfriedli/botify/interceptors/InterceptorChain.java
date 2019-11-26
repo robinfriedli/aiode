@@ -6,7 +6,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Iterator;
 
-import net.robinfriedli.botify.util.Cache;
+import net.robinfriedli.botify.util.InjectorService;
 import org.hibernate.CallbackException;
 import org.hibernate.EmptyInterceptor;
 import org.hibernate.EntityMode;
@@ -56,7 +56,7 @@ public class InterceptorChain extends EmptyInterceptor {
                     parameters[i] = EmptyInterceptor.INSTANCE;
                 }
             } else {
-                parameters[i] = Cache.get(parameterType);
+                parameters[i] = InjectorService.get(parameterType);
             }
         }
 

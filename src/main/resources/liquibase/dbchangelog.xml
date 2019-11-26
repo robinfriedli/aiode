@@ -12,24 +12,417 @@ databasechangelog table by liquibase, to rerun change the id.
 See RunLiquibaseUpdateTask
 -->
 <databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
-  <changeSet id="add_guild_specification_guild_id_unique_constr-dJJE3/1.6.5" author="robinfriedli" context="constraint">
+  <!-- complete db schema as of botify 1 -->
+  <changeSet author="robinfriedli (generated)" id="1574552513560-1" context="definition">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="access_configuration"/>
+      </not>
+    </preConditions>
+    <createTable tableName="access_configuration">
+      <column autoIncrement="true" name="pk" type="BIGINT">
+        <constraints primaryKey="true" primaryKeyName="access_configuration_pkey"/>
+      </column>
+      <column name="command_identifier" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="guild_specification_pk" type="BIGINT"/>
+    </createTable>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1574552513560-2" context="definition">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="artist"/>
+      </not>
+    </preConditions>
+    <createTable tableName="artist">
+      <column autoIncrement="true" name="pk" type="BIGINT">
+        <constraints primaryKey="true" primaryKeyName="artist_pkey"/>
+      </column>
+      <column name="id" type="VARCHAR(255)"/>
+      <column name="name" type="VARCHAR(255)"/>
+    </createTable>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1574552513560-3" context="definition">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="command_history"/>
+      </not>
+    </preConditions>
+    <createTable tableName="command_history">
+      <column autoIncrement="true" name="pk" type="BIGINT">
+        <constraints primaryKey="true" primaryKeyName="command_history_pkey"/>
+      </column>
+      <column name="command_body" type="VARCHAR(2000)"/>
+      <column name="command_context_id" type="VARCHAR(255)"/>
+      <column name="command_identifier" type="VARCHAR(255)"/>
+      <column name="completed_successfully" type="BOOLEAN"/>
+      <column name="duration_ms" type="BIGINT"/>
+      <column name="error_message" type="VARCHAR(2000)"/>
+      <column name="failed_manually" type="BOOLEAN"/>
+      <column name="guild" type="VARCHAR(255)"/>
+      <column name="guild_id" type="VARCHAR(255)"/>
+      <column name="input" type="VARCHAR(2000)"/>
+      <column name="is_widget" type="BOOLEAN"/>
+      <column name="start_millis" type="BIGINT"/>
+      <column name="timestamp" type="TIMESTAMP WITHOUT TIME ZONE"/>
+      <column name="unexpected_exception" type="BOOLEAN"/>
+      <column name="user_name" type="VARCHAR(255)"/>
+      <column name="user_id" type="VARCHAR(255)"/>
+    </createTable>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1574552513560-4" context="definition">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="current_youtube_quota_usage"/>
+      </not>
+    </preConditions>
+    <createTable tableName="current_youtube_quota_usage">
+      <column autoIncrement="true" name="pk" type="BIGINT">
+        <constraints primaryKey="true" primaryKeyName="current_youtube_quota_usage_pkey"/>
+      </column>
+      <column name="quota" type="INTEGER"/>
+      <column name="lastupdated" type="TIMESTAMP WITHOUT TIME ZONE"/>
+    </createTable>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1574552513560-5" context="definition">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="granted_role"/>
+      </not>
+    </preConditions>
+    <createTable tableName="granted_role">
+      <column autoIncrement="true" name="pk" type="BIGINT">
+        <constraints primaryKey="true" primaryKeyName="granted_role_pkey"/>
+      </column>
+      <column name="id" type="VARCHAR(255)"/>
+      <column name="access_configuration_pk" type="BIGINT"/>
+    </createTable>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1574552513560-6" context="definition">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="guild_specification"/>
+      </not>
+    </preConditions>
+    <createTable tableName="guild_specification">
+      <column autoIncrement="true" name="pk" type="BIGINT">
+        <constraints primaryKey="true" primaryKeyName="guild_specification_pkey"/>
+      </column>
+      <column name="argument_prefix" type="CHAR(1)"/>
+      <column name="bot_name" type="VARCHAR(255)"/>
+      <column name="color" type="VARCHAR(255)"/>
+      <column name="default_list_source" type="VARCHAR(255)"/>
+      <column name="default_source" type="VARCHAR(255)"/>
+      <column name="default_text_channel_id" type="VARCHAR(255)"/>
+      <column name="enable_auto_pause" type="BOOLEAN"/>
+      <column name="guild_id" type="VARCHAR(255)"/>
+      <column name="guild_name" type="VARCHAR(255)"/>
+      <column name="prefix" type="VARCHAR(255)"/>
+      <column name="send_playback_notification" type="BOOLEAN"/>
+      <column name="temp_message_timeout" type="INTEGER"/>
+    </createTable>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1574552513560-7" context="definition">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="playback_history"/>
+      </not>
+    </preConditions>
+    <createTable tableName="playback_history">
+      <column autoIncrement="true" name="pk" type="BIGINT">
+        <constraints primaryKey="true" primaryKeyName="playback_history_pkey"/>
+      </column>
+      <column name="guild" type="VARCHAR(255)"/>
+      <column name="guild_id" type="VARCHAR(255)"/>
+      <column name="source" type="VARCHAR(255)"/>
+      <column name="timestamp" type="TIMESTAMP WITHOUT TIME ZONE"/>
+      <column name="title" type="VARCHAR(255)"/>
+      <column name="track_id" type="VARCHAR(255)"/>
+    </createTable>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1574552513560-8" context="definition">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="playback_history_artist"/>
+      </not>
+    </preConditions>
+    <createTable tableName="playback_history_artist">
+      <column name="playbackhistory_pk" type="BIGINT">
+        <constraints primaryKey="true" primaryKeyName="playback_history_artist_pkey"/>
+      </column>
+      <column name="artists_pk" type="BIGINT">
+        <constraints primaryKey="true" primaryKeyName="playback_history_artist_pkey"/>
+      </column>
+    </createTable>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1574552513560-9" context="definition">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="playlist"/>
+      </not>
+    </preConditions>
+    <createTable tableName="playlist">
+      <column autoIncrement="true" name="pk" type="BIGINT">
+        <constraints primaryKey="true" primaryKeyName="playlist_pkey"/>
+      </column>
+      <column name="created_user" type="VARCHAR(255)"/>
+      <column name="created_user_id" type="VARCHAR(255)"/>
+      <column name="guild" type="VARCHAR(255)"/>
+      <column name="guild_id" type="VARCHAR(255)"/>
+      <column name="name" type="VARCHAR(30)"/>
+    </createTable>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1574552513560-10" context="definition">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="preset"/>
+      </not>
+    </preConditions>
+    <createTable tableName="preset">
+      <column autoIncrement="true" name="pk" type="BIGINT">
+        <constraints primaryKey="true" primaryKeyName="preset_pkey"/>
+      </column>
+      <column name="guild" type="VARCHAR(255)"/>
+      <column name="guild_id" type="VARCHAR(255)"/>
+      <column name="name" type="VARCHAR(30)"/>
+      <column name="preset" type="VARCHAR(1000)"/>
+      <column name="user_name" type="VARCHAR(255)"/>
+      <column name="user_id" type="VARCHAR(255)"/>
+    </createTable>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1574552513560-11" context="definition">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="song"/>
+      </not>
+    </preConditions>
+    <createTable tableName="song">
+      <column autoIncrement="true" name="pk" type="BIGINT">
+        <constraints primaryKey="true" primaryKeyName="song_pkey"/>
+      </column>
+      <column name="added_user" type="VARCHAR(255)"/>
+      <column name="added_user_id" type="VARCHAR(255)"/>
+      <column name="created_timestamp" type="TIMESTAMP WITHOUT TIME ZONE"/>
+      <column name="duration" type="BIGINT"/>
+      <column name="item_index" type="INTEGER"/>
+      <column name="id" type="VARCHAR(255)"/>
+      <column name="name" type="VARCHAR(255)"/>
+      <column name="playlist_pk" type="BIGINT"/>
+    </createTable>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1574552513560-12" context="definition">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="song_artist"/>
+      </not>
+    </preConditions>
+    <createTable tableName="song_artist">
+      <column name="song_pk" type="BIGINT">
+        <constraints primaryKey="true" primaryKeyName="song_artist_pkey"/>
+      </column>
+      <column name="artists_pk" type="BIGINT">
+        <constraints primaryKey="true" primaryKeyName="song_artist_pkey"/>
+      </column>
+    </createTable>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1574552513560-13" context="definition">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="spotify_redirect_index"/>
+      </not>
+    </preConditions>
+    <createTable tableName="spotify_redirect_index">
+      <column autoIncrement="true" name="pk" type="BIGINT">
+        <constraints primaryKey="true" primaryKeyName="spotify_redirect_index_pkey"/>
+      </column>
+      <column name="last_updated" type="date"/>
+      <column name="spotify_id" type="VARCHAR(255)"/>
+      <column name="youtube_id" type="VARCHAR(255)"/>
+    </createTable>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1574552513560-14" context="definition">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="spotify_redirect_index_modification_lock"/>
+      </not>
+    </preConditions>
+    <createTable tableName="spotify_redirect_index_modification_lock">
+      <column autoIncrement="true" name="pk" type="BIGINT">
+        <constraints primaryKey="true" primaryKeyName="spotify_redirect_index_modification_lock_pkey"/>
+      </column>
+      <column name="creation_time_stamp" type="TIMESTAMP WITHOUT TIME ZONE"/>
+    </createTable>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1574552513560-15" context="definition">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="url_track"/>
+      </not>
+    </preConditions>
+    <createTable tableName="url_track">
+      <column autoIncrement="true" name="pk" type="BIGINT">
+        <constraints primaryKey="true" primaryKeyName="url_track_pkey"/>
+      </column>
+      <column name="added_user" type="VARCHAR(255)"/>
+      <column name="added_user_id" type="VARCHAR(255)"/>
+      <column name="created_timestamp" type="TIMESTAMP WITHOUT TIME ZONE"/>
+      <column name="duration" type="BIGINT"/>
+      <column name="item_index" type="INTEGER"/>
+      <column name="title" type="VARCHAR(255)"/>
+      <column name="url" type="VARCHAR(255)"/>
+      <column name="playlist_pk" type="BIGINT"/>
+    </createTable>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1574552513560-16" context="definition">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="user_playback_history"/>
+      </not>
+    </preConditions>
+    <createTable tableName="user_playback_history">
+      <column autoIncrement="true" name="pk" type="BIGINT">
+        <constraints primaryKey="true" primaryKeyName="user_playback_history_pkey"/>
+      </column>
+      <column name="user_id" type="VARCHAR(255)"/>
+      <column name="user_name" type="VARCHAR(255)"/>
+      <column name="playback_history_pk" type="BIGINT"/>
+    </createTable>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1574552513560-17" context="definition">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="video"/>
+      </not>
+    </preConditions>
+    <createTable tableName="video">
+      <column autoIncrement="true" name="pk" type="BIGINT">
+        <constraints primaryKey="true" primaryKeyName="video_pkey"/>
+      </column>
+      <column name="added_user" type="VARCHAR(255)"/>
+      <column name="added_user_id" type="VARCHAR(255)"/>
+      <column name="created_timestamp" type="TIMESTAMP WITHOUT TIME ZONE"/>
+      <column name="duration" type="BIGINT"/>
+      <column name="item_index" type="INTEGER"/>
+      <column name="id" type="VARCHAR(255)"/>
+      <column name="redirected_spotify_id" type="VARCHAR(255)"/>
+      <column name="spotify_track_name" type="VARCHAR(255)"/>
+      <column name="title" type="VARCHAR(255)"/>
+      <column name="playlist_pk" type="BIGINT"/>
+    </createTable>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1574552513560-18" context="constraint">
     <preConditions onFail="MARK_RAN">
       <columnExists tableName="guild_specification" columnName="guild_id"/>
       <not>
-        <sqlCheck expectedResult="1">select count(*) from pg_constraint where conname = 'guild_specification_guild_id_key'</sqlCheck>
+        <sqlCheck expectedResult="1">select count(*) from pg_constraint where conname =
+          'guild_specification_guild_id_key'
+        </sqlCheck>
       </not>
     </preConditions>
-    <addUniqueConstraint tableName="guild_specification" columnNames="guild_id" constraintName="guild_specification_guild_id_key"/>
+    <addUniqueConstraint columnNames="guild_id" constraintName="guild_specification_guild_id_key" tableName="guild_specification"/>
   </changeSet>
-  <changeSet id="change_length_of_preset_string-sdGRE4/1.6.5" author="robinfriedli" context="definition">
+  <changeSet author="robinfriedli (generated)" id="1574552513560-19" context="constraint">
     <preConditions onFail="MARK_RAN">
-      <columnExists tableName="preset" columnName="preset"/>
+      <columnExists tableName="spotify_redirect_index" columnName="spotify_id"/>
       <not>
-        <sqlCheck expectedResult="1000">select character_maximum_length from information_schema.columns where column_name = 'preset' and table_name = 'preset'</sqlCheck>
+        <sqlCheck expectedResult="1">select count(*) from pg_constraint where conname = 'uk_9lvk6qqce02fxcnbbre8o2yj2'
+        </sqlCheck>
       </not>
     </preConditions>
-    <modifyDataType tableName="preset" columnName="preset" newDataType="varchar(1000)"/>
+    <addUniqueConstraint columnNames="spotify_id" constraintName="uk_9lvk6qqce02fxcnbbre8o2yj2" tableName="spotify_redirect_index"/>
   </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1574552513560-21" context="constraint">
+    <preConditions onFail="MARK_RAN">
+      <columnExists tableName="artist" columnName="id"/>
+      <not>
+        <sqlCheck expectedResult="1">select count(*) from pg_constraint where conname = 'uk_ku11dq47spr24frr7wajkiv1q'
+        </sqlCheck>
+      </not>
+    </preConditions>
+    <addUniqueConstraint columnNames="id" constraintName="uk_ku11dq47spr24frr7wajkiv1q" tableName="artist"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1574552513560-22" context="constraint">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <foreignKeyConstraintExists foreignKeyName="fk7fmxitcixuooxr5ptd2nm51ws" foreignKeyTableName="video"/>
+      </not>
+    </preConditions>
+    <addForeignKeyConstraint baseColumnNames="playlist_pk" baseTableName="video" constraintName="fk7fmxitcixuooxr5ptd2nm51ws" deferrable="false" initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION" referencedColumnNames="pk" referencedTableName="playlist" validate="true"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1574552513560-23" context="constraint">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <foreignKeyConstraintExists foreignKeyName="fk7k0t8vcxswxo8syktws77926r" foreignKeyTableName="song_artist"/>
+      </not>
+    </preConditions>
+    <addForeignKeyConstraint baseColumnNames="artists_pk" baseTableName="song_artist" constraintName="fk7k0t8vcxswxo8syktws77926r" deferrable="false" initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION" referencedColumnNames="pk" referencedTableName="artist" validate="true"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1574552513560-24" context="constraint">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <foreignKeyConstraintExists foreignKeyName="fk_access_configuration" foreignKeyTableName="granted_role"/>
+      </not>
+    </preConditions>
+    <addForeignKeyConstraint baseColumnNames="access_configuration_pk" baseTableName="granted_role" constraintName="fk_access_configuration" deferrable="false" initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION" referencedColumnNames="pk" referencedTableName="access_configuration" validate="true"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1574552513560-25" context="constraint">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <foreignKeyConstraintExists foreignKeyName="fk_guild_specification" foreignKeyTableName="access_configuration"/>
+      </not>
+    </preConditions>
+    <addForeignKeyConstraint baseColumnNames="guild_specification_pk" baseTableName="access_configuration" constraintName="fk_guild_specification" deferrable="false" initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION" referencedColumnNames="pk" referencedTableName="guild_specification" validate="true"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1574552513560-26" context="constraint">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <foreignKeyConstraintExists foreignKeyName="fk_playback_history" foreignKeyTableName="user_playback_history"/>
+      </not>
+    </preConditions>
+    <addForeignKeyConstraint baseColumnNames="playback_history_pk" baseTableName="user_playback_history" constraintName="fk_playback_history" deferrable="false" initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION" referencedColumnNames="pk" referencedTableName="playback_history" validate="true"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1574552513560-27" context="constraint">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <foreignKeyConstraintExists foreignKeyName="fka1ilbuil43ve4fdp086oqh6f4" foreignKeyTableName="playback_history_artist"/>
+      </not>
+    </preConditions>
+    <addForeignKeyConstraint baseColumnNames="artists_pk" baseTableName="playback_history_artist" constraintName="fka1ilbuil43ve4fdp086oqh6f4" deferrable="false" initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION" referencedColumnNames="pk" referencedTableName="artist" validate="true"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1574552513560-28" context="constraint">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <foreignKeyConstraintExists foreignKeyName="fkc0n616ys9856pcla2sbrjpp30" foreignKeyTableName="song"/>
+      </not>
+    </preConditions>
+    <addForeignKeyConstraint baseColumnNames="playlist_pk" baseTableName="song" constraintName="fkc0n616ys9856pcla2sbrjpp30" deferrable="false" initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION" referencedColumnNames="pk" referencedTableName="playlist" validate="true"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1574552513560-29" context="constraint">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <foreignKeyConstraintExists foreignKeyName="fkfp5cj0alx32js5svihn1ge8re" foreignKeyTableName="song_artist"/>
+      </not>
+    </preConditions>
+    <addForeignKeyConstraint baseColumnNames="song_pk" baseTableName="song_artist" constraintName="fkfp5cj0alx32js5svihn1ge8re" deferrable="false" initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION" referencedColumnNames="pk" referencedTableName="song" validate="true"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1574552513560-30" context="constraint">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <foreignKeyConstraintExists foreignKeyName="fkogwcexnc7tauhn5eaxmek5lsq" foreignKeyTableName="url_track"/>
+      </not>
+    </preConditions>
+    <addForeignKeyConstraint baseColumnNames="playlist_pk" baseTableName="url_track" constraintName="fkogwcexnc7tauhn5eaxmek5lsq" deferrable="false" initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION" referencedColumnNames="pk" referencedTableName="playlist" validate="true"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1574552513560-31" context="constraint">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <foreignKeyConstraintExists foreignKeyName="fkrxie5r6i0lyey1ar08jfw914e" foreignKeyTableName="playback_history_artist"/>
+      </not>
+    </preConditions>
+    <addForeignKeyConstraint baseColumnNames="playbackhistory_pk" baseTableName="playback_history_artist" constraintName="fkrxie5r6i0lyey1ar08jfw914e" deferrable="false" initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION" referencedColumnNames="pk" referencedTableName="playback_history" validate="true"/>
+  </changeSet>
+
   <changeSet id="create_current_youtube_quota_usage-sd23d/1.6.LTS" author="robinfriedli" context="initialvalue" runAlways="true">
     <preConditions onFail="MARK_RAN">
       <sqlCheck expectedResult="0">select count(*) from current_youtube_quota_usage</sqlCheck>
@@ -45,5 +438,46 @@ See RunLiquibaseUpdateTask
       </not>
     </preConditions>
     <delete tableName="spotify_redirect_index_modification_lock"/>
+  </changeSet>
+  <changeSet id="migrate_lastupdated_to_last_updated_new_column-234ds/2.0" author="robinfriedli" context="definition">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="current_youtube_quota_usage" columnName="last_updated"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="current_youtube_quota_usage">
+      <column name="last_updated" type="TIMESTAMP"/>
+    </addColumn>
+  </changeSet>
+  <changeSet id="migrate_lastupdated_to_last_updated_values-swersDS3/2.0" author="robinfriedli" context="initialvalue">
+    <preConditions onFail="MARK_RAN">
+      <columnExists tableName="current_youtube_quota_usage" columnName="lastupdated"/>
+      <columnExists tableName="current_youtube_quota_usage" columnName="last_updated"/>
+    </preConditions>
+    <sql>update current_youtube_quota_usage set last_updated = lastupdated</sql>
+  </changeSet>
+  <changeSet id="migrate_lastupdated_to_last_updated_drop_old_column-2DEd2/2.0" author="robinfriedli" context="definition">
+    <preConditions onFail="MARK_RAN">
+      <columnExists tableName="current_youtube_quota_usage" columnName="lastupdated"/>
+    </preConditions>
+    <dropColumn tableName="current_youtube_quota_usage" columnName="lastupdated"/>
+  </changeSet>
+  <changeSet id="rename_playback_history_artist_playbackhistory_pk-ER3dE/2.0" author="robinfriedli" context="definition">
+    <preConditions onFail="MARK_RAN">
+      <columnExists tableName="playback_history_artist" columnName="playbackhistory_pk"/>
+    </preConditions>
+    <renameColumn tableName="playback_history_artist" oldColumnName="playbackhistory_pk" newColumnName="playback_history_pk"/>
+  </changeSet>
+  <changeSet id="rename_playback_history_artist_artists_pk-sd78D/2.0" author="robinfriedli" context="definition">
+    <preConditions onFail="MARK_RAN">
+      <columnExists tableName="playback_history_artist" columnName="artists_pk"/>
+    </preConditions>
+    <renameColumn tableName="playback_history_artist" oldColumnName="artists_pk" newColumnName="artist_pk"/>
+  </changeSet>
+  <changeSet id="rename_song_artist_artists_pk-Dfs23E/2.0" author="robinfriedli" context="definition">
+    <preConditions onFail="MARK_RAN">
+      <columnExists tableName="song_artist" columnName="artists_pk"/>
+    </preConditions>
+    <renameColumn tableName="song_artist" oldColumnName="artists_pk" newColumnName="artist_pk"/>
   </changeSet>
 </databaseChangeLog>

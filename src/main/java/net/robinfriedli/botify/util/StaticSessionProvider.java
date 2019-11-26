@@ -3,13 +3,16 @@ package net.robinfriedli.botify.util;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.command.CommandContext;
+import net.robinfriedli.botify.function.AutoTransactionInvoker;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
 /**
  * Utility class to statically provide a hibernate session or run a code snippet with a hibernate session based on the
- * {@link CommandContext} of the current thread
+ * {@link CommandContext} of the current thread. This offers same functionality as the {@link HibernateComponent} but
+ * from a static context or from outside a spring component.
  */
 public class StaticSessionProvider {
 
@@ -34,36 +37,11 @@ public class StaticSessionProvider {
     }
 
     public static void invokeWithSession(Consumer<Session> consumer) {
-        invokeWithSession(session -> {
-            consumer.accept(session);
-            return null;
-        });
+        AutoTransactionInvoker.create(provide()).invoke(consumer);
     }
 
     public static <E> E invokeWithSession(Function<Session, E> function) {
-        Session session = provide();
-        boolean commitRequired = false;
-        if (!CommandContext.Current.isSet()) {
-            if (session.getTransaction() == null || !session.getTransaction().isActive()) {
-                session.beginTransaction();
-                commitRequired = true;
-            }
-        }
-        try {
-            return function.apply(session);
-        } catch (Throwable e) {
-            if (commitRequired) {
-                session.getTransaction().rollback();
-                // make sure this transaction is not committed in the finally block, which would throw an exception that
-                // overrides the current exception
-                commitRequired = false;
-            }
-            throw e;
-        } finally {
-            if (commitRequired) {
-                session.getTransaction().commit();
-            }
-        }
+        return AutoTransactionInvoker.create(provide()).invoke(function);
     }
 
 }

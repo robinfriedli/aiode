@@ -16,7 +16,8 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.VoiceChannel;
-import net.robinfriedli.botify.util.PropertiesLoadingService;
+import net.robinfriedli.botify.Botify;
+import net.robinfriedli.botify.boot.SpringPropertiesConfig;
 
 /**
  * There is exactly one AudioPlayback per guild instantiated when initializing the guild. This class holds all information
@@ -41,9 +42,9 @@ public class AudioPlayback {
         this.guild = guild;
         audioPlayer = player;
         this.logger = LoggerFactory.getLogger(getClass());
-        String queueSizeMax = PropertiesLoadingService.loadProperty("QUEUE_SIZE_MAX");
-        Integer maxSize = queueSizeMax != null ? Integer.parseInt(queueSizeMax) : null;
-        audioQueue = new AudioQueue(maxSize);
+        SpringPropertiesConfig springPropertiesConfig = Botify.get().getSpringPropertiesConfig();
+        Integer queueSizeMax = springPropertiesConfig.getApplicationProperty(Integer.class, "botify.preferences.queue_size_max");
+        audioQueue = new AudioQueue(queueSizeMax);
     }
 
     public boolean isPlaying() {

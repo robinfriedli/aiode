@@ -23,8 +23,9 @@ public class GarbageCollectCommand extends AbstractAdminCommand {
     }
 
     private double getUsedMemory(Runtime runtime) {
-        double allocatedMemory = runtime.totalMemory() / Math.pow(1024, 2);
-        double allocFreeMemory = runtime.freeMemory() / Math.pow(1024, 2);
+        // convert to MB by right shifting by 20 bytes (same as dividing by 2^20)
+        double allocatedMemory = runtime.totalMemory() >> 20;
+        double allocFreeMemory = runtime.freeMemory() >> 20;
         return allocatedMemory - allocFreeMemory;
     }
 

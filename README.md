@@ -33,129 +33,81 @@ router's public ip and setup port forwarding for your router.
 #### 3.1 Go to https://console.developers.google.com/ and create a project for the YouTube Data API and create and copy the credentials
 
 ### 4. Setup botify settings
-#### 4.1 Navigate to your cloned project and go to `src/main/resources` and open the `settings.properties` file and fill in the blanks, it should look like this:
-#### 4.2 To take advantage of the admin commands that can perform administrative actions, such as updating and restarting the bot, be sure to add your Discord user id to the `ADMIN_USERS` property. To find your Discord user id, enable Developer Mode in the App Settings > Appearance. Then go to any guild, right click your user and click "Copy ID".
-#### 4.3 For Botify to manage the YouTube API quota automatically, be sure to fill in the `YOUTUBE_API_DAILY_QUOTA` property; open the Google developer console and go to Library > YouTube Data API v3 > Manage > Quotas
-#### 4.4 Change the `BASE_URI` property to your domain or public IP (without slash at the end) and adjust `REDIRECT_URI` to the corresponding endpoint for Spotify logins (normaly BASE_URI + "/login")
+#### 4.1 Enter confidentials
+##### 4.1.1 Navigate to your cloned project and go to `src/main/resources` and open the `settings-private.properties` file and fill in the blanks.
+##### 4.1.2 Adjust datasource properties and enter the database user and password, database setup will be discussed further in 4.2.1.
+##### 4.1.3 To take advantage of the admin commands that can perform administrative actions, such as updating and restarting the bot, be sure to add your Discord user id to the `botify.security.admin_users` property. To find your Discord user id, enable Developer Mode in the App Settings > Appearance. Then go to any guild, right click your user and click "Copy ID".
+```properties
+##########
+# tokens #
+##########
+botify.tokens.discord_token=
+botify.tokens.spotify_client_id=
+botify.tokens.spotify_client_secret=
+botify.tokens.youtube_credentials=
+############
+# security #
+############
+#define user ids (comma separated) that may access admin commands. These users can always use each command irregardless of access configurations
+botify.security.admin_users=
+##############
+# datasource #
+##############
+spring.datasource.username=postgres
+spring.datasource.password=postgres
+##############################
+# top.gg settings (optional) #
+##############################
+#copy your discord client id here
+botify.tokens.discord_bot_id=
+#copy your top.gg token here
+botify.tokens.topgg_token=
+```
+#### 4.2 Adjust application.properties
+##### 4.2.1 Review the datasource properties and make necessary adjustments. If you are using a local postgres server and name your database "botify" you can leave it as it is. If you need help setting up your postgres server, please refer to their official documentation: http://www.postgresqltutorial.com/.
+##### 4.2.2 For Botify to manage the YouTube API quota automatically, be sure to fill in the `botify.preferences.youtube_api_daily_quota` property; open the Google developer console and go to Library > YouTube Data API v3 > Manage > Quotas
+##### 4.2.3 Change the `botify.server.base_uri` property to your domain or public IP (without slash at the end) and adjust `botify.server.spotify_login_callback` to the corresponding endpoint for Spotify logins (normaly BASE_URI + "/login")
 Don't have a domain? You could either go without a web server all together and still use most of botify's features or use your
 router's public ip and setup port forwarding for your router to the machine where you're running botify via the port specified by the `SERVER_PORT` property.
 ```properties
 ###################
 # server settings #
 ###################
-SERVER_PORT=8000
-BASE_URI=http://localhost:8000
-REDIRECT_URI=http://localhost:8000/login
-HIBERNATE_CONFIGURATION=./resources/hibernate.cfg.xml
-##########
-# tokens #
-##########
-DISCORD_TOKEN=#copy your discord token here
-SPOTIFY_CLIENT_ID=#copy your spotify client id here
-SPOTIFY_CLIENT_SECRET=#copy your spotify client secret here
-YOUTUBE_CREDENTIALS=#copy your youtube credentials here
-#################
-# contributions #
-#################
-PLAYLISTS_PATH=./resources/playlists.xml
-GUILD_PLAYLISTS_PATH=./resources/%splaylists.xml
-GUILD_SPECIFICATION_PATH=./resources/guildSpecifications.xml
-COMMANDS_PATH=./resources/xml-contributions/commands.xml
-COMMAND_INTERCEPTORS_PATH=./resources/xml-contributions/commandInterceptors.xml
-HTTP_HANDLERS_PATH=./resources/xml-contributions/httpHandlers.xml
-STARTUP_TASKS_PATH=./resources/xml-contributions/startupTasks.xml
-LOGIN_PAGE_PATH=./resources/html/login.html
-LIST_PAGE_PATH=./resources/html/playlist_view.html
-ERROR_PAGE_PATH=./resources/html/default_error_page.html
-QUEUE_PAGE_PATH=./resources/html/queue_view.html
-EMBED_DOCUMENTS_PATH=./resources/xml-contributions/embedDocuments.xml
-GUILD_PROPERTIES_PATH=./resources/xml-contributions/guildProperties.xml
-CRON_JOBS_PATH=./resources/xml-contributions/cronJobs.xml
-WIDGETS_PATH=./resources/xml-contributions/widgets.xml
-VERSIONS_PATH=./resources/versions.xml
+botify.server.port=8000
+botify.server.base_uri=http://localhost:8000
+botify.server.spotify_login_callback=http://localhost:8000/login
+spring.liquibase.change-log=classpath:liquibase/dbchangelog.xml
+spring.liquibase.contexts=definition,initialvalue,constraint
+liquibase.change-log-path=src/main/resources/liquibase/dbchangelog.xml
+liquibase.referenceUrl=hibernate:spring:net.robinfriedli.botify.entities?dialect=org.hibernate.dialect.PostgreSQL10Dialect
 ###############
 # preferences #
 ###############
 # replace this value with your YouTube API Quota: open the Google developer console and go to Library > YouTube Data API v3 > Manage > Quotas
-YOUTUBE_API_DAILY_QUOTA=1000001
-MODE_PARTITIONED=true
-QUEUE_SIZE_MAX=10000
+botify.preferences.youtube_api_daily_quota=1000001
+botify.preferences.mode_partitioned=true
+botify.preferences.queue_size_max=10000
 # playlists per guild (if mode_partitioned = true, else playlist total)
-PLAYLIST_COUNT_MAX=50
-PLAYLIST_SIZE_MAX=5000
-ADMIN_USERS=#define user ids (comma separated) that may access admin commands. These users can always use each command irregardless of access configurations
-#######################################
-# discordbots.org settings (optional) #
-#######################################
-#DISCORD_BOT_ID=#copy your discord client id here
-#DISCORDBOTS_TOKEN=#copy your discordbots.org token here
-
+botify.preferences.playlist_count_max=50
+botify.preferences.playlist_size_max=5000
+##############
+# datasource #
+##############
+spring.datasource.url=jdbc:postgresql://localhost:5432/botify
+spring.datasource.driverClassName=org.postgresql.Driver
+spring.jpa.database-platform=org.hibernate.dialect.PostgreSQL10Dialect
+spring.jpa.properties.hibernate.current_session_context_class=thread
+spring.datasource.type=com.mchange.v2.c3p0.ComboPooledDataSource
+spring.jpa.properties.hibernate.cache.use_query_cache=true
+spring.jpa.properties.hibernate.cache.use_second_level_cache=true
+spring.jpa.properties.hibernate.cache.region.factory_class=org.hibernate.cache.jcache.JCacheRegionFactory
+spring.jpa.properties.hibernate.javax.cache.provider=org.ehcache.jsr107.EhcacheCachingProvider
+spring.jpa.properties.hibernate.javax.cache.missing_cache_strategy=create
 ```
 
-### 5. Setup database
-#### 5.1 Setup hibernate configuration
-Navigate to `src/main/resources/hibernate.cfg.xml` and adjust the settings, if you use a local postgres server and name your
-database "botify_playlists" you can leave it like this:
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE hibernate-configuration PUBLIC
-    "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
-    "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
-
-<hibernate-configuration>
-  <session-factory>
-    <!-- hibernate config -->
-    <property name="hibernate.connection.driver_class">org.postgresql.Driver</property>
-    <property name="hibernate.connection.url">jdbc:postgresql://localhost:5432/botify_playlists</property>
-    <property name="hibernate.connection.username">postgres</property>
-    <property name="hibernate.connection.password">postgres</property>
-    <property name="hibernate.dialect">org.hibernate.dialect.PostgreSQL94Dialect</property>
-    <property name="show_sql">false</property>
-    <property name="hibernate.hbm2ddl.auto">update</property>
-    <property name="hibernate.current_session_context_class">thread</property>
-    <!-- C3P0 config -->
-    <property name="hibernate.c3p0.min_size">5</property>
-    <property name="hibernate.c3p0.max_size">20</property>
-    <property name="hibernate.c3p0.timeout">1800</property>
-    <property name="hibernate.c3p0.max_statements">50</property>
-    <!-- ehcache -->
-    <property name="hibernate.cache.use_query_cache">true</property>
-    <property name="hibernate.cache.use_second_level_cache">true</property>
-    <property name="hibernate.cache.region.factory_class">org.hibernate.cache.jcache.JCacheRegionFactory</property>
-    <property name="hibernate.javax.cache.provider">org.ehcache.jsr107.EhcacheCachingProvider</property>
-    <property name="hibernate.javax.cache.missing_cache_strategy">create</property>
-    <!-- annotated classes -->
-    <mapping class="net.robinfriedli.botify.entities.Playlist"/>
-    <mapping class="net.robinfriedli.botify.entities.Song"/>
-    <mapping class="net.robinfriedli.botify.entities.Video"/>
-    <mapping class="net.robinfriedli.botify.entities.UrlTrack"/>
-    <mapping class="net.robinfriedli.botify.entities.Artist"/>
-    <mapping class="net.robinfriedli.botify.entities.PlaylistItem"/>
-    <mapping class="net.robinfriedli.botify.entities.CommandHistory"/>
-    <mapping class="net.robinfriedli.botify.entities.PlaybackHistory"/>
-    <mapping class="net.robinfriedli.botify.entities.Preset"/>
-    <mapping class="net.robinfriedli.botify.entities.GuildSpecification"/>
-    <mapping class="net.robinfriedli.botify.entities.AccessConfiguration"/>
-    <mapping class="net.robinfriedli.botify.entities.GrantedRole"/>
-    <mapping class="net.robinfriedli.botify.entities.SpotifyRedirectIndex"/>
-  </session-factory>
-</hibernate-configuration>
-```
-If you need help setting up your postgres server, please refer to their official documentation: http://www.postgresqltutorial.com/
-
-#### 5.2 Setup liquibase properties
-Go to `src/main/resources/liquibase/liquibase.properties` and adjust the liquibase properties according to the changes you made
-to the hibernate configuration above. If you left it as it is you can leave the liquibase.properties like this:
-```properties
-driver=org.postgresql.Driver
-url=jdbc:postgresql://localhost:5432/botify_playlists
-username=postgres
-password=postgres
-changeLogFile=src/main/resources/liquibase/dbchangelog.xml
-```
 
 ### 6 Compile and run botify
 Navigate to the project root directory and install botify by running `./gradlew build`. Then you can launch botify
-using the main class `net.robinfriedli.botify.boot.Launcher`. You can either run the bash script `bash/launch.sh`
-or run `./gradle run` directly. Note that those commands are written for Unix-like operating systems such as macOS and
+using the main class `net.robinfriedli.botify.boot.SpringBootstrap`. You can either run the bash script `bash/launch.sh`
+or run `./gradlew bootRun` directly. Note that those commands are written for Unix-like operating systems such as macOS and
 Linux. For windows you need to make adjustments to the `bash/launch.sh` file.

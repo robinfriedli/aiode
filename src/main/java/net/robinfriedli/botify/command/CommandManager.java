@@ -1,5 +1,6 @@
 package net.robinfriedli.botify.command;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,8 +18,12 @@ import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 import net.robinfriedli.botify.exceptions.handlers.CommandExceptionHandler;
 import net.robinfriedli.botify.listeners.CommandListener;
+import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.persist.Context;
 import org.hibernate.Session;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.stereotype.Component;
 
 import static net.robinfriedli.jxp.queries.Conditions.*;
 
@@ -29,6 +34,7 @@ import static net.robinfriedli.jxp.queries.Conditions.*;
  * instantiating the {@link AbstractCommand} based on the results and {@link #runCommand(Command, ThreadExecutionQueue)}
  * passes it to the {@link CommandInterceptorChain} for execution.
  */
+@Component
 public class CommandManager {
 
     private final Context commandContributionContext;
@@ -40,10 +46,15 @@ public class CommandManager {
      */
     private CommandInterceptorChain interceptorChain;
 
-    public CommandManager(Context commandContributionContext,
-                          Context commandInterceptorContext) {
-        this.commandContributionContext = commandContributionContext;
-        this.commandInterceptorContext = commandInterceptorContext;
+    public CommandManager(@Value("classpath:xml-contributions/commands.xml") Resource commandResource,
+                          @Value("classpath:xml-contributions/commandInterceptors.xml") Resource commandInterceptorResource,
+                          JxpBackend jxpBackend) {
+        try {
+            this.commandContributionContext = jxpBackend.getContext(commandResource.getFile());
+            this.commandInterceptorContext = jxpBackend.getContext(commandInterceptorResource.getFile());
+        } catch (IOException e) {
+            throw new RuntimeException("Could not instantiate " + getClass().getSimpleName(), e);
+        }
         this.logger = LoggerFactory.getLogger(getClass());
     }
 

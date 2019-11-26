@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <startupTasks xmlns="startupTaskSpace">
-  <startupTask implementation="net.robinfriedli.botify.boot.tasks.RunLiquibaseUpdateTask"/>
   <startupTask implementation="net.robinfriedli.botify.boot.tasks.MigrateGuildSpecificationsTask"/>
   <startupTask implementation="net.robinfriedli.botify.boot.tasks.CreatePermissionAccessConfigurationTask"/>
   <startupTask implementation="net.robinfriedli.botify.boot.tasks.SetRedirectedSpotifyTrackNameTask"/>

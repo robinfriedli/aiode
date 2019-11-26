@@ -28,7 +28,7 @@ public class CurrentYouTubeQuotaUsage implements Serializable {
     private long pk;
     @Column
     private int quota;
-    @Column
+    @Column(name = "last_updated")
     private LocalDateTime lastUpdated;
 
     public long getPk() {

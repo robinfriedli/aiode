@@ -1,13 +1,13 @@
 package net.robinfriedli.botify.command.commands;
 
-import com.google.common.base.Strings;
+import net.robinfriedli.botify.Botify;
+import net.robinfriedli.botify.boot.SpringPropertiesConfig;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
-import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.SearchEngine;
 import org.hibernate.Session;
 
@@ -20,19 +20,19 @@ public class CreateCommand extends AbstractCommand {
     @Override
     public void doRun() {
         Session session = getContext().getSession();
+        SpringPropertiesConfig springPropertiesConfig = Botify.get().getSpringPropertiesConfig();
         Playlist existingPlaylist = SearchEngine.searchLocalList(session, getCommandInput(), isPartitioned(), getContext().getGuild().getId());
 
         if (existingPlaylist != null) {
             throw new InvalidCommandException("Playlist " + getCommandInput() + " already exists");
         }
 
-        String playlistCountMax = PropertiesLoadingService.loadProperty("PLAYLIST_COUNT_MAX");
-        if (!Strings.isNullOrEmpty(playlistCountMax)) {
-            int maxPlaylists = Integer.parseInt(playlistCountMax);
+        Integer playlistCountMax = springPropertiesConfig.getApplicationProperty(Integer.class, "botify.preferences.playlist_count_max");
+        if (playlistCountMax != null) {
             String query = "select count(*) from " + Playlist.class.getName();
             Long playlistCount = (Long) session.createQuery(isPartitioned() ? query + " where guild_id = '" + getContext().getGuild().getId() + "'" : query).uniqueResult();
-            if (playlistCount >= maxPlaylists) {
-                throw new InvalidCommandException("Maximum playlist count of " + maxPlaylists + " reached!");
+            if (playlistCount >= playlistCountMax) {
+                throw new InvalidCommandException("Maximum playlist count of " + playlistCountMax + " reached!");
             }
         }
 

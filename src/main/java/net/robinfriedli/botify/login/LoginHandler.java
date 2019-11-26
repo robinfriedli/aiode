@@ -18,7 +18,6 @@ import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.exceptions.InvalidRequestException;
 import net.robinfriedli.botify.servers.ServerUtil;
-import net.robinfriedli.botify.util.PropertiesLoadingService;
 
 /**
  * Handler for the login flow that completes pending logins
@@ -37,8 +36,7 @@ public class LoginHandler implements HttpHandler {
 
     @Override
     public void handle(HttpExchange httpExchange) throws IOException {
-        String loginPagePath = PropertiesLoadingService.requireProperty("LOGIN_PAGE_PATH");
-        String html = Files.readString(Path.of(loginPagePath));
+        String html = Files.readString(Path.of("html/login.html"));
         try {
             Map<String, String> parameterMap = ServerUtil.getParameters(httpExchange);
 

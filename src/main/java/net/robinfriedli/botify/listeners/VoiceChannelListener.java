@@ -15,28 +15,32 @@ import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.boot.Shutdownable;
+import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
-import net.robinfriedli.botify.util.StaticSessionProvider;
+import org.springframework.stereotype.Component;
 
 /**
  * Listener responsible for listening for VoiceChannel events; currently used for the auto pause feature
  */
+@Component
 public class VoiceChannelListener extends ListenerAdapter implements Shutdownable {
 
     private final AudioManager audioManager;
     private final ExecutorService executorService;
+    private final HibernateComponent hibernateComponent;
 
-    public VoiceChannelListener(AudioManager audioManager) {
+    public VoiceChannelListener(AudioManager audioManager, HibernateComponent hibernateComponent) {
         this.audioManager = audioManager;
         executorService = Executors.newCachedThreadPool(r -> {
             Thread thread = new Thread(r);
             thread.setUncaughtExceptionHandler(new LoggingExceptionHandler());
             return thread;
         });
+        this.hibernateComponent = hibernateComponent;
         register();
     }
 
@@ -79,7 +83,7 @@ public class VoiceChannelListener extends ListenerAdapter implements Shutdownabl
     }
 
     private boolean isAutoPauseEnabled(Guild guild) {
-        return StaticSessionProvider.invokeWithSession(session -> {
+        return hibernateComponent.invokeWithSession(session -> {
             GuildPropertyManager guildPropertyManager = Botify.get().getGuildPropertyManager();
             GuildManager guildManager = Botify.get().getGuildManager();
             GuildSpecification specification = guildManager.getContextForGuild(guild).getSpecification(session);

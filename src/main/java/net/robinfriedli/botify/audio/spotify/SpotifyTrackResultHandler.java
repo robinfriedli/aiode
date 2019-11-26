@@ -88,8 +88,8 @@ public class SpotifyTrackResultHandler {
 
         @SuppressWarnings("unchecked")
         Query<Object[]> artistPopularityQuery = session.createSQLQuery("select a.id, count(*) from playback_history_artist as p " +
-            "left join artist as a on p.artists_pk = a.pk " +
-            "where p.playbackhistory_pk in (select pk from playback_history where guild_id = '" + guild.getId() + "') " +
+            "left join artist as a on p.artist_pk = a.pk " +
+            "where p.playback_history_pk in (select pk from playback_history where guild_id = '" + guild.getId() + "') " +
             "and a.id in(" + artistIdString + ") group by a.id");
         List<Object[]> artistPopularityList = artistPopularityQuery.getResultList();
 

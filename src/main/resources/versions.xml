@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <versions xmlns="versionSpace">
-  <version launched="false" version="1.6.LTS.4">
+  <version launched="true" version="1.6.LTS.4">
     <feature title="YouTube API quota usage adjustments">Tired of botify reaching the YouTube API quota limit and breaking all YouTube requests? So am I. Botify now calculates the approximate quota usage and stops using the YouTube API wherever possible in exchange for parsing the html response of YouTube pages using lavaplayer when the quota gets low.</feature>
     <feature title="Embed message formatting adjustments">Adjusted the layout of some embed messages to the new discord update.</feature>
     <feature title="Enabled JDA sharding">Added JDA sharding. This was originally intended as a feature for botify 2 but botify is going to reach 2500 guilds, the maximum number of guilds per WebSocket, before then.</feature>

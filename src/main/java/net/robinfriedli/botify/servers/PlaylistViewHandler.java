@@ -18,7 +18,6 @@ import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
 import net.robinfriedli.botify.exceptions.InvalidRequestException;
-import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.SearchEngine;
 import net.robinfriedli.botify.util.Util;
 import org.hibernate.Session;
@@ -38,8 +37,7 @@ public class PlaylistViewHandler implements HttpHandler {
     public void handle(HttpExchange exchange) throws IOException {
         Session session = null;
         try {
-            String listPagePath = PropertiesLoadingService.requireProperty("LIST_PAGE_PATH");
-            String html = Files.readString(Path.of(listPagePath));
+            String html = Files.readString(Path.of("html/playlist_view.html"));
             Map<String, String> parameterMap = ServerUtil.getParameters(exchange);
             String guildId = parameterMap.get("guildId");
             String name = parameterMap.get("name");

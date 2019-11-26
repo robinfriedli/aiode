@@ -2,7 +2,6 @@ package net.robinfriedli.botify.command.commands;
 
 import java.util.List;
 
-import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.botify.Botify;
@@ -10,6 +9,7 @@ import net.robinfriedli.botify.audio.AudioQueue;
 import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.audio.PlayableFactory;
 import net.robinfriedli.botify.audio.youtube.HollowYouTubeVideo;
+import net.robinfriedli.botify.boot.SpringPropertiesConfig;
 import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
@@ -18,7 +18,6 @@ import net.robinfriedli.botify.entities.PlaylistItem;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
-import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.SearchEngine;
 import org.hibernate.Session;
 
@@ -113,11 +112,11 @@ public class AddCommand extends AbstractPlayableLoadingCommand {
     }
 
     private void checkSize(Playlist playlist, int toAddSize) {
-        String playlistSizeMax = PropertiesLoadingService.loadProperty("PLAYLIST_SIZE_MAX");
-        if (!Strings.isNullOrEmpty(playlistSizeMax)) {
-            int maxSize = Integer.parseInt(playlistSizeMax);
-            if (playlist.getSize() + toAddSize > maxSize) {
-                throw new InvalidCommandException("List exceeds maximum size of " + maxSize + " items!");
+        SpringPropertiesConfig springPropertiesConfig = Botify.get().getSpringPropertiesConfig();
+        Integer playlistSizeMax = springPropertiesConfig.getApplicationProperty(Integer.class, "botify.preferences.playlist_size_max");
+        if (playlistSizeMax != null) {
+            if (playlist.getSize() + toAddSize > playlistSizeMax) {
+                throw new InvalidCommandException("List exceeds maximum size of " + playlistSizeMax + " items!");
             }
         }
     }

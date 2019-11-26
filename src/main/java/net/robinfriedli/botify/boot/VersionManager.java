@@ -10,20 +10,29 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import net.robinfriedli.botify.entities.xml.Version;
+import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.stereotype.Component;
 
 import static net.robinfriedli.jxp.queries.Conditions.*;
 
 /**
  * Manager to access Botify release versions
  */
+@Component
 public class VersionManager {
 
     private final Context context;
 
-    public VersionManager(Context context) {
-        this.context = context;
+    public VersionManager(@Value("classpath:versions.xml") Resource commandResource, JxpBackend jxpBackend) {
+        try {
+            this.context = jxpBackend.getContext(commandResource.getFile());
+        } catch (IOException e) {
+            throw new RuntimeException("Could not instantiate " + getClass().getSimpleName(), e);
+        }
     }
 
     /**

@@ -13,13 +13,13 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.robinfriedli.botify.Botify;
+import net.robinfriedli.botify.boot.SpringPropertiesConfig;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.botify.util.EmojiConstants;
-import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.StaticSessionProvider;
 
 /**
@@ -210,7 +210,8 @@ public class QueueIterator extends AudioEventAdapter {
 
         String albumCoverUrl = currentTrack.getAlbumCoverUrl();
         if (albumCoverUrl == null) {
-            String baseUri = PropertiesLoadingService.requireProperty("BASE_URI");
+            SpringPropertiesConfig springPropertiesConfig = Botify.get().getSpringPropertiesConfig();
+            String baseUri = springPropertiesConfig.requireApplicationProperty("botify.server.base_uri");
             albumCoverUrl = baseUri + "/resources-public/img/botify-logo-small.png";
         }
         embedBuilder.setFooter(footerBuilder.toString(), albumCoverUrl);

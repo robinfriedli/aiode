@@ -1,5 +1,6 @@
 package net.robinfriedli.botify.command;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
@@ -233,6 +234,10 @@ public class CommandContext {
 
         public static boolean isSet() {
             return get() != null;
+        }
+
+        public static Optional<CommandContext> optional() {
+            return Optional.ofNullable(get());
         }
 
     }

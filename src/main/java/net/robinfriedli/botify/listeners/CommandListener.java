@@ -15,6 +15,7 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.robinfriedli.botify.boot.Shutdownable;
+import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
@@ -27,28 +28,29 @@ import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.exceptions.UserException;
 import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
 import org.hibernate.Session;
-import org.hibernate.SessionFactory;
+import org.springframework.stereotype.Component;
 
 /**
  * Listener responsible for filtering entered commands and creating a {@link CommandContext} to pass to the
  * {@link CommandManager}
  */
+@Component
 public class CommandListener extends ListenerAdapter implements Shutdownable {
 
     private final CommandExecutionQueueManager executionQueueManager;
     private final CommandManager commandManager;
     private final ExecutorService commandConceptionPool;
     private final GuildManager guildManager;
+    private final HibernateComponent hibernateComponent;
     private final Logger logger;
     private final MessageService messageService;
-    private final SessionFactory sessionFactory;
     private final SpotifyApi.Builder spotifyApiBuilder;
 
     public CommandListener(CommandExecutionQueueManager executionQueueManager,
                            CommandManager commandManager,
                            GuildManager guildManager,
+                           HibernateComponent hibernateComponent,
                            MessageService messageService,
-                           SessionFactory sessionFactory,
                            SpotifyApi.Builder spotifyApiBuilder) {
         this.executionQueueManager = executionQueueManager;
         this.commandManager = commandManager;
@@ -58,8 +60,8 @@ public class CommandListener extends ListenerAdapter implements Shutdownable {
             return thread;
         });
         this.guildManager = guildManager;
+        this.hibernateComponent = hibernateComponent;
         this.messageService = messageService;
-        this.sessionFactory = sessionFactory;
         this.spotifyApiBuilder = spotifyApiBuilder;
         this.logger = LoggerFactory.getLogger(getClass());
         register();
@@ -69,7 +71,10 @@ public class CommandListener extends ListenerAdapter implements Shutdownable {
     public void onGuildMessageReceived(GuildMessageReceivedEvent event) {
         if (!event.getAuthor().isBot()) {
             commandConceptionPool.execute(() -> {
-                try (Session session = sessionFactory.openSession()) {
+                // DO NOT use StaticSessionProvider#invokeWithSession here. Since a CommandContext will be set on this thread
+                // and this thread will be reused, StaticSessionProvider#invokeWithSession does not close the session,
+                // causing a connection leak filling up the C3P0 connection pool.
+                try (Session session = hibernateComponent.getSessionFactory().openSession()) {
                     Guild guild = event.getGuild();
                     Message message = event.getMessage();
                     String msg = message.getContentDisplay();
@@ -121,7 +126,7 @@ public class CommandListener extends ListenerAdapter implements Shutdownable {
     private void startCommandExecution(String namePrefix, Message message, Guild guild, GuildContext guildContext, Session session, GuildMessageReceivedEvent event) {
         ThreadExecutionQueue queue = executionQueueManager.getForGuild(guild);
         String commandBody = message.getContentDisplay().substring(namePrefix.length()).trim();
-        CommandContext commandContext = new CommandContext(event, guildContext, sessionFactory, spotifyApiBuilder.build(), commandBody);
+        CommandContext commandContext = new CommandContext(event, guildContext, hibernateComponent.getSessionFactory(), spotifyApiBuilder.build(), commandBody);
         CommandContext.Current.set(commandContext);
         try {
             Optional<AbstractCommand> commandInstance = commandManager.instantiateCommandForContext(commandContext, session);

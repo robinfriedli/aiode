@@ -16,6 +16,7 @@ import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.discord.property.properties.ArgumentPrefixProperty;
+import net.robinfriedli.botify.discord.property.properties.PrefixProperty;
 import net.robinfriedli.botify.entities.AccessConfiguration;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
@@ -105,7 +106,8 @@ public class HelpCommand extends AbstractCommand {
     private void listCommands() {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle("**Commands:**");
-        embedBuilder.appendDescription("To get help with a specific command just enter the name of the command. E.g. $botify help play.");
+        String prefix = PrefixProperty.getEffectiveCommandStartForCurrentContext();
+        embedBuilder.appendDescription(String.format("To get help with a specific command just enter the name of the command. E.g. %shelp play.", prefix));
 
         List<AbstractCommand> commands = getManager().getAllCommands(getContext());
         LinkedHashMultimap<Category, AbstractCommand> commandsByCategory = LinkedHashMultimap.create();

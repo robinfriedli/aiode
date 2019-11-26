@@ -10,7 +10,6 @@ import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.entities.xml.EmbedDocumentContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
-import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.Util;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.persist.Context;
@@ -27,7 +26,8 @@ public class LoadDocumentCommand extends AbstractAdminCommand {
     public void runAdmin() {
         JxpBackend jxpBackend = Botify.get().getJxpBackend();
         EmbedBuilder embedBuilder;
-        try (Context context = jxpBackend.createLazyContext(PropertiesLoadingService.requireContributionFile("embedDocuments.xml"))) {
+        String embedDocumentFile = getClass().getResource("/xml-contributions/embedDocuments.xml").getFile();
+        try (Context context = jxpBackend.createLazyContext(embedDocumentFile)) {
             if (getCommandInput().isBlank()) {
                 List<EmbedDocumentContribution> documents = context.getInstancesOf(EmbedDocumentContribution.class);
                 embedBuilder = new EmbedBuilder();

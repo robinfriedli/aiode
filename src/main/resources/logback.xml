@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+  <property name="LOGS" value="./logs"/>
+
+  <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+      <Pattern>%highlight(%-5level) %black(%d{ISO8601}) [%blue(%t)] %yellow(%C{1.}): %msg%n%throwable</Pattern>
+    </encoder>
+  </appender>
+
+  <appender name="RollingFile" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${LOGS}/logs.log</file>
+    <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+      <Pattern>%p %d [%t] %C{1.} %m%n</Pattern>
+    </encoder>
+
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${LOGS}/logs-%d{yyyy-MM-dd}.log</fileNamePattern>
+    </rollingPolicy>
+  </appender>
+
+  <root level="info">
+    <appender-ref ref="RollingFile"/>
+    <appender-ref ref="Console"/>
+  </root>
+
+</configuration>

@@ -7,6 +7,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.antkorwin.xsync.XSync;
 import com.google.api.client.util.Sets;
 import com.wrapper.spotify.SpotifyApi;
 import net.dv8tion.jda.api.OnlineStatus;
@@ -14,7 +15,9 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.boot.Shutdownable;
+import net.robinfriedli.botify.boot.SpringPropertiesConfig;
 import net.robinfriedli.botify.boot.VersionManager;
+import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.command.SecurityManager;
 import net.robinfriedli.botify.cron.CronJobService;
@@ -23,9 +26,18 @@ import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.login.LoginManager;
+import net.robinfriedli.botify.servers.HttpServerManager;
 import net.robinfriedli.jxp.api.JxpBackend;
 import org.hibernate.SessionFactory;
+import org.springframework.context.ApplicationContext;
+import org.springframework.stereotype.Component;
 
+/**
+ * This class offers several methods to manage the bot, such as un- / registering discord listeners or shutting down
+ * or restarting the bot and serves as a registry for all major components, enabling static access or access from
+ * outside of spring components.
+ */
+@Component
 public class Botify {
 
     public static final Logger LOGGER = LoggerFactory.getLogger(Botify.class);
@@ -34,51 +46,63 @@ public class Botify {
 
     private static Botify instance;
 
+    private final ApplicationContext springBootContext;
     private final AudioManager audioManager;
     private final CommandExecutionQueueManager executionQueueManager;
     private final CommandManager commandManager;
     private final CronJobService cronJobService;
     private final GuildManager guildManager;
     private final GuildPropertyManager guildPropertyManager;
+    private final HibernateComponent hibernateComponent;
+    private final HttpServerManager httpServerManager;
     private final JxpBackend jxpBackend;
     private final ListenerAdapter[] registeredListeners;
     private final LoginManager loginManager;
     private final MessageService messageService;
     private final SecurityManager securityManager;
-    private final SessionFactory sessionFactory;
     private final ShardManager shardManager;
     private final SpotifyApi.Builder spotifyApiBuilder;
+    private final SpringPropertiesConfig springPropertiesConfig;
     private final VersionManager versionManager;
+    private final XSync<String> stringSync;
 
-    public Botify(AudioManager audioManager,
+    public Botify(ApplicationContext springBootContext,
+                  AudioManager audioManager,
                   CommandExecutionQueueManager executionQueueManager,
                   CommandManager commandManager,
                   CronJobService cronJobService,
                   GuildManager guildManager,
                   GuildPropertyManager guildPropertyManager,
+                  HibernateComponent hibernateComponent,
+                  HttpServerManager httpServerManager,
                   JxpBackend jxpBackend,
                   LoginManager loginManager,
                   MessageService messageService,
                   SecurityManager securityManager,
-                  SessionFactory sessionFactory,
                   ShardManager shardManager,
                   SpotifyApi.Builder spotifyApiBuilder,
+                  SpringPropertiesConfig springPropertiesConfig,
                   VersionManager versionManager,
+                  XSync<String> stringSync,
                   ListenerAdapter... listeners) {
+        this.springBootContext = springBootContext;
         this.audioManager = audioManager;
         this.executionQueueManager = executionQueueManager;
         this.commandManager = commandManager;
         this.cronJobService = cronJobService;
         this.guildManager = guildManager;
         this.guildPropertyManager = guildPropertyManager;
+        this.hibernateComponent = hibernateComponent;
+        this.httpServerManager = httpServerManager;
         this.jxpBackend = jxpBackend;
         this.loginManager = loginManager;
         this.messageService = messageService;
         this.securityManager = securityManager;
-        this.sessionFactory = sessionFactory;
         this.shardManager = shardManager;
         this.spotifyApiBuilder = spotifyApiBuilder;
+        this.springPropertiesConfig = springPropertiesConfig;
         this.versionManager = versionManager;
+        this.stringSync = stringSync;
         this.registeredListeners = listeners;
         instance = this;
     }
@@ -97,6 +121,8 @@ public class Botify {
         pb.start();
     }
 
+    // compiler warning is shown without cast
+    @SuppressWarnings("RedundantCast")
     public static void registerListeners() {
         Botify botify = get();
         ShardManager shardManager = botify.getShardManager();
@@ -106,6 +132,8 @@ public class Botify {
         LOGGER.info("Registered listeners");
     }
 
+    // compiler warning is shown without cast
+    @SuppressWarnings("RedundantCast")
     public static void shutdownListeners() {
         Botify botify = get();
         LOGGER.info("Shutting down listeners");
@@ -161,6 +189,10 @@ public class Botify {
         botify.getSessionFactory().close();
     }
 
+    public ApplicationContext getSpringBootContext() {
+        return springBootContext;
+    }
+
     public AudioManager getAudioManager() {
         return audioManager;
     }
@@ -185,6 +217,10 @@ public class Botify {
         return guildPropertyManager;
     }
 
+    public HttpServerManager getHttpServerManager() {
+        return httpServerManager;
+    }
+
     public JxpBackend getJxpBackend() {
         return jxpBackend;
     }
@@ -206,7 +242,7 @@ public class Botify {
     }
 
     public SessionFactory getSessionFactory() {
-        return sessionFactory;
+        return hibernateComponent.getSessionFactory();
     }
 
     public ShardManager getShardManager() {
@@ -217,7 +253,15 @@ public class Botify {
         return spotifyApiBuilder;
     }
 
+    public SpringPropertiesConfig getSpringPropertiesConfig() {
+        return springPropertiesConfig;
+    }
+
     public VersionManager getVersionManager() {
         return versionManager;
+    }
+
+    public XSync<String> getStringSync() {
+        return stringSync;
     }
 }

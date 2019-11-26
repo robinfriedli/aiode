@@ -1,22 +1,26 @@
 package net.robinfriedli.botify.command;
 
-import com.google.common.base.Splitter;
-import com.google.common.base.Strings;
+import java.util.List;
+
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.entities.AccessConfiguration;
 import net.robinfriedli.botify.exceptions.ForbiddenCommandException;
-import net.robinfriedli.botify.util.PropertiesLoadingService;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 /**
  * Manager that evaluates permission for a specific action represented by a command identifier for the given member or
- * checks whether a manager has admin privileges as configured in the settings.properties file.
+ * checks whether a user has admin privileges as configured in the settings-private.properties file.
  */
+@Component
 public class SecurityManager {
 
     private final GuildManager guildManager;
+    @Value("#{'${botify.security.admin_users}'.split(',')}")
+    private List<String> adminUserIds;
 
     public SecurityManager(GuildManager guildManager) {
         this.guildManager = guildManager;
@@ -37,13 +41,7 @@ public class SecurityManager {
     }
 
     public boolean isAdmin(User user) {
-        String adminUserString = PropertiesLoadingService.loadProperty("ADMIN_USERS");
-        if (!Strings.isNullOrEmpty(adminUserString)) {
-            Splitter splitter = Splitter.on(",").trimResults().omitEmptyStrings();
-            return splitter.splitToList(adminUserString).contains(user.getId());
-        }
-
-        return false;
+        return adminUserIds.contains(user.getId());
     }
 
 }

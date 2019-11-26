@@ -3,10 +3,12 @@ package net.robinfriedli.botify.discord;
 import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
 import net.robinfriedli.botify.util.ISnowflakeMap;
+import org.springframework.stereotype.Component;
 
 /**
  * Manages all command {@link ThreadExecutionQueue}s for all guilds.
  */
+@Component
 public class CommandExecutionQueueManager {
 
     private final ISnowflakeMap<ThreadExecutionQueue> guildExecutionQueues;
