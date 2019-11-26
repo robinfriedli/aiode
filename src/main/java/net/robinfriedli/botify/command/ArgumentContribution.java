@@ -163,6 +163,29 @@ public class ArgumentContribution {
     }
 
     /**
+     * Copy state from an existing ArgumentContribution instance onto this one. Useful when forking commands. The
+     * ArgumentContribution must be from the same Command type.
+     *
+     * @param argumentContribution the old argument contribution
+     */
+    public void transferValues(ArgumentContribution argumentContribution) {
+        Class<? extends AbstractCommand> currentCommandType = sourceCommand.getClass();
+        Class<? extends AbstractCommand> providedCommandType = argumentContribution.getSourceCommand().getClass();
+        if (!currentCommandType.equals(providedCommandType)) {
+            throw new IllegalArgumentException(
+                String.format("Provided argumentContribution is of a different Command type. Current type: %s; Provided type:%s",
+                    currentCommandType, providedCommandType)
+            );
+        }
+
+        for (Argument argument : getArguments()) {
+            Argument correspondingArgument = argumentContribution.get(argument.getIdentifier());
+            argument.setSet(correspondingArgument.isSet());
+            argument.setValue(correspondingArgument.getValue());
+        }
+    }
+
+    /**
      * A single argument that may be described in this ArgumentContribution
      */
     public class Argument {
@@ -198,6 +221,10 @@ public class ArgumentContribution {
          */
         public void setValue(String value) {
             this.value = value;
+        }
+
+        public String getValue() {
+            return value;
         }
 
         /**
