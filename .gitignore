@@ -6,3 +6,4 @@
 /botify.iml
 /build/
 /logs/
+/src/main/resources/settings-private.properties
