@@ -106,6 +106,17 @@ public abstract class AbstractCommand implements Command {
     }
 
     /**
+     * Clone this command instance to be executed with a new context and in a fresh state. This is used by the
+     * {@link AnswerCommand}.
+     *
+     * @param newContext the new context
+     * @return the freshly instantiated Command instance
+     */
+    public AbstractCommand fork(CommandContext newContext) {
+        return commandContribution.instantiate(commandManager, newContext, commandBody);
+    }
+
+    /**
      * define the arguments that this command accepts
      *
      * @return the {@link ArgumentContribution}
