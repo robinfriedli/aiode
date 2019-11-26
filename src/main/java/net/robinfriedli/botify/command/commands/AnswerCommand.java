@@ -46,7 +46,9 @@ public class AnswerCommand extends AbstractCommand {
                 option = chosenOptions;
             }
             try {
-                sourceCommand.withUserResponse(option);
+                AbstractCommand target = sourceCommand.fork(getContext());
+                target.getArgumentContribution().transferValues(sourceCommand.getArgumentContribution());
+                target.withUserResponse(option);
                 question.destroy();
             } catch (RuntimeException e) {
                 throw e;
