@@ -768,7 +768,8 @@ public class YouTubeService {
         // read the value in a fresh session to ensure the current value in the database is returned, not the cached state
         // of the current session
         try (Session session = StaticSessionProvider.getSessionFactory().openSession()) {
-            return getCurrentQuotaUsage(session).getQuota();
+            CurrentYouTubeQuotaUsage currentQuotaUsage = getCurrentQuotaUsage(session);
+            return currentQuotaUsage != null ? currentQuotaUsage.getQuota() : 0;
         }
     }
 
