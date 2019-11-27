@@ -15,7 +15,7 @@ import net.robinfriedli.botify.exceptions.InvalidCommandException;
 
 public class AnswerCommand extends AbstractCommand {
 
-    private AbstractCommand sourceCommand;
+    private AbstractCommand targetCommand;
 
     public AnswerCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
         super(commandContribution, context, commandManager, commandString, true, identifier, description, Category.GENERAL);
@@ -24,7 +24,7 @@ public class AnswerCommand extends AbstractCommand {
     @Override
     public void doRun() {
         getContext().getGuildContext().getClientQuestionEventManager().getQuestion(getContext()).ifPresentOrElse(question -> {
-            sourceCommand = question.getSourceCommand();
+            AbstractCommand sourceCommand = question.getSourceCommand();
 
             String commandInput = getCommandInput();
             Splitter commaSplitter = Splitter.on(",").trimResults().omitEmptyStrings();
@@ -46,9 +46,9 @@ public class AnswerCommand extends AbstractCommand {
                 option = chosenOptions;
             }
             try {
-                AbstractCommand target = sourceCommand.fork(getContext());
-                target.getArgumentContribution().transferValues(sourceCommand.getArgumentContribution());
-                target.withUserResponse(option);
+                targetCommand = sourceCommand.fork(getContext());
+                targetCommand.getArgumentContribution().transferValues(sourceCommand.getArgumentContribution());
+                targetCommand.withUserResponse(option);
                 question.destroy();
             } catch (RuntimeException e) {
                 throw e;
@@ -62,6 +62,6 @@ public class AnswerCommand extends AbstractCommand {
 
     @Override
     public void onSuccess() {
-        sourceCommand.onSuccess();
+        targetCommand.onSuccess();
     }
 }
