@@ -81,6 +81,7 @@ public class AudioManager extends AbstractShutdownable {
         if (!Strings.isNullOrEmpty(ipv6Block)) {
             YoutubeIpRotatorSetup youtubeIpRotatorSetup = new YoutubeIpRotatorSetup(new RotatingIpRoutePlanner(Collections.singletonList(new Ipv6Block(ipv6Block))));
             youtubeIpRotatorSetup.forSource(youtubeAudioSourceManager).setup();
+            logger.info("YouTubeIpRotator set up with block: " + ipv6Block);
         }
     }
 
