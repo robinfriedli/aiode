@@ -1,19 +1,13 @@
 package net.robinfriedli.botify.audio;
 
-import java.time.LocalDateTime;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import javax.annotation.Nullable;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import com.google.common.base.Strings;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager;
+import com.sedmelluq.lava.extensions.youtuberotator.YoutubeIpRotatorSetup;
+import com.sedmelluq.lava.extensions.youtuberotator.planner.RotatingIpRoutePlanner;
+import com.sedmelluq.lava.extensions.youtuberotator.tools.ip.Ipv6Block;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -32,7 +26,17 @@ import net.robinfriedli.botify.entities.PlaybackHistory;
 import net.robinfriedli.botify.entities.UserPlaybackHistory;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import javax.annotation.Nullable;
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Provides access to all {@link AudioPlayback} for all guilds and methods to retrieve all audio related factories and
@@ -41,6 +45,9 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class AudioManager extends AbstractShutdownable {
+
+    @Value("${botify.preferences.ipv6_block}")
+    private String ipv6Block;
 
     private final AudioPlayerManager playerManager;
     private final AudioTrackLoader audioTrackLoader;
@@ -71,6 +78,10 @@ public class AudioManager extends AbstractShutdownable {
         // there is 100 videos per page and the maximum playlist size is 5000
         youtubeAudioSourceManager.setPlaylistPageCount(50);
 
+        if (!Strings.isNullOrEmpty(ipv6Block)) {
+            YoutubeIpRotatorSetup youtubeIpRotatorSetup = new YoutubeIpRotatorSetup(new RotatingIpRoutePlanner(Collections.singletonList(new Ipv6Block(ipv6Block))));
+            youtubeIpRotatorSetup.forSource(youtubeAudioSourceManager).setup();
+        }
     }
 
     public void startPlayback(Guild guild, @Nullable VoiceChannel channel) {

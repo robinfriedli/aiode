@@ -14,6 +14,10 @@ repositories {
     maven {
         url = "https://jitpack.io"
     }
+
+    maven {
+        url = "https://dl.bintray.com/sedmelluq/com.sedmelluq"
+    }
 }
 
 compileJava.options.encoding = "UTF-8"
@@ -22,6 +26,7 @@ dependencies {
     implementation "com.google.apis:google-api-services-youtube:v3-rev212-1.25.0"
     implementation "com.google.guava:guava:28.1-jre"
     implementation "com.sedmelluq:lavaplayer:1.3.29"
+    implementation "com.sedmelluq:lavaplayer-ext-youtube-rotator:0.2.1"
     implementation "net.dv8tion:JDA:4.0.0_61"
     implementation "net.robinfriedli:JXP:1.3"
     implementation "net.robinfriedli:StringList:1.5"
