@@ -1,10 +1,6 @@
 package net.robinfriedli.botify.boot;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.Botify;
@@ -18,6 +14,8 @@ import net.robinfriedli.botify.servers.HttpServerManager;
 import net.robinfriedli.botify.util.StaticSessionProvider;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.persist.Context;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
