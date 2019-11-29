@@ -55,6 +55,10 @@ botify.security.admin_users=
 ##############
 spring.datasource.username=postgres
 spring.datasource.password=postgres
+########
+# IPv6 #
+########
+botify.preferences.ipv6_block=
 ##############################
 # top.gg settings (optional) #
 ##############################
