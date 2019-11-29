@@ -46,9 +46,6 @@ import java.util.concurrent.Executors;
 @Component
 public class AudioManager extends AbstractShutdownable {
 
-    @Value("${botify.preferences.ipv6_block}")
-    private String ipv6Block;
-
     private final AudioPlayerManager playerManager;
     private final AudioTrackLoader audioTrackLoader;
     private final ExecutorService executorService;
@@ -57,7 +54,10 @@ public class AudioManager extends AbstractShutdownable {
     private final Logger logger;
     private final YouTubeService youTubeService;
 
-    public AudioManager(GuildManager guildManager, HibernateComponent hibernateComponent, YouTubeService youTubeService) {
+    public AudioManager(GuildManager guildManager,
+                        HibernateComponent hibernateComponent,
+                        YouTubeService youTubeService,
+                        @Value("${botify.preferences.ipv6_block}") String ipv6Block) {
         playerManager = new DefaultAudioPlayerManager();
         audioTrackLoader = new AudioTrackLoader(playerManager);
 
