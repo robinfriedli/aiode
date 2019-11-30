@@ -75,7 +75,8 @@ public class SpotifyRedirectService extends AbstractShutdownable {
                         .createQuery("select count(*) from " + SpotifyRedirectIndexModificationLock.class.getName(), Long.class)
                         .uniqueResult();
                     if (modificationLocks == 0) {
-                        invoker.invoke(() -> otherThreadSession.delete(spotifyRedirectIndex));
+                        Object mergedIndex = otherThreadSession.merge(spotifyRedirectIndex);
+                        invoker.invoke(() -> otherThreadSession.delete(mergedIndex));
                     }
                 }));
             }
