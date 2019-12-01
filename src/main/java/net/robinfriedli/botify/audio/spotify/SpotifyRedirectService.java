@@ -15,6 +15,7 @@ import net.robinfriedli.botify.audio.youtube.HollowYouTubeVideo;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
 import net.robinfriedli.botify.boot.AbstractShutdownable;
+import net.robinfriedli.botify.concurrent.LoggingThreadFactory;
 import net.robinfriedli.botify.entities.SpotifyRedirectIndex;
 import net.robinfriedli.botify.entities.SpotifyRedirectIndexModificationLock;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
@@ -32,7 +33,7 @@ import static net.robinfriedli.botify.entities.SpotifyRedirectIndex.*;
  */
 public class SpotifyRedirectService extends AbstractShutdownable {
 
-    private static final ExecutorService SINGE_THREAD_EXECUTOR_SERVICE = Executors.newSingleThreadExecutor();
+    private static final ExecutorService SINGE_THREAD_EXECUTOR_SERVICE = Executors.newSingleThreadExecutor(new LoggingThreadFactory("spotify-redirect-service-pool"));
 
     private final HibernateInvoker invoker = HibernateInvoker.create();
     private final Logger logger = LoggerFactory.getLogger(getClass());
