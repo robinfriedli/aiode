@@ -46,11 +46,11 @@ import net.robinfriedli.botify.boot.AbstractShutdownable;
 import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.command.commands.PlayCommand;
 import net.robinfriedli.botify.command.commands.QueueCommand;
+import net.robinfriedli.botify.concurrent.LoggingThreadFactory;
 import net.robinfriedli.botify.entities.CurrentYouTubeQuotaUsage;
 import net.robinfriedli.botify.exceptions.CommandRuntimeException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
-import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
 import net.robinfriedli.botify.util.StaticSessionProvider;
 import net.robinfriedli.stringlist.StringList;
 import net.robinfriedli.stringlist.StringListImpl;
@@ -70,11 +70,7 @@ public class YouTubeService extends AbstractShutdownable {
     private static final int QUOTA_COST_1_FIELD = 3;
     private static final int QUOTA_COST_2_FIELDS = 5;
     private static final int QUOTA_COST_3_FIELDS = 7;
-    private static final ExecutorService UPDATE_QUOTA_SERVICE = Executors.newSingleThreadExecutor(r -> {
-        Thread thread = new Thread(r);
-        thread.setUncaughtExceptionHandler(new LoggingExceptionHandler());
-        return thread;
-    });
+    private static final ExecutorService UPDATE_QUOTA_SERVICE = Executors.newSingleThreadExecutor(new LoggingThreadFactory("update-youtube-quota-pool"));
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final HibernateComponent hibernateComponent;
     private final YouTube youTube;

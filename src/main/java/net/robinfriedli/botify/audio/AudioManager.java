@@ -1,5 +1,16 @@
 package net.robinfriedli.botify.audio;
 
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Strings;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
@@ -20,23 +31,14 @@ import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.widgets.NowPlayingWidget;
 import net.robinfriedli.botify.command.widgets.WidgetManager;
+import net.robinfriedli.botify.concurrent.LoggingThreadFactory;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.entities.PlaybackHistory;
 import net.robinfriedli.botify.entities.UserPlaybackHistory;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
-import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import javax.annotation.Nullable;
-import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * Provides access to all {@link AudioPlayback} for all guilds and methods to retrieve all audio related factories and
@@ -61,11 +63,7 @@ public class AudioManager extends AbstractShutdownable {
         playerManager = new DefaultAudioPlayerManager();
         audioTrackLoader = new AudioTrackLoader(playerManager);
 
-        executorService = Executors.newFixedThreadPool(5, r -> {
-            Thread thread = new Thread(r);
-            thread.setUncaughtExceptionHandler(new LoggingExceptionHandler());
-            return thread;
-        });
+        executorService = Executors.newFixedThreadPool(5, new LoggingThreadFactory("audio-manager-pool"));
 
         this.guildManager = guildManager;
         this.hibernateComponent = hibernateComponent;

@@ -19,11 +19,11 @@ import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.command.AbstractWidget;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.widgets.WidgetManager;
+import net.robinfriedli.botify.concurrent.LoggingThreadFactory;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.exceptions.UserException;
-import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 
@@ -43,11 +43,7 @@ public class WidgetListener extends ListenerAdapter implements Shutdownable {
         this.guildManager = guildManager;
         this.hibernateComponent = hibernateComponent;
         this.messageService = messageService;
-        executorService = Executors.newCachedThreadPool(r -> {
-            Thread thread = new Thread(r);
-            thread.setUncaughtExceptionHandler(new LoggingExceptionHandler());
-            return thread;
-        });
+        executorService = Executors.newCachedThreadPool(new LoggingThreadFactory("widget-listener-pool"));
         logger = LoggerFactory.getLogger(getClass());
         register();
     }

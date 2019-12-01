@@ -21,10 +21,10 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.boot.Shutdownable;
 import net.robinfriedli.botify.boot.configurations.HibernateComponent;
+import net.robinfriedli.botify.concurrent.LoggingThreadFactory;
 import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.entities.GrantedRole;
-import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
 import org.discordbots.api.client.DiscordBotListAPI;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
@@ -51,11 +51,7 @@ public class GuildManagementListener extends ListenerAdapter implements Shutdown
                                    ShardManager shardManager) {
         this.executionQueueManager = executionQueueManager;
         this.discordBotListAPI = discordBotListAPI;
-        guildEventHandlerExecutorService = Executors.newFixedThreadPool(3, r -> {
-            Thread thread = new Thread(r);
-            thread.setUncaughtExceptionHandler(new LoggingExceptionHandler());
-            return thread;
-        });
+        guildEventHandlerExecutorService = Executors.newFixedThreadPool(3, new LoggingThreadFactory("guild-management-listener-pool"));
         this.guildManager = guildManager;
         this.hibernateComponent = hibernateComponent;
         logger = LoggerFactory.getLogger(getClass());

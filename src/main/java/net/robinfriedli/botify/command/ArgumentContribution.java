@@ -143,25 +143,6 @@ public class ArgumentContribution {
         return definedArguments.isEmpty();
     }
 
-    public static class Rule {
-
-        private final Predicate<ArgumentContribution> rule;
-        private final String errorMessage;
-
-        public Rule(Predicate<ArgumentContribution> rule, String errorMessage) {
-            this.rule = rule;
-            this.errorMessage = errorMessage;
-        }
-
-        public Predicate<ArgumentContribution> getRule() {
-            return rule;
-        }
-
-        public String getErrorMessage() {
-            return errorMessage;
-        }
-    }
-
     /**
      * Copy state from an existing ArgumentContribution instance onto this one. Useful when forking commands. The
      * ArgumentContribution must be from the same Command type.
@@ -182,6 +163,25 @@ public class ArgumentContribution {
             Argument correspondingArgument = argumentContribution.get(argument.getIdentifier());
             argument.setSet(correspondingArgument.isSet());
             argument.setValue(correspondingArgument.getValue());
+        }
+    }
+
+    public static class Rule {
+
+        private final Predicate<ArgumentContribution> rule;
+        private final String errorMessage;
+
+        public Rule(Predicate<ArgumentContribution> rule, String errorMessage) {
+            this.rule = rule;
+            this.errorMessage = errorMessage;
+        }
+
+        public Predicate<ArgumentContribution> getRule() {
+            return rule;
+        }
+
+        public String getErrorMessage() {
+            return errorMessage;
         }
     }
 
@@ -216,15 +216,15 @@ public class ArgumentContribution {
             return identifier;
         }
 
+        public String getValue() {
+            return value;
+        }
+
         /**
          * Assign a value to this argument as entered by the user
          */
         public void setValue(String value) {
             this.value = value;
-        }
-
-        public String getValue() {
-            return value;
         }
 
         /**

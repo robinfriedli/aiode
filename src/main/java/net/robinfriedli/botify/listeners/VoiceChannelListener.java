@@ -16,11 +16,11 @@ import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.boot.Shutdownable;
 import net.robinfriedli.botify.boot.configurations.HibernateComponent;
+import net.robinfriedli.botify.concurrent.LoggingThreadFactory;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.entities.GuildSpecification;
-import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
 import org.springframework.stereotype.Component;
 
 /**
@@ -35,11 +35,7 @@ public class VoiceChannelListener extends ListenerAdapter implements Shutdownabl
 
     public VoiceChannelListener(AudioManager audioManager, HibernateComponent hibernateComponent) {
         this.audioManager = audioManager;
-        executorService = Executors.newCachedThreadPool(r -> {
-            Thread thread = new Thread(r);
-            thread.setUncaughtExceptionHandler(new LoggingExceptionHandler());
-            return thread;
-        });
+        executorService = Executors.newCachedThreadPool(new LoggingThreadFactory("voice-channel-listener-pool"));
         this.hibernateComponent = hibernateComponent;
         register();
     }

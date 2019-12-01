@@ -19,6 +19,7 @@ import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
+import net.robinfriedli.botify.concurrent.LoggingThreadFactory;
 import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
 import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
 import net.robinfriedli.botify.discord.GuildContext;
@@ -26,7 +27,6 @@ import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.exceptions.UserException;
-import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
 import org.hibernate.Session;
 import org.springframework.stereotype.Component;
 
@@ -54,11 +54,7 @@ public class CommandListener extends ListenerAdapter implements Shutdownable {
                            SpotifyApi.Builder spotifyApiBuilder) {
         this.executionQueueManager = executionQueueManager;
         this.commandManager = commandManager;
-        this.commandConceptionPool = Executors.newCachedThreadPool(r -> {
-            Thread thread = new Thread(r);
-            thread.setUncaughtExceptionHandler(new LoggingExceptionHandler());
-            return thread;
-        });
+        this.commandConceptionPool = Executors.newCachedThreadPool(new LoggingThreadFactory("command-conception-pool"));
         this.guildManager = guildManager;
         this.hibernateComponent = hibernateComponent;
         this.messageService = messageService;
