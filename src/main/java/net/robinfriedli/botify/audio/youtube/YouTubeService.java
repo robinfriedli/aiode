@@ -78,10 +78,10 @@ public class YouTubeService extends AbstractShutdownable {
     private final AtomicInteger currentQuota = new AtomicInteger(getPersistentQuota());
     @Value("${botify.tokens.youtube_credentials}")
     private String apiKey;
-    @Value("${botify.preferences.youtube_api_daily_quota}")
-    private int youtubeApiDailyQuota;
 
-    public YouTubeService(HibernateComponent hibernateComponent, YouTube youTube) {
+    public YouTubeService(HibernateComponent hibernateComponent,
+                          YouTube youTube,
+                          @Value("${botify.preferences.youtube_api_daily_quota}") int youtubeApiDailyQuota) {
         this.hibernateComponent = hibernateComponent;
         this.youTube = youTube;
         double factor = youtubeApiDailyQuota > 50000 ? 0.75 : 0.5;
