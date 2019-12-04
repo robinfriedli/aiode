@@ -79,7 +79,7 @@ public class AlertAccessConfigurationModificationInterceptor extends CollectingI
         if (grantedRoles.size() == 1) {
             builder.append("role '").append(roleString).append("'");
         } else if (grantedRoles.isEmpty()) {
-            builder.append("guild owner");
+            builder.append("guild owner and administrator roles");
         } else {
             builder.append("roles [").append(roleString).append("]");
         }
