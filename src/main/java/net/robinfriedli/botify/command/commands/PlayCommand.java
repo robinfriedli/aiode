@@ -2,6 +2,7 @@ package net.robinfriedli.botify.command.commands;
 
 import java.util.List;
 
+import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.VoiceChannel;
@@ -54,6 +55,10 @@ public class PlayCommand extends AbstractQueueLoadingCommand {
         AudioManager audioManager = Botify.get().getAudioManager();
 
         AudioPlayback playback = getContext().getGuildContext().getPlayback();
+        AudioPlayer audioPlayer = playback.getAudioPlayer();
+        if (audioPlayer.getPlayingTrack() != null) {
+            audioPlayer.stopTrack();
+        }
         playback.getAudioQueue().set(playables);
         audioManager.startPlayback(guild, channel);
     }
@@ -72,6 +77,10 @@ public class PlayCommand extends AbstractQueueLoadingCommand {
         AudioQueue queue = playback.getAudioQueue();
 
         List<Playable> playables = playableFactory.createPlayables(!argumentSet("preview"), option);
+        AudioPlayer audioPlayer = playback.getAudioPlayer();
+        if (audioPlayer.getPlayingTrack() != null) {
+            audioPlayer.stopTrack();
+        }
         queue.set(playables);
 
         audioManager.startPlayback(guild, getContext().getVoiceChannel());
