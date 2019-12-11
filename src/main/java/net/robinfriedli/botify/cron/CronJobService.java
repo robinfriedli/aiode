@@ -31,7 +31,7 @@ public class CronJobService extends AbstractShutdownable {
     private final Context contributionContext;
     private final Scheduler scheduler;
 
-    public CronJobService(@Value("classpath:xml-contributions/commands.xml") Resource commandResource, JxpBackend jxpBackend) throws SchedulerException {
+    public CronJobService(@Value("classpath:xml-contributions/cronJobs.xml") Resource commandResource, JxpBackend jxpBackend) throws SchedulerException {
         try {
             this.contributionContext = jxpBackend.getContext(commandResource.getFile());
         } catch (IOException e) {
