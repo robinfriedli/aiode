@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.VoiceChannel;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.cron.AbstractCronTask;
@@ -44,11 +45,10 @@ public class PlaybackCleanupTask extends AbstractCronTask {
                 Duration aloneSinceDuration = Duration.between(aloneSince, LocalDateTime.now());
                 Duration oneHour = Duration.ofHours(1);
                 if (aloneSinceDuration.compareTo(oneHour) > 0) {
-                    playback.stop();
-                    playback.setAloneSince(null);
-                    playback.clear();
-                    ++clearedAlone;
-                    continue;
+                    if (clearLonePlayback(guildContext, playback)) {
+                        ++clearedAlone;
+                        continue;
+                    }
                 }
             }
 
@@ -62,6 +62,25 @@ public class PlaybackCleanupTask extends AbstractCronTask {
         if (clearedAlone > 0 || playbacksCleared > 0) {
             logger.info(String.format("Cleared %s stale playbacks and stopped %s lone playbacks", playbacksCleared, clearedAlone));
         }
+    }
+
+    private boolean clearLonePlayback(GuildContext guildContext, AudioPlayback playback) {
+        VoiceChannel voiceChannel = playback.getVoiceChannel();
+        Guild guild = guildContext.getGuild();
+
+        if (voiceChannel == null) {
+            return false;
+        }
+
+        boolean isAlone = voiceChannel.getMembers().stream().allMatch(member -> member.equals(guild.getSelfMember()) || member.getUser().isBot());
+        if (isAlone) {
+            playback.stop();
+            playback.setAloneSince(null);
+            playback.clear();
+            return true;
+        }
+
+        return false;
     }
 
     @Override
