@@ -35,12 +35,13 @@ public class SpotifyRedirectService extends AbstractShutdownable {
 
     private static final ExecutorService SINGE_THREAD_EXECUTOR_SERVICE = Executors.newSingleThreadExecutor(new LoggingThreadFactory("spotify-redirect-service-pool"));
 
-    private final HibernateInvoker invoker = HibernateInvoker.create();
+    private final HibernateInvoker invoker;
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Session session;
     private final YouTubeService youTubeService;
 
     public SpotifyRedirectService(Session session, YouTubeService youTubeService) {
+        invoker = HibernateInvoker.create();
         this.session = session;
         this.youTubeService = youTubeService;
     }
@@ -52,6 +53,12 @@ public class SpotifyRedirectService extends AbstractShutdownable {
             throw new IllegalArgumentException(youTubeVideo.toString() + " is not a placeholder for a redirected Spotify Track");
         }
 
+        // early exit to avoid duplicate loading of Playables that have been loaded prioritised by invoking Playable#fetchNow
+        if (youTubeVideo.isDone()) {
+            return;
+        }
+
+        youTubeVideo.markLoading();
         Optional<SpotifyRedirectIndex> persistedSpotifyRedirectIndex = queryExistingIndex(session, spotifyTrack.getId());
 
         if (persistedSpotifyRedirectIndex.isPresent()) {

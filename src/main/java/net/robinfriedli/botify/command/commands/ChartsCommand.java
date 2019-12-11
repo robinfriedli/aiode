@@ -13,9 +13,9 @@ import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.botify.Botify;
-import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.audio.PlayableFactory;
+import net.robinfriedli.botify.audio.exec.BlockingTrackLoadingExecutor;
 import net.robinfriedli.botify.audio.spotify.SpotifyService;
 import net.robinfriedli.botify.audio.spotify.TrackWrapper;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
@@ -31,8 +31,11 @@ import org.hibernate.query.Query;
 
 public class ChartsCommand extends AbstractCommand {
 
+    private final PlayableFactory playableFactory;
+
     public ChartsCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
         super(commandContribution, context, commandManager, commandString, false, identifier, description, Category.GENERAL);
+        playableFactory = Botify.get().getAudioManager().createPlayableFactory(getSpotifyService(), new BlockingTrackLoadingExecutor());
     }
 
     @Override
@@ -171,8 +174,6 @@ public class ChartsCommand extends AbstractCommand {
                     return null;
                 }
             case "Url":
-                AudioManager audioManager = Botify.get().getAudioManager();
-                PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild(), getSpotifyService());
                 return playableFactory.createPlayable(id, getContext().getSpotifyApi(), false);
         }
 

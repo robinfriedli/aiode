@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,24 +25,21 @@ import com.wrapper.spotify.exceptions.detailed.NotFoundException;
 import com.wrapper.spotify.model_objects.specification.AlbumSimplified;
 import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
-import net.robinfriedli.botify.audio.spotify.SpotifyRedirectService;
+import net.robinfriedli.botify.audio.exec.SpotifyTrackRedirectionRunnable;
+import net.robinfriedli.botify.audio.exec.TrackLoadingExecutor;
+import net.robinfriedli.botify.audio.exec.YouTubePlaylistPopulationRunnable;
 import net.robinfriedli.botify.audio.spotify.SpotifyService;
 import net.robinfriedli.botify.audio.spotify.TrackWrapper;
 import net.robinfriedli.botify.audio.youtube.HollowYouTubeVideo;
 import net.robinfriedli.botify.audio.youtube.YouTubePlaylist;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
-import net.robinfriedli.botify.concurrent.GuildTrackLoadingExecutor;
 import net.robinfriedli.botify.entities.UrlTrack;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
-import net.robinfriedli.botify.function.CheckedConsumer;
-import net.robinfriedli.botify.function.CheckedFunction;
 import net.robinfriedli.botify.function.SpotifyInvoker;
-import net.robinfriedli.botify.util.StaticSessionProvider;
 import net.robinfriedli.stringlist.StringList;
 import net.robinfriedli.stringlist.StringListImpl;
-import org.hibernate.Session;
 
 /**
  * Factory class for {@link Playable}. Instantiates the matching Playable implementation for given Object or URL
@@ -49,18 +47,18 @@ import org.hibernate.Session;
  */
 public class PlayableFactory {
 
-    private final SpotifyService spotifyService;
     private final AudioTrackLoader audioTrackLoader;
-    private final YouTubeService youTubeService;
-    private final GuildTrackLoadingExecutor trackLoadingExecutor;
+    private final SpotifyService spotifyService;
     private final SpotifyInvoker invoker;
+    private final TrackLoadingExecutor trackLoadingExecutor;
+    private final YouTubeService youTubeService;
 
-    public PlayableFactory(SpotifyService spotifyService, AudioTrackLoader audioTrackLoader, YouTubeService youTubeService, GuildTrackLoadingExecutor trackLoadingExecutor) {
-        this.spotifyService = spotifyService;
+    public PlayableFactory(AudioTrackLoader audioTrackLoader, SpotifyService spotifyService, TrackLoadingExecutor trackLoadingExecutor, YouTubeService youTubeService) {
         this.audioTrackLoader = audioTrackLoader;
-        this.youTubeService = youTubeService;
-        this.trackLoadingExecutor = trackLoadingExecutor;
+        this.spotifyService = spotifyService;
         invoker = SpotifyInvoker.create(spotifyService.getSpotifyApi());
+        this.trackLoadingExecutor = trackLoadingExecutor;
+        this.youTubeService = youTubeService;
     }
 
     /**
@@ -72,41 +70,20 @@ public class PlayableFactory {
      *                        preview mp3 provided by Spotify
      */
     public Playable createPlayable(boolean redirectSpotify, Object track) {
-        if (track instanceof Playable) {
-            return (Playable) track;
-        } else if (track instanceof Track) {
-            if (redirectSpotify) {
-                return StaticSessionProvider.invokeWithSession((CheckedFunction<Session, YouTubeVideo>) session -> {
-                    SpotifyRedirectService spotifyRedirectService = new SpotifyRedirectService(session, youTubeService);
-                    HollowYouTubeVideo youTubeVideo = new HollowYouTubeVideo(youTubeService, (Track) track);
-                    spotifyRedirectService.redirectTrack(youTubeVideo);
-                    return youTubeVideo;
-                });
-            } else {
-                return new TrackWrapper((Track) track);
-            }
-        } else if (track instanceof UrlTrack) {
-            return ((UrlTrack) track).asPlayable();
-        } else if (track != null) {
-            throw new UnsupportedOperationException("Unsupported playable " + track.getClass());
+        List<Playable> playables = createPlayables(redirectSpotify, Collections.singleton(track));
+
+        if (playables.isEmpty()) {
+            return null;
         } else {
-            throw new IllegalArgumentException("Cannot create Playable for null");
+            return playables.get(0);
         }
     }
 
-    public List<Playable> createPlayables(boolean redirectSpotify, Collection<?> items) {
-        return createPlayables(redirectSpotify, items, true);
-    }
-
     public List<Playable> createPlayables(boolean redirectSpotify, Object item) {
-        return createPlayables(redirectSpotify, item, true);
-    }
-
-    public List<Playable> createPlayables(boolean redirectSpotify, Object item, boolean mayInterrupt) {
         if (item instanceof Collection) {
-            return createPlayables(redirectSpotify, (Collection) item, mayInterrupt);
+            return createPlayables(redirectSpotify, (Collection) item);
         } else {
-            return createPlayables(redirectSpotify, Lists.newArrayList(item), mayInterrupt);
+            return createPlayables(redirectSpotify, Lists.newArrayList(item));
         }
     }
 
@@ -117,14 +94,9 @@ public class PlayableFactory {
      *                        {@link YouTubeService#redirectSpotify(HollowYouTubeVideo)}, else a {@link TrackWrapper} is created to play the
      *                        preview mp3 provided by Spotify
      * @param items           the objects to create a Playable for
-     * @param mayInterrupt    determines whether loading the playables should be interrupted if the same
-     *                        {@link GuildTrackLoadingExecutor} loads different playables where mayInterrupt is also true. This is used for
-     *                        the play command so that when the user starts playing different tracks the bot can stop wasting resources on loading
-     *                        the playables that won't be needed anymore. This should never be true for commands like the Queue or AddCommand
-     *                        where invoking the command again should not cancel out the last command.
      * @return the created Playables
      */
-    public List<Playable> createPlayables(boolean redirectSpotify, Collection<?> items, boolean mayInterrupt) {
+    public List<Playable> createPlayables(boolean redirectSpotify, Collection<?> items) {
         List<Playable> playables = Lists.newArrayList();
         List<HollowYouTubeVideo> tracksToRedirect = Lists.newArrayList();
         List<YouTubePlaylist> youTubePlaylistsToLoad = Lists.newArrayList();
@@ -160,35 +132,8 @@ public class PlayableFactory {
         }
 
         if (!tracksToRedirect.isEmpty() || !youTubePlaylistsToLoad.isEmpty()) {
-            trackLoadingExecutor.load(() -> {
-                try {
-                    if (!tracksToRedirect.isEmpty()) {
-                        StaticSessionProvider.invokeWithSession((CheckedConsumer<Session>) session -> {
-                            SpotifyRedirectService spotifyRedirectService = new SpotifyRedirectService(session, youTubeService);
-                            for (HollowYouTubeVideo youTubeVideo : tracksToRedirect) {
-                                if (Thread.currentThread().isInterrupted()) {
-                                    tracksToRedirect.stream().filter(HollowYouTubeVideo::isHollow).forEach(HollowYouTubeVideo::cancel);
-                                    break;
-                                }
-                                spotifyRedirectService.redirectTrack(youTubeVideo);
-                            }
-                        });
-                    }
-
-                    for (YouTubePlaylist youTubePlaylist : youTubePlaylistsToLoad) {
-                        if (Thread.currentThread().isInterrupted()) {
-                            youTubePlaylistsToLoad.forEach(YouTubePlaylist::cancelLoading);
-                            break;
-                        }
-
-                        youTubeService.populateList(youTubePlaylist);
-                    }
-                } catch (IOException e) {
-                    tracksToRedirect.stream().filter(HollowYouTubeVideo::isHollow).forEach(HollowYouTubeVideo::cancel);
-                    youTubePlaylistsToLoad.forEach(YouTubePlaylist::cancelLoading);
-                    throw e;
-                }
-            }, mayInterrupt);
+            trackLoadingExecutor.execute(new SpotifyTrackRedirectionRunnable(tracksToRedirect, youTubeService)
+                .andThen(new YouTubePlaylistPopulationRunnable(youTubePlaylistsToLoad, youTubeService)));
         }
 
         return playables;
@@ -204,36 +149,18 @@ public class PlayableFactory {
         }
     }
 
-    public List<Playable> createPlayables(YouTubePlaylist youTubePlaylist) {
-        return createPlayables(youTubePlaylist, true);
-    }
-
     /**
      * Populates a YouTube playlist by fetching the data for each {@link HollowYouTubeVideo} asynchronously and returning
      * them as Playables
      *
      * @param youTubePlaylist the YouTube playlist to load the videos for
-     * @param mayInterrupt    whether or not loading the tracks can be interrupted by a similar action,
-     *                        see {@link #createPlayables(boolean, Collection, boolean)}
-     * @return the {@link HollowYouTubeVideo}s as Playables
      */
-    public List<Playable> createPlayables(YouTubePlaylist youTubePlaylist, boolean mayInterrupt) {
+    public List<Playable> createPlayables(YouTubePlaylist youTubePlaylist) {
         List<Playable> playables = Lists.newArrayList(youTubePlaylist.getVideos());
 
-        trackLoadingExecutor.load(() -> {
-            try {
-                youTubeService.populateList(youTubePlaylist);
-            } catch (IOException e) {
-                youTubePlaylist.cancelLoading();
-                throw e;
-            }
-        }, mayInterrupt);
+        trackLoadingExecutor.execute(new YouTubePlaylistPopulationRunnable(youTubeService, youTubePlaylist));
 
         return playables;
-    }
-
-    public List<Playable> createPlayables(String url, SpotifyApi spotifyApi, boolean redirectSpotify) throws IOException {
-        return createPlayables(url, spotifyApi, redirectSpotify, true);
     }
 
     /**
@@ -299,11 +226,8 @@ public class PlayableFactory {
      * @param url             the url that points to a playable track or playlist
      * @param spotifyApi      the SpotifyApi instance
      * @param redirectSpotify if true the loaded Spotify tracks will get directed to YouTube videos
-     * @param mayInterrupt    whether or not loading the tracks can be interrupted by a similar action,
-     *                        see {@link #createPlayables(boolean, Collection, boolean)}
-     * @return the created playables
      */
-    public List<Playable> createPlayables(String url, SpotifyApi spotifyApi, boolean redirectSpotify, boolean mayInterrupt) throws IOException {
+    public List<Playable> createPlayables(String url, SpotifyApi spotifyApi, boolean redirectSpotify) throws IOException {
         List<Playable> playables;
 
         URI uri;
@@ -321,7 +245,7 @@ public class PlayableFactory {
                 playables = Lists.newArrayList(youTubeVideo);
             } else if (playlistId != null) {
                 YouTubePlaylist youTubePlaylist = youTubeService.playlistForId(playlistId);
-                playables = createPlayables(youTubePlaylist, mayInterrupt);
+                playables = createPlayables(youTubePlaylist);
             } else {
                 throw new InvalidCommandException("Detected YouTube URL but no video or playlist id provided.");
             }
@@ -330,7 +254,7 @@ public class PlayableFactory {
             YouTubeVideo youTubeVideo = youTubeService.requireVideoForId(parts[parts.length - 1]);
             playables = Lists.newArrayList(youTubeVideo);
         } else if (uri.getHost().equals("open.spotify.com")) {
-            playables = createPlayablesFromSpotifyUrl(uri, spotifyApi, redirectSpotify, mayInterrupt);
+            playables = createPlayablesFromSpotifyUrl(uri, spotifyApi, redirectSpotify);
         } else {
             playables = createPlayablesFromUrl(uri.toString());
         }
@@ -361,7 +285,7 @@ public class PlayableFactory {
         return playables;
     }
 
-    private List<Playable> createPlayablesFromSpotifyUrl(URI uri, SpotifyApi spotifyApi, boolean redirectSpotify, boolean mayInterrupt) {
+    private List<Playable> createPlayablesFromSpotifyUrl(URI uri, SpotifyApi spotifyApi, boolean redirectSpotify) {
         StringList pathFragments = StringListImpl.createWithRegex(uri.getPath(), "/");
         SpotifyService spotifyService = new SpotifyService(spotifyApi);
         if (pathFragments.contains("playlist")) {
@@ -374,7 +298,7 @@ public class PlayableFactory {
                 String accessToken = spotifyApi.clientCredentials().build().execute().getAccessToken();
                 spotifyApi.setAccessToken(accessToken);
                 List<Track> playlistTracks = spotifyService.getPlaylistTracks(playlistId);
-                return createPlayables(redirectSpotify, playlistTracks, mayInterrupt);
+                return createPlayables(redirectSpotify, playlistTracks);
             } catch (NotFoundException e) {
                 throw new NoResultsFoundException(String.format("No Spotify playlist found for id '%s'", playlistId));
             } catch (IOException | SpotifyWebApiException e) {
@@ -410,7 +334,7 @@ public class PlayableFactory {
                 String accessToken = spotifyApi.clientCredentials().build().execute().getAccessToken();
                 spotifyApi.setAccessToken(accessToken);
                 List<Track> albumTracks = spotifyService.getAlbumTracks(albumId);
-                return createPlayables(redirectSpotify, albumTracks, mayInterrupt);
+                return createPlayables(redirectSpotify, albumTracks);
             } catch (BadRequestException e) {
                 throw new NoResultsFoundException(String.format("No album found for id '%s'", albumId));
             } catch (IOException | SpotifyWebApiException e) {

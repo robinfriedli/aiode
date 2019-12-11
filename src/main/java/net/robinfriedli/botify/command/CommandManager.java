@@ -69,12 +69,13 @@ public class CommandManager {
         });
 
         commandExecutionThread.setUncaughtExceptionHandler(new CommandExceptionHandler(command, logger));
-        commandExecutionThread.setName("botify command execution: " + context);
-        boolean queued = !executionQueue.add(commandExecutionThread);
+        commandExecutionThread.setName("botify-command-execution-" + context);
+        boolean queued = !executionQueue.add(commandExecutionThread, false);
 
         if (queued) {
             MessageService messageService = Botify.get().getMessageService();
             messageService.sendError("Executing too many commands concurrently. This command will be executed after one has finished.", context.getChannel());
+            logger.warn(String.format("Guild %s has reached the max concurrent commands limit.", context.getGuild()));
         }
     }
 

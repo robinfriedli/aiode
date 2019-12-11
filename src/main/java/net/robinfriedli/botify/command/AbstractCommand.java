@@ -147,7 +147,7 @@ public abstract class AbstractCommand implements Command {
      * @return
      */
     public <E> E invoke(Callable<E> callable) {
-        return HibernateInvoker.create(getContext().getGuild()).invoke(callable);
+        return HibernateInvoker.create(getContext().getSession(), getContext().getGuild()).invoke(callable);
     }
 
     @Override

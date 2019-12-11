@@ -1,8 +1,6 @@
 package net.robinfriedli.botify.command.interceptor.interceptors;
 
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.awt.Color;
 import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
@@ -25,6 +23,9 @@ import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
  */
 public class CommandMonitoringInterceptor extends AbstractChainableCommandInterceptor {
 
+    private static final int MESSAGE_AFTER_THRESHOLD = 5000;
+    private static final int LOGGER_WARNING_AFTER_THRESHOLD = 115000;
+
     private final MessageService messageService;
     private final Logger logger;
 
@@ -39,35 +40,66 @@ public class CommandMonitoringInterceptor extends AbstractChainableCommandInterc
         CommandContext context = command.getContext();
         Thread monitoringThread = new Thread(() -> {
             CommandExecutionThread commandExecutionThread = command.getThread();
+            CompletableFuture<Message> stillLoadingMessage = null;
+            CompletableFuture<Message> warningMessage = null;
             try {
-                commandExecutionThread.join(5000);
-            } catch (InterruptedException e) {
-                return;
-            }
-            if (commandExecutionThread.isAlive()) {
-                EmbedBuilder embedBuilder = new EmbedBuilder();
-                embedBuilder.setDescription("Still loading...");
-                CompletableFuture<Message> futureMessage = messageService.send(embedBuilder, context.getChannel());
+                commandExecutionThread.join(MESSAGE_AFTER_THRESHOLD);
 
-                try {
+                if (commandExecutionThread.isAlive()) {
+                    EmbedBuilder embedBuilder = new EmbedBuilder();
+                    embedBuilder.setDescription("Still loading...");
+                    stillLoadingMessage = messageService.send(embedBuilder, context.getChannel());
+
+                    commandExecutionThread.join(LOGGER_WARNING_AFTER_THRESHOLD);
+                    if (commandExecutionThread.isAlive()) {
+                        EmbedBuilder warningEmbed = new EmbedBuilder();
+                        warningEmbed.setColor(Color.RED);
+                        warningEmbed.setTitle("Command timeout");
+                        warningEmbed.setDescription(
+                            String.format(
+                                "Your command '%s' is taking very long to execute. " +
+                                    "If the command is not responding, consider interrupting it using the abort command.",
+                                command.display())
+                        );
+                        warningMessage = messageService.send(warningEmbed.build(), context.getChannel());
+
+                        logger.warn(String.format("Command [%s] on guild %s has exceeded the warn limit for execution duration of %s millis.",
+                            command.display(), context.getGuild(), MESSAGE_AFTER_THRESHOLD + LOGGER_WARNING_AFTER_THRESHOLD));
+                    }
+
                     commandExecutionThread.join();
-                } catch (InterruptedException ignored) {
-                    // CommandExecutionInterceptor interrupts monitoring in post command
-                    futureMessage.thenAccept(message -> {
-                        try {
-                            message.delete().queue();
-                        } catch (Exception e) {
-                            OffsetDateTime timeCreated = message.getTimeCreated();
-                            ZonedDateTime zonedDateTime = timeCreated.atZoneSameInstant(ZoneId.systemDefault());
-                            logger.warn(String.format("Could not delete still loading message from: %s channel: %s guild: %s",
-                                zonedDateTime.toString(), context.getChannel(), context.getGuild()));
-                        }
-                    });
+                    deleteMessages(stillLoadingMessage, warningMessage);
                 }
+            } catch (InterruptedException e) {
+                // CommandExecutionInterceptor interrupts monitoring in post command
+                deleteMessages(stillLoadingMessage, warningMessage);
             }
         });
         monitoringThread.setUncaughtExceptionHandler(new LoggingExceptionHandler());
+        monitoringThread.setName("botify command monitoring: " + context);
+        monitoringThread.setDaemon(true);
         context.registerMonitoring(monitoringThread);
         context.startMonitoring();
     }
+
+    private void deleteMessages(CompletableFuture<Message> stillLoadingMessage, CompletableFuture<Message> warningMessage) {
+        if (stillLoadingMessage != null) {
+            stillLoadingMessage.thenAccept(message -> {
+                try {
+                    message.delete().queue();
+                } catch (Exception ignored) {
+                }
+            });
+        }
+
+        if (warningMessage != null) {
+            warningMessage.thenAccept(message -> {
+                try {
+                    message.delete().queue();
+                } catch (Exception ignored) {
+                }
+            });
+        }
+    }
+
 }

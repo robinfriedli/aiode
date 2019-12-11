@@ -21,7 +21,15 @@ import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 public class PlayCommand extends AbstractQueueLoadingCommand {
 
     public PlayCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContribution, context, commandManager, commandString, identifier, description, Category.PLAYBACK, true);
+        super(commandContribution,
+            context,
+            commandManager,
+            commandString,
+            identifier,
+            description,
+            Category.PLAYBACK,
+            true,
+            context.getGuildContext().getReplaceableTrackLoadingExecutor());
     }
 
     @Override
@@ -72,7 +80,7 @@ public class PlayCommand extends AbstractQueueLoadingCommand {
     public void withUserResponse(Object option) {
         AudioManager audioManager = Botify.get().getAudioManager();
         Guild guild = getContext().getGuild();
-        PlayableFactory playableFactory = audioManager.createPlayableFactory(guild, getSpotifyService());
+        PlayableFactory playableFactory = audioManager.createPlayableFactory(getSpotifyService(), getTrackLoadingExecutor());
         AudioPlayback playback = audioManager.getPlaybackForGuild(guild);
         AudioQueue queue = playback.getAudioQueue();
 

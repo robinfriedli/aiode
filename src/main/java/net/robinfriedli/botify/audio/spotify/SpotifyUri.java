@@ -96,7 +96,7 @@ public class SpotifyUri {
                 } catch (NotFoundException e) {
                     throw new InvalidCommandException("Invalid id " + uri.getId());
                 }
-                return playableFactory.createPlayables(redirect, tracks, mayInterrupt);
+                return playableFactory.createPlayables(redirect, tracks);
             }
         },
         PLAYLIST(Pattern.compile("spotify:playlist:([a-zA-Z0-9])([a-zA-Z0-9])*")) {
@@ -113,7 +113,7 @@ public class SpotifyUri {
                 } catch (NotFoundException e) {
                     throw new InvalidCommandException("Invalid id " + uri.getId());
                 }
-                return playableFactory.createPlayables(redirect, tracks, mayInterrupt);
+                return playableFactory.createPlayables(redirect, tracks);
             }
         };
 

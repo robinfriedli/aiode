@@ -28,7 +28,15 @@ import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 public class QueueCommand extends AbstractQueueLoadingCommand {
 
     public QueueCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContribution, context, commandManager, commandString, identifier, description, Category.PLAYBACK, false);
+        super(commandContribution,
+            context,
+            commandManager,
+            commandString,
+            identifier,
+            description,
+            Category.PLAYBACK,
+            false,
+            context.getGuildContext().getPooledTrackLoadingExecutor());
     }
 
     @Override
@@ -86,7 +94,7 @@ public class QueueCommand extends AbstractQueueLoadingCommand {
     @Override
     public void withUserResponse(Object chosenOption) throws Exception {
         AudioManager audioManager = Botify.get().getAudioManager();
-        PlayableFactory playableFactory = audioManager.createPlayableFactory(getContext().getGuild(), getSpotifyService());
+        PlayableFactory playableFactory = audioManager.createPlayableFactory(getSpotifyService(), getTrackLoadingExecutor());
         AudioQueue queue = audioManager.getQueue(getContext().getGuild());
 
         List<Playable> playables;
@@ -108,18 +116,18 @@ public class QueueCommand extends AbstractQueueLoadingCommand {
         } else if (chosenOption instanceof PlaylistSimplified) {
             PlaylistSimplified playlist = (PlaylistSimplified) chosenOption;
             List<Track> tracks = runWithCredentials(() -> getSpotifyService().getPlaylistTracks(playlist));
-            List<Playable> playables = playableFactory.createPlayables(!argumentSet("preview"), tracks, false);
+            List<Playable> playables = playableFactory.createPlayables(!argumentSet("preview"), tracks);
             loadedSpotifyPlaylist = playlist;
             return playables;
         } else if (chosenOption instanceof YouTubePlaylist) {
             YouTubePlaylist youTubePlaylist = (YouTubePlaylist) chosenOption;
-            List<Playable> playables = playableFactory.createPlayables(youTubePlaylist, false);
+            List<Playable> playables = playableFactory.createPlayables(youTubePlaylist);
             loadedYouTubePlaylist = youTubePlaylist;
             return playables;
         } else if (chosenOption instanceof AlbumSimplified) {
             AlbumSimplified album = (AlbumSimplified) chosenOption;
             List<Track> tracks = runWithCredentials(() -> getSpotifyService().getAlbumTracks(album.getId()));
-            List<Playable> playables = playableFactory.createPlayables(!argumentSet("preview"), tracks, false);
+            List<Playable> playables = playableFactory.createPlayables(!argumentSet("preview"), tracks);
             loadedAlbum = album;
             return playables;
         }

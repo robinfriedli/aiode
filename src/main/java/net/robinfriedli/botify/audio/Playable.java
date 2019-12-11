@@ -165,4 +165,20 @@ public interface Playable {
      */
     void setCached(AudioTrack audioTrack);
 
+    /**
+     * For lazy Playables that have not received values yet, this will tell the playable that it will be used soon and it
+     * should start fetching data. This method makes no guarantee that this playable will be complete when this method
+     * returns but it will have submitted the task to fetch data in a separate executor service. For example, this might
+     * be used for the previous and next playables that are shown by the queue widget or the next playable shown by the
+     * now playing widget. Where ever playables are not required right now but should be prioritised. This method returns
+     * the current playable as it is intended for method chaining.
+     * <p>
+     * Exemplary use case:
+     * <code>playable.fetch().display()</code>
+     * This method is commonly used to prepare displaying relevant Playables without blocking the current thread.
+     */
+    default Playable fetch() {
+        return this;
+    }
+
 }

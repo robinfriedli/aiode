@@ -18,7 +18,7 @@ public class CommandExecutionQueueManager {
     }
 
     public void addGuild(Guild guild) {
-        guildExecutionQueues.put(guild, new ThreadExecutionQueue(3));
+        guildExecutionQueues.put(guild, new ThreadExecutionQueue("command-execution-queue-guild-" + guild.getId(), 3));
     }
 
     public void removeGuild(Guild guild) {
@@ -29,7 +29,7 @@ public class CommandExecutionQueueManager {
         ThreadExecutionQueue threadExecutionQueue = guildExecutionQueues.get(guild);
 
         if (threadExecutionQueue == null) {
-            ThreadExecutionQueue newQueue = new ThreadExecutionQueue(3);
+            ThreadExecutionQueue newQueue = new ThreadExecutionQueue("command-execution-queue-guild-" + guild.getId(), 3);
             guildExecutionQueues.put(guild, newQueue);
             return newQueue;
         }

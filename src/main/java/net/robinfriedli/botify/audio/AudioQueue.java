@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -181,7 +182,7 @@ public class AudioQueue {
             String duration = Util.normalizeMillis(current.durationMs());
             embedBuilder.addField(
                 "Current",
-                "| " + current.display() + " - " + currentPosition + " / " + duration,
+                "| " + current.getDisplayNow() + " - " + currentPosition + " / " + duration,
                 false
             );
 
@@ -436,8 +437,9 @@ public class AudioQueue {
     }
 
     private void appendPlayable(StringBuilder trackListBuilder, Playable playable) {
-        String display = playable.display();
-        long durationMs = playable.durationMs();
+        playable.fetch();
+        String display = playable.display(2, TimeUnit.SECONDS);
+        long durationMs = playable.durationMs(2, TimeUnit.SECONDS);
         trackListBuilder.append("| ").append(display).append(" - ").append(Util.normalizeMillis(durationMs)).append(System.lineSeparator());
     }
 

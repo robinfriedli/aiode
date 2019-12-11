@@ -2,6 +2,7 @@ package net.robinfriedli.botify.audio;
 
 import java.awt.Color;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.event.AudioEventAdapter;
@@ -199,7 +200,7 @@ public class QueueIterator extends AudioEventAdapter {
         embedBuilder.addField("Now playing", currentTrack.display(), false);
 
         if (queue.hasNext()) {
-            embedBuilder.addField("Next", queue.getNext().display(), false);
+            embedBuilder.addField("Next", queue.getNext().fetch().display(2, TimeUnit.SECONDS), false);
         }
 
         StringBuilder footerBuilder = new StringBuilder();

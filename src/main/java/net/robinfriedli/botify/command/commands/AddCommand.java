@@ -8,6 +8,7 @@ import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioQueue;
 import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.audio.PlayableFactory;
+import net.robinfriedli.botify.audio.exec.BlockingTrackLoadingExecutor;
 import net.robinfriedli.botify.audio.youtube.HollowYouTubeVideo;
 import net.robinfriedli.botify.boot.SpringPropertiesConfig;
 import net.robinfriedli.botify.command.ArgumentContribution;
@@ -31,7 +32,7 @@ public class AddCommand extends AbstractPlayableLoadingCommand {
     }
 
     public AddCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description, String definingArgument) {
-        super(commandContribution, context, commandManager, commandString, true, identifier, description, Category.PLAYLIST_MANAGEMENT, false);
+        super(commandContribution, context, commandManager, commandString, true, identifier, description, Category.PLAYLIST_MANAGEMENT, false, new BlockingTrackLoadingExecutor());
         this.definingArgument = definingArgument;
     }
 
@@ -93,16 +94,15 @@ public class AddCommand extends AbstractPlayableLoadingCommand {
     }
 
     private void addPlayables(Playlist playlist, List<Playable> playables) {
+        if (getThread().isTerminated()) {
+            return;
+        }
         Session session = getContext().getSession();
         List<PlaylistItem> items = Lists.newArrayList();
         invoke(() -> {
             playables.forEach(playable -> {
-                if (playable instanceof HollowYouTubeVideo) {
-                    HollowYouTubeVideo video = (HollowYouTubeVideo) playable;
-                    video.awaitCompletion();
-                    if (video.isCanceled()) {
-                        return;
-                    }
+                if (playable instanceof HollowYouTubeVideo && ((HollowYouTubeVideo) playable).isCanceled()) {
+                    return;
                 }
 
                 items.add(playable.export(playlist, getContext().getUser(), session));
@@ -137,8 +137,8 @@ public class AddCommand extends AbstractPlayableLoadingCommand {
             throw new NoResultsFoundException(String.format("No local list found for '%s'", getToAddString()));
         }
 
-        PlayableFactory playableFactory = Botify.get().getAudioManager().createPlayableFactory(guild, getSpotifyService());
-        List<Playable> playables = playableFactory.createPlayables(false, option, false);
+        PlayableFactory playableFactory = Botify.get().getAudioManager().createPlayableFactory(getSpotifyService(), new BlockingTrackLoadingExecutor());
+        List<Playable> playables = playableFactory.createPlayables(false, option);
         addPlayables(playlist, playables);
     }
 

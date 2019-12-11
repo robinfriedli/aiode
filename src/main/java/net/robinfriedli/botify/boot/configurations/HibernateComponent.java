@@ -6,7 +6,7 @@ import java.util.function.Function;
 import javax.persistence.EntityManagerFactory;
 
 import net.robinfriedli.botify.command.CommandContext;
-import net.robinfriedli.botify.function.AutoTransactionInvoker;
+import net.robinfriedli.botify.function.HibernateInvoker;
 import net.robinfriedli.botify.util.StaticSessionProvider;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -26,12 +26,7 @@ public class HibernateComponent {
 
     public Session getCurrentSession() {
         SessionFactory sessionFactory = getSessionFactory();
-
-        if (CommandContext.Current.isSet()) {
-            return CommandContext.Current.require().getSession();
-        }
-
-        return sessionFactory.getCurrentSession();
+        return CommandContext.Current.optional().map(CommandContext::getSession).orElse(sessionFactory.getCurrentSession());
     }
 
     public SessionFactory getSessionFactory() {
@@ -44,11 +39,11 @@ public class HibernateComponent {
     }
 
     public void invokeWithSession(Consumer<Session> consumer) {
-        AutoTransactionInvoker.create(getCurrentSession()).invoke(consumer);
+        HibernateInvoker.create(getCurrentSession()).invoke(consumer);
     }
 
     public <E> E invokeWithSession(Function<Session, E> function) {
-        return AutoTransactionInvoker.create(getCurrentSession()).invoke(function);
+        return HibernateInvoker.create(getCurrentSession()).invoke(function);
     }
 
 }

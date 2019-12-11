@@ -1,5 +1,6 @@
 package net.robinfriedli.botify.command.commands;
 
+import net.robinfriedli.botify.audio.exec.TrackLoadingExecutor;
 import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
@@ -7,8 +8,16 @@ import net.robinfriedli.botify.entities.xml.CommandContribution;
 
 public abstract class AbstractQueueLoadingCommand extends AbstractPlayableLoadingCommand {
 
-    public AbstractQueueLoadingCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description, Category category, boolean mayInterrupt) {
-        super(commandContribution, context, commandManager, commandString, false, identifier, description, category, mayInterrupt);
+    public AbstractQueueLoadingCommand(CommandContribution commandContribution,
+                                       CommandContext context,
+                                       CommandManager commandManager,
+                                       String commandString,
+                                       String identifier,
+                                       String description,
+                                       Category category,
+                                       boolean mayInterrupt,
+                                       TrackLoadingExecutor trackLoadingExecutor) {
+        super(commandContribution, context, commandManager, commandString, false, identifier, description, category, mayInterrupt, trackLoadingExecutor);
     }
 
     @Override

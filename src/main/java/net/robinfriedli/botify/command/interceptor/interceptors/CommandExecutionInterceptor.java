@@ -1,6 +1,9 @@
 package net.robinfriedli.botify.command.interceptor.interceptors;
 
 import java.awt.Color;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,13 +20,14 @@ import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.Command;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.interceptor.CommandInterceptor;
+import net.robinfriedli.botify.concurrent.LoggingThreadFactory;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.CommandHistory;
 import net.robinfriedli.botify.exceptions.AmbiguousCommandException;
 import net.robinfriedli.botify.exceptions.CommandRuntimeException;
 import net.robinfriedli.botify.exceptions.NoLoginException;
 import net.robinfriedli.botify.exceptions.UserException;
-import net.robinfriedli.botify.function.HibernateInvoker;
+import net.robinfriedli.botify.util.StaticSessionProvider;
 import org.hibernate.Session;
 
 /**
@@ -31,6 +35,8 @@ import org.hibernate.Session;
  * during execution
  */
 public class CommandExecutionInterceptor implements CommandInterceptor {
+
+    private static final ExecutorService COMMAND_HISTORY_SERVICE = Executors.newCachedThreadPool(new LoggingThreadFactory("command-history-pool"));
 
     private final MessageService messageService;
     private final Logger logger;
@@ -50,6 +56,11 @@ public class CommandExecutionInterceptor implements CommandInterceptor {
             try {
                 command.doRun();
             } catch (Throwable e) {
+                if (command.getThread().isTerminated()) {
+                    logger.warn(String.format("Suppressed '%s' because command execution was interrupted.", e));
+                    return;
+                }
+
                 try {
                     command.onFailure();
                 } catch (Throwable e1) {
@@ -124,11 +135,7 @@ public class CommandExecutionInterceptor implements CommandInterceptor {
             unexpectedException = true;
             throw new CommandRuntimeException(e);
         } finally {
-            try {
-                postCommand(command, completedSuccessfully, failedManually, errorMessage, unexpectedException);
-            } catch (Throwable e) {
-                logger.error("Exception in postCommand ", e);
-            }
+            postCommand(command, completedSuccessfully, failedManually, errorMessage, unexpectedException);
         }
     }
 
@@ -148,19 +155,20 @@ public class CommandExecutionInterceptor implements CommandInterceptor {
                              boolean unexpectedException) {
         CommandContext context = command.getContext();
         context.interruptMonitoring();
-        CommandHistory history = context.getCommandHistory();
-        if (history != null) {
-            history.setDurationMs(System.currentTimeMillis() - history.getStartMillis());
-            history.setCompletedSuccessfully(completedSuccessfully);
-            history.setFailedManually(failedManually);
-            history.setUnexpectedException(unexpectedException);
-            history.setErrorMessage(errorMessage);
+        COMMAND_HISTORY_SERVICE.execute(() -> {
+            CommandHistory history = context.getCommandHistory();
+            if (history != null) {
+                history.setDurationMs(System.currentTimeMillis() - history.getStartMillis());
+                history.setCompletedSuccessfully(completedSuccessfully);
+                history.setFailedManually(failedManually);
+                history.setUnexpectedException(unexpectedException);
+                history.setErrorMessage(errorMessage);
 
-            Session session = context.getSession();
-            HibernateInvoker.create().invoke(() -> session.persist(history));
-        } else {
-            logger.warn("Command " + command + " has no history");
-        }
+                StaticSessionProvider.invokeWithSession((Consumer<Session>) session -> session.persist(history));
+            } else {
+                logger.warn("Command " + command + " has no history");
+            }
+        });
 
     }
 

@@ -11,7 +11,9 @@ import javax.annotation.Nullable;
 
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.robinfriedli.botify.audio.AbstractSoftCachedPlayable;
+import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.audio.spotify.SpotifyRedirectService;
+import net.robinfriedli.botify.concurrent.EagerFetchQueue;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.botify.function.CheckedConsumer;
 import net.robinfriedli.botify.util.StaticSessionProvider;
@@ -23,23 +25,24 @@ import org.hibernate.Session;
  */
 public class HollowYouTubeVideo extends AbstractSoftCachedPlayable implements YouTubeVideo {
 
-    private final YouTubeService youTubeService;
     private final CompletableFuture<String> title;
     private final CompletableFuture<String> id;
     private final CompletableFuture<Long> duration;
+    private final YouTubeService youTubeService;
     @Nullable
     private Track redirectedSpotifyTrack;
     private boolean canceled = false;
+    private volatile boolean isHollow = true;
 
     public HollowYouTubeVideo(YouTubeService youTubeService) {
         this(youTubeService, null);
     }
 
     public HollowYouTubeVideo(YouTubeService youTubeService, @Nullable Track redirectedSpotifyTrack) {
-        this.youTubeService = youTubeService;
         this.title = new CompletableFuture<>();
         this.id = new CompletableFuture<>();
         this.duration = new CompletableFuture<>();
+        this.youTubeService = youTubeService;
         this.redirectedSpotifyTrack = redirectedSpotifyTrack;
     }
 
@@ -49,6 +52,7 @@ public class HollowYouTubeVideo extends AbstractSoftCachedPlayable implements Yo
     }
 
     public void setTitle(String title) {
+        isHollow = false;
         this.title.complete(title);
     }
 
@@ -68,6 +72,7 @@ public class HollowYouTubeVideo extends AbstractSoftCachedPlayable implements Yo
     }
 
     public void setId(String id) {
+        isHollow = false;
         this.id.complete(id);
     }
 
@@ -77,6 +82,7 @@ public class HollowYouTubeVideo extends AbstractSoftCachedPlayable implements Yo
     }
 
     public void setDuration(long duration) {
+        isHollow = false;
         this.duration.complete(duration);
     }
 
@@ -124,19 +130,43 @@ public class HollowYouTubeVideo extends AbstractSoftCachedPlayable implements Yo
     }
 
     public boolean isHollow() {
-        return !(title.isDone() || id.isDone() || duration.isDone());
+        return isHollow;
+    }
+
+    public boolean isDone() {
+        return title.isDone() && id.isDone() && duration.isDone();
+    }
+
+    public void markLoading() {
+        isHollow = false;
+    }
+
+    @Override
+    public Playable fetch() {
+        if (isHollow()) {
+            markLoading();
+            EagerFetchQueue.submitFetch(() -> {
+                // only supported for Spotify redirect as YouTube does not allow loading specific playlist items
+                if (redirectedSpotifyTrack != null) {
+                    StaticSessionProvider.invokeWithSession((CheckedConsumer<Session>) session -> {
+                        SpotifyRedirectService spotifyRedirectService = new SpotifyRedirectService(session, youTubeService);
+                        spotifyRedirectService.redirectTrack(this);
+                    });
+                }
+            });
+        }
+        return this;
     }
 
     private <E> E getCompleted(CompletableFuture<E> future) throws UnavailableResourceException {
         try {
-            if (!future.isDone() && redirectedSpotifyTrack != null) {
-                StaticSessionProvider.invokeWithSession((CheckedConsumer<Session>) session -> {
-                    SpotifyRedirectService spotifyRedirectService = new SpotifyRedirectService(session, youTubeService);
-                    spotifyRedirectService.redirectTrack(this);
-                });
-            }
+            try {
+                return future.get(2, TimeUnit.SECONDS);
+            } catch (TimeoutException e) {
+                fetch();
 
-            return future.get(3, TimeUnit.MINUTES);
+                return future.get(3, TimeUnit.MINUTES);
+            }
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         } catch (TimeoutException e) {

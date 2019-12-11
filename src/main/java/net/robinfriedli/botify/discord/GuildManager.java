@@ -225,7 +225,7 @@ public class GuildManager {
                     guildContexts.put(guild, guildContext);
                     return guildContext;
                 } else {
-                    GuildSpecification newSpecification = HibernateInvoker.create().invoke(() -> {
+                    GuildSpecification newSpecification = HibernateInvoker.create(session).invoke(() -> {
                         GuildSpecification specification = new GuildSpecification(guild);
                         AccessConfiguration permissionConfiguration = new AccessConfiguration("permission");
                         session.persist(permissionConfiguration);

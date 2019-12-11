@@ -24,6 +24,7 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.VoiceChannel;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
+import net.robinfriedli.botify.audio.exec.TrackLoadingExecutor;
 import net.robinfriedli.botify.audio.spotify.SpotifyService;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.boot.AbstractShutdownable;
@@ -129,8 +130,8 @@ public class AudioManager extends AbstractShutdownable {
         return playerManager;
     }
 
-    public PlayableFactory createPlayableFactory(Guild guild, SpotifyService spotifyService) {
-        return new PlayableFactory(spotifyService, audioTrackLoader, youTubeService, guildManager.getContextForGuild(guild).getTrackLoadingExecutor());
+    public PlayableFactory createPlayableFactory(SpotifyService spotifyService, TrackLoadingExecutor trackLoadingExecutor) {
+        return new PlayableFactory(audioTrackLoader, spotifyService, trackLoadingExecutor, youTubeService);
     }
 
     void createHistoryEntry(Playable playable, Guild guild, VoiceChannel voiceChannel) {

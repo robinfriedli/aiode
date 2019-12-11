@@ -20,7 +20,7 @@ public class StopCommand extends AbstractCommand {
         Guild guild = getContext().getGuild();
         AudioManager audioManager = Botify.get().getAudioManager();
         AudioPlayback playback = audioManager.getPlaybackForGuild(guild);
-        getContext().getGuildContext().getTrackLoadingExecutor().interruptTrackLoading();
+        getContext().getGuildContext().getReplaceableTrackLoadingExecutor().abort();
         playback.stop();
         playback.getAudioQueue().clear();
     }

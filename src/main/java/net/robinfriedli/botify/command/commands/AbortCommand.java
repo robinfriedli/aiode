@@ -2,12 +2,14 @@ package net.robinfriedli.botify.command.commands;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.robinfriedli.botify.Botify;
+import net.robinfriedli.botify.audio.exec.PooledTrackLoadingExecutor;
+import net.robinfriedli.botify.audio.exec.ReplaceableTrackLoadingExecutor;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.concurrent.GuildTrackLoadingExecutor;
 import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
 import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
+import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
 
@@ -27,16 +29,19 @@ public class AbortCommand extends AbstractCommand {
             }
 
             CommandExecutionQueueManager executionQueueManager = Botify.get().getExecutionQueueManager();
-            GuildTrackLoadingExecutor trackLoadingExecutor = getContext().getGuildContext().getTrackLoadingExecutor();
+            GuildContext guildContext = getContext().getGuildContext();
             ThreadExecutionQueue executionQueue = executionQueueManager.getForGuild(getContext().getGuild());
-            if (executionQueue.isIdle() && trackLoadingExecutor.isIdle()) {
+            PooledTrackLoadingExecutor pooledTrackLoadingExecutor = guildContext.getPooledTrackLoadingExecutor();
+            ReplaceableTrackLoadingExecutor replaceableTrackLoadingExecutor = guildContext.getReplaceableTrackLoadingExecutor();
+            if (executionQueue.isIdle() && pooledTrackLoadingExecutor.isIdle() && replaceableTrackLoadingExecutor.isIdle()) {
                 EmbedBuilder embedBuilder = new EmbedBuilder();
                 embedBuilder.setDescription("No commands are currently running");
                 getMessageService().sendTemporary(embedBuilder, getContext().getChannel());
                 setFailed(true);
             } else {
                 executionQueue.abortAll();
-                trackLoadingExecutor.interruptAll();
+                pooledTrackLoadingExecutor.abortAll();
+                replaceableTrackLoadingExecutor.abort();
                 sendSuccess("Sent all currently running commands an interrupt signal and cancelled queued commands.");
             }
         });

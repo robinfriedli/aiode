@@ -63,7 +63,7 @@ public class MessageService extends AbstractShutdownable {
 
     @Override
     public void shutdown(int delayMs) {
-        TEMP_MESSAGE_DELETION_SCHEDULER.shutdown();
+        TEMP_MESSAGE_DELETION_SCHEDULER.shutdownNow();
     }
 
     public CompletableFuture<Message> send(String message, MessageChannel channel) {

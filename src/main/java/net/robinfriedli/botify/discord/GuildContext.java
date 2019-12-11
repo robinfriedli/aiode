@@ -4,12 +4,15 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioPlayback;
+import net.robinfriedli.botify.audio.exec.PooledTrackLoadingExecutor;
+import net.robinfriedli.botify.audio.exec.ReplaceableTrackLoadingExecutor;
+import net.robinfriedli.botify.audio.exec.TrackLoadingExecutor;
 import net.robinfriedli.botify.command.AbstractWidget;
 import net.robinfriedli.botify.command.ClientQuestionEvent;
 import net.robinfriedli.botify.command.ClientQuestionEventManager;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.widgets.WidgetManager;
-import net.robinfriedli.botify.concurrent.GuildTrackLoadingExecutor;
+import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
 import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.entities.GuildSpecification;
@@ -19,25 +22,29 @@ import org.hibernate.Session;
 
 /**
  * Provides context for a guild by storing and loading the guild's {@link GuildSpecification}, holding the guild's
- * {@link AudioPlayback} and {@link GuildTrackLoadingExecutor} to manage concurrent operations per guild.
+ * {@link AudioPlayback} and guild specific {@link TrackLoadingExecutor} implementations to manage concurrent operations per guild.
  * Holds the managers for all open {@link ClientQuestionEvent} and active {@link AbstractWidget} for this guild.
  */
 public class GuildContext {
 
-    private final Guild guild;
     private final AudioPlayback playback;
-    private final long specificationPk;
-    private final GuildTrackLoadingExecutor trackLoadingExecutor;
-    private final WidgetManager widgetManager;
     private final ClientQuestionEventManager clientQuestionEventManager;
+    private final Guild guild;
+    private final long specificationPk;
+    private final PooledTrackLoadingExecutor pooledTrackLoadingExecutor;
+    private final ReplaceableTrackLoadingExecutor replaceableTrackLoadingExecutor;
+    private final WidgetManager widgetManager;
 
     public GuildContext(Guild guild, AudioPlayback playback, long specificationPk) {
-        this.guild = guild;
         this.playback = playback;
-        this.specificationPk = specificationPk;
-        trackLoadingExecutor = new GuildTrackLoadingExecutor(this);
-        widgetManager = new WidgetManager();
         clientQuestionEventManager = new ClientQuestionEventManager();
+        this.guild = guild;
+        this.specificationPk = specificationPk;
+        pooledTrackLoadingExecutor = new PooledTrackLoadingExecutor(
+            new ThreadExecutionQueue("pooled-track-loading-guild-" + guild.getId(), 3), this
+        );
+        replaceableTrackLoadingExecutor = new ReplaceableTrackLoadingExecutor(this);
+        widgetManager = new WidgetManager();
     }
 
     public Guild getGuild() {
@@ -80,7 +87,7 @@ public class GuildContext {
         StaticSessionProvider.invokeWithSession(session -> {
             GuildSpecification guildSpecification = getSpecification(session);
 
-            HibernateInvoker.create().invoke(() -> guildSpecification.setBotName(name));
+            HibernateInvoker.create(session).invoke(() -> guildSpecification.setBotName(name));
         });
         try {
             guild.getSelfMember().modifyNickname(name).queue();
@@ -108,12 +115,16 @@ public class GuildContext {
         StaticSessionProvider.invokeWithSession(session -> {
             GuildSpecification guildSpecification = getSpecification(session);
 
-            HibernateInvoker.create().invoke(() -> guildSpecification.setPrefix(prefix));
+            HibernateInvoker.create(session).invoke(() -> guildSpecification.setPrefix(prefix));
         });
     }
 
-    public GuildTrackLoadingExecutor getTrackLoadingExecutor() {
-        return trackLoadingExecutor;
+    public PooledTrackLoadingExecutor getPooledTrackLoadingExecutor() {
+        return pooledTrackLoadingExecutor;
+    }
+
+    public ReplaceableTrackLoadingExecutor getReplaceableTrackLoadingExecutor() {
+        return replaceableTrackLoadingExecutor;
     }
 
     public WidgetManager getWidgetManager() {
