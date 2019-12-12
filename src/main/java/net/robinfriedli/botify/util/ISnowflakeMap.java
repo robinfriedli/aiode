@@ -2,10 +2,10 @@ package net.robinfriedli.botify.util;
 
 import java.util.AbstractMap;
 import java.util.AbstractSet;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import net.dv8tion.jda.api.entities.ISnowflake;
 import net.robinfriedli.botify.discord.GuildContext;
@@ -64,7 +64,7 @@ public class ISnowflakeMap<V> extends AbstractMap<ISnowflake, V> {
 
     private static class ISnowflakeEntrySet<V> extends AbstractSet<Entry<ISnowflake, V>> {
 
-        private final Map<Long, Map.Entry<ISnowflake, V>> mappedValues = new HashMap<>();
+        private final Map<Long, Map.Entry<ISnowflake, V>> mappedValues = new ConcurrentHashMap<>();
 
         @NotNull
         @Override
