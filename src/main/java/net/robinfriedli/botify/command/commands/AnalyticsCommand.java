@@ -1,7 +1,7 @@
 package net.robinfriedli.botify.command.commands;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadMXBean;
 import java.util.List;
 
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -48,12 +48,16 @@ public class AnalyticsCommand extends AbstractCommand {
             + session.createQuery("select count(*) from " + UrlTrack.class.getName(), Long.class).uniqueResult();
         long playedCount = session.createQuery("select count(*) from " + PlaybackHistory.class.getName(), Long.class).uniqueResult();
         // convert to MB by right shifting by 20 bytes (same as dividing by 2^20)
-        double maxMemory = runtime.maxMemory() >> 20;
-        double allocatedMemory = runtime.totalMemory() >> 20;
-        double unallocatedMemory = maxMemory - allocatedMemory;
-        double allocFreeMemory = runtime.freeMemory() >> 20;
-        double usedMemory = allocatedMemory - allocFreeMemory;
-        double totalFreeMemory = maxMemory - usedMemory;
+        long maxMemory = runtime.maxMemory() >> 20;
+        long allocatedMemory = runtime.totalMemory() >> 20;
+        long unallocatedMemory = maxMemory - allocatedMemory;
+        long allocFreeMemory = runtime.freeMemory() >> 20;
+        long usedMemory = allocatedMemory - allocFreeMemory;
+        long totalFreeMemory = maxMemory - usedMemory;
+
+        ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+        int threadCount = threadMXBean.getThreadCount();
+        int daemonThreadCount = threadMXBean.getDaemonThreadCount();
 
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.addField("Guilds", String.valueOf(guildCount), true);
@@ -63,21 +67,17 @@ public class AnalyticsCommand extends AbstractCommand {
         embedBuilder.addField("Saved playlists", String.valueOf(playlistCount), true);
         embedBuilder.addField("Saved tracks", String.valueOf(trackCount), true);
         embedBuilder.addField("Total tracks played", String.valueOf(playedCount), true);
+        embedBuilder.addField("Thread count", String.format("%s (%s daemons)", threadCount, daemonThreadCount), true);
         embedBuilder.addField("Memory (in MB)",
-            "Total: " + round(maxMemory) + System.lineSeparator() +
-                "Allocated: " + round(allocatedMemory) + System.lineSeparator() +
-                "Unallocated: " + round(unallocatedMemory) + System.lineSeparator() +
-                "Free allocated: " + round(allocFreeMemory) + System.lineSeparator() +
-                "Currently used: " + round(usedMemory) + System.lineSeparator() +
-                "Total free: " + round(totalFreeMemory)
+            "Total: " + maxMemory + System.lineSeparator() +
+                "Allocated: " + allocatedMemory + System.lineSeparator() +
+                "Unallocated: " + unallocatedMemory + System.lineSeparator() +
+                "Free allocated: " + allocFreeMemory + System.lineSeparator() +
+                "Currently used: " + usedMemory + System.lineSeparator() +
+                "Total free: " + totalFreeMemory
             , false);
 
         sendWithLogo(embedBuilder);
-    }
-
-    private double round(double d) {
-        BigDecimal bigDecimal = BigDecimal.valueOf(d).setScale(2, RoundingMode.HALF_UP);
-        return bigDecimal.doubleValue();
     }
 
     @Override
