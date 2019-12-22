@@ -9,6 +9,7 @@ import java.util.concurrent.TimeoutException;
 import org.slf4j.LoggerFactory;
 
 import com.wrapper.spotify.requests.authorization.authorization_code.AuthorizationCodeUriRequest;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.Botify;
@@ -40,10 +41,13 @@ public class LoginCommand extends AbstractCommand {
         loginManager.expectLogin(user, pendingLogin);
 
         String response = String.format("Your login link:\n%s", uriRequest.execute().toString());
-        CompletableFuture<Message> futureMessage = sendMessage(user, response);
+        CompletableFuture<Message> futurePrivateMessage = sendMessage(user, response);
+        CompletableFuture<Message> futureNoticeMessage = new CompletableFuture<>();
         try {
-            futureMessage.get();
-            sendMessage("I sent you a login link");
+            futurePrivateMessage.get();
+            EmbedBuilder embedBuilder = new EmbedBuilder();
+            embedBuilder.setDescription("I have sent you a login link");
+            sendMessage(embedBuilder).thenAccept(futureNoticeMessage::complete);
         } catch (CancellationException | ExecutionException e) {
             loginManager.removePendingLogin(user);
             throw new UserException("I was unable to send you a message. Please adjust your privacy settings to allow direct messages from guild members.");
@@ -51,6 +55,7 @@ public class LoginCommand extends AbstractCommand {
         }
 
         pendingLogin.orTimeout(10, TimeUnit.MINUTES).whenComplete((login, throwable) -> {
+            futureNoticeMessage.thenAccept(message -> message.delete().queue());
             if (login != null) {
                 sendSuccess("User " + getContext().getUser().getName() + " logged in to Spotify");
             }
@@ -59,12 +64,11 @@ public class LoginCommand extends AbstractCommand {
 
                 if (throwable instanceof TimeoutException) {
                     sendMessage(user, "Login attempt timed out");
-                    setFailed(true);
                 } else {
                     getMessageService().sendException("There has been an unexpected error while completing your login, please try again.", getContext().getChannel());
                     LoggerFactory.getLogger(getClass()).error("unexpected exception while completing login", throwable);
-                    setFailed(true);
                 }
+                setFailed(true);
             }
         });
     }
