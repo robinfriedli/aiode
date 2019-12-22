@@ -7,7 +7,7 @@ import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.cron.AbstractCronTask;
 import net.robinfriedli.botify.entities.CurrentYouTubeQuotaUsage;
 import net.robinfriedli.botify.function.modes.HibernateTransactionMode;
-import net.robinfriedli.botify.util.StaticSessionProvider;
+import net.robinfriedli.botify.persist.StaticSessionProvider;
 import net.robinfriedli.jxp.exec.Invoker;
 import org.quartz.JobExecutionContext;
 

@@ -17,7 +17,7 @@ import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.function.HibernateInvoker;
-import net.robinfriedli.botify.util.StaticSessionProvider;
+import net.robinfriedli.botify.persist.StaticSessionProvider;
 import org.hibernate.Session;
 
 /**

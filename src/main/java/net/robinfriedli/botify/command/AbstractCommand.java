@@ -20,7 +20,7 @@ import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.spotify.SpotifyService;
-import net.robinfriedli.botify.command.commands.AnswerCommand;
+import net.robinfriedli.botify.command.commands.general.AnswerCommand;
 import net.robinfriedli.botify.command.interceptor.CommandInterceptorChain;
 import net.robinfriedli.botify.command.interceptor.interceptors.CommandParserInterceptor;
 import net.robinfriedli.botify.command.parser.CommandParser;

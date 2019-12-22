@@ -16,7 +16,7 @@ import net.robinfriedli.botify.entities.AccessConfiguration;
 import net.robinfriedli.botify.entities.GrantedRole;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.function.modes.HibernateTransactionMode;
-import net.robinfriedli.botify.util.StaticSessionProvider;
+import net.robinfriedli.botify.persist.StaticSessionProvider;
 import net.robinfriedli.jxp.exec.Invoker;
 import org.quartz.JobExecutionContext;
 

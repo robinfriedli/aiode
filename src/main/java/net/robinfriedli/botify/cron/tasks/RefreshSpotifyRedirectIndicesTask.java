@@ -31,7 +31,7 @@ import net.robinfriedli.botify.exceptions.CommandRuntimeException;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.botify.function.modes.HibernateTransactionMode;
 import net.robinfriedli.botify.function.modes.SpotifyAuthorizationMode;
-import net.robinfriedli.botify.util.StaticSessionProvider;
+import net.robinfriedli.botify.persist.StaticSessionProvider;
 import net.robinfriedli.jxp.exec.Invoker;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;

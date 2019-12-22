@@ -9,7 +9,7 @@ import net.robinfriedli.botify.cron.AbstractCronTask;
 import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.GuildManager;
-import net.robinfriedli.botify.listeners.GuildManagementListener;
+import net.robinfriedli.botify.discord.listeners.GuildManagementListener;
 import net.robinfriedli.jxp.exec.Invoker;
 import org.quartz.JobExecutionContext;
 

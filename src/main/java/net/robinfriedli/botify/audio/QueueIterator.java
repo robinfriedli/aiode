@@ -21,7 +21,7 @@ import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.botify.util.EmojiConstants;
-import net.robinfriedli.botify.util.StaticSessionProvider;
+import net.robinfriedli.botify.persist.StaticSessionProvider;
 
 /**
  * Iterator to iterate the queue automatically when a track ends or fails loading. The current QueueIterator is registered

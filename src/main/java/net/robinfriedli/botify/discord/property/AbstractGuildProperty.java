@@ -7,7 +7,7 @@ import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.xml.GuildPropertyContribution;
 import net.robinfriedli.botify.function.HibernateInvoker;
-import net.robinfriedli.botify.util.StaticSessionProvider;
+import net.robinfriedli.botify.persist.StaticSessionProvider;
 
 /**
  * Represents a property persisted as column on the {@link GuildSpecification class}. Offers default values and validation

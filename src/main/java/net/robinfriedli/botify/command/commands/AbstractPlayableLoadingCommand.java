@@ -38,12 +38,13 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
 
     private final boolean mayInterrupt;
     private final TrackLoadingExecutor trackLoadingExecutor;
-    int loadedAmount;
-    Playlist loadedLocalList;
-    YouTubePlaylist loadedYouTubePlaylist;
-    PlaylistSimplified loadedSpotifyPlaylist;
-    Playable loadedTrack;
-    AlbumSimplified loadedAlbum;
+
+    protected int loadedAmount;
+    protected Playlist loadedLocalList;
+    protected YouTubePlaylist loadedYouTubePlaylist;
+    protected PlaylistSimplified loadedSpotifyPlaylist;
+    protected Playable loadedTrack;
+    protected AlbumSimplified loadedAlbum;
 
     public AbstractPlayableLoadingCommand(CommandContribution commandContribution,
                                           CommandContext context,

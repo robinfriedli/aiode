@@ -16,7 +16,7 @@ import net.robinfriedli.botify.audio.spotify.SpotifyRedirectService;
 import net.robinfriedli.botify.concurrent.EagerFetchQueue;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.botify.function.CheckedConsumer;
-import net.robinfriedli.botify.util.StaticSessionProvider;
+import net.robinfriedli.botify.persist.StaticSessionProvider;
 import org.hibernate.Session;
 
 /**

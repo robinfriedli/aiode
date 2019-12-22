@@ -5,14 +5,14 @@ import java.util.concurrent.Callable;
 import javax.annotation.Nullable;
 
 import net.robinfriedli.botify.command.CommandContext;
-import net.robinfriedli.botify.util.StaticSessionProvider;
+import net.robinfriedli.botify.persist.StaticSessionProvider;
 import net.robinfriedli.jxp.exec.AbstractDelegatingModeWrapper;
 import net.robinfriedli.jxp.exec.Invoker;
 import net.robinfriedli.jxp.exec.modes.SynchronisationMode;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
-import static net.robinfriedli.botify.util.StaticSessionProvider.*;
+import static net.robinfriedli.botify.persist.StaticSessionProvider.*;
 
 /**
  * Runs a task in a hibernate transaction, managing commits and rollbacks. This automatically utilises either the session of the

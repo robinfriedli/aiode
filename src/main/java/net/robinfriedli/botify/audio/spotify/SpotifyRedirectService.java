@@ -20,7 +20,7 @@ import net.robinfriedli.botify.entities.SpotifyRedirectIndex;
 import net.robinfriedli.botify.entities.SpotifyRedirectIndexModificationLock;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.botify.function.HibernateInvoker;
-import net.robinfriedli.botify.util.StaticSessionProvider;
+import net.robinfriedli.botify.persist.StaticSessionProvider;
 import net.robinfriedli.stringlist.StringListImpl;
 import org.hibernate.Session;
 

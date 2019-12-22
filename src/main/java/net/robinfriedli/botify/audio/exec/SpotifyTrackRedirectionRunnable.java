@@ -7,7 +7,7 @@ import net.robinfriedli.botify.audio.youtube.HollowYouTubeVideo;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.function.ChainableRunnable;
 import net.robinfriedli.botify.function.CheckedConsumer;
-import net.robinfriedli.botify.util.StaticSessionProvider;
+import net.robinfriedli.botify.persist.StaticSessionProvider;
 import org.hibernate.Session;
 
 public class SpotifyTrackRedirectionRunnable extends ChainableRunnable {

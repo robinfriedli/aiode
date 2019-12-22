@@ -13,7 +13,7 @@ import net.robinfriedli.botify.boot.VersionManager;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.xml.Version;
 import net.robinfriedli.botify.function.CheckedConsumer;
-import net.robinfriedli.botify.util.StaticSessionProvider;
+import net.robinfriedli.botify.persist.StaticSessionProvider;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
 import org.hibernate.Session;

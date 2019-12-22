@@ -27,7 +27,7 @@ import net.robinfriedli.botify.exceptions.AmbiguousCommandException;
 import net.robinfriedli.botify.exceptions.CommandRuntimeException;
 import net.robinfriedli.botify.exceptions.NoLoginException;
 import net.robinfriedli.botify.exceptions.UserException;
-import net.robinfriedli.botify.util.StaticSessionProvider;
+import net.robinfriedli.botify.persist.StaticSessionProvider;
 import org.hibernate.Session;
 
 /**

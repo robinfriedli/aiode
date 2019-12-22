@@ -7,7 +7,7 @@ import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.Song;
 import net.robinfriedli.botify.entities.UrlTrack;
 import net.robinfriedli.botify.entities.Video;
-import net.robinfriedli.botify.tasks.UpdatePlaylistItemIndicesTask;
+import net.robinfriedli.botify.persist.tasks.UpdatePlaylistItemIndicesTask;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.query.Query;

@@ -14,7 +14,7 @@ import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.cron.AbstractCronTask;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.GuildManager;
-import net.robinfriedli.botify.util.StaticSessionProvider;
+import net.robinfriedli.botify.persist.StaticSessionProvider;
 import net.robinfriedli.jxp.exec.Invoker;
 import org.quartz.JobExecutionContext;
 

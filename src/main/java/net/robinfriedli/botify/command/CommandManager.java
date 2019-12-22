@@ -17,7 +17,7 @@ import net.robinfriedli.botify.entities.Preset;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 import net.robinfriedli.botify.exceptions.handlers.CommandExceptionHandler;
-import net.robinfriedli.botify.listeners.CommandListener;
+import net.robinfriedli.botify.discord.listeners.CommandListener;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.persist.Context;
 import org.hibernate.Session;

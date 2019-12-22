@@ -7,7 +7,7 @@ import javax.annotation.Nullable;
 
 import net.robinfriedli.botify.exceptions.CommandRuntimeException;
 import net.robinfriedli.botify.function.modes.HibernateTransactionMode;
-import net.robinfriedli.botify.util.StaticSessionProvider;
+import net.robinfriedli.botify.persist.StaticSessionProvider;
 import net.robinfriedli.jxp.exec.BaseInvoker;
 import net.robinfriedli.jxp.exec.modes.SynchronisationMode;
 import org.hibernate.Session;

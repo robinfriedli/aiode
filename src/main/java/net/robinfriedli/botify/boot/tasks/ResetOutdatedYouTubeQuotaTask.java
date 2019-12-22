@@ -9,7 +9,7 @@ import java.time.ZonedDateTime;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.boot.StartupTask;
 import net.robinfriedli.botify.entities.CurrentYouTubeQuotaUsage;
-import net.robinfriedli.botify.util.StaticSessionProvider;
+import net.robinfriedli.botify.persist.StaticSessionProvider;
 
 /**
  * Resets the daily YouTube API quota counter on startup if it hasn't already been reset today i.e. if the bot was offline.

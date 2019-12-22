@@ -7,7 +7,7 @@ import javax.persistence.EntityManagerFactory;
 
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.function.HibernateInvoker;
-import net.robinfriedli.botify.util.StaticSessionProvider;
+import net.robinfriedli.botify.persist.StaticSessionProvider;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.springframework.boot.autoconfigure.domain.EntityScan;

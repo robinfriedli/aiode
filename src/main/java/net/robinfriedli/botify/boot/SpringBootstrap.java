@@ -14,7 +14,7 @@ import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.entities.xml.StartupTaskContribution;
 import net.robinfriedli.botify.function.CheckedConsumer;
 import net.robinfriedli.botify.servers.HttpServerManager;
-import net.robinfriedli.botify.util.StaticSessionProvider;
+import net.robinfriedli.botify.persist.StaticSessionProvider;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.persist.Context;
 import org.springframework.boot.CommandLineRunner;
