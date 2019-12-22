@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -194,22 +195,25 @@ public class YouTubeService extends AbstractShutdownable {
                     maxEditDistance = editDistance;
                 }
             }
+            int index = 0;
             for (Video v : videos) {
                 int artistMatchScore = 0;
-                int viewScore;
-                int editDistanceScore;
                 if (artists.stream().anyMatch(a -> {
                     String artist = a.toLowerCase();
+                    String artistNoSpace = artist.replace(" ", "");
                     String channel = v.getSnippet().getChannelTitle().toLowerCase();
-                    return channel.contains(artist) || artist.contains(channel);
+                    String channelNoSpace = channel.replace(" ", "");
+                    return channel.contains(artist) || artist.contains(channel) || channelNoSpace.contains(artistNoSpace) || artistNoSpace.contains(channelNoSpace);
                 })) {
                     artistMatchScore = 5;
                 }
                 long viewCount = getViewCount(v);
                 int editDistance = videosWithEditDistance.get(v);
-                viewScore = highestViewCount == 0 ? 10 : (int) (viewCount * 10 / highestViewCount);
-                editDistanceScore = maxEditDistance == 0 ? 15 : 15 - (editDistance * 15 / maxEditDistance);
-                videosByScore.putIfAbsent(artistMatchScore + viewScore + editDistanceScore, v);
+                int viewScore = highestViewCount == 0 ? 10 : (int) (viewCount * 10 / highestViewCount);
+                int editDistanceScore = maxEditDistance == 0 ? 15 : 15 - (editDistance * 15 / maxEditDistance);
+                int indexScore = 10 - index * 2;
+                videosByScore.putIfAbsent(artistMatchScore + viewScore + editDistanceScore + indexScore, v);
+                ++index;
             }
 
             @SuppressWarnings("OptionalGetWithoutIsPresent")
@@ -241,16 +245,29 @@ public class YouTubeService extends AbstractShutdownable {
             ? artistNames.subList(1).toSeparatedString(", ").toLowerCase()
             : "";
 
+        int parenthesesNotEscaped = bestEditDistanceForParams(levenshteinDistance, trackName, videoTitle, artists, artistString, firstArtist, featuringArtistString);
+        String videoTitleWithParenthesesRemoved = videoTitle.replaceAll("\\(.*\\)", "");
+        int parenthesesEscaped = bestEditDistanceForParams(levenshteinDistance, trackName, videoTitleWithParenthesesRemoved, artists, artistString, firstArtist, featuringArtistString);
+        return Math.min(parenthesesEscaped, parenthesesNotEscaped);
+    }
+
+    private int bestEditDistanceForParams(LevenshteinDistance levenshteinDistance, String trackName, String videoTitle, ArtistSimplified[] artists, String artistString, String firstArtist, String featuringArtistString) {
         int distancePlain = levenshteinDistance.apply(trackName, videoTitle);
-        int distanceFirstArtistFront = levenshteinDistance.apply(firstArtist + " " + trackName, videoTitle);
-        int distanceFirstArtistBack = levenshteinDistance.apply(trackName + " " + firstArtist, videoTitle);
+        int distanceSingleArtistFront = Arrays.stream(artists)
+            .mapToInt(artist -> levenshteinDistance.apply(artist.getName().toLowerCase() + " " + trackName, videoTitle))
+            .min()
+            .orElse(Integer.MAX_VALUE);
+        int distanceSingleArtistBack = Arrays.stream(artists)
+            .mapToInt(artist -> levenshteinDistance.apply(trackName + " " + artist.getName().toLowerCase(), videoTitle))
+            .min()
+            .orElse(Integer.MAX_VALUE);
         int distanceArtistsFront = levenshteinDistance.apply(artistString + " " + trackName, videoTitle);
         int distanceArtistsBack = levenshteinDistance.apply(trackName + " " + artistString, videoTitle);
         String featuringArtistsString = firstArtist + " " + trackName + " " + featuringArtistString;
         int distanceFirstArtistFrontFeaturingArtistsBack = levenshteinDistance.apply(featuringArtistsString, videoTitle);
 
         return IntStream
-            .of(distancePlain, distanceFirstArtistFront, distanceFirstArtistBack, distanceArtistsFront, distanceArtistsBack, distanceFirstArtistFrontFeaturingArtistsBack)
+            .of(distancePlain, distanceSingleArtistFront, distanceSingleArtistBack, distanceArtistsFront, distanceArtistsBack, distanceFirstArtistFrontFeaturingArtistsBack)
             .min()
             .getAsInt();
     }
@@ -569,7 +586,7 @@ public class YouTubeService extends AbstractShutdownable {
      * but it's necessary if shuffle is enabled when loading a large playlist as the populateList methods might take a
      * while until the items towards the end of the list are loaded.
      *
-     * @param index    the index of the item to load
+     * @param index the index of the item to load
      * @param playlist the playlist the item is a part of
      * @deprecated deprecated as of 1.2.1 since the method is unreliable when the playlist contains unavailable items and
      * very inefficient for minimal gain
