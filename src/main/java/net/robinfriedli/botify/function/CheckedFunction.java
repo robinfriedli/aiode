@@ -10,6 +10,7 @@ import net.robinfriedli.botify.exceptions.CommandRuntimeException;
  * @param <P> the type of the parameter
  * @param <R> the return type
  */
+@FunctionalInterface
 public interface CheckedFunction<P, R> extends Function<P, R> {
 
     @Override

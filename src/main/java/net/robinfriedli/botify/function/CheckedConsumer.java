@@ -9,6 +9,7 @@ import net.robinfriedli.botify.exceptions.CommandRuntimeException;
  *
  * @param <T> the type of parameter to execute an operation on
  */
+@FunctionalInterface
 public interface CheckedConsumer<T> extends Consumer<T> {
 
     @Override
