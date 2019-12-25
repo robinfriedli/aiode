@@ -113,13 +113,20 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
                 logger.info(String.format("Regenerated %s spotify redirect indices in %s seconds", updateCount, stopwatch.elapsed(TimeUnit.SECONDS)));
             });
         } finally {
+            Transaction transaction = null;
             try (Session session = sessionFactory.openSession()) {
-                Transaction transaction = session.beginTransaction();
-                session.delete(spotifyRedirectIndexModificationLock);
+                transaction = session.beginTransaction();
+                // since hibernate is now bootstrapped by JPA rather than native after implementing spring boot
+                // the entity has the be merged because JPA does not allow the deletion of detached entities
+                Object merge = session.merge(spotifyRedirectIndexModificationLock);
+                session.delete(merge);
                 transaction.commit();
             } catch (Throwable e) {
                 // catch exceptions thrown in the finally block so as to not override exceptions thrown in the try block
                 logger.error("Exception thrown while deleting SpotifyRedirectIndexModificationLock", e);
+                if (transaction != null) {
+                    transaction.rollback();
+                }
             }
         }
     }
