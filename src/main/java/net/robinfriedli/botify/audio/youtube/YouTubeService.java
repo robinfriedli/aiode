@@ -72,11 +72,14 @@ public class YouTubeService extends AbstractShutdownable {
     private static final int QUOTA_COST_2_FIELDS = 5;
     private static final int QUOTA_COST_3_FIELDS = 7;
     private static final ExecutorService UPDATE_QUOTA_SERVICE = Executors.newSingleThreadExecutor(new LoggingThreadFactory("update-youtube-quota-pool"));
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final HibernateComponent hibernateComponent;
-    private final YouTube youTube;
-    private final int quotaThreshold;
+
     private final AtomicInteger currentQuota = new AtomicInteger(getPersistentQuota());
+    private final int quotaThreshold;
+
+    private final HibernateComponent hibernateComponent;
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final YouTube youTube;
+
     @Value("${botify.tokens.youtube_credentials}")
     private String apiKey;
 
@@ -586,7 +589,7 @@ public class YouTubeService extends AbstractShutdownable {
      * but it's necessary if shuffle is enabled when loading a large playlist as the populateList methods might take a
      * while until the items towards the end of the list are loaded.
      *
-     * @param index the index of the item to load
+     * @param index    the index of the item to load
      * @param playlist the playlist the item is a part of
      * @deprecated deprecated as of 1.2.1 since the method is unreliable when the playlist contains unavailable items and
      * very inefficient for minimal gain
