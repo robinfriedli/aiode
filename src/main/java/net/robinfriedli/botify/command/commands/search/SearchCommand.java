@@ -132,12 +132,7 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
     private void listLocalList() {
         if (getCommandInput().isBlank()) {
             Session session = getContext().getSession();
-            List<Playlist> playlists;
-            if (isPartitioned()) {
-                playlists = session.createQuery("from " + Playlist.class.getName() + " where guild_id = '" + getContext().getGuild().getId() + "'", Playlist.class).getResultList();
-            } else {
-                playlists = session.createQuery("from " + Playlist.class.getName(), Playlist.class).getResultList();
-            }
+            List<Playlist> playlists = getQueryBuilderFactory().find(Playlist.class).build(session).getResultList();
 
             EmbedBuilder embedBuilder = new EmbedBuilder();
 
@@ -153,7 +148,7 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
 
             sendMessage(embedBuilder);
         } else {
-            Playlist playlist = SearchEngine.searchLocalList(getContext().getSession(), getCommandInput(), isPartitioned(), getContext().getGuild().getId());
+            Playlist playlist = SearchEngine.searchLocalList(getContext().getSession(), getCommandInput());
             if (playlist == null) {
                 throw new NoResultsFoundException(String.format("No local list found for '%s'", getCommandInput()));
             }

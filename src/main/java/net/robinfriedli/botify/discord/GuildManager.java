@@ -12,9 +12,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,8 +38,10 @@ import net.robinfriedli.botify.entities.PlaylistItem;
 import net.robinfriedli.botify.entities.xml.EmbedDocumentContribution;
 import net.robinfriedli.botify.function.HibernateInvoker;
 import net.robinfriedli.botify.persist.interceptors.InterceptorChain;
-import net.robinfriedli.botify.persist.interceptors.PlaylistItemTimestampListener;
-import net.robinfriedli.botify.persist.interceptors.VerifyPlaylistListener;
+import net.robinfriedli.botify.persist.interceptors.PlaylistItemTimestampInterceptor;
+import net.robinfriedli.botify.persist.interceptors.VerifyPlaylistInterceptor;
+import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
+import net.robinfriedli.botify.persist.qb.interceptor.interceptors.AccessConfigurationPartitionInterceptor;
 import net.robinfriedli.botify.persist.tasks.HibernatePlaylistMigrator;
 import net.robinfriedli.botify.util.ISnowflakeMap;
 import net.robinfriedli.botify.util.SearchEngine;
@@ -69,13 +68,15 @@ public class GuildManager {
     private final JxpBackend jxpBackend;
     private final Logger logger;
     private final Mode mode;
+    private final QueryBuilderFactory queryBuilderFactory;
     private AudioManager audioManager;
 
     public GuildManager(@Value("classpath:xml-contributions/embedDocuments.xml") Resource embedDocumentsResource,
                         @Value("classpath:playlists.xml") Resource playlistsResource,
                         HibernateComponent hibernateComponent,
                         JxpBackend jxpBackend,
-                        @Value("${botify.preferences.mode_partitioned}") boolean modePartitioned) {
+                        @Value("${botify.preferences.mode_partitioned}") boolean modePartitioned,
+                        QueryBuilderFactory queryBuilderFactory) {
         try {
             embedDocumentFile = embedDocumentsResource.getFile();
             defaultPlaylistFile = playlistsResource.getFile();
@@ -83,6 +84,7 @@ public class GuildManager {
             this.jxpBackend = jxpBackend;
             logger = LoggerFactory.getLogger(getClass());
             this.mode = modePartitioned ? GuildManager.Mode.PARTITIONED : GuildManager.Mode.SHARED;
+            this.queryBuilderFactory = queryBuilderFactory;
         } catch (IOException e) {
             throw new RuntimeException("Could not instantiate " + getClass().getSimpleName(), e);
         }
@@ -121,13 +123,13 @@ public class GuildManager {
     @Nullable
     public AccessConfiguration getAccessConfiguration(String commandIdentifier, Guild guild) {
         return hibernateComponent.invokeWithSession(session -> {
-            Optional<AccessConfiguration> accessConfiguration = session.createQuery("from " + AccessConfiguration.class.getName()
-                    + " where command_identifier = '" + commandIdentifier + "' and"
-                    + " guild_specification_pk = (select pk from " + GuildSpecification.class.getName() + " where guild_id = '" + guild.getId() + "')"
-                , AccessConfiguration.class)
+            return queryBuilderFactory.find(AccessConfiguration.class)
+                .where((cb, root, subQueryFactory) -> cb.equal(root.get("commandIdentifier"), commandIdentifier))
+                .addInterceptors(new AccessConfigurationPartitionInterceptor(session, guild.getId()))
+                .build(session)
                 .setCacheable(true)
-                .uniqueResultOptional();
-            return accessConfiguration.orElse(null);
+                .uniqueResultOptional()
+                .orElse(null);
         });
     }
 
@@ -155,7 +157,9 @@ public class GuildManager {
      * @return all active guilds
      */
     public Set<Guild> getActiveGuilds(Session session, long delayMs) {
-        ShardManager shardManager = Botify.get().getShardManager();
+        Botify botify = Botify.get();
+        ShardManager shardManager = botify.getShardManager();
+        QueryBuilderFactory queryBuilderFactory = botify.getQueryBuilderFactory();
         Set<Guild> activeGuilds = Sets.newHashSet();
         Set<String> activeGuildIds = Sets.newHashSet();
 
@@ -170,24 +174,18 @@ public class GuildManager {
             }
         }
 
-        CriteriaBuilder cb = session.getCriteriaBuilder();
-
         long startMillis = System.currentTimeMillis() - delayMs;
-        CriteriaQuery<String> recentCommandGuildsQuery = cb.createQuery(String.class);
-        Root<CommandHistory> commandsQueryRoot = recentCommandGuildsQuery.from(CommandHistory.class);
-        recentCommandGuildsQuery
-            .select(commandsQueryRoot.get("guildId"))
-            .where(cb.greaterThan(commandsQueryRoot.get("startMillis"), startMillis));
-        Set<String> recentCommandGuildIds = session.createQuery(recentCommandGuildsQuery).getResultStream().collect(Collectors.toSet());
+        Set<String> recentCommandGuildIds = queryBuilderFactory.select(CommandHistory.class, "guildId", String.class)
+            .where((cb, root) -> cb.greaterThan(root.get("startMillis"), startMillis))
+            .build(session)
+            .getResultStream().collect(Collectors.toSet());
         activeGuildIds.addAll(recentCommandGuildIds);
 
         LocalDateTime dateTime10MinutesAgo = LocalDateTime.ofInstant(Instant.ofEpochMilli(startMillis), ZoneId.systemDefault());
-        CriteriaQuery<String> recentPlaybackGuildsQuery = cb.createQuery(String.class);
-        Root<PlaybackHistory> playbackHistoryRoot = recentPlaybackGuildsQuery.from(PlaybackHistory.class);
-        recentPlaybackGuildsQuery
-            .select(playbackHistoryRoot.get("guildId"))
-            .where(cb.greaterThan(playbackHistoryRoot.get("timestamp"), dateTime10MinutesAgo));
-        Set<String> recentPlaybackGuildIds = session.createQuery(recentPlaybackGuildsQuery).getResultStream().collect(Collectors.toSet());
+        Set<String> recentPlaybackGuildIds = queryBuilderFactory.select(PlaybackHistory.class, "guildId", String.class)
+            .where((cb, root) -> cb.greaterThan(root.get("timestamp"), dateTime10MinutesAgo))
+            .build(session)
+            .getResultStream().collect(Collectors.toSet());
         activeGuildIds.addAll(recentPlaybackGuildIds);
 
         for (String guildId : activeGuildIds) {
@@ -217,8 +215,10 @@ public class GuildManager {
             return hibernateComponent.invokeWithSession(session -> {
                 AudioPlayer player = audioManager.getPlayerManager().createPlayer();
 
-                Optional<Long> existingSpecification = session.createQuery("select pk from " + GuildSpecification.class.getName()
-                    + " where guildId = '" + guild.getId() + "'", Long.class).uniqueResultOptional();
+                Optional<Long> existingSpecification = queryBuilderFactory.select(GuildSpecification.class, "pk", Long.class)
+                    .where((cb, root, query) -> cb.equal(root.get("guildId"), guild.getId()))
+                    .build(session)
+                    .uniqueResultOptional();
 
                 if (existingSpecification.isPresent()) {
                     GuildContext guildContext = new GuildContext(guild, new AudioPlayback(player, guild), existingSpecification.get());
@@ -260,7 +260,7 @@ public class GuildManager {
         SessionFactory sessionFactory = hibernateComponent.getSessionFactory();
         SpotifyApi.Builder spotifyApiBuilder = botify.getSpotifyApiBuilder();
         try (Session session = sessionFactory.withOptions().interceptor(InterceptorChain.of(
-            PlaylistItemTimestampListener.class, VerifyPlaylistListener.class)).openSession()) {
+            PlaylistItemTimestampInterceptor.class, VerifyPlaylistInterceptor.class)).openSession()) {
             if (defaultPlaylistFile.exists()) {
                 try (Context context = jxpBackend.createLazyContext(defaultPlaylistFile)) {
                     HibernatePlaylistMigrator hibernatePlaylistMigrator = new HibernatePlaylistMigrator(context, guild, spotifyApiBuilder.build(), session);

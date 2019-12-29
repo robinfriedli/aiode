@@ -9,9 +9,9 @@ import net.robinfriedli.botify.entities.PlaylistItem;
 import org.hibernate.Interceptor;
 import org.hibernate.type.Type;
 
-public class PlaylistItemTimestampListener extends ChainableInterceptor {
+public class PlaylistItemTimestampInterceptor extends ChainableInterceptor {
 
-    public PlaylistItemTimestampListener(Interceptor next, Logger logger) {
+    public PlaylistItemTimestampInterceptor(Interceptor next, Logger logger) {
         super(next, logger);
     }
 

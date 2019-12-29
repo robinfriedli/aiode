@@ -1,7 +1,5 @@
 package net.robinfriedli.botify.command.commands.playlistmanagement;
 
-import net.robinfriedli.botify.Botify;
-import net.robinfriedli.botify.boot.SpringPropertiesConfig;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
@@ -20,20 +18,10 @@ public class CreateCommand extends AbstractCommand {
     @Override
     public void doRun() {
         Session session = getContext().getSession();
-        SpringPropertiesConfig springPropertiesConfig = Botify.get().getSpringPropertiesConfig();
-        Playlist existingPlaylist = SearchEngine.searchLocalList(session, getCommandInput(), isPartitioned(), getContext().getGuild().getId());
+        Playlist existingPlaylist = SearchEngine.searchLocalList(session, getCommandInput());
 
         if (existingPlaylist != null) {
             throw new InvalidCommandException("Playlist " + getCommandInput() + " already exists");
-        }
-
-        Integer playlistCountMax = springPropertiesConfig.getApplicationProperty(Integer.class, "botify.preferences.playlist_count_max");
-        if (playlistCountMax != null) {
-            String query = "select count(*) from " + Playlist.class.getName();
-            Long playlistCount = (Long) session.createQuery(isPartitioned() ? query + " where guild_id = '" + getContext().getGuild().getId() + "'" : query).uniqueResult();
-            if (playlistCount >= playlistCountMax) {
-                throw new InvalidCommandException("Maximum playlist count of " + playlistCountMax + " reached!");
-            }
         }
 
         Playlist playlist = new Playlist(getCommandInput(), getContext().getUser(), getContext().getGuild());

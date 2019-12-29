@@ -29,7 +29,7 @@ public class MoveCommand extends AbstractCommand {
         Guild guild = getContext().getGuild();
         Session session = getContext().getSession();
         String playlistName = getArgumentValue("on");
-        Playlist playlist = SearchEngine.searchLocalList(session, playlistName, isPartitioned(), guild.getId());
+        Playlist playlist = SearchEngine.searchLocalList(session, playlistName);
 
         if (playlist == null) {
             throw new NoResultsFoundException(String.format("No local playlist found for '%s'", playlistName));

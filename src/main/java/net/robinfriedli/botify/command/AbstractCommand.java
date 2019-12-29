@@ -34,6 +34,7 @@ import net.robinfriedli.botify.function.CheckedRunnable;
 import net.robinfriedli.botify.function.HibernateInvoker;
 import net.robinfriedli.botify.function.SpotifyInvoker;
 import net.robinfriedli.botify.login.Login;
+import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
 import net.robinfriedli.botify.util.Util;
 import net.robinfriedli.jxp.exec.modes.SynchronisationMode;
 import net.robinfriedli.stringlist.StringList;
@@ -429,6 +430,10 @@ public abstract class AbstractCommand implements Command {
 
     public SpotifyService getSpotifyService() {
         return context.getSpotifyService();
+    }
+
+    public QueryBuilderFactory getQueryBuilderFactory() {
+        return Botify.get().getQueryBuilderFactory();
     }
 
     /**

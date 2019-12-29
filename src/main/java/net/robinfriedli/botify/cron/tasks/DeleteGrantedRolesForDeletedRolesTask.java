@@ -17,6 +17,7 @@ import net.robinfriedli.botify.entities.GrantedRole;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.function.modes.HibernateTransactionMode;
 import net.robinfriedli.botify.persist.StaticSessionProvider;
+import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
 import net.robinfriedli.jxp.exec.Invoker;
 import org.quartz.JobExecutionContext;
 
@@ -29,9 +30,11 @@ public class DeleteGrantedRolesForDeletedRolesTask extends AbstractCronTask {
 
     @Override
     protected void run(JobExecutionContext jobExecutionContext) {
-        ShardManager shardManager = Botify.get().getShardManager();
+        Botify botify = Botify.get();
+        ShardManager shardManager = botify.getShardManager();
+        QueryBuilderFactory queryBuilderFactory = botify.getQueryBuilderFactory();
         StaticSessionProvider.invokeWithSession(session -> {
-            List<GuildSpecification> guildSpecifications = session.createQuery("from " + GuildSpecification.class.getName(), GuildSpecification.class).getResultList();
+            List<GuildSpecification> guildSpecifications = queryBuilderFactory.find(GuildSpecification.class).build(session).getResultList();
             int deletionCounter = 0;
 
             for (GuildSpecification guildSpecification : guildSpecifications) {

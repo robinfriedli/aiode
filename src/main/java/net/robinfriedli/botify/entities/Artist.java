@@ -13,8 +13,8 @@ import javax.persistence.Table;
 import com.antkorwin.xsync.XSync;
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
 import net.robinfriedli.botify.Botify;
+import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
 import org.hibernate.Session;
-import org.hibernate.query.Query;
 
 @Entity
 @Table(name = "artist")
@@ -45,11 +45,14 @@ public class Artist implements Serializable {
      * @param session the hibernate session
      */
     public static Artist getOrCreateArtist(ArtistSimplified artist, Session session) {
-        XSync<String> stringSync = Botify.get().getStringSync();
+        Botify botify = Botify.get();
+        XSync<String> stringSync = botify.getStringSync();
+        QueryBuilderFactory queryBuilderFactory = botify.getQueryBuilderFactory();
         return stringSync.evaluate(artist.getId(), () -> {
-            Query<Artist> query = session
-                .createQuery(" from " + Artist.class.getName() + " where id = '" + artist.getId() + "'", Artist.class);
-            Optional<Artist> existingArtist = query.uniqueResultOptional();
+            Optional<Artist> existingArtist = queryBuilderFactory.find(Artist.class)
+                .where((cb, root) -> cb.equal(root.get("id"), artist.getId()))
+                .build(session)
+                .uniqueResultOptional();
             return existingArtist.orElseGet(() -> {
                 Artist newArtist = new Artist(artist.getId(), artist.getName());
                 session.persist(newArtist);

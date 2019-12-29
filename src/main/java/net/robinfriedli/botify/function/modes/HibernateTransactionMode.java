@@ -3,6 +3,7 @@ package net.robinfriedli.botify.function.modes;
 import java.util.concurrent.Callable;
 
 import javax.annotation.Nullable;
+import javax.persistence.RollbackException;
 
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.persist.StaticSessionProvider;
@@ -82,15 +83,28 @@ public class HibernateTransactionMode extends AbstractDelegatingModeWrapper {
                 return callableToWrap.call();
             } catch (Throwable e) {
                 if (commitRequired) {
+                    session.getTransaction().markRollbackOnly();
                     session.getTransaction().rollback();
                     // make sure this transaction is not committed in the finally block, which would throw an exception that
                     // overrides the current exception
                     commitRequired = false;
                 }
+
                 throw e;
             } finally {
                 if (commitRequired) {
-                    session.getTransaction().commit();
+                    try {
+                        session.getTransaction().commit();
+                    } catch (RollbackException e) {
+                        // now that hibernate is bootstrapped via JPA by spring boot as of botify 2.0, hibernate now wraps
+                        // exceptions thrown during commit; with native bootstrapping hibernate simply threw the exception
+                        if (e.getCause() instanceof Exception) {
+                            // commitRequired is never true when an exception occurred, so it is safe to throw an
+                            // exception here without potentially swallowing another one
+                            //noinspection ThrowFromFinallyBlock
+                            throw (Exception) e.getCause();
+                        }
+                    }
                 }
             }
         }

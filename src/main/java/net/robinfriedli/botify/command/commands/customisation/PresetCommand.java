@@ -35,7 +35,7 @@ public class PresetCommand extends AbstractCommand {
 
             invoke(() -> session.delete(preset));
         } else if (getCommandInput().isBlank()) {
-            List<Preset> presets = session.createQuery("from " + Preset.class.getName() + " where guild_id = '" + guildId + "'", Preset.class).getResultList();
+            List<Preset> presets = getQueryBuilderFactory().find(Preset.class).build(session).getResultList();
             EmbedBuilder embedBuilder = new EmbedBuilder();
             if (presets.isEmpty()) {
                 embedBuilder.setDescription("No presets saved");

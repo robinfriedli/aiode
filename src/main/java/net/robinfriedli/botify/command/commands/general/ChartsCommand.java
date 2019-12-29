@@ -2,6 +2,7 @@ package net.robinfriedli.botify.command.commands.general;
 
 import java.math.BigInteger;
 import java.sql.Date;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -25,6 +26,8 @@ import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.Artist;
 import net.robinfriedli.botify.entities.PlaybackHistory;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
+import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
+import net.robinfriedli.botify.persist.qb.builders.SelectQueryBuilder;
 import net.robinfriedli.botify.util.Util;
 import org.hibernate.Session;
 import org.hibernate.query.Query;
@@ -42,21 +45,27 @@ public class ChartsCommand extends AbstractCommand {
     public void doRun() throws Exception {
         Session session = getContext().getSession();
         Guild guild = getContext().getGuild();
+        QueryBuilderFactory queryBuilderFactory = getQueryBuilderFactory();
 
-        Date dateAtStartOfMonth = Date.valueOf(LocalDateTime.now().withDayOfMonth(1).toLocalDate());
-        Query<Object[]> globalQuery = session.createQuery("select source, trackId, count(*) as c from " + PlaybackHistory.class.getName()
-            + " where trackId is not null group by trackId, source order by c desc", Object[].class)
-            .setMaxResults(5);
-        Query<Object[]> guildQuery = session.createQuery("select source, trackId, count(*) as c from " + PlaybackHistory.class.getName()
-            + " where trackId is not null and guildId = '" + guild.getId() + "' group by trackId, source order by c desc", Object[].class)
-            .setMaxResults(5);
+        LocalDateTime startOfMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay();
+        Date dateAtStartOfMonth = Date.valueOf(startOfMonth.toLocalDate());
+        SelectQueryBuilder<PlaybackHistory> trackChartsQuery = queryBuilderFactory
+            .select(PlaybackHistory.class,
+                (from, cb) -> from.get("source"),
+                (from, cb) -> from.get("trackId"),
+                (from, cb) -> cb.count(from.get("pk")))
+            .where((cb, root) -> cb.isNotNull(root.get("trackId")))
+            .groupBySeveral((from, cb) -> Lists.newArrayList(from.get("trackId"), from.get("source")))
+            .orderBy((from, cb) -> cb.desc(cb.count(from.get("pk"))));
+        SelectQueryBuilder<PlaybackHistory> trackChartsQueryGuild = trackChartsQuery.fork().where((cb, root) -> cb.equal(root.get("guildId"), guild.getId()));
+        SelectQueryBuilder<PlaybackHistory> trackChartsQueryMonthly = trackChartsQuery.fork().where((cb, root) -> cb.greaterThan(root.get("timestamp"), startOfMonth));
+        SelectQueryBuilder<PlaybackHistory> trackChartsQueryMonthlyGuild = trackChartsQueryMonthly.fork().where((cb, root) -> cb.equal(root.get("guildId"), guild.getId()));
 
-        Query<Object[]> globalQueryMonthly = session.createQuery("select source, trackId, count(*) as c from " + PlaybackHistory.class.getName()
-            + " where trackId is not null and timestamp > '" + dateAtStartOfMonth.toString() + "' group by trackId, source order by c desc", Object[].class)
-            .setMaxResults(5);
-        Query<Object[]> guildQueryMonthly = session.createQuery("select source, trackId, count(*) as c from " + PlaybackHistory.class.getName()
-            + " where trackId is not null and timestamp > '" + dateAtStartOfMonth.toString() + "' and guildId = '" + guild.getId() + "' group by trackId, source order by c desc", Object[].class)
-            .setMaxResults(5);
+        Query<Object[]> globalQuery = trackChartsQuery.build(session).setMaxResults(5);
+        Query<Object[]> guildQuery = trackChartsQueryGuild.build(session).setMaxResults(5);
+
+        Query<Object[]> globalQueryMonthly = trackChartsQueryMonthly.build(session).setMaxResults(5);
+        Query<Object[]> guildQueryMonthly = trackChartsQueryMonthlyGuild.build(session).setMaxResults(5);
 
         List<Object[]> globalResults = globalQuery.getResultList();
         List<Object[]> guildResults = guildQuery.getResultList();
@@ -68,19 +77,24 @@ public class ChartsCommand extends AbstractCommand {
             "from playback_history_artist group by artist_pk order by c desc limit 3");
         @SuppressWarnings("unchecked")
         Query<Object[]> guildArtistQuery = session.createSQLQuery("select artist_pk, count(*) as c from " +
-            "playback_history_artist as p where p.playback_history_pk in(select pk from playback_history where guild_id = '" + guild.getId() + "') " +
+            "playback_history_artist as p where p.playback_history_pk in(select pk from playback_history where guild_id = ?) " +
             "group by artist_pk order by c desc limit 3");
+        guildArtistQuery.setParameter(1, guild.getId());
 
         @SuppressWarnings("unchecked")
         Query<Object[]> globalArtistMonthlyQuery = session.createSQLQuery("select artist_pk, count(*) as c " +
             "from playback_history_artist as p " +
-            "where p.playback_history_pk in(select pk from playback_history where timestamp > '" + dateAtStartOfMonth.toString() + "') " +
+            "where p.playback_history_pk in(select pk from playback_history where timestamp > ?) " +
             "group by artist_pk order by c desc limit 3");
+        globalArtistMonthlyQuery.setParameter(1, dateAtStartOfMonth);
+
         @SuppressWarnings("unchecked")
         Query<Object[]> guildArtistMonthlyQuery = session.createSQLQuery("select artist_pk, count(*) as c " +
             "from playback_history_artist where playback_history_pk in(select pk from playback_history " +
-            "where timestamp > '" + dateAtStartOfMonth.toString() + "' and guild_id = '" + guild.getId() + "') " +
+            "where timestamp > ? and guild_id = ?) " +
             "group by artist_pk order by c desc limit 3");
+        guildArtistMonthlyQuery.setParameter(1, dateAtStartOfMonth);
+        guildArtistMonthlyQuery.setParameter(2, guild.getId());
 
         List<Object[]> globalArtists = globalArtistQuery.getResultList();
         List<Object[]> guildArtists = guildArtistQuery.getResultList();

@@ -13,8 +13,8 @@ import net.robinfriedli.botify.boot.StartupTask;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
 import net.robinfriedli.botify.persist.interceptors.InterceptorChain;
-import net.robinfriedli.botify.persist.interceptors.PlaylistItemTimestampListener;
-import net.robinfriedli.botify.persist.interceptors.VerifyPlaylistListener;
+import net.robinfriedli.botify.persist.interceptors.PlaylistItemTimestampInterceptor;
+import net.robinfriedli.botify.persist.interceptors.VerifyPlaylistInterceptor;
 import net.robinfriedli.botify.persist.tasks.HibernatePlaylistMigrator;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.persist.Context;
@@ -41,7 +41,7 @@ public class MigratePlaylistsTask implements StartupTask {
     @Override
     public void perform() throws Exception {
         try (Session session = sessionFactory.withOptions().interceptor(InterceptorChain.of(
-            PlaylistItemTimestampListener.class, VerifyPlaylistListener.class)).openSession()) {
+            PlaylistItemTimestampInterceptor.class, VerifyPlaylistInterceptor.class)).openSession()) {
             session.beginTransaction();
             for (Guild guild : shardManager.getGuilds()) {
                 String path = String.format("./resources/%splaylists.xml", guild.getId());

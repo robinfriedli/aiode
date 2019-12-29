@@ -13,11 +13,12 @@ import net.robinfriedli.botify.command.interceptor.CommandInterceptorChain;
 import net.robinfriedli.botify.concurrent.CommandExecutionThread;
 import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
 import net.robinfriedli.botify.discord.MessageService;
+import net.robinfriedli.botify.discord.listeners.CommandListener;
 import net.robinfriedli.botify.entities.Preset;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 import net.robinfriedli.botify.exceptions.handlers.CommandExceptionHandler;
-import net.robinfriedli.botify.discord.listeners.CommandListener;
+import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.persist.Context;
 import org.hibernate.Session;
@@ -40,6 +41,7 @@ public class CommandManager {
     private final Context commandContributionContext;
     private final Context commandInterceptorContext;
     private final Logger logger;
+    private final QueryBuilderFactory queryBuilderFactory;
 
     /**
      * The chain of interceptors to process the command
@@ -48,7 +50,8 @@ public class CommandManager {
 
     public CommandManager(@Value("classpath:xml-contributions/commands.xml") Resource commandResource,
                           @Value("classpath:xml-contributions/commandInterceptors.xml") Resource commandInterceptorResource,
-                          JxpBackend jxpBackend) {
+                          JxpBackend jxpBackend,
+                          QueryBuilderFactory queryBuilderFactory) {
         try {
             this.commandContributionContext = jxpBackend.getContext(commandResource.getFile());
             this.commandInterceptorContext = jxpBackend.getContext(commandInterceptorResource.getFile());
@@ -56,6 +59,7 @@ public class CommandManager {
             throw new RuntimeException("Could not instantiate " + getClass().getSimpleName(), e);
         }
         this.logger = LoggerFactory.getLogger(getClass());
+        this.queryBuilderFactory = queryBuilderFactory;
     }
 
     public void runCommand(Command command, ThreadExecutionQueue executionQueue) {
@@ -86,14 +90,18 @@ public class CommandManager {
             return Optional.empty();
         }
 
+        String formattedCommandInput = commandBody.toLowerCase().replaceAll("'", "''");
         CommandContribution commandContribution = getCommandContributionForInput(commandBody);
         AbstractCommand commandInstance;
         // find a preset where the preset name matches the beginning of the command, find the longest matching preset name
-        Optional<Preset> optionalPreset = session
-            .createQuery("from " + Preset.class.getName()
-                + " where guild_id = '" + context.getGuild().getId()
-                + "' and lower(name) = substring(lower('" + commandBody.replaceAll("'", "''") + "'), 0, length(name) + 1) " +
-                "order by length(name) desc", Preset.class)
+        // corresponds to lower(name) = substring(lower('" + commandBody.replaceAll("'", "''") + "'), 0, length(name) + 1)
+        Optional<Preset> optionalPreset = queryBuilderFactory.find(Preset.class)
+            .where((cb, root) -> cb.equal(
+                cb.lower(root.get("name")),
+                cb.substring(cb.literal(formattedCommandInput), cb.literal(1), cb.length(root.get("name")))
+            ))
+            .orderBy((root, cb) -> cb.desc(cb.length(root.get("name"))))
+            .build(session)
             .setMaxResults(1)
             .setCacheable(true)
             .uniqueResultOptional();

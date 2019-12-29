@@ -3,14 +3,12 @@ package net.robinfriedli.botify.command.commands.playlistmanagement;
 import java.util.List;
 
 import com.google.common.collect.Lists;
-import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioQueue;
 import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.audio.PlayableFactory;
 import net.robinfriedli.botify.audio.exec.BlockingTrackLoadingExecutor;
 import net.robinfriedli.botify.audio.youtube.HollowYouTubeVideo;
-import net.robinfriedli.botify.boot.SpringPropertiesConfig;
 import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
@@ -46,7 +44,7 @@ public class AddCommand extends AbstractPlayableLoadingCommand {
                 throw new InvalidCommandException("Queue is empty");
             }
 
-            Playlist playlist = SearchEngine.searchLocalList(session, getToAddString(), isPartitioned(), getContext().getGuild().getId());
+            Playlist playlist = SearchEngine.searchLocalList(session, getToAddString());
             if (playlist == null) {
                 throw new NoResultsFoundException(String.format("No local list found for '%s'", getToAddString()));
             }
@@ -60,7 +58,7 @@ public class AddCommand extends AbstractPlayableLoadingCommand {
             }
 
             String playlistName = getArgumentValue(definingArgument);
-            playlist = SearchEngine.searchLocalList(session, playlistName, isPartitioned(), getContext().getGuild().getId());
+            playlist = SearchEngine.searchLocalList(session, playlistName);
 
             if (playlist == null) {
                 throw new NoResultsFoundException(String.format("No local list found for '%s'", playlistName));
@@ -85,13 +83,10 @@ public class AddCommand extends AbstractPlayableLoadingCommand {
             throw new NoResultsFoundException("Result is empty!");
         }
         Session session = getContext().getSession();
-        invoke(() -> {
-            checkSize(playlist, items.size());
-            items.forEach(item -> {
-                item.add();
-                session.persist(item);
-            });
-        });
+        invoke(() -> items.forEach(item -> {
+            item.add();
+            session.persist(item);
+        }));
     }
 
     private void addPlayables(Playlist playlist, List<Playable> playables) {
@@ -112,16 +107,6 @@ public class AddCommand extends AbstractPlayableLoadingCommand {
         });
     }
 
-    private void checkSize(Playlist playlist, int toAddSize) {
-        SpringPropertiesConfig springPropertiesConfig = Botify.get().getSpringPropertiesConfig();
-        Integer playlistSizeMax = springPropertiesConfig.getApplicationProperty(Integer.class, "botify.preferences.playlist_size_max");
-        if (playlistSizeMax != null) {
-            if (playlist.getSize() + toAddSize > playlistSizeMax) {
-                throw new InvalidCommandException("List exceeds maximum size of " + playlistSizeMax + " items!");
-            }
-        }
-    }
-
     @Override
     public void onSuccess() {
         // notification sent by interceptor
@@ -132,8 +117,7 @@ public class AddCommand extends AbstractPlayableLoadingCommand {
         Session session = getContext().getSession();
         String playlistName = getArgumentValue(definingArgument);
 
-        Guild guild = getContext().getGuild();
-        Playlist playlist = SearchEngine.searchLocalList(session, playlistName, isPartitioned(), guild.getId());
+        Playlist playlist = SearchEngine.searchLocalList(session, playlistName);
         if (playlist == null) {
             throw new NoResultsFoundException(String.format("No local list found for '%s'", getToAddString()));
         }

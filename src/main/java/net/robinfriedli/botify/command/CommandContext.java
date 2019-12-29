@@ -26,8 +26,8 @@ import net.robinfriedli.botify.persist.interceptors.AlertPresetCreationIntercept
 import net.robinfriedli.botify.persist.interceptors.EntityValidationInterceptor;
 import net.robinfriedli.botify.persist.interceptors.GuildPropertyInterceptor;
 import net.robinfriedli.botify.persist.interceptors.InterceptorChain;
-import net.robinfriedli.botify.persist.interceptors.PlaylistItemTimestampListener;
-import net.robinfriedli.botify.persist.interceptors.VerifyPlaylistListener;
+import net.robinfriedli.botify.persist.interceptors.PlaylistItemTimestampInterceptor;
+import net.robinfriedli.botify.persist.interceptors.VerifyPlaylistInterceptor;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
@@ -154,8 +154,8 @@ public class CommandContext {
             Session session = sessionFactory
                 .withOptions()
                 .interceptor(InterceptorChain.of(
-                    PlaylistItemTimestampListener.class,
-                    VerifyPlaylistListener.class,
+                    PlaylistItemTimestampInterceptor.class,
+                    VerifyPlaylistInterceptor.class,
                     AlertAccessConfigurationModificationInterceptor.class,
                     AlertPlaylistModificationInterceptor.class,
                     AlertPresetCreationInterceptor.class,

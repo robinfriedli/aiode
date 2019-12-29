@@ -15,11 +15,15 @@ import org.apache.commons.text.similarity.LevenshteinDistance;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
+import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.spotify.SpotifyService;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
 import net.robinfriedli.botify.entities.Preset;
+import net.robinfriedli.botify.persist.qb.builders.EntityQueryBuilder;
+import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
+import net.robinfriedli.botify.persist.qb.interceptor.interceptors.PartitionedQueryInterceptor;
 import net.robinfriedli.jxp.api.XmlElement;
 import org.hibernate.Session;
 
@@ -32,19 +36,28 @@ public class SearchEngine {
     private static final int MAX_LEVENSHTEIN_DISTANCE = 4;
 
     @Nullable
+    public static Playlist searchLocalList(Session session, String searchTerm) {
+        String searchName = Playlist.sanatizeName(searchTerm).replaceAll("'", "''").toLowerCase();
+        QueryBuilderFactory queryBuilderFactory = Botify.get().getQueryBuilderFactory();
+        return queryBuilderFactory.find(Playlist.class)
+            .where((cb, root, query) -> cb.equal(cb.lower(root.get("name")), searchName))
+            .build(session)
+            .uniqueResultOptional()
+            .orElse(null);
+    }
+
+    @Nullable
     public static Playlist searchLocalList(Session session, String searchTerm, boolean isPartitioned, String guildId) {
-        Optional<Playlist> playlist;
-        String searchName = Playlist.sanatizeName(searchTerm).replaceAll("'", "''");
-        String baseQuery = "from " + Playlist.class.getName() + " where lower(name) like lower('" + searchName + "')";
+        String searchName = Playlist.sanatizeName(searchTerm).replaceAll("'", "''").toLowerCase();
+        QueryBuilderFactory queryBuilderFactory = Botify.get().getQueryBuilderFactory();
+        EntityQueryBuilder<Playlist> queryBuilder = queryBuilderFactory
+            .find(Playlist.class)
+            .where((cb, root, query) -> cb.equal(cb.lower(root.get("name")), searchName));
         if (isPartitioned) {
-            playlist = session
-                .createQuery(baseQuery + " and guild_id = '" + guildId + "'", Playlist.class)
-                .uniqueResultOptional();
-        } else {
-            playlist = session.createQuery(baseQuery, Playlist.class).uniqueResultOptional();
+            queryBuilder.where((cb, root, query) -> cb.equal(root.get("guildId"), guildId));
         }
 
-        return playlist.orElse(null);
+        return queryBuilder.skipInterceptors(PartitionedQueryInterceptor.class).build(session).uniqueResultOptional().orElse(null);
     }
 
     public static List<PlaylistItem> searchPlaylistItems(Playlist playlist, String searchTerm) {

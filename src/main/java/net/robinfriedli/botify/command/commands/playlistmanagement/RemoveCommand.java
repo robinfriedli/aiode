@@ -30,7 +30,7 @@ public class RemoveCommand extends AbstractCommand {
     public void doRun() {
         Session session = getContext().getSession();
         String playlistName = getArgumentValue("from");
-        Playlist playlist = SearchEngine.searchLocalList(session, playlistName, isPartitioned(), getContext().getGuild().getId());
+        Playlist playlist = SearchEngine.searchLocalList(session, playlistName);
 
         if (playlist == null) {
             throw new NoResultsFoundException(String.format("No local list found for '%s'", playlistName));

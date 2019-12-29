@@ -18,7 +18,7 @@ public class DeleteCommand extends AbstractCommand {
     @Override
     public void doRun() {
         Session session = getContext().getSession();
-        Playlist playlist = SearchEngine.searchLocalList(session, getCommandInput(), isPartitioned(), getContext().getGuild().getId());
+        Playlist playlist = SearchEngine.searchLocalList(session, getCommandInput());
 
         if (playlist == null) {
             throw new NoResultsFoundException(String.format("No local list found for '%s'", getCommandInput()));

@@ -119,7 +119,7 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
     }
 
     private void loadLocalList(AudioManager audioManager) throws Exception {
-        Playlist playlist = SearchEngine.searchLocalList(getContext().getSession(), getCommandInput(), isPartitioned(), getContext().getGuild().getId());
+        Playlist playlist = SearchEngine.searchLocalList(getContext().getSession(), getCommandInput());
         if (playlist == null) {
             throw new NoResultsFoundException(String.format("No local playlist found for '%s'", getCommandInput()));
         }

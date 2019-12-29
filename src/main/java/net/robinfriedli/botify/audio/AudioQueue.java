@@ -20,8 +20,8 @@ import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
-import net.robinfriedli.botify.util.EmojiConstants;
 import net.robinfriedli.botify.persist.StaticSessionProvider;
+import net.robinfriedli.botify.util.EmojiConstants;
 import net.robinfriedli.botify.util.Util;
 
 /**

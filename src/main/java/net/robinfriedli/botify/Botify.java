@@ -26,6 +26,7 @@ import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.login.LoginManager;
+import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
 import net.robinfriedli.botify.servers.HttpServerManager;
 import net.robinfriedli.jxp.api.JxpBackend;
 import org.hibernate.SessionFactory;
@@ -59,6 +60,7 @@ public class Botify {
     private final ListenerAdapter[] registeredListeners;
     private final LoginManager loginManager;
     private final MessageService messageService;
+    private final QueryBuilderFactory queryBuilderFactory;
     private final SecurityManager securityManager;
     private final ShardManager shardManager;
     private final SpotifyApi.Builder spotifyApiBuilder;
@@ -78,6 +80,7 @@ public class Botify {
                   JxpBackend jxpBackend,
                   LoginManager loginManager,
                   MessageService messageService,
+                  QueryBuilderFactory queryBuilderFactory,
                   SecurityManager securityManager,
                   ShardManager shardManager,
                   SpotifyApi.Builder spotifyApiBuilder,
@@ -97,6 +100,7 @@ public class Botify {
         this.jxpBackend = jxpBackend;
         this.loginManager = loginManager;
         this.messageService = messageService;
+        this.queryBuilderFactory = queryBuilderFactory;
         this.securityManager = securityManager;
         this.shardManager = shardManager;
         this.spotifyApiBuilder = spotifyApiBuilder;
@@ -217,6 +221,10 @@ public class Botify {
         return guildPropertyManager;
     }
 
+    public HibernateComponent getHibernateComponent() {
+        return hibernateComponent;
+    }
+
     public HttpServerManager getHttpServerManager() {
         return httpServerManager;
     }
@@ -235,6 +243,10 @@ public class Botify {
 
     public MessageService getMessageService() {
         return messageService;
+    }
+
+    public QueryBuilderFactory getQueryBuilderFactory() {
+        return queryBuilderFactory;
     }
 
     public SecurityManager getSecurityManager() {

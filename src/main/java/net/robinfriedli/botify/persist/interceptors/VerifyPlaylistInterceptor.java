@@ -7,13 +7,19 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import javax.persistence.FlushModeType;
+
 import org.slf4j.Logger;
 
+import net.robinfriedli.botify.boot.SpringPropertiesConfig;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
 import net.robinfriedli.botify.entities.Song;
 import net.robinfriedli.botify.entities.UrlTrack;
 import net.robinfriedli.botify.entities.Video;
+import net.robinfriedli.botify.exceptions.InvalidCommandException;
+import net.robinfriedli.botify.persist.StaticSessionProvider;
+import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
 import net.robinfriedli.botify.persist.tasks.UpdatePlaylistItemIndicesTask;
 import org.hibernate.Interceptor;
 import org.hibernate.Transaction;
@@ -30,18 +36,24 @@ import org.hibernate.type.Type;
  * <p>
  * Verifies the playlist's name when one is saved and removes subsequent spaces.
  */
-public class VerifyPlaylistListener extends ChainableInterceptor {
+public class VerifyPlaylistInterceptor extends ChainableInterceptor {
 
+    private final QueryBuilderFactory queryBuilderFactory;
+    private final SpringPropertiesConfig springPropertiesConfig;
+
+    private boolean createdPlaylist;
     private int ordinal;
 
-
-    public VerifyPlaylistListener(Interceptor next, Logger logger) {
+    public VerifyPlaylistInterceptor(Interceptor next, Logger logger, QueryBuilderFactory queryBuilderFactory, SpringPropertiesConfig springPropertiesConfig) {
         super(next, logger);
+        this.queryBuilderFactory = queryBuilderFactory;
+        this.springPropertiesConfig = springPropertiesConfig;
     }
 
     @Override
     public void onSaveChained(Object entity, Serializable id, Object[] state, String[] propertyNames, Type[] types) {
         if (entity instanceof Playlist) {
+            createdPlaylist = true;
             Playlist playlist = (Playlist) entity;
             String newName = Playlist.sanatizeName(playlist.getName());
             if (!newName.equals(playlist.getName())) {
@@ -73,9 +85,13 @@ public class VerifyPlaylistListener extends ChainableInterceptor {
         }
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public void preFlushChained(Iterator entities) {
+    public void preFlush(Iterator entities) {
+        if (createdPlaylist) {
+            checkPlaylistCount();
+        }
+
+        @SuppressWarnings("unchecked")
         Iterable<Object> iterable = () -> entities;
         Set<Playlist> playlistsToUpdate = StreamSupport.stream(iterable.spliterator(), false)
             .filter(entity -> entity instanceof PlaylistItem)
@@ -83,14 +99,41 @@ public class VerifyPlaylistListener extends ChainableInterceptor {
             .collect(Collectors.toSet());
 
         if (!playlistsToUpdate.isEmpty()) {
+            playlistsToUpdate.forEach(this::checkPlaylistSize);
             UpdatePlaylistItemIndicesTask task = new UpdatePlaylistItemIndicesTask(playlistsToUpdate, Comparator.comparing(PlaylistItem::getOrdinal));
             task.perform();
         }
+
+        super.preFlush(entities);
     }
 
     @Override
     public void afterTransactionCompletionChained(Transaction tx) {
         ordinal = 0;
+        createdPlaylist = false;
     }
+
+    private void checkPlaylistCount() {
+        StaticSessionProvider.invokeWithSession(session -> {
+            Long playlistCount = queryBuilderFactory.select(Playlist.class, ((from, cb) -> cb.count(from.get("pk"))), Long.class)
+                .build(session)
+                .setFlushMode(FlushModeType.COMMIT)
+                .uniqueResult();
+            Integer playlistCountMax = springPropertiesConfig.getApplicationProperty(Integer.class, "botify.preferences.playlist_count_max");
+            if (playlistCountMax != null && playlistCount.compareTo(playlistCountMax.longValue()) > 0) {
+                throw new InvalidCommandException("Maximum playlist count of " + playlistCountMax + " reached!");
+            }
+        });
+    }
+
+    private void checkPlaylistSize(Playlist playlist) {
+        Integer playlistSizeMax = springPropertiesConfig.getApplicationProperty(Integer.class, "botify.preferences.playlist_size_max");
+        if (playlistSizeMax != null) {
+            if (playlist.getSize() > playlistSizeMax) {
+                throw new InvalidCommandException("List exceeds maximum size of " + playlistSizeMax + " items!");
+            }
+        }
+    }
+
 }
 

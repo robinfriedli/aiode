@@ -5,10 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.commons.lang3.tuple.Pair;
@@ -26,8 +22,11 @@ import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.discord.property.properties.ArgumentPrefixProperty;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.Preset;
+import net.robinfriedli.botify.function.HibernateInvoker;
+import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
 import org.hibernate.Interceptor;
 import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.type.Type;
 
@@ -37,12 +36,22 @@ public class GuildPropertyInterceptor extends ChainableInterceptor {
     private final GuildPropertyManager guildPropertyManager;
     private final Map<AbstractGuildProperty, Pair<Object, Object>> changedProperties;
     private final MessageService messageService;
+    private final QueryBuilderFactory queryBuilderFactory;
+    private final SessionFactory sessionFactory;
 
-    public GuildPropertyInterceptor(Interceptor next, Logger logger, CommandContext commandContext, GuildPropertyManager guildPropertyManager, MessageService messageService) {
+    public GuildPropertyInterceptor(Interceptor next,
+                                    Logger logger,
+                                    CommandContext commandContext,
+                                    GuildPropertyManager guildPropertyManager,
+                                    MessageService messageService,
+                                    QueryBuilderFactory queryBuilderFactory,
+                                    SessionFactory sessionFactory) {
         super(next, logger);
         this.commandContext = commandContext;
         this.guildPropertyManager = guildPropertyManager;
         this.messageService = messageService;
+        this.queryBuilderFactory = queryBuilderFactory;
+        this.sessionFactory = sessionFactory;
         changedProperties = new HashMap<>();
     }
 
@@ -67,6 +76,31 @@ public class GuildPropertyInterceptor extends ChainableInterceptor {
     }
 
     @Override
+    public void beforeTransactionCompletionChained(Transaction tx) {
+        if (!tx.getRollbackOnly()) {
+            for (AbstractGuildProperty property : changedProperties.keySet()) {
+                if ("argumentPrefix".equals(property.getProperty())) {
+                    // a new transaction has to be started explicitly as this one cannot be used anymore, this also requires
+                    // a new session where this interceptor is not registered, otherwise it'd be stuck in an infinite
+                    // loop of triggering itself
+                    try (Session session = sessionFactory.openSession()) {
+                        HibernateInvoker.create(session).invoke(() -> {
+                            Pair<Object, Object> previousWithNewValue = changedProperties.get(property);
+                            // previous might be null
+                            updatePresets((Character) previousWithNewValue.getLeft(), (char) previousWithNewValue.getRight(), session);
+                        });
+                    } catch (Throwable e) {
+                        messageService.sendException("Exception occurred while updating presets with new argument prefix. " +
+                                "Presets will have to be updated manually if necessary.",
+                            commandContext.getChannel());
+                        LoggerFactory.getLogger(getClass()).error("Exception while updating presets", e);
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
     public void afterTransactionCompletionChained(Transaction tx) {
         if (!tx.getRollbackOnly()) {
             if (!changedProperties.isEmpty()) {
@@ -76,18 +110,6 @@ public class GuildPropertyInterceptor extends ChainableInterceptor {
                     Pair<Object, Object> previousWithNewValue = changedProperties.get(property);
                     successMessageBuilder.append(String.format(updateMessage, previousWithNewValue.getRight()))
                         .append(System.lineSeparator());
-
-                    if ("argumentPrefix".equals(property.getProperty())) {
-                        try {
-                            // previous might be null
-                            updatePresets((Character) previousWithNewValue.getLeft(), (char) previousWithNewValue.getRight());
-                        } catch (Throwable e) {
-                            messageService.sendException("Exception occurred while updating presets with new argument prefix. " +
-                                    "Presets will have to be updated manually if necessary.",
-                                commandContext.getChannel());
-                            LoggerFactory.getLogger(getClass()).error("Exception while updating presets", e);
-                        }
-                    }
                 }
 
                 messageService.sendSuccess(successMessageBuilder.toString(), commandContext.getChannel());
@@ -96,13 +118,8 @@ public class GuildPropertyInterceptor extends ChainableInterceptor {
         changedProperties.clear();
     }
 
-    private void updatePresets(Character oldArgumentPrefix, char newArgumentPrefix) {
-        Session session = commandContext.getSession();
-        CriteriaBuilder cb = session.getCriteriaBuilder();
-        CriteriaQuery<Preset> presetQuery = cb.createQuery(Preset.class);
-        Root<Preset> queryRoot = presetQuery.from(Preset.class);
-        presetQuery.where(cb.equal(queryRoot.get("guildId"), commandContext.getGuild().getId()));
-        List<Preset> presets = session.createQuery(presetQuery).getResultList();
+    private void updatePresets(Character oldArgumentPrefix, char newArgumentPrefix, Session session) {
+        List<Preset> presets = queryBuilderFactory.find(Preset.class).build(session).getResultList();
 
         for (Preset preset : presets) {
             Botify botify = Botify.get();
