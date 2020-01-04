@@ -116,4 +116,4 @@ spring.jpa.properties.hibernate.javax.cache.missing_cache_strategy=create
 Navigate to the project root directory and install botify by running `./gradlew build`. Then you can launch botify
 using the main class `net.robinfriedli.botify.boot.SpringBootstrap`. You can either run the bash script `bash/launch.sh`
 or run `./gradlew bootRun` directly. Note that those commands are written for Unix-like operating systems such as macOS and
-Linux. For windows you need to make adjustments to the `bash/launch.sh` file.
+Linux. For windows you need to make adjustments to the `bash/launch.sh` and `bash/update.sh` files.
