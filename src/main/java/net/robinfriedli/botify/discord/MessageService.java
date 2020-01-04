@@ -35,6 +35,7 @@ import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.boot.AbstractShutdownable;
 import net.robinfriedli.botify.boot.SpringPropertiesConfig;
 import net.robinfriedli.botify.boot.configurations.HibernateComponent;
+import net.robinfriedli.botify.concurrent.LoggingThreadFactory;
 import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
@@ -48,7 +49,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class MessageService extends AbstractShutdownable {
 
-    private static final ScheduledExecutorService TEMP_MESSAGE_DELETION_SCHEDULER = Executors.newScheduledThreadPool(3);
+    private static final ScheduledExecutorService TEMP_MESSAGE_DELETION_SCHEDULER = Executors.newScheduledThreadPool(3, new LoggingThreadFactory("temp-message-deletion-scheduler"));
 
     private final int limit = 1000;
     private final HibernateComponent hibernateComponent;
