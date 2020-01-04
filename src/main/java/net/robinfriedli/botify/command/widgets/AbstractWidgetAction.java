@@ -46,16 +46,22 @@ public abstract class AbstractWidgetAction implements Command {
     public void onSuccess() {
         if (resetRequired) {
             widget.reset();
-        } else if (!widget.isMessageDeleted()) {
-            removeReaction();
+        } else {
+            widget.awaitMessageDeletionIfPendingThenDo(messageDeleted -> {
+                if (!messageDeleted) {
+                    removeReaction();
+                }
+            });
         }
     }
 
     @Override
     public void onFailure() {
-        if (!widget.isMessageDeleted()) {
-            removeReaction();
-        }
+        widget.awaitMessageDeletionIfPendingThenDo(messageDeleted -> {
+            if (!messageDeleted) {
+                removeReaction();
+            }
+        });
     }
 
     @Override

@@ -31,22 +31,28 @@ public class QueueWidget extends AbstractWidget {
     public void reset() {
         MessageService messageService = Botify.get().getMessageService();
         Message message = getMessage();
+        awaitMessageDeletion();
         try {
-            message.delete().queue();
-            setMessageDeleted(true);
+            message.delete().queue(_v -> setMessageDeleted(true), e -> handleDeletionError(e, message));
         } catch (InsufficientPermissionException e) {
+            setMessageDeleted(false);
             messageService.sendError("Bot is missing permission: " + e.getPermission().getName(), message.getChannel());
         } catch (Throwable e) {
-            OffsetDateTime timeCreated = message.getTimeCreated();
-            ZonedDateTime zonedDateTime = timeCreated.atZoneSameInstant(ZoneId.systemDefault());
-            LoggerFactory.getLogger(getClass()).warn(String.format("Cannot delete queue widget message from %s for channel %s on guild %s",
-                zonedDateTime, message.getChannel(), message.getGuild()), e);
+            handleDeletionError(e, message);
         }
 
         EmbedBuilder embedBuilder = audioPlayback.getAudioQueue().buildMessageEmbed(audioPlayback, message.getGuild());
         CompletableFuture<Message> futureMessage = messageService.send(embedBuilder, message.getChannel());
         WidgetManager manager = getWidgetManager();
         futureMessage.thenAccept(completedMessage -> manager.registerWidget(new QueueWidget(manager, completedMessage, audioManager, audioPlayback)));
+    }
+
+    private void handleDeletionError(Throwable e, Message message) {
+        setMessageDeleted(false);
+        OffsetDateTime timeCreated = message.getTimeCreated();
+        ZonedDateTime zonedDateTime = timeCreated.atZoneSameInstant(ZoneId.systemDefault());
+        LoggerFactory.getLogger(getClass()).warn(String.format("Cannot delete queue widget message from %s for channel %s on guild %s",
+            zonedDateTime, message.getChannel(), message.getGuild()), e);
     }
 
 }

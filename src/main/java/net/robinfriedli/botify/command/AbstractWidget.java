@@ -3,6 +3,7 @@ package net.robinfriedli.botify.command;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,8 +34,9 @@ public abstract class AbstractWidget {
     private final Message message;
     private final String guildId;
     private final Logger logger;
-    // if the message has been deleted by a widget action that does not always require a reset
-    private boolean messageDeleted;
+
+    private volatile CompletableFuture<Boolean> pendingMessageDeletion;
+    private volatile boolean messageDeleted;
 
     protected AbstractWidget(WidgetManager widgetManager, Message message) {
         Botify botify = Botify.get();
@@ -48,7 +50,8 @@ public abstract class AbstractWidget {
     }
 
     /**
-     * Resets (i.e. re-sends) the message output after the widget action has been executed
+     * Resets (i.e. re-sends) the message output after the widget action has been executed. The new message needs to be
+     * attached to a new instance of this widget.
      */
     public abstract void reset();
 
@@ -111,16 +114,18 @@ public abstract class AbstractWidget {
 
     public void destroy() {
         widgetManager.removeWidget(this);
-        if (!isMessageDeleted()) {
-            try {
+        awaitMessageDeletionIfPendingThenDo(deleted -> {
+            if (!deleted) {
                 try {
-                    message.delete().queue();
-                } catch (InsufficientPermissionException ignored) {
-                    message.clearReactions().queue();
+                    try {
+                        message.delete().queue();
+                    } catch (InsufficientPermissionException ignored) {
+                        message.clearReactions().queue();
+                    }
+                } catch (Throwable ignored) {
                 }
-            } catch (Throwable ignored) {
             }
-        }
+        });
     }
 
     public void handleReaction(GuildMessageReactionAddEvent event, CommandContext context) {
@@ -139,12 +144,37 @@ public abstract class AbstractWidget {
         return widgetManager;
     }
 
-    public boolean isMessageDeleted() {
-        return messageDeleted;
+    /**
+     * This method is used to run any logic that checks if this widget has deleted its associated message. If the widget
+     * is currently in the process of deleting the message, i.e. if pendingMessageDeletion is set to a non completed future
+     * but not null, this will execute the given code after the pendingMessageDeletion future is complete. Else this
+     * simply checks the value of the messageDeleted field and apply it to the given consumer.
+     *
+     * @param resultConsumer The logic to run that depends on whether or not the message of this widget has been deleted.
+     */
+    public void awaitMessageDeletionIfPendingThenDo(Consumer<Boolean> resultConsumer) {
+        if (pendingMessageDeletion != null) {
+            pendingMessageDeletion.thenAccept(resultConsumer);
+        } else {
+            resultConsumer.accept(messageDeleted);
+        }
     }
 
     public void setMessageDeleted(boolean messageDeleted) {
+        // calls to #awaitMessageDeletionIfPendingThenDo while the deletion is in progress will await the completable future
+        // and see the completion of the completable future instance; calls made to that method after deletion will see
+        // the altered messageDeleted field; the pending deletion future is set back to null for in case this widget sends
+        // a new message, i.e. after resetting
         this.messageDeleted = messageDeleted;
+
+        if (pendingMessageDeletion != null) {
+            pendingMessageDeletion.complete(messageDeleted);
+            pendingMessageDeletion = null;
+        }
+    }
+
+    public void awaitMessageDeletion() {
+        pendingMessageDeletion = new CompletableFuture<>();
     }
 
     public String getGuildId() {
