@@ -13,7 +13,7 @@
 
 ## Invite it to your guild
 
-https://discordapp.com/api/oauth2/authorize?client_id=483377420494176258&permissions=70315072&scope=bot
+[Invite the bot to join your guild](https://discordapp.com/api/oauth2/authorize?client_id=483377420494176258&permissions=70315072&scope=bot)
 
 ## Host it yourself
 
@@ -33,8 +33,8 @@ router's public ip and setup port forwarding for your router.
 #### 3.1 Go to https://console.developers.google.com/ and create a project for the YouTube Data API and create and copy the credentials
 
 ### 4. Setup botify settings
-#### 4.1 Enter confidentials
-##### 4.1.1 Navigate to your cloned project and go to `src/main/resources` and create the `settings-private.properties` from the example below and fill in the blanks.
+#### 4.1 Apply your confidentials created in the previous steps and manage your private settings
+##### 4.1.1 Navigate to your cloned project and go to `src/main/resources` and create the `settings-private.properties` from the example below and fill in the blanks. This file is included in gitignore to make sure you don't accidentally publish it.
 ##### 4.1.2 Adjust datasource properties and enter the database user and password, database setup will be discussed further in 4.2.1.
 ##### 4.1.3 To take advantage of the admin commands that can perform administrative actions, such as updating and restarting the bot, be sure to add your Discord user id to the `botify.security.admin_users` property. To find your Discord user id, enable Developer Mode in the App Settings > Appearance. Then go to any guild, right click your user and click "Copy ID".
 ```properties
@@ -69,8 +69,8 @@ botify.tokens.topgg_token=
 ```
 #### 4.2 Adjust application.properties
 ##### 4.2.1 Review the datasource properties and make necessary adjustments. If you are using a local postgres server and name your database "botify" you can leave it as it is. If you need help setting up your postgres server, please refer to their official documentation: http://www.postgresqltutorial.com/.
-##### 4.2.2 For Botify to manage the YouTube API quota automatically, be sure to fill in the `botify.preferences.youtube_api_daily_quota` property; open the Google developer console and go to Library > YouTube Data API v3 > Manage > Quotas
-##### 4.2.3 Change the `botify.server.base_uri` property to your domain or public IP (without slash at the end) and adjust `botify.server.spotify_login_callback` to the corresponding endpoint for Spotify logins (normaly BASE_URI + "/login")
+##### 4.2.2 For Botify to manage the YouTube API quota usage automatically, be sure to fill in the `botify.preferences.youtube_api_daily_quota` property; open the Google developer console and go to Library > YouTube Data API v3 > Manage > Quotas
+##### 4.2.3 Change the `botify.server.base_uri` property to your domain or public IP (without slash at the end) and adjust `botify.server.spotify_login_callback` to the corresponding endpoint for Spotify logins (normally BASE_URI + "/login")
 Don't have a domain? You could either go without a web server all together and still use most of botify's features or use your
 router's public ip and setup port forwarding for your router to the machine where you're running botify via the port specified by the `SERVER_PORT` property.
 ```properties
