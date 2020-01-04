@@ -30,7 +30,12 @@ public class SpotifyTrackRedirectionRunnable extends ChainableRunnable {
                         tracksToRedirect.stream().filter(HollowYouTubeVideo::isHollow).forEach(HollowYouTubeVideo::cancel);
                         break;
                     }
-                    spotifyRedirectService.redirectTrack(youTubeVideo);
+                    try {
+                        spotifyRedirectService.redirectTrack(youTubeVideo);
+                    } catch (Throwable e) {
+                        tracksToRedirect.stream().filter(HollowYouTubeVideo::isHollow).forEach(HollowYouTubeVideo::cancel);
+                        throw e;
+                    }
                 }
             });
         }

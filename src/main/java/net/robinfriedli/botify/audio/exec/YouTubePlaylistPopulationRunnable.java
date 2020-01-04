@@ -29,7 +29,12 @@ public class YouTubePlaylistPopulationRunnable extends ChainableRunnable {
                 break;
             }
 
-            youTubeService.populateList(youTubePlaylist);
+            try {
+                youTubeService.populateList(youTubePlaylist);
+            } catch (Throwable e) {
+                youTubePlaylistsToLoad.forEach(YouTubePlaylist::cancelLoading);
+                throw e;
+            }
         }
     }
 }

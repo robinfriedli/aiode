@@ -26,10 +26,11 @@ public class TrackLoadingExceptionHandler implements Thread.UncaughtExceptionHan
 
     @Override
     public void uncaughtException(Thread t, Throwable e) {
-        logger.error("Exception while loading tracks", e);
+        String commandContextSuffix = commandContext != null ? " (started by command: " + commandContext.getId() + ")" : "";
+        logger.error("Exception while loading tracks" + commandContextSuffix, e);
         if (channel != null) {
             EmbedBuilder embedBuilder = ExceptionUtils.buildErrorEmbed(e);
-            embedBuilder.setDescription("There has been an API error while loading some tracks. Please try again.");
+            embedBuilder.setDescription("There has been an error while loading some tracks. Please try again.");
 
             if (commandContext != null) {
                 embedBuilder.addField("CommandContext ID", commandContext.getId(), false);

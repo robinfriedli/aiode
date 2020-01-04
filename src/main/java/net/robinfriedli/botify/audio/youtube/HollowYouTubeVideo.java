@@ -143,17 +143,13 @@ public class HollowYouTubeVideo extends AbstractSoftCachedPlayable implements Yo
 
     @Override
     public Playable fetch() {
-        if (isHollow()) {
+        // only supported for Spotify redirect as YouTube does not allow loading specific playlist items
+        if (isHollow() && redirectedSpotifyTrack != null) {
             markLoading();
-            EagerFetchQueue.submitFetch(() -> {
-                // only supported for Spotify redirect as YouTube does not allow loading specific playlist items
-                if (redirectedSpotifyTrack != null) {
-                    StaticSessionProvider.invokeWithSession((CheckedConsumer<Session>) session -> {
-                        SpotifyRedirectService spotifyRedirectService = new SpotifyRedirectService(session, youTubeService);
-                        spotifyRedirectService.redirectTrack(this);
-                    });
-                }
-            });
+            EagerFetchQueue.submitFetch(() -> StaticSessionProvider.invokeWithSession((CheckedConsumer<Session>) session -> {
+                SpotifyRedirectService spotifyRedirectService = new SpotifyRedirectService(session, youTubeService);
+                spotifyRedirectService.redirectTrack(this);
+            }));
         }
         return this;
     }
