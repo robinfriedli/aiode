@@ -180,6 +180,7 @@ public class ChainableInterceptor extends EmptyInterceptor {
         next.beforeTransactionCompletion(tx);
     }
 
+    @Deprecated
     @Override
     public String onPrepareStatement(String sql) {
         try {
@@ -271,6 +272,7 @@ public class ChainableInterceptor extends EmptyInterceptor {
     public void beforeTransactionCompletionChained(Transaction tx) throws Exception {
     }
 
+    @Deprecated
     public void onPrepareStatementChained(String sql) throws Exception {
     }
 

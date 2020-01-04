@@ -141,6 +141,7 @@ public class InterceptorChain extends EmptyInterceptor {
         first.beforeTransactionCompletion(tx);
     }
 
+    @Deprecated
     @Override
     public String onPrepareStatement(String sql) {
         return first.onPrepareStatement(sql);

@@ -37,7 +37,7 @@ public class AnswerCommand extends AbstractCommand {
                 for (String o : options) {
                     Object chosen = question.get(o);
                     if (chosen instanceof Collection) {
-                        chosenOptions.addAll((Collection) chosen);
+                        chosenOptions.addAll((Collection<?>) chosen);
                     } else {
                         chosenOptions.add(chosen);
                     }
