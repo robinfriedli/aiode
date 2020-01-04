@@ -11,6 +11,34 @@
 * Customise how you want to summon your bot by using a custom prefix or giving your bot a name
 * Advanced admin commands such as updating and rebooting the bot or cleaning up the database available to bot administrators
 
+## botify 2
+
+Botify 2 is currently in development. Check out the development/v2.0 branch to see the latest progress.
+
+Milestones:
+- [x] migrate from maven to gradle
+- [x] implement spring boot framework
+- [x] add support for lavaplayer youtube ip rotator
+- [x] cleanup transaction invokers
+- [x] cleanup track loading executors and improve concurrency
+- [x] create new query builder API as a wrapper for hibernate criteria queries that simplifies writing queries and introduces new features like forking and query interceptors
+- [x] adapt to changes in behaviour of JPA hibernate now that it’s bootstrapped by spring boot via JPA
+- [ ] additional commands to alter existing playlist, incl. renaming and adding a thumbnail
+- [ ] support for PLS files to export / import playlists (maybe, evaluation pending)
+- [ ] enable search for soundcloud tracks using lavaplayer scsearch
+- [ ] fully configure command arguments in XML and use groovy scripts for rules
+- [ ] advanced queue management that allows removing items from the queue and reflects changes to queued playlists
+- [ ] store discord snowflake ids as long instead of string
+- [ ] better manage storage / retrieval of JDA entities (esp. on AudioPlayback, GuildContext and AbstractWidget)
+- [ ] drop cached GuildContext instances for inactive guilds
+- [ ] pagination widget for playlist view and maybe add pagination to queue widget
+- [ ] enable skipping to a specific queue index
+- [ ] save and restore playback states when rebooting (queue, current track position etc)
+- [ ] adjust charts command and add user specific charts
+- [ ] user specific track suggestions
+- [ ] evaluate command / scripting sandbox + custom scripted CommandInterceptors
+- [ ] web client that communicates with Botify via rest (eval Rust + WebAssembly vs TypeScript)
+
 ## Invite it to your guild
 
 https://discordapp.com/api/oauth2/authorize?client_id=483377420494176258&permissions=70315072&scope=bot
