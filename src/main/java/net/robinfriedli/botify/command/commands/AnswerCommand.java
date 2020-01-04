@@ -47,7 +47,6 @@ public class AnswerCommand extends AbstractCommand {
             }
             try {
                 targetCommand = sourceCommand.fork(getContext());
-                targetCommand.getArgumentContribution().transferValues(sourceCommand.getArgumentContribution());
                 targetCommand.withUserResponse(option);
                 question.destroy();
             } catch (RuntimeException e) {
