@@ -101,7 +101,7 @@ public class MessageService extends AbstractShutdownable {
     }
 
     public CompletableFuture<Message> send(String message, Guild guild) {
-        return acceptForGuild(guild, messageChannel -> messageChannel.sendMessage(message));
+        return executeMessageActionForGuild(guild, messageChannel -> messageChannel.sendMessage(message));
     }
 
     public CompletableFuture<Message> send(MessageEmbed messageEmbed, MessageChannel messageChannel) {
@@ -109,7 +109,7 @@ public class MessageService extends AbstractShutdownable {
     }
 
     public CompletableFuture<Message> send(MessageEmbed messageEmbed, Guild guild) {
-        return acceptForGuild(guild, channel -> channel.sendMessage(messageEmbed));
+        return executeMessageActionForGuild(guild, channel -> channel.sendMessage(messageEmbed));
     }
 
     public CompletableFuture<Message> send(EmbedBuilder embedBuilder, MessageChannel channel) {
@@ -137,14 +137,14 @@ public class MessageService extends AbstractShutdownable {
     }
 
     public CompletableFuture<Message> send(MessageBuilder messageBuilder, InputStream file, String fileName, MessageChannel messageChannel) {
-        return accept(messageChannel, c -> {
+        return executeMessageAction(messageChannel, c -> {
             MessageAction messageAction = c.sendMessage(messageBuilder.build());
             return messageAction.addFile(file, fileName);
         });
     }
 
     public CompletableFuture<Message> send(MessageBuilder messageBuilder, InputStream file, String fileName, Guild guild) {
-        return acceptForGuild(guild, c -> {
+        return executeMessageActionForGuild(guild, c -> {
             MessageAction messageAction = c.sendMessage(messageBuilder.build());
             return messageAction.addFile(file, fileName);
         });
@@ -222,7 +222,7 @@ public class MessageService extends AbstractShutdownable {
         }
     }
 
-    public CompletableFuture<Message> accept(MessageChannel channel, Function<MessageChannel, MessageAction> function) {
+    public CompletableFuture<Message> executeMessageAction(MessageChannel channel, Function<MessageChannel, MessageAction> function) {
         CompletableFuture<Message> futureMessage = new CompletableFuture<>();
         try {
             MessageAction messageAction = function.apply(channel);
@@ -236,7 +236,7 @@ public class MessageService extends AbstractShutdownable {
                 if (channel instanceof TextChannel && canTalk(((TextChannel) channel).getGuild())) {
                     Guild guild = ((TextChannel) channel).getGuild();
                     send("I do not have permission to send any messages to channel " + channel.getName() + " so I'll send it here instead.", guild);
-                    acceptForGuild(guild, function).thenAccept(futureMessage::complete);
+                    executeMessageActionForGuild(guild, function).thenAccept(futureMessage::complete);
                 } else if (channel instanceof TextChannel) {
                     logger.warn("Unable to send messages to guild " + ((TextChannel) channel).getGuild());
                     futureMessage.completeExceptionally(e);
@@ -260,14 +260,14 @@ public class MessageService extends AbstractShutdownable {
         return futureMessage;
     }
 
-    public CompletableFuture<Message> acceptForGuild(Guild guild, Function<MessageChannel, MessageAction> function) {
+    public CompletableFuture<Message> executeMessageActionForGuild(Guild guild, Function<MessageChannel, MessageAction> function) {
         TextChannel textChannel = getTextChannelForGuild(guild);
 
         if (textChannel == null) {
             logger.warn("Unable to send any messages to guild " + guild.getName() + " (" + guild.getId() + ")");
             return CompletableFuture.failedFuture(new CancellationException());
         } else {
-            return accept(textChannel, function);
+            return executeMessageAction(textChannel, function);
         }
     }
 
@@ -317,11 +317,11 @@ public class MessageService extends AbstractShutdownable {
     }
 
     private CompletableFuture<Message> sendInternal(MessageChannel channel, String text) {
-        return accept(channel, c -> c.sendMessage(text));
+        return executeMessageAction(channel, c -> c.sendMessage(text));
     }
 
     private CompletableFuture<Message> sendInternal(MessageChannel channel, MessageEmbed messageEmbed) {
-        return accept(channel, c -> c.sendMessage(messageEmbed));
+        return executeMessageAction(channel, c -> c.sendMessage(messageEmbed));
     }
 
     private boolean canTalk(Guild guild) {

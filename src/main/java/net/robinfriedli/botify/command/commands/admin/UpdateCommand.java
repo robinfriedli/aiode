@@ -39,7 +39,7 @@ public class UpdateCommand extends AbstractAdminCommand {
         embedBuilder.setColor(ColorSchemeProperty.getColor());
         MessageEmbed messageEmbed = embedBuilder.build();
 
-        getMessageService().accept(getContext().getChannel(), channel -> {
+        getMessageService().executeMessageAction(getContext().getChannel(), channel -> {
             MessageAction messageAction = channel.sendMessage(messageEmbed);
 
             for (OutputAttachment attachment : attachments) {
