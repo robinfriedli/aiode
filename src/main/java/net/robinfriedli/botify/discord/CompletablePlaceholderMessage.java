@@ -1,6 +1,7 @@
 package net.robinfriedli.botify.discord;
 
 import java.time.OffsetDateTime;
+import java.util.EnumSet;
 import java.util.Formatter;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -395,6 +396,23 @@ public class CompletablePlaceholderMessage implements Message {
     @Override
     public MessageReaction.ReactionEmote getReactionById(long l) {
         return unwrap().getReactionById(l);
+    }
+
+    @Nonnull
+    @Override
+    public AuditableRestAction<Void> suppressEmbeds(boolean suppressed) {
+        return unwrap().suppressEmbeds(suppressed);
+    }
+
+    @Override
+    public boolean isSuppressedEmbeds() {
+        return unwrap().isSuppressedEmbeds();
+    }
+
+    @Nonnull
+    @Override
+    public EnumSet<MessageFlag> getFlags() {
+        return unwrap().getFlags();
     }
 
     @Nonnull

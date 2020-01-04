@@ -27,7 +27,7 @@ dependencies {
     implementation "com.google.guava:guava:28.1-jre"
     implementation "com.sedmelluq:lavaplayer:1.3.32"
     implementation "com.sedmelluq:lavaplayer-ext-youtube-rotator:0.2.1"
-    implementation "net.dv8tion:JDA:4.0.0_79"
+    implementation "net.dv8tion:JDA:4.1.0_95"
     implementation "net.robinfriedli:JXP:1.3"
     implementation "net.robinfriedli:StringList:1.5"
     implementation "commons-validator:commons-validator:1.6"
