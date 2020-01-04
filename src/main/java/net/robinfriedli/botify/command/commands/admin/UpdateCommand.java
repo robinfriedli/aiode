@@ -5,20 +5,23 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.List;
 
+import com.google.common.collect.Lists;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.MessageBuilder;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.requests.restaction.MessageAction;
 import net.robinfriedli.botify.command.AbstractAdminCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
+import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.stringlist.StringList;
 import net.robinfriedli.stringlist.StringListImpl;
 
 public class UpdateCommand extends AbstractAdminCommand {
+
+    private final List<OutputAttachment> attachments = Lists.newArrayList();
 
     public UpdateCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
         super(commandContribution, context, commandManager, commandString, false, identifier, description);
@@ -26,32 +29,46 @@ public class UpdateCommand extends AbstractAdminCommand {
 
     @Override
     public void runAdmin() throws Exception {
-        ProcessBuilder updateProcess = new ProcessBuilder("bash", "resources/bash/update.sh");
+        ProcessBuilder updateProcess = new ProcessBuilder("bash", "bash/update.sh");
         Process process = updateProcess.start();
         process.waitFor();
 
-        sendOutput(process);
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        attachOutput(embedBuilder, "Success", process.getInputStream());
+        attachOutput(embedBuilder, "Error", process.getErrorStream());
+        embedBuilder.setColor(ColorSchemeProperty.getColor());
+        MessageEmbed messageEmbed = embedBuilder.build();
+
+        getMessageService().accept(getContext().getChannel(), channel -> {
+            MessageAction messageAction = channel.sendMessage(messageEmbed);
+
+            for (OutputAttachment attachment : attachments) {
+                // #addFile simply returns the current MessageAction which is returned below
+                //noinspection ResultOfMethodCallIgnored
+                messageAction.addFile(attachment.getInputStream(), attachment.getName());
+            }
+
+            return messageAction;
+        });
     }
 
     @Override
     public void onSuccess() {
     }
 
-    private void sendOutput(Process process) throws IOException {
-        String inputStreamString = getInputStreamString(process.getInputStream());
-        if (inputStreamString.length() < 2000) {
-            EmbedBuilder embedBuilder = new EmbedBuilder();
-            embedBuilder.setTitle("Output");
-            embedBuilder.setDescription(inputStreamString);
-            sendMessage(embedBuilder);
+    private void attachOutput(EmbedBuilder embedBuilder, String title, InputStream inputStream) throws IOException {
+        String inputStreamString = getInputStreamString(inputStream);
+
+        if (inputStreamString.isBlank()) {
+            return;
+        }
+
+        if (inputStreamString.length() < 1024) {
+            embedBuilder.addField(title, String.format("%s%s%s", "```" + System.lineSeparator(), inputStreamString, System.lineSeparator() + "```"), false);
         } else {
-            MessageChannel channel = getContext().getChannel();
-            Message message = new MessageBuilder().append("Output too long, attaching as file").build();
             ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(inputStreamString.getBytes());
-            getMessageService().accept(channel, c -> {
-                MessageAction messageAction = c.sendMessage(message);
-                return messageAction.addFile(byteArrayInputStream, "output.txt");
-            });
+            embedBuilder.addField(title, "Output too long, sending as attachment", false);
+            attachments.add(new OutputAttachment(byteArrayInputStream, title + ".txt"));
         }
     }
 
@@ -64,6 +81,25 @@ public class UpdateCommand extends AbstractAdminCommand {
         }
 
         return lineList.toSeparatedString(System.lineSeparator());
+    }
+
+    private static class OutputAttachment {
+
+        private final ByteArrayInputStream inputStream;
+        private final String name;
+
+        private OutputAttachment(ByteArrayInputStream inputStream, String name) {
+            this.inputStream = inputStream;
+            this.name = name;
+        }
+
+        public ByteArrayInputStream getInputStream() {
+            return inputStream;
+        }
+
+        public String getName() {
+            return name;
+        }
     }
 
 }

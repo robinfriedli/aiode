@@ -9,9 +9,9 @@ BASE=$(git merge-base @ "$UPSTREAM")
 if [ $LOCAL = $REMOTE ]; then
     echo "Already Up-to-date"
 elif [ $LOCAL = $BASE ]; then
-    git pull --rebase
-    mvn clean install
-    echo "Pulled updates and performed clean install. You might need to restart the bot."
+    git pull
+    ./gradlew build
+    echo "Pulled updates and executed gradle build. You might need to restart the bot."
 elif [ $REMOTE = $BASE ]; then
     echo "Need to push"
 else
