@@ -188,6 +188,10 @@
       <url>http://jcenter.bintray.com</url>
     </repository>
     <repository>
+      <id>sedmelluq-bintray</id>
+      <url>https://dl.bintray.com/sedmelluq/com.sedmelluq</url>
+    </repository>
+    <repository>
       <id>StringList</id>
       <url>https://raw.github.com/robinfriedli/StringList/repository/</url>
     </repository>
