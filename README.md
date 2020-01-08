@@ -47,6 +47,8 @@ SERVER_PORT=8000
 BASE_URI=http://localhost:8000
 REDIRECT_URI=http://localhost:8000/login
 HIBERNATE_CONFIGURATION=./resources/hibernate.cfg.xml
+# list IPv6 blocks to use for the lavaplayer route planner (comma separated)
+IPV6_BLOCKS=
 ##########
 # tokens #
 ##########
