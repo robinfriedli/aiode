@@ -58,7 +58,8 @@ spring.datasource.password=postgres
 ########
 # IPv6 #
 ########
-botify.preferences.ipv6_block=
+# list IPv6 blocks to use for the lavaplayer route planner (comma separated)
+botify.preferences.ipv6_blocks=
 ##############################
 # top.gg settings (optional) #
 ##############################
