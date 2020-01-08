@@ -72,7 +72,7 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
             SpotifyTrackBulkLoadingService spotifyTrackBulkLoadingService = new SpotifyTrackBulkLoadingService(spotifyApi, true);
 
             LocalDate currentDate = LocalDate.now();
-            LocalDate date2WeeksAgo = currentDate.minusDays(14);
+            LocalDate date2WeeksAgo = currentDate.minusDays(28);
 
             StaticSessionProvider.invokeWithSession(session -> {
                 CriteriaBuilder cb = session.getCriteriaBuilder();
