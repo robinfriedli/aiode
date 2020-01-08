@@ -1,19 +1,27 @@
 package net.robinfriedli.botify.audio;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager;
+import com.sedmelluq.lava.extensions.youtuberotator.YoutubeIpRotatorSetup;
+import com.sedmelluq.lava.extensions.youtuberotator.planner.NanoIpRoutePlanner;
+import com.sedmelluq.lava.extensions.youtuberotator.tools.ip.IpBlock;
+import com.sedmelluq.lava.extensions.youtuberotator.tools.ip.Ipv6Block;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -29,6 +37,7 @@ import net.robinfriedli.botify.entities.PlaybackHistory;
 import net.robinfriedli.botify.entities.UserPlaybackHistory;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
+import net.robinfriedli.botify.util.PropertiesLoadingService;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
@@ -67,6 +76,22 @@ public class AudioManager {
         // there is 100 videos per page and the maximum playlist size is 5000
         youtubeAudioSourceManager.setPlaylistPageCount(50);
 
+        String ipv6Blocks = PropertiesLoadingService.loadProperty("IPV6_BLOCKS");
+        if (!Strings.isNullOrEmpty(ipv6Blocks)) {
+            // thats the type of list NanoIpRoutePlanner expects
+            @SuppressWarnings("rawtypes")
+            List<IpBlock> ipv6BlockList = Splitter.on(",")
+                .trimResults()
+                .omitEmptyStrings()
+                .splitToList(ipv6Blocks)
+                .stream()
+                .map(Ipv6Block::new)
+                .collect(Collectors.toList());
+
+            YoutubeIpRotatorSetup rotatorSetup = new YoutubeIpRotatorSetup(new NanoIpRoutePlanner(ipv6BlockList, true));
+            rotatorSetup.forSource(youtubeAudioSourceManager).setup();
+            logger.info(String.format("YouTubeIpRotator set up with '%s'", ipv6Blocks));
+        }
     }
 
     public void startPlayback(Guild guild, @Nullable VoiceChannel channel) {
