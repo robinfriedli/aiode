@@ -24,6 +24,12 @@ public class CommandExceptionHandler implements Thread.UncaughtExceptionHandler 
     @Override
     public void uncaughtException(Thread t, Throwable e) {
         CommandContext commandContext = command.getContext();
+
+        if (Botify.isShuttingDown()) {
+            logger.warn(String.format("Suppressed error from command %s because it happened during shutdown: %s", commandContext.getId(), e));
+            return;
+        }
+
         MessageChannel channel = commandContext.getChannel();
         String commandDisplay = command.display();
         MessageService messageService = Botify.get().getMessageService();

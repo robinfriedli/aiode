@@ -13,6 +13,8 @@ import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
 import com.wrapper.spotify.model_objects.credentials.AuthorizationCodeCredentials;
 import net.dv8tion.jda.api.entities.User;
+import net.robinfriedli.botify.Botify;
+import net.robinfriedli.botify.boot.ShutdownableExecutorService;
 import net.robinfriedli.botify.concurrent.LoggingThreadFactory;
 
 /**
@@ -21,6 +23,10 @@ import net.robinfriedli.botify.concurrent.LoggingThreadFactory;
 public class Login {
 
     private static final ScheduledExecutorService REFRESH_SERVICE = Executors.newScheduledThreadPool(3, new LoggingThreadFactory("login-refresh-pool"));
+
+    static {
+        Botify.SHUTDOWNABLES.add(new ShutdownableExecutorService(REFRESH_SERVICE));
+    }
 
     private final User user;
     private ScheduledFuture<?> nextRefresh;

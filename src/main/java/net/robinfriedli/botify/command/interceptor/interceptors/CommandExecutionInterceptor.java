@@ -16,6 +16,8 @@ import com.wrapper.spotify.exceptions.detailed.UnauthorizedException;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.User;
+import net.robinfriedli.botify.Botify;
+import net.robinfriedli.botify.boot.ShutdownableExecutorService;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.Command;
 import net.robinfriedli.botify.command.CommandContext;
@@ -37,6 +39,10 @@ import org.hibernate.Session;
 public class CommandExecutionInterceptor implements CommandInterceptor {
 
     private static final ExecutorService COMMAND_HISTORY_SERVICE = Executors.newCachedThreadPool(new LoggingThreadFactory("command-history-pool"));
+
+    static {
+        Botify.SHUTDOWNABLES.add(new ShutdownableExecutorService(COMMAND_HISTORY_SERVICE));
+    }
 
     private final MessageService messageService;
     private final Logger logger;

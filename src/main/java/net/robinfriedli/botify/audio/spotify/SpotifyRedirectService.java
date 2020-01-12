@@ -11,10 +11,11 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Strings;
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
+import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.youtube.HollowYouTubeVideo;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
-import net.robinfriedli.botify.boot.AbstractShutdownable;
+import net.robinfriedli.botify.boot.ShutdownableExecutorService;
 import net.robinfriedli.botify.concurrent.LoggingThreadFactory;
 import net.robinfriedli.botify.entities.SpotifyRedirectIndex;
 import net.robinfriedli.botify.entities.SpotifyRedirectIndexModificationLock;
@@ -31,9 +32,13 @@ import static net.robinfriedli.botify.entities.SpotifyRedirectIndex.*;
  * of full tracks via its api. Checks if there is a persisted {@link SpotifyRedirectIndex} or loads the YouTube video
  * via {@link YouTubeService#redirectSpotify(HollowYouTubeVideo)} if not.
  */
-public class SpotifyRedirectService extends AbstractShutdownable {
+public class SpotifyRedirectService {
 
     private static final ExecutorService SINGE_THREAD_EXECUTOR_SERVICE = Executors.newSingleThreadExecutor(new LoggingThreadFactory("spotify-redirect-service-pool"));
+
+    static {
+        Botify.SHUTDOWNABLES.add(new ShutdownableExecutorService(SINGE_THREAD_EXECUTOR_SERVICE));
+    }
 
     private final HibernateInvoker invoker;
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -109,8 +114,4 @@ public class SpotifyRedirectService extends AbstractShutdownable {
         }
     }
 
-    @Override
-    public void shutdown(int delayMs) {
-        SINGE_THREAD_EXECUTOR_SERVICE.shutdown();
-    }
 }

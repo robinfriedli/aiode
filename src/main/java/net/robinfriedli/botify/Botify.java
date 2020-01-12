@@ -44,6 +44,7 @@ public class Botify {
     public static final Logger LOGGER = LoggerFactory.getLogger(Botify.class);
 
     public static final Set<Shutdownable> SHUTDOWNABLES = Sets.newHashSet();
+    private static volatile boolean shuttingDown;
 
     private static Botify instance;
 
@@ -158,6 +159,7 @@ public class Botify {
      */
     public static void shutdown(int millisToWait) {
         Botify botify = get();
+        shuttingDown = true;
         LOGGER.info("Shutting down");
         ShardManager shardManager = botify.getShardManager();
         CommandExecutionQueueManager executionQueueManager = botify.getExecutionQueueManager();
@@ -191,6 +193,10 @@ public class Botify {
         shardManager.shutdown();
         LOGGER.info("Shutting down hibernate SessionFactory");
         botify.getSessionFactory().close();
+    }
+
+    public static boolean isShuttingDown() {
+        return shuttingDown;
     }
 
     public ApplicationContext getSpringBootContext() {

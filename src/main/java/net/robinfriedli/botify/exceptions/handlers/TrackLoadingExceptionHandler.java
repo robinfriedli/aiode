@@ -27,7 +27,14 @@ public class TrackLoadingExceptionHandler implements Thread.UncaughtExceptionHan
     @Override
     public void uncaughtException(Thread t, Throwable e) {
         String commandContextSuffix = commandContext != null ? " (started by command: " + commandContext.getId() + ")" : "";
-        logger.error("Exception while loading tracks" + commandContextSuffix, e);
+        String msg = "Exception while loading tracks" + commandContextSuffix;
+
+        if (Botify.isShuttingDown()) {
+            logger.warn(String.format("Suppressed error because it happened during shutdown: %s: %s", msg, e));
+            return;
+        }
+
+        logger.error(msg, e);
         if (channel != null) {
             EmbedBuilder embedBuilder = ExceptionUtils.buildErrorEmbed(e);
             embedBuilder.setDescription("There has been an error while loading some tracks. Please try again.");
