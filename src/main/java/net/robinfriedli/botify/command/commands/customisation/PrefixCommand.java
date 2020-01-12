@@ -1,12 +1,9 @@
 package net.robinfriedli.botify.command.commands.customisation;
 
-import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
-import net.robinfriedli.botify.exceptions.InvalidCommandException;
 
 public class PrefixCommand extends AbstractCommand {
 
@@ -16,12 +13,6 @@ public class PrefixCommand extends AbstractCommand {
 
     @Override
     public void doRun() {
-        GuildManager guildManager = Botify.get().getGuildManager();
-
-        if (getCommandInput().length() < 1 || getCommandInput().length() > 5) {
-            throw new InvalidCommandException("Length should be 1 - 5 characters");
-        }
-
         getContext().getGuildContext().setPrefix(getCommandInput());
     }
 

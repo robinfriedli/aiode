@@ -271,7 +271,7 @@ public class MessageService extends AbstractShutdownable {
         }
     }
 
-    private TextChannel getTextChannelForGuild(Guild guild) {
+    public TextChannel getTextChannelForGuild(Guild guild) {
         Botify botify = Botify.get();
         GuildContext guildContext = botify.getGuildManager().getContextForGuild(guild);
 

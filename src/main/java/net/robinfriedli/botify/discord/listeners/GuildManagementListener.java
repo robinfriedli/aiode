@@ -1,5 +1,6 @@
 package net.robinfriedli.botify.discord.listeners;
 
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -12,10 +13,14 @@ import javax.persistence.criteria.Root;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent;
+import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateNicknameEvent;
 import net.dv8tion.jda.api.events.role.RoleDeleteEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.sharding.ShardManager;
@@ -23,8 +28,12 @@ import net.robinfriedli.botify.boot.Shutdownable;
 import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.concurrent.LoggingThreadFactory;
 import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
+import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.GuildManager;
+import net.robinfriedli.botify.discord.MessageService;
+import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.entities.GrantedRole;
+import net.robinfriedli.botify.function.HibernateInvoker;
 import org.discordbots.api.client.DiscordBotListAPI;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
@@ -42,15 +51,18 @@ public class GuildManagementListener extends ListenerAdapter implements Shutdown
     private final GuildManager guildManager;
     private final HibernateComponent hibernateComponent;
     private final Logger logger;
+    private final MessageService messageService;
     private final ShardManager shardManager;
 
     public GuildManagementListener(CommandExecutionQueueManager executionQueueManager,
                                    @Nullable DiscordBotListAPI discordBotListAPI,
                                    GuildManager guildManager,
                                    HibernateComponent hibernateComponent,
+                                   MessageService messageService,
                                    ShardManager shardManager) {
         this.executionQueueManager = executionQueueManager;
         this.discordBotListAPI = discordBotListAPI;
+        this.messageService = messageService;
         guildEventHandlerExecutorService = Executors.newFixedThreadPool(3, new LoggingThreadFactory("guild-management-listener-pool"));
         this.guildManager = guildManager;
         this.hibernateComponent = hibernateComponent;
@@ -94,7 +106,8 @@ public class GuildManagementListener extends ListenerAdapter implements Shutdown
     @Override
     public void onRoleDelete(@Nonnull RoleDeleteEvent event) {
         guildEventHandlerExecutorService.execute(() -> {
-            String roleId = event.getRole().getId();
+            Role role = event.getRole();
+            String roleId = role.getId();
             hibernateComponent.invokeWithSession(session -> {
                 CriteriaBuilder cb = session.getCriteriaBuilder();
                 CriteriaDelete<GrantedRole> deleteQuery = cb.createCriteriaDelete(GrantedRole.class);
@@ -103,10 +116,49 @@ public class GuildManagementListener extends ListenerAdapter implements Shutdown
                 int rowCount = session.createQuery(deleteQuery).executeUpdate();
 
                 if (rowCount > 0) {
-                    logger.info(String.format("Deleted %s GrantedRole entities upon deletion of role %s on guild %s", rowCount, roleId, event.getGuild()));
+                    Guild guild = event.getGuild();
+                    GuildContext guildContext = guildManager.getContextForGuild(guild);
+                    logger.info(String.format("Deleted %s GrantedRole entities upon deletion of role %s on guild %s", rowCount, roleId, guild));
+
+                    EmbedBuilder embedBuilder = new EmbedBuilder();
+                    embedBuilder.setTitle("Deletion of role referenced by your permission configuration");
+                    embedBuilder.setDescription(String.format("The deleted role '%s' was referenced by the permission configuration. Check the current permissions by using the permission command.", role.getName()));
+                    embedBuilder.setColor(ColorSchemeProperty.getColor(guildContext.getSpecification(session)));
+                    TextChannel textChannel = messageService.getTextChannelForGuild(guild);
+                    if (textChannel != null) {
+                        messageService.sendTemporary(embedBuilder.build(), textChannel);
+                    }
                 }
             });
         });
+    }
+
+    @Override
+    public void onGuildMemberUpdateNickname(@Nonnull GuildMemberUpdateNicknameEvent event) {
+        Guild guild = event.getGuild();
+        if (event.getMember().equals(guild.getSelfMember())) {
+            // synchronise invoked transaction per guild, as invoked transactions executed by commands via AbstractCommand#invoke
+            // are always synchronised per guild this makes sure that if this event is triggered by the rename command this task will
+            // run after the rename command has committed its transaction
+            guildEventHandlerExecutorService.execute(() -> HibernateInvoker.create(guild).invoke(session -> {
+                    GuildContext guildContext = guildManager.getContextForGuild(guild);
+                    String botName = guildContext.getBotName();
+                    String name = event.getNewNickname();
+                    if (!Objects.equals(name, botName)) {
+                        guildContext.setBotName(name);
+
+                        EmbedBuilder embedBuilder = new EmbedBuilder();
+                        embedBuilder.setTitle("Renamed");
+                        embedBuilder.setDescription(String.format("Botify has been renamed to '%s'. This new name can be used as command prefix.", name));
+                        embedBuilder.setColor(ColorSchemeProperty.getColor(guildContext.getSpecification(session)));
+                        TextChannel textChannel = messageService.getTextChannelForGuild(guild);
+                        if (textChannel != null) {
+                            messageService.sendTemporary(embedBuilder.build(), textChannel);
+                        }
+                    }
+                }
+            ));
+        }
     }
 
     @Override

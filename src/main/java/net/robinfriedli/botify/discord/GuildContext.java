@@ -1,7 +1,6 @@
 package net.robinfriedli.botify.discord;
 
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.audio.exec.PooledTrackLoadingExecutor;
@@ -16,7 +15,6 @@ import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
 import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.entities.GuildSpecification;
-import net.robinfriedli.botify.function.HibernateInvoker;
 import net.robinfriedli.botify.persist.StaticSessionProvider;
 import org.hibernate.Session;
 
@@ -83,18 +81,12 @@ public class GuildContext {
         });
     }
 
-    public boolean setBotName(String name) {
+    public void setBotName(String name) {
         StaticSessionProvider.invokeWithSession(session -> {
             GuildSpecification guildSpecification = getSpecification(session);
 
-            HibernateInvoker.create(session).invoke(() -> guildSpecification.setBotName(name));
+            guildSpecification.setBotName(name);
         });
-        try {
-            guild.getSelfMember().modifyNickname(name).queue();
-            return true;
-        } catch (InsufficientPermissionException ignored) {
-            return false;
-        }
     }
 
     public String getPrefix() {
@@ -115,7 +107,7 @@ public class GuildContext {
         StaticSessionProvider.invokeWithSession(session -> {
             GuildSpecification guildSpecification = getSpecification(session);
 
-            HibernateInvoker.create(session).invoke(() -> guildSpecification.setPrefix(prefix));
+            guildSpecification.setPrefix(prefix);
         });
     }
 

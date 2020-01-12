@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <guildProperties xmlns="guildPropertySpace">
-  <guildProperty property="botName" name="bot name" defaultValue="$botify" implementation="net.robinfriedli.botify.discord.property.properties.BotNameProperty" updateMessage="You can now call me %s"/>
-  <guildProperty property="prefix" name="prefix" defaultValue="$botify" implementation="net.robinfriedli.botify.discord.property.properties.PrefixProperty" updateMessage="Prefix set to %s"/>
+  <guildProperty property="botName" name="bot name" defaultValue="$botify" implementation="net.robinfriedli.botify.discord.property.properties.BotNameProperty" updateMessage="You can now call me %s. My new name may be used as command prefix."/>
+  <guildProperty property="prefix" name="prefix" defaultValue="$botify" implementation="net.robinfriedli.botify.discord.property.properties.PrefixProperty" updateMessage="Command prefix set to %s"/>
   <guildProperty property="sendPlaybackNotification" name="playback notification" defaultValue="true" implementation="net.robinfriedli.botify.discord.property.properties.PlaybackNotificationProperty" updateMessage="Set playback notification to %s"/>
   <guildProperty property="color" name="color" defaultValue="#1DB954" implementation="net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty" updateMessage="Changed colour to %s"/>
   <guildProperty property="enableAutoPause" name="auto pause" defaultValue="true" implementation="net.robinfriedli.botify.discord.property.properties.AutoPauseProperty" updateMessage="Set auto pause to %s"/>

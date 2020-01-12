@@ -16,6 +16,7 @@ import com.wrapper.spotify.exceptions.detailed.UnauthorizedException;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.boot.ShutdownableExecutorService;
 import net.robinfriedli.botify.command.AbstractCommand;
@@ -128,6 +129,9 @@ public class CommandExecutionInterceptor implements CommandInterceptor {
             logger.error("Exception during YouTube request", e);
             errorMessage = message;
             unexpectedException = true;
+        } catch (ErrorResponseException e) {
+            messageService.sendException(String.format("Discord returned error (code: %s): %s", e.getErrorCode(), e.getMeaning()), command.getContext().getChannel());
+            logger.error("Blocking Discord request returned error", e);
         } catch (CommandRuntimeException e) {
             if (e.getCause() != null) {
                 errorMessage = e.getCause().getClass().getSimpleName() + ": " + e.getCause().getMessage();

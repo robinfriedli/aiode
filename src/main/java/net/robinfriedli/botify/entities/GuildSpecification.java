@@ -13,6 +13,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
+import javax.validation.constraints.Size;
 
 import com.google.api.client.util.Sets;
 import net.dv8tion.jda.api.entities.Guild;
@@ -35,8 +36,10 @@ public class GuildSpecification implements Serializable {
     @Column(name = "guild_id", unique = true)
     private String guildId;
     @Column(name = "bot_name")
+    @Size(min = 1, max = 32, message = "Invalid length of nickname. Needs to be between 1 and 32.")
     private String botName;
     @Column(name = "prefix")
+    @Size(min = 1, max = 5, message = "Invalid length of prefix. Needs to be between 1 and 5.")
     private String prefix;
     @Column(name = "send_playback_notification")
     private Boolean sendPlaybackNotification;

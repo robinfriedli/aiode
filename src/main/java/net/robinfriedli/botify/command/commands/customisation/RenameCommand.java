@@ -1,10 +1,10 @@
 package net.robinfriedli.botify.command.commands.customisation;
 
-import net.robinfriedli.botify.Botify;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 
@@ -18,13 +18,25 @@ public class RenameCommand extends AbstractCommand {
 
     @Override
     public void doRun() {
-        GuildManager guildManager = Botify.get().getGuildManager();
+        String name = getCommandInput();
+        CommandContext context = getContext();
+        Guild guild = context.getGuild();
 
-        if (getCommandInput().length() < 1 || getCommandInput().length() > 20) {
-            throw new InvalidCommandException("Length should be 1 - 20 characters");
+        if (name.length() < 1 || name.length() > 32) {
+            throw new InvalidCommandException("Length should be 1 - 32 characters");
         }
 
-        couldChangeNickname = getContext().getGuildContext().setBotName(getCommandInput());
+        // create enclosing transaction that is blocked until the nickname is set
+        invoke(() -> {
+            context.getGuildContext().setBotName(name);
+            try {
+                // use complete() in this case to make the transaction wait fo the nickname change to complete
+                guild.getSelfMember().modifyNickname(name).complete();
+                couldChangeNickname = true;
+            } catch (InsufficientPermissionException ignored) {
+                couldChangeNickname = false;
+            }
+        });
     }
 
     @Override
