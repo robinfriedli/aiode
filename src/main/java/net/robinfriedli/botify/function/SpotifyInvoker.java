@@ -37,18 +37,14 @@ public class SpotifyInvoker extends BaseInvoker {
         return new SpotifyInvoker(spotifyApi, login);
     }
 
-    @Override
-    public <E> E invoke(Mode mode, Callable<E> task) throws Exception {
+    public <E> E invoke(Callable<E> task) throws Exception {
+        Mode mode = Mode.create();
         if (login != null) {
             mode.with(new SpotifyUserAuthorizationMode(login, spotifyApi));
         } else {
             mode.with(new SpotifyAuthorizationMode(spotifyApi));
         }
-        return super.invoke(mode, task);
-    }
-
-    public <E> E invoke(Callable<E> task) throws Exception {
-        return invoke(Mode.create(), task);
+        return invoke(mode, task);
     }
 
 }
