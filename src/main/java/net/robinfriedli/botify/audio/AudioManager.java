@@ -108,6 +108,11 @@ public class AudioManager extends AbstractShutdownable {
     public void playTrack(Guild guild, @Nullable VoiceChannel channel, boolean resumePaused) {
         AudioPlayback playback = getPlaybackForGuild(guild);
 
+        if (!resumePaused && playback.isPaused()) {
+            playback.getAudioPlayer().stopTrack();
+            playback.unpause();
+        }
+
         if (channel != null) {
             setChannel(playback, channel);
         } else if (playback.getVoiceChannel() == null) {
