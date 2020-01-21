@@ -17,6 +17,9 @@ import org.hibernate.Session;
  */
 public interface Playable {
 
+    String UNAVAILABLE_STRING = "[UNAVAILABLE]";
+    String LOADING_STRING = "Loading...";
+
     /**
      * @return The url of the music file to stream
      * @throws UnavailableResourceException if loading the item was cancelled due to being unavailable or cancelled
@@ -27,6 +30,41 @@ public interface Playable {
      * @return an id that uniquely identifies this playable together with {@link #getSource()}
      */
     String getId() throws UnavailableResourceException;
+
+    /**
+     * @return The title of the track. This is usually the song name without artist string.
+     */
+    String getTitle() throws UnavailableResourceException;
+
+    default String title() {
+        try {
+            return getTitle();
+        } catch (UnavailableResourceException e) {
+            return UNAVAILABLE_STRING;
+        }
+    }
+
+    String getTitle(long timeOut, TimeUnit unit) throws UnavailableResourceException, TimeoutException;
+
+    default String title(long timeOut, TimeUnit unit) {
+        try {
+            return getTitle(timeOut, unit);
+        } catch (UnavailableResourceException e) {
+            return UNAVAILABLE_STRING;
+        } catch (TimeoutException e) {
+            return LOADING_STRING;
+        }
+    }
+
+    String getTitleNow(String alternativeValue) throws UnavailableResourceException;
+
+    default String getTitleNow() {
+        try {
+            return getTitleNow(LOADING_STRING);
+        } catch (UnavailableResourceException e) {
+            return UNAVAILABLE_STRING;
+        }
+    }
 
     /**
      * @return The title of the Playable. For Spotify it's the track name, for YouTube it's the video title and for other
@@ -42,7 +80,7 @@ public interface Playable {
         try {
             return getDisplay();
         } catch (UnavailableResourceException e) {
-            return "[UNAVAILABLE]";
+            return UNAVAILABLE_STRING;
         }
     }
 
@@ -61,9 +99,9 @@ public interface Playable {
         try {
             return getDisplay(timeOut, unit);
         } catch (UnavailableResourceException e) {
-            return "[UNAVAILABLE]";
+            return UNAVAILABLE_STRING;
         } catch (TimeoutException e) {
-            return "Loading...";
+            return LOADING_STRING;
         }
     }
 
@@ -79,9 +117,9 @@ public interface Playable {
 
     default String getDisplayNow() {
         try {
-            return getDisplayNow("Loading...");
+            return getDisplayNow(LOADING_STRING);
         } catch (UnavailableResourceException e) {
-            return "[UNAVAILABLE]";
+            return UNAVAILABLE_STRING;
         }
     }
 

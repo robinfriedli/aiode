@@ -48,6 +48,21 @@ public class UrlPlayable implements Playable {
     }
 
     @Override
+    public String getTitle() {
+        return display;
+    }
+
+    @Override
+    public String getTitle(long timeOut, TimeUnit unit) {
+        return getTitle();
+    }
+
+    @Override
+    public String getTitleNow(String alternativeValue) {
+        return getTitle();
+    }
+
+    @Override
     public String getDisplay() {
         return display;
     }

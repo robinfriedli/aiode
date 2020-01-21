@@ -23,8 +23,8 @@ import net.robinfriedli.botify.login.LoginManager;
 
 public class LoginCommand extends AbstractCommand {
 
-    public LoginCommand(CommandContribution commandContribution, CommandContext commandContext, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContribution, commandContext, commandManager, commandString, false, identifier, description, Category.SPOTIFY);
+    public LoginCommand(CommandContribution commandContribution, CommandContext commandContext, CommandManager commandManager, String commandString, boolean requiresInput, String identifier, String description, Category category) {
+        super(commandContribution, commandContext, commandManager, commandString, requiresInput, identifier, description, category);
     }
 
     @Override

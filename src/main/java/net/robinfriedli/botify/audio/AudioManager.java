@@ -67,7 +67,7 @@ public class AudioManager extends AbstractShutdownable {
         playerManager = new DefaultAudioPlayerManager();
         audioTrackLoader = new AudioTrackLoader(playerManager);
 
-        executorService = Executors.newFixedThreadPool(5, new LoggingThreadFactory("audio-manager-pool"));
+        executorService = Executors.newFixedThreadPool(3, new LoggingThreadFactory("audio-manager-pool"));
 
         this.guildManager = guildManager;
         this.hibernateComponent = hibernateComponent;
@@ -155,7 +155,7 @@ public class AudioManager extends AbstractShutdownable {
     void createHistoryEntry(Playable playable, Guild guild, VoiceChannel voiceChannel) {
         executorService.execute(() -> {
             try {
-                hibernateComponent.invokeWithSession(session -> {
+                hibernateComponent.consumeSession(session -> {
                     PlaybackHistory playbackHistory = new PlaybackHistory(LocalDateTime.now(), playable, guild, session);
 
                     session.persist(playbackHistory);

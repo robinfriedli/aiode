@@ -8,6 +8,7 @@ import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.Command;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.discord.MessageService;
+import net.robinfriedli.botify.exceptions.CommandFailure;
 import net.robinfriedli.botify.exceptions.ExceptionUtils;
 import net.robinfriedli.botify.exceptions.UserException;
 
@@ -23,6 +24,10 @@ public class CommandExceptionHandler implements Thread.UncaughtExceptionHandler 
 
     @Override
     public void uncaughtException(Thread t, Throwable e) {
+        if (e instanceof CommandFailure) {
+            return;
+        }
+
         CommandContext commandContext = command.getContext();
 
         if (Botify.isShuttingDown()) {

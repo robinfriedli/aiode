@@ -12,8 +12,8 @@ public class RenameCommand extends AbstractCommand {
 
     private boolean couldChangeNickname;
 
-    public RenameCommand(CommandContribution commandContribution, CommandContext commandContext, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContribution, commandContext, commandManager, commandString, true, identifier, description, Category.CUSTOMISATION);
+    public RenameCommand(CommandContribution commandContribution, CommandContext commandContext, CommandManager commandManager, String commandString, boolean requiresInput, String identifier, String description, Category category) {
+        super(commandContribution, commandContext, commandManager, commandString, requiresInput, identifier, description, category);
     }
 
     @Override

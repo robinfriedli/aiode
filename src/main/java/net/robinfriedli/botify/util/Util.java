@@ -67,4 +67,8 @@ public class Util {
         }
     }
 
+    public static String normalizeWhiteSpace(String s) {
+        return s.trim().replaceAll("\\s+", " ");
+    }
+
 }

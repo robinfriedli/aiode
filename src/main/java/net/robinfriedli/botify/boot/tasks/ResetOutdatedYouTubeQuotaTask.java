@@ -24,7 +24,7 @@ public class ResetOutdatedYouTubeQuotaTask implements StartupTask {
 
     @Override
     public void perform() {
-        StaticSessionProvider.invokeWithSession(session -> {
+        StaticSessionProvider.consumeSession(session -> {
             CurrentYouTubeQuotaUsage currentQuotaUsage = YouTubeService.getCurrentQuotaUsage(session);
             LocalDateTime lastUpdatedNoZone = currentQuotaUsage.getLastUpdated();
 

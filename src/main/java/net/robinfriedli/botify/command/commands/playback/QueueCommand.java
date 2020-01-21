@@ -28,14 +28,15 @@ import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 
 public class QueueCommand extends AbstractQueueLoadingCommand {
 
-    public QueueCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
+    public QueueCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, boolean requiresInput, String identifier, String description, Category category) {
         super(commandContribution,
             context,
             commandManager,
             commandString,
+            requiresInput,
             identifier,
             description,
-            Category.PLAYBACK,
+            category,
             false,
             context.getGuildContext().getPooledTrackLoadingExecutor());
     }

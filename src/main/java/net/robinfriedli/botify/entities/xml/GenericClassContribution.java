@@ -28,7 +28,7 @@ public abstract class GenericClassContribution<E> extends AbstractXmlElement {
     @SuppressWarnings("unchecked")
     public Class<E> getImplementationClass() {
         Class<E> implementation;
-        String className = getAttribute("implementation").getValue();
+        String className = getAttribute(defineClassAttribute()).getValue();
         try {
             implementation = (Class<E>) Class.forName(className);
         } catch (ClassNotFoundException e) {
@@ -71,6 +71,10 @@ public abstract class GenericClassContribution<E> extends AbstractXmlElement {
         } catch (InvocationTargetException e) {
             throw new RuntimeException("Exception while invoking constructor " + constructor.toString(), e);
         }
+    }
+
+    protected String defineClassAttribute() {
+        return "implementation";
     }
 
 }

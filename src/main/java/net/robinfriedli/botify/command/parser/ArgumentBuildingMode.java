@@ -1,7 +1,7 @@
 package net.robinfriedli.botify.command.parser;
 
 import net.robinfriedli.botify.command.AbstractCommand;
-import net.robinfriedli.botify.command.ArgumentContribution;
+import net.robinfriedli.botify.command.ArgumentController;
 import net.robinfriedli.botify.discord.property.properties.ArgumentPrefixProperty;
 import net.robinfriedli.botify.exceptions.CommandParseException;
 import net.robinfriedli.botify.exceptions.UserException;
@@ -48,15 +48,14 @@ public class ArgumentBuildingMode implements CommandParser.Mode {
         if (character == '=') {
             isRecodingValue = true;
             return this;
-        } else if (character == ' ') {
+        } else if (Character.isWhitespace(character)) {
             if (isInline) {
                 if (isRecodingValue) {
                     argumentValueBuilder.append(character);
-                    return this;
                 } else {
                     isRecodingValue = true;
-                    return this;
                 }
+                return this;
             } else {
                 terminate();
                 return new ScanningMode(command, commandParser, argumentPrefix);
@@ -67,11 +66,10 @@ public class ArgumentBuildingMode implements CommandParser.Mode {
         } else {
             if (isRecodingValue) {
                 argumentValueBuilder.append(character);
-                return this;
             } else {
                 argumentBuilder.append(character);
-                return this;
             }
+            return this;
         }
     }
 
@@ -79,20 +77,19 @@ public class ArgumentBuildingMode implements CommandParser.Mode {
     public CommandParser.Mode handleLiteral(char character) {
         if (isRecodingValue) {
             argumentValueBuilder.append(character);
-            return this;
         } else {
             argumentBuilder.append(character);
-            return this;
         }
+        return this;
     }
 
     @Override
     public void terminate() {
         try {
-            ArgumentContribution argumentContribution = command.getArgumentContribution();
+            ArgumentController argumentController = command.getArgumentController();
             String argument = argumentBuilder.toString().trim();
             String argumentValue = argumentValueBuilder.toString().trim();
-            argumentContribution.setArgument(argument, argumentValue);
+            argumentController.setArgument(argument, argumentValue);
             commandParser.fireOnArgumentParsed(argument, argumentValue);
         } catch (UserException e) {
             throw new CommandParseException(e.getMessage(), command.getCommandBody(), e, conceptionIndex);

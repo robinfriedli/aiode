@@ -40,7 +40,7 @@ public class CommandInterceptorChain implements CommandInterceptor {
         Object[] parameters = new Object[parameterCount];
         for (int i = 0; i < parameterCount; i++) {
             Class<?> parameterType = parameterTypes[i];
-            if (parameterType.isAssignableFrom(CommandInterceptor.class)) {
+            if (CommandInterceptor.class.isAssignableFrom(parameterType)) {
                 if (next.hasNext()) {
                     parameters[i] = instantiate(next.next(), next);
                 } else {

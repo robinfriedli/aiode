@@ -15,10 +15,31 @@ public class QueuedThread extends Thread {
 
     @Override
     public void run() {
+        if (isPrivileged()) {
+            try {
+                super.run();
+            } finally {
+                queue.removeFromPool(this);
+            }
+        } else {
+            runWithSlot();
+        }
+    }
+
+    @SuppressWarnings("CallToThreadRun")
+    private void runWithSlot() {
+        Object slot;
+        try {
+            slot = queue.takeSlot();
+        } catch (InterruptedException e) {
+            return;
+        }
+
         try {
             super.run();
         } finally {
-            queue.freeSlot(this);
+            queue.removeFromPool(this);
+            queue.freeSlot(slot);
         }
     }
 

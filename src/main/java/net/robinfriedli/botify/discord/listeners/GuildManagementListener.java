@@ -108,7 +108,7 @@ public class GuildManagementListener extends ListenerAdapter implements Shutdown
         guildEventHandlerExecutorService.execute(() -> {
             Role role = event.getRole();
             String roleId = role.getId();
-            hibernateComponent.invokeWithSession(session -> {
+            hibernateComponent.consumeSession(session -> {
                 CriteriaBuilder cb = session.getCriteriaBuilder();
                 CriteriaDelete<GrantedRole> deleteQuery = cb.createCriteriaDelete(GrantedRole.class);
                 Root<GrantedRole> queryRoot = deleteQuery.from(GrantedRole.class);

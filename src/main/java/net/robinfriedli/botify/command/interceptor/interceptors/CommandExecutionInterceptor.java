@@ -3,7 +3,6 @@ package net.robinfriedli.botify.command.interceptor.interceptors;
 import java.awt.Color;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,12 +25,13 @@ import net.robinfriedli.botify.command.interceptor.CommandInterceptor;
 import net.robinfriedli.botify.concurrent.LoggingThreadFactory;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.CommandHistory;
+import net.robinfriedli.botify.exceptions.Abort;
 import net.robinfriedli.botify.exceptions.AmbiguousCommandException;
+import net.robinfriedli.botify.exceptions.CommandFailure;
 import net.robinfriedli.botify.exceptions.CommandRuntimeException;
 import net.robinfriedli.botify.exceptions.NoLoginException;
 import net.robinfriedli.botify.exceptions.UserException;
 import net.robinfriedli.botify.persist.StaticSessionProvider;
-import org.hibernate.Session;
 
 /**
  * CommandInterceptor that runs the commands logic by calling {@link Command#doRun()} and handles exceptions thrown
@@ -39,7 +39,7 @@ import org.hibernate.Session;
  */
 public class CommandExecutionInterceptor implements CommandInterceptor {
 
-    private static final ExecutorService COMMAND_HISTORY_SERVICE = Executors.newCachedThreadPool(new LoggingThreadFactory("command-history-pool"));
+    private static final ExecutorService COMMAND_HISTORY_SERVICE = Executors.newFixedThreadPool(3, new LoggingThreadFactory("command-history-pool"));
 
     static {
         Botify.SHUTDOWNABLES.add(new ShutdownableExecutorService(COMMAND_HISTORY_SERVICE));
@@ -88,15 +88,18 @@ public class CommandExecutionInterceptor implements CommandInterceptor {
             } else {
                 throw e;
             }
+        } catch (Abort ignored) {
         } catch (NoLoginException e) {
             MessageChannel channel = command.getContext().getChannel();
             User user = command.getContext().getUser();
             String message = "User " + user.getName() + " is not logged in to Spotify";
             messageService.sendError(message, channel);
             errorMessage = message;
+            throw new CommandFailure(e);
         } catch (UserException e) {
             messageService.sendTemporary(e.buildEmbed().build(), command.getContext().getChannel());
             errorMessage = e.getMessage();
+            throw new CommandFailure(e);
         } catch (FriendlyException e) {
             EmbedBuilder embedBuilder = new EmbedBuilder();
             embedBuilder.setTitle("Could not load track");
@@ -106,12 +109,14 @@ public class CommandExecutionInterceptor implements CommandInterceptor {
             embedBuilder.setColor(Color.RED);
 
             messageService.sendTemporary(embedBuilder.build(), command.getContext().getChannel());
+            throw new CommandFailure(e);
         } catch (UnauthorizedException e) {
             String message = "Unauthorized: " + e.getMessage();
             messageService.sendException(message, command.getContext().getChannel());
             logger.warn("Unauthorized Spotify API operation", e);
             errorMessage = message;
             unexpectedException = true;
+            throw new CommandFailure(e);
         } catch (TooManyRequestsException e) {
             String message = "Executing too many Spotify requests at the moment, please try again later.";
             messageService.sendException(message,
@@ -119,6 +124,7 @@ public class CommandExecutionInterceptor implements CommandInterceptor {
             logger.warn("Executing too many Spotify requests", e);
             errorMessage = message;
             unexpectedException = true;
+            throw new CommandFailure(e);
         } catch (GoogleJsonResponseException e) {
             String message = e.getDetails().getMessage();
             StringBuilder responseBuilder = new StringBuilder("Error occurred when requesting data from YouTube.");
@@ -129,9 +135,11 @@ public class CommandExecutionInterceptor implements CommandInterceptor {
             logger.error("Exception during YouTube request", e);
             errorMessage = message;
             unexpectedException = true;
+            throw new CommandFailure(e);
         } catch (ErrorResponseException e) {
             messageService.sendException(String.format("Discord returned error (code: %s): %s", e.getErrorCode(), e.getMeaning()), command.getContext().getChannel());
             logger.error("Blocking Discord request returned error", e);
+            throw new CommandFailure(e);
         } catch (CommandRuntimeException e) {
             if (e.getCause() != null) {
                 errorMessage = e.getCause().getClass().getSimpleName() + ": " + e.getCause().getMessage();
@@ -174,7 +182,7 @@ public class CommandExecutionInterceptor implements CommandInterceptor {
                 history.setUnexpectedException(unexpectedException);
                 history.setErrorMessage(errorMessage);
 
-                StaticSessionProvider.invokeWithSession((Consumer<Session>) session -> session.persist(history));
+                StaticSessionProvider.consumeSession(session -> session.persist(history));
             } else {
                 logger.warn("Command " + command + " has no history");
             }

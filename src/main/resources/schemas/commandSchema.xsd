@@ -5,18 +5,59 @@
   <xs:complexType name="commands">
     <xs:sequence>
       <xs:element name="command" type="command"/>
+      <xs:element name="abstractCommand" type="abstractCommand"/>
     </xs:sequence>
   </xs:complexType>
   <xs:complexType name="command">
     <xs:sequence>
+      <xs:element name="argument" type="argument"/>
+      <xs:element name="removeArgument" type="removeArgument"/>
       <xs:element name="example" type="example"/>
     </xs:sequence>
-    <xs:attribute name="identifier" type="xs:string"/>
-    <xs:attribute name="implementation" type="xs:string"/>
-    <xs:attribute name="description" type="xs:string"/>
+    <xs:attribute name="identifier" type="xs:string" use="required"/>
+    <xs:attribute name="implementation" type="xs:string" use="required"/>
+    <xs:attribute name="requiresInput" type="xs:boolean"/>
+    <xs:attribute name="category" type="xs:string" use="required"/>
+    <xs:attribute name="description" type="xs:string" use="required"/>
   </xs:complexType>
   <xs:complexType name="example">
     <xs:attribute name="title" type="xs:string"/>
+  </xs:complexType>
+  <xs:complexType name="argument">
+    <xs:sequence>
+      <xs:element name="excludes" type="excludes"/>
+      <xs:element name="requires" type="requires"/>
+      <xs:element name="valueCheck" type="valueCheck"/>
+      <xs:element name="rule" type="rule"/>
+    </xs:sequence>
+    <xs:attribute name="identifier" type="xs:string" use="required"/>
+    <xs:attribute name="valueType" type="xs:string" default="java.lang.String"/>
+    <xs:attribute name="requiresInput" type="xs:boolean"/>
+    <xs:attribute name="requiresValue" type="xs:boolean"/>
+    <xs:attribute name="description" type="xs:string"/>
+  </xs:complexType>
+  <xs:complexType name="removeArgument">
+    <xs:attribute name="identifier" type="xs:string" use="required"/>
+  </xs:complexType>
+  <xs:complexType name="excludes">
+    <xs:attribute name="argument" type="xs:string" use="required"/>
+  </xs:complexType>
+  <xs:complexType name="requires">
+    <xs:attribute name="argument" type="xs:string" use="required"/>
+  </xs:complexType>
+  <xs:complexType name="valueCheck">
+    <xs:attribute name="errorMessage" type="xs:string" use="required"/>
+    <xs:attribute name="check" type="xs:string" use="required"/>
+  </xs:complexType>
+  <xs:complexType name="rule">
+    <xs:attribute name="errorMessage" type="xs:string" use="required"/>
+  </xs:complexType>
+  <xs:complexType name="abstractCommand">
+    <xs:sequence>
+      <xs:element name="argument" type="argument"/>
+      <xs:element name="removeArgument" type="removeArgument"/>
+    </xs:sequence>
+    <xs:attribute name="class" type="xs:string" use="required"/>
   </xs:complexType>
 
 </xs:schema>

@@ -77,7 +77,7 @@ public class VersionUpdateAlertTask implements StartupTask {
             }
 
             // setup current thread session and handle all guilds within one session instead of opening a new session for each
-            StaticSessionProvider.invokeWithSession((CheckedConsumer<Session>) session -> {
+            StaticSessionProvider.consumeSession((CheckedConsumer<Session>) session -> {
                 for (Guild guild : shardManager.getGuilds()) {
                     messageService.sendWithLogo(embedBuilder, guild);
                 }

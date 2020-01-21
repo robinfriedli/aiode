@@ -10,8 +10,8 @@ import net.robinfriedli.botify.entities.xml.CommandContribution;
 
 public class PauseCommand extends AbstractCommand {
 
-    public PauseCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContribution, context, commandManager, commandString, false, identifier, description, Category.PLAYBACK);
+    public PauseCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, boolean requiresValue, String identifier, String description, Category category) {
+        super(commandContribution, context, commandManager, commandString, requiresValue, identifier, description, category);
     }
 
     @Override

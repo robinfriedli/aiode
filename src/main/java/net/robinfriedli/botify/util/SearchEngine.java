@@ -21,6 +21,7 @@ import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
 import net.robinfriedli.botify.entities.Preset;
+import net.robinfriedli.botify.entities.StoredScript;
 import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
 import net.robinfriedli.botify.persist.qb.builders.EntityQueryBuilder;
 import net.robinfriedli.botify.persist.qb.interceptor.interceptors.PartitionedQueryInterceptor;
@@ -37,7 +38,7 @@ public class SearchEngine {
 
     @Nullable
     public static Playlist searchLocalList(Session session, String searchTerm) {
-        String searchName = Playlist.sanatizeName(searchTerm).replaceAll("'", "''").toLowerCase();
+        String searchName = Util.normalizeWhiteSpace(searchTerm).replaceAll("'", "''").toLowerCase();
         QueryBuilderFactory queryBuilderFactory = Botify.get().getQueryBuilderFactory();
         return queryBuilderFactory.find(Playlist.class)
             .where((cb, root, query) -> cb.equal(cb.lower(root.get("name")), searchName))
@@ -48,7 +49,7 @@ public class SearchEngine {
 
     @Nullable
     public static Playlist searchLocalList(Session session, String searchTerm, boolean isPartitioned, String guildId) {
-        String searchName = Playlist.sanatizeName(searchTerm).replaceAll("'", "''").toLowerCase();
+        String searchName = Util.normalizeWhiteSpace(searchTerm).replaceAll("'", "''").toLowerCase();
         QueryBuilderFactory queryBuilderFactory = Botify.get().getQueryBuilderFactory();
         EntityQueryBuilder<Playlist> queryBuilder = queryBuilderFactory
             .find(Playlist.class)
@@ -58,6 +59,22 @@ public class SearchEngine {
         }
 
         return queryBuilder.skipInterceptors(PartitionedQueryInterceptor.class).build(session).uniqueResultOptional().orElse(null);
+    }
+
+    public static Optional<StoredScript> searchScript(String identifier, String scriptUsageId, Session session) {
+        QueryBuilderFactory queryBuilderFactory = Botify.get().getQueryBuilderFactory();
+        return queryBuilderFactory.find(StoredScript.class)
+            .where((cb, root, subQueryFactory) -> cb.and(
+                cb.equal(cb.lower(root.get("identifier")), Util.normalizeWhiteSpace(identifier).toLowerCase()),
+                cb.equal(
+                    root.get("scriptUsage"),
+                    subQueryFactory.createUncorrelatedSubQuery(StoredScript.ScriptUsage.class, "pk")
+                        .where((cb1, root1) -> cb1.equal(root1.get("uniqueId"), scriptUsageId))
+                        .build(session)
+                )
+            ))
+            .build(session)
+            .uniqueResultOptional();
     }
 
     public static List<PlaylistItem> searchPlaylistItems(Playlist playlist, String searchTerm) {
@@ -73,9 +90,11 @@ public class SearchEngine {
     }
 
     @Nullable
-    public static Preset searchPreset(Session session, String name, String guildId) {
-        Optional<Preset> optionalPreset = session
-            .createQuery("from " + Preset.class.getName() + " where guild_id = '" + guildId + "' and name = '" + name.replaceAll("'", "''") + "'", Preset.class)
+    public static Preset searchPreset(Session session, String name) {
+        QueryBuilderFactory queryBuilderFactory = Botify.get().getQueryBuilderFactory();
+        Optional<Preset> optionalPreset = queryBuilderFactory.find(Preset.class)
+            .where((cb, root) -> cb.equal(cb.lower(root.get("name")), Util.normalizeWhiteSpace(name).toLowerCase()))
+            .build(session)
             .uniqueResultOptional();
 
         return optionalPreset.orElse(null);

@@ -16,8 +16,9 @@ public abstract class AbstractAdminCommand extends AbstractCommand {
                                 String commandString,
                                 boolean requiresInput,
                                 String identifier,
-                                String description) {
-        super(commandContribution, context, commandManager, commandString, requiresInput, identifier, description, Category.ADMIN);
+                                String description,
+                                Category category) {
+        super(commandContribution, context, commandManager, commandString, requiresInput, identifier, description, category);
     }
 
     @Override

@@ -10,8 +10,8 @@ public class GarbageCollectCommand extends AbstractAdminCommand {
     private double memoryBefore;
     private double memoryAfter;
 
-    public GarbageCollectCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContribution, context, commandManager, commandString, false, identifier, description);
+    public GarbageCollectCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, boolean requiresInput, String identifier, String description, Category category) {
+        super(commandContribution, context, commandManager, commandString, requiresInput, identifier, description, category);
     }
 
     @Override

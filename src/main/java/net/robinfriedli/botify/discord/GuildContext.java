@@ -82,7 +82,7 @@ public class GuildContext {
     }
 
     public void setBotName(String name) {
-        StaticSessionProvider.invokeWithSession(session -> {
+        StaticSessionProvider.consumeSession(session -> {
             GuildSpecification guildSpecification = getSpecification(session);
 
             guildSpecification.setBotName(name);
@@ -104,7 +104,7 @@ public class GuildContext {
     }
 
     public void setPrefix(String prefix) {
-        StaticSessionProvider.invokeWithSession(session -> {
+        StaticSessionProvider.consumeSession(session -> {
             GuildSpecification guildSpecification = getSpecification(session);
 
             guildSpecification.setPrefix(prefix);

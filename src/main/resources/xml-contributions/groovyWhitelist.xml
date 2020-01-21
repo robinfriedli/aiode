@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<whitelistConfiguration xmlns="whitelistSpace">
+  <whitelistMethods class="java.lang.Object">
+    <method name="equals"/>
+  </whitelistMethods>
+  <whitelistMethods class="net.robinfriedli.botify.command.CommandContext">
+    <method name="getMessage"/>
+    <method name="getUser"/>
+    <method name="getMember"/>
+    <method name="getVoiceChannel"/>
+    <method name="getGuild"/>
+    <method name="getChannel"/>
+    <method name="getCommandBody"/>
+    <method name="getGuildContext"/>
+  </whitelistMethods>
+  <whitelistMethods class="net.robinfriedli.botify.command.AbstractCommand">
+    <method name="run" maxInvocationCount="5"/>
+    <method name="abort"/>
+    <method name="getContext"/>
+    <method name="getCommandBody"/>
+    <method name="getCategory"/>
+    <method name="getIdentifier"/>
+    <method name="getCommandInput"/>
+  </whitelistMethods>
+  <whitelistMethods class="net.robinfriedli.botify.discord.GuildContext">
+    <method name="getGuild"/>
+    <method name="getPlayback"/>
+    <method name="getSpecification"/>
+    <method name="getBotName"/>
+    <method name="getPrefix"/>
+  </whitelistMethods>
+  <whitelistMethods class="net.robinfriedli.botify.audio.AudioPlayback">
+    <method name="isPlaying"/>
+    <method name="pause"/>
+    <method name="unpause"/>
+    <method name="isPaused"/>
+    <method name="stop"/>
+    <method name="getGuild"/>
+    <method name="getAudioQueue"/>
+    <method name="isRepeatOne"/>
+    <method name="setRepeatOne"/>
+    <method name="isRepeatAll"/>
+    <method name="setRepeatAll"/>
+    <method name="isShuffle"/>
+    <method name="setShuffle"/>
+    <method name="getCurrentPositionMs"/>
+    <method name="setPosition"/>
+    <method name="getVolume"/>
+    <method name="setVolume"/>
+    <method name="leaveChannel"/>
+  </whitelistMethods>
+  <whitelistMethods class="net.robinfriedli.botify.audio.Playable">
+    <method name="getPlaybackUrl"/>
+    <method name="getId"/>
+    <method name="getTitle"/>
+    <method name="title"/>
+    <method name="getTitleNow"/>
+    <method name="getDisplay"/>
+    <method name="display"/>
+    <method name="getDisplayNow"/>
+    <method name="getDurationMs"/>
+    <method name="durationMs"/>
+    <method name="getDurationNow"/>
+    <method name="getAlbumCoverUrl"/>
+    <method name="fetch"/>
+  </whitelistMethods>
+  <whitelistMethods class="net.robinfriedli.botify.discord.MessageService">
+    <method name="send"/>
+    <method name="sendWithLogo"/>
+    <method name="sendSuccess"/>
+    <method name="sendError"/>
+    <method name="sendException"/>
+    <method name="sendTemporary"/>
+    <method name="sendWrapped"/>
+  </whitelistMethods>
+  <whitelistMethods class="net.robinfriedli.botify.entities.GuildSpecification">
+    <method name="getGuildName"/>
+    <method name="getGuildId"/>
+    <method name="getBotName"/>
+    <method name="getPrefix"/>
+    <method name="getAccessConfigurations"/>
+    <method name="getAccessConfiguration"/>
+    <method name="isSendPlaybackNotification"/>
+    <method name="isEnableAutoPause"/>
+    <method name="getColor"/>
+    <method name="getDefaultSource"/>
+    <method name="getDefaultListSource"/>
+    <method name="getArgumentPrefix"/>
+    <method name="getTempMessageTimeout"/>
+    <method name="getDefaultTextChannelId"/>
+  </whitelistMethods>
+  <whitelistMethods class="net.dv8tion.jda.api.entities.Guild">
+    <method name="getMemberCount"/>
+    <method name="getName"/>
+    <method name="getIconId"/>
+    <method name="getIconUrl"/>
+    <method name="getFeatures"/>
+    <method name="getSplashId"/>
+    <method name="getSplashUrl"/>
+    <method name="getVanityCode"/>
+    <method name="getVanityUrl"/>
+    <method name="getDescription"/>
+    <method name="getBannerId"/>
+    <method name="getBannerUrl"/>
+    <method name="getBoostTier"/>
+    <method name="getBoostCount"/>
+    <method name="getBoosters"/>
+    <method name="getMaxBitrate"/>
+    <method name="getMaxEmotes"/>
+    <method name="getMaxMembers"/>
+    <method name="getAfkChannel"/>
+    <method name="getSystemChannel"/>
+    <method name="getOwner"/>
+    <method name="getOwnerIdLong"/>
+    <method name="getOwnerId"/>
+    <method name="getAfkTimeout"/>
+    <method name="getRegion"/>
+    <method name="getRegionRaw"/>
+    <method name="isMember"/>
+    <method name="getSelfMember"/>
+    <method name="getMember"/>
+    <method name="getMemberById"/>
+    <method name="getMemberByTag"/>
+    <method name="getMembers"/>
+    <method name="getMembersByName"/>
+    <method name="getMembersByNickname"/>
+    <method name="getMembersByEffectiveName"/>
+    <method name="getMembersWithRoles"/>
+    <method name="getGuildChannelById"/>
+    <method name="getCategoryById"/>
+    <method name="getCategories"/>
+    <method name="getCategoriesByName"/>
+    <method name="getStoreChannelById"/>
+    <method name="getStoreChannels"/>
+    <method name="getStoreChannelsByName"/>
+    <method name="getTextChannelById"/>
+    <method name="getTextChannels"/>
+    <method name="getTextChannelsByName"/>
+    <method name="getVoiceChannelById"/>
+    <method name="getVoiceChannels"/>
+    <method name="getVoiceChannelsByName"/>
+    <method name="getRoleById"/>
+    <method name="getRoles"/>
+    <method name="getRolesByName"/>
+    <method name="getEmoteById"/>
+    <method name="getEmotes"/>
+    <method name="getEmotesByName"/>
+  </whitelistMethods>
+  <whitelistMethods class="net.dv8tion.jda.api.entities.Message">
+    <method name="getMentionedUsers"/>
+    <method name="getMentionedChannels"/>
+    <method name="getMentionedRoles"/>
+    <method name="getMentionedMembers"/>
+    <method name="mentionsEveryone"/>
+    <method name="isEdited"/>
+    <method name="getTimeEdited"/>
+    <method name="getAuthor"/>
+    <method name="getMember"/>
+    <method name="getJumpUrl"/>
+    <method name="getContentDisplay"/>
+    <method name="getContentRaw"/>
+    <method name="getContentStripped"/>
+    <method name="getInvites"/>
+    <method name="getChannel"/>
+    <method name="getPrivateChannel"/>
+    <method name="getTextChannel"/>
+    <method name="getGuild"/>
+    <method name="delete"/>
+    <method name="isPinned"/>
+    <method name="pin"/>
+    <method name="unpin"/>
+    <method name="addReaction"/>
+    <method name="clearReactions"/>
+    <method name="removeReaction"/>
+  </whitelistMethods>
+  <whitelistMethods class="net.dv8tion.jda.api.entities.User">
+    <method name="getName"/>
+    <method name="getDiscriminator"/>
+    <method name="getAvatarId"/>
+    <method name="getAvatarUrl"/>
+    <method name="getDefaultAvatarId"/>
+    <method name="getDefaultAvatarUrl"/>
+    <method name="getEffectiveAvatarUrl"/>
+    <method name="getAsTag"/>
+    <method name="hasPrivateChannel"/>
+    <method name="isBot"/>
+  </whitelistMethods>
+  <whitelistMethods class="net.dv8tion.jda.api.entities.Member">
+    <method name="getUser"/>
+    <method name="getGuild"/>
+    <method name="getTimeJoined"/>
+    <method name="getTimeBoosted"/>
+    <method name="getVoiceState"/>
+    <method name="getActivities"/>
+    <method name="getOnlineStatus"/>
+    <method name="getNickname"/>
+    <method name="getEffectiveName"/>
+    <method name="getRoles"/>
+    <method name="getColor"/>
+    <method name="getColorRaw"/>
+    <method name="canInteract"/>
+    <method name="isOwner"/>
+    <method name="getDefaultChannel"/>
+  </whitelistMethods>
+  <whitelistMethods class="net.dv8tion.jda.api.entities.MessageChannel">
+    <method name="getName"/>
+    <method name="getType"/>
+    <method name="sendMessage"/>
+    <method name="sendMessageFormat"/>
+  </whitelistMethods>
+  <whitelistMethods class="net.dv8tion.jda.api.requests.RestAction">
+    <!--
+    do not allow queue because of the async callbacks that method provides; these callbacks are executed in a thread
+    were no GroovyInterceptor is registered, meaning within that closure the user would be free to execute anything
+    they want; e.g.:
+    .eval "context.channel.sendMessage('destroyed').queue({msg -> System.exit(0)})"
+
+    with submit we can control what methods of CompletableFuture may be used
+     -->
+    <method name="complete" maxInvocationCount="10"/>
+    <method name="submit" maxInvocationCount="10"/>
+  </whitelistMethods>
+
+  <!-- classes with full access -->
+  <whitelistAllMethods class="java.lang.Integer"/>
+  <whitelistAllMethods class="java.lang.Long"/>
+  <whitelistAllMethods class="java.lang.String"/>
+  <whitelistAllMethods class="java.lang.StringBuilder"/>
+  <whitelistAllMethods class="java.lang.Double"/>
+  <whitelistAllMethods class="java.lang.Float"/>
+  <whitelistAllMethods class="java.lang.Number"/>
+  <whitelistAllMethods class="java.lang.Character"/>
+  <whitelistAllMethods class="java.math.BigDecimal"/>
+  <whitelistAllMethods class="java.time.OffsetTime"/>
+  <whitelistAllMethods class="java.time.OffsetDateTime"/>
+  <whitelistAllMethods class="java.time.LocalDate"/>
+  <whitelistAllMethods class="java.time.LocalDateTime"/>
+  <whitelistAllMethods class="java.util.List"/>
+  <whitelistAllMethods class="java.util.Set"/>
+  <whitelistAllMethods class="java.util.Collection"/>
+  <whitelistAllMethods class="java.util.stream.Stream"/>
+  <whitelistAllMethods class="java.util.stream.Collectors"/>
+  <whitelistAllMethods class="java.util.Random"/>
+  <whitelistAllMethods class="net.dv8tion.jda.api.EmbedBuilder"/>
+  <whitelistAllMethods class="net.robinfriedli.botify.audio.AudioQueue"/>
+  <whitelistAllMethods class="org.kohsuke.groovy.sandbox.impl.Checker"/>
+</whitelistConfiguration>

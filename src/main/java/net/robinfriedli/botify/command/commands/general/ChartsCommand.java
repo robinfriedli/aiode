@@ -36,8 +36,8 @@ public class ChartsCommand extends AbstractCommand {
 
     private final PlayableFactory playableFactory;
 
-    public ChartsCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContribution, context, commandManager, commandString, false, identifier, description, Category.GENERAL);
+    public ChartsCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, boolean requiresInput, String identifier, String description, Category category) {
+        super(commandContribution, context, commandManager, commandString, requiresInput, identifier, description, category);
         playableFactory = Botify.get().getAudioManager().createPlayableFactory(getSpotifyService(), new BlockingTrackLoadingExecutor());
     }
 

@@ -43,6 +43,21 @@ public class TrackWrapper extends AbstractSoftCachedPlayable implements Playable
     }
 
     @Override
+    public String getTitle() {
+        return track.getName();
+    }
+
+    @Override
+    public String getTitle(long timeOut, TimeUnit unit) {
+        return getTitle();
+    }
+
+    @Override
+    public String getTitleNow(String alternativeValue) {
+        return getTitle();
+    }
+
+    @Override
     public String getDisplay() {
         String name = track.getName();
         String artistString = StringListImpl.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", ");

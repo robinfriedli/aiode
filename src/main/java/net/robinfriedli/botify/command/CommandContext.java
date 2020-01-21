@@ -6,6 +6,7 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 
 import com.wrapper.spotify.SpotifyApi;
+import groovy.lang.GroovyShell;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.GuildVoiceState;
@@ -23,10 +24,12 @@ import net.robinfriedli.botify.entities.CommandHistory;
 import net.robinfriedli.botify.persist.interceptors.AlertAccessConfigurationModificationInterceptor;
 import net.robinfriedli.botify.persist.interceptors.AlertPlaylistModificationInterceptor;
 import net.robinfriedli.botify.persist.interceptors.AlertPresetCreationInterceptor;
+import net.robinfriedli.botify.persist.interceptors.AlertScriptCreationInterceptor;
 import net.robinfriedli.botify.persist.interceptors.EntityValidationInterceptor;
 import net.robinfriedli.botify.persist.interceptors.GuildPropertyInterceptor;
 import net.robinfriedli.botify.persist.interceptors.InterceptorChain;
 import net.robinfriedli.botify.persist.interceptors.PlaylistItemTimestampInterceptor;
+import net.robinfriedli.botify.persist.interceptors.SanitizingEntityInterceptor;
 import net.robinfriedli.botify.persist.interceptors.VerifyPlaylistInterceptor;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -92,6 +95,13 @@ public class CommandContext {
         id = UUID.randomUUID().toString();
     }
 
+    /**
+     * @return A new CommandContext instance based on this one with a different input
+     */
+    public CommandContext fork(String input) {
+        return new CommandContext(guild, guildContext, jda, member, message, sessionFactory, spotifyApi, input, user);
+    }
+
     public Message getMessage() {
         return message;
     }
@@ -154,10 +164,12 @@ public class CommandContext {
             Session session = sessionFactory
                 .withOptions()
                 .interceptor(InterceptorChain.of(
+                    SanitizingEntityInterceptor.class,
                     PlaylistItemTimestampInterceptor.class,
                     VerifyPlaylistInterceptor.class,
                     AlertAccessConfigurationModificationInterceptor.class,
                     AlertPlaylistModificationInterceptor.class,
+                    AlertScriptCreationInterceptor.class,
                     AlertPresetCreationInterceptor.class,
                     GuildPropertyInterceptor.class,
                     EntityValidationInterceptor.class
@@ -204,6 +216,17 @@ public class CommandContext {
         }
 
         return spotifyService;
+    }
+
+    public void addScriptParameters(GroovyShell shell) {
+        shell.setVariable("context", this);
+        shell.setVariable("guildContext", guildContext);
+        shell.setVariable("playback", guildContext.getPlayback());
+        shell.setVariable("guild", guild);
+        shell.setVariable("message", message);
+        shell.setVariable("channel", getChannel());
+        shell.setVariable("member", member);
+        shell.setVariable("user", user);
     }
 
     /**

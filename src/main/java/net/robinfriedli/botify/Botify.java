@@ -17,6 +17,7 @@ import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.boot.Shutdownable;
 import net.robinfriedli.botify.boot.SpringPropertiesConfig;
 import net.robinfriedli.botify.boot.VersionManager;
+import net.robinfriedli.botify.boot.configurations.GroovySandboxComponent;
 import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.command.SecurityManager;
@@ -53,6 +54,7 @@ public class Botify {
     private final CommandExecutionQueueManager executionQueueManager;
     private final CommandManager commandManager;
     private final CronJobService cronJobService;
+    private final GroovySandboxComponent groovySandboxComponent;
     private final GuildManager guildManager;
     private final GuildPropertyManager guildPropertyManager;
     private final HibernateComponent hibernateComponent;
@@ -74,6 +76,7 @@ public class Botify {
                   CommandExecutionQueueManager executionQueueManager,
                   CommandManager commandManager,
                   CronJobService cronJobService,
+                  GroovySandboxComponent groovySandboxComponent,
                   GuildManager guildManager,
                   GuildPropertyManager guildPropertyManager,
                   HibernateComponent hibernateComponent,
@@ -94,6 +97,7 @@ public class Botify {
         this.executionQueueManager = executionQueueManager;
         this.commandManager = commandManager;
         this.cronJobService = cronJobService;
+        this.groovySandboxComponent = groovySandboxComponent;
         this.guildManager = guildManager;
         this.guildPropertyManager = guildPropertyManager;
         this.hibernateComponent = hibernateComponent;
@@ -217,6 +221,10 @@ public class Botify {
 
     public CronJobService getCronJobService() {
         return cronJobService;
+    }
+
+    public GroovySandboxComponent getGroovySandboxComponent() {
+        return groovySandboxComponent;
     }
 
     public GuildManager getGuildManager() {

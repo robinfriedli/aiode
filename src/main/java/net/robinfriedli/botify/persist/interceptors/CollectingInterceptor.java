@@ -9,7 +9,10 @@ import org.slf4j.Logger;
 
 import com.google.api.client.util.Lists;
 import com.google.common.collect.Iterables;
+import net.robinfriedli.botify.function.CheckedConsumer;
+import net.robinfriedli.botify.persist.StaticSessionProvider;
 import org.hibernate.Interceptor;
+import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.type.Type;
 
@@ -44,9 +47,11 @@ public abstract class CollectingInterceptor extends ChainableInterceptor {
     }
 
     @Override
-    public void afterTransactionCompletionChained(Transaction tx) throws Exception {
+    public void afterTransactionCompletionChained(Transaction tx) {
         if (!tx.getRollbackOnly()) {
-            afterCommit();
+            StaticSessionProvider.consumeSessionWithoutInterceptors((CheckedConsumer<Session>) session -> {
+                afterCommit();
+            });
         }
         createdEntities.clear();
         deletedEntities.clear();

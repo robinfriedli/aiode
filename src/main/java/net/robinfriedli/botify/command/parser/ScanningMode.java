@@ -21,7 +21,7 @@ public class ScanningMode implements CommandParser.Mode {
 
     @Override
     public CommandParser.Mode handle(char character) {
-        if (' ' == character) {
+        if (Character.isWhitespace(character)) {
             return this;
         } else {
             if (argumentPrefix == character || ArgumentPrefixProperty.DEFAULT == character) {

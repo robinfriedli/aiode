@@ -24,13 +24,18 @@ public class YouTubeVideoImpl extends AbstractSoftCachedPlayable implements YouT
     }
 
     @Override
-    public String getTitle() {
+    public String getDisplay() {
         return title;
     }
 
     @Override
-    public String getTitle(long timeOut, TimeUnit unit) {
-        return getTitle();
+    public String getDisplay(long timeOut, TimeUnit unit) {
+        return getDisplay();
+    }
+
+    @Override
+    public String getDisplayNow(String alternativeValue) {
+        return getDisplay();
     }
 
     @Override

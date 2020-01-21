@@ -11,7 +11,6 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
 import net.robinfriedli.botify.command.AbstractCommand;
-import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.AccessConfiguration;
@@ -27,8 +26,8 @@ public class PermissionCommand extends AbstractCommand {
 
     private final Splitter commaSplitter = Splitter.on(",").trimResults().omitEmptyStrings();
 
-    public PermissionCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContribution, context, commandManager, commandString, false, identifier, description, Category.GENERAL);
+    public PermissionCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, boolean requiresInput, String identifier, String description, Category category) {
+        super(commandContribution, context, commandManager, commandString, requiresInput, identifier, description, category);
     }
 
     @Override
@@ -282,29 +281,6 @@ public class PermissionCommand extends AbstractCommand {
     @Override
     public void onSuccess() {
         // success message sent by interceptor
-    }
-
-    @Override
-    public ArgumentContribution setupArguments() {
-        ArgumentContribution argumentContribution = new ArgumentContribution(this);
-        argumentContribution.map("to").needsArguments("grant")
-            .setDescription("Specify the roles to grant access for.");
-        argumentContribution.map("for").excludesArguments("to").needsArguments("deny")
-            .setDescription("Specify the roles to remove access privileges from when using the $deny argument.");
-        argumentContribution.map("grant").setRequiresInput(true).excludesArguments("deny")
-            .setDescription("Grant the selected commands to the selected roles. Limits the command to the selected roles " +
-                "if no roles were previously defined.");
-        argumentContribution.map("deny").setRequiresInput(true).excludesArguments("grant")
-            .setDescription("Removes a set role from a command.");
-        argumentContribution.map("clear").excludesArguments("grant", "deny")
-            .setDescription("Clear all restrictions for a command to make it available for everyone.");
-        argumentContribution.map("category").setRequiresInput(true)
-            .setDescription("Manage a category of commands. Use the help command to show all categories.");
-        argumentContribution.map("all").excludesArguments("category")
-            .setDescription("Manage all commands at once. The inline argument $for is not required with this argument.");
-        argumentContribution.map("lock").excludesArguments("grant", "deny", "clear")
-            .setDescription("Make the selected commands available only to the guild owner.");
-        return argumentContribution;
     }
 
 }

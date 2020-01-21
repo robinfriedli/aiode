@@ -13,8 +13,8 @@ import org.hibernate.Session;
 
 public class EmptyCommand extends AbstractCommand {
 
-    public EmptyCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandBody, String identifier, String description) {
-        super(commandContribution, context, commandManager, commandBody, true, identifier, description, Category.PLAYLIST_MANAGEMENT);
+    public EmptyCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandBody, boolean requiresInput, String identifier, String description, Category category) {
+        super(commandContribution, context, commandManager, commandBody, requiresInput, identifier, description, category);
     }
 
     @Override

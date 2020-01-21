@@ -20,8 +20,8 @@ import org.hibernate.Session;
 
 public class ExportCommand extends AbstractCommand {
 
-    public ExportCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContribution, context, commandManager, commandString, true, identifier, description, Category.PLAYLIST_MANAGEMENT);
+    public ExportCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, boolean requiresInput, String identifier, String description, Category category) {
+        super(commandContribution, context, commandManager, commandString, requiresInput, identifier, description, category);
     }
 
     @Override

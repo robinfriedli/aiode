@@ -2,6 +2,8 @@ package net.robinfriedli.botify.command.interceptor.interceptors;
 
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.User;
+import net.robinfriedli.botify.boot.SpringPropertiesConfig;
+import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.Command;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.SecurityManager;
@@ -11,6 +13,7 @@ import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.entities.AccessConfiguration;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 import net.robinfriedli.botify.exceptions.ForbiddenCommandException;
+import net.robinfriedli.botify.exceptions.InvalidCommandException;
 
 /**
  * Interceptor that checks whether a member is allowed to use the current command
@@ -19,11 +22,13 @@ public class SecurityInterceptor extends AbstractChainableCommandInterceptor {
 
     private final GuildManager guildManager;
     private final SecurityManager securityManager;
+    private final SpringPropertiesConfig springPropertiesConfig;
 
-    public SecurityInterceptor(CommandInterceptorContribution contribution, CommandInterceptor next, GuildManager guildManager, SecurityManager securityManager) {
+    public SecurityInterceptor(CommandInterceptorContribution contribution, CommandInterceptor next, GuildManager guildManager, SecurityManager securityManager, SpringPropertiesConfig springPropertiesConfig) {
         super(contribution, next);
         this.guildManager = guildManager;
         this.securityManager = securityManager;
+        this.springPropertiesConfig = springPropertiesConfig;
     }
 
     @Override
@@ -31,6 +36,13 @@ public class SecurityInterceptor extends AbstractChainableCommandInterceptor {
         CommandContext context = command.getContext();
         User user = context.getUser();
         Guild guild = context.getGuild();
+
+        if (command instanceof AbstractCommand
+            && ((AbstractCommand) command).getCategory() == AbstractCommand.Category.SCRIPTING
+            && !springPropertiesConfig.requireApplicationProperty(Boolean.class, "botify.preferences.enableScripting")) {
+            throw new InvalidCommandException("Scripting disabled. None of the commands in the scripting category may be used.");
+        }
+
         if (!securityManager.askPermission(command.getIdentifier(), context.getMember())) {
             // if accessConfiguration were null we would not have got here
             AccessConfiguration accessConfiguration = guildManager.getAccessConfiguration(command.getIdentifier(), guild);
@@ -38,5 +50,4 @@ public class SecurityInterceptor extends AbstractChainableCommandInterceptor {
             throw new ForbiddenCommandException(user, command.getIdentifier(), accessConfiguration.getRoles(guild));
         }
     }
-
 }

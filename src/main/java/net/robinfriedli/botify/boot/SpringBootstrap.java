@@ -56,7 +56,7 @@ public class SpringBootstrap implements CommandLineRunner {
             shardManager.getShards().forEach((CheckedConsumer<JDA>) JDA::awaitReady);
 
             // setup guilds
-            StaticSessionProvider.invokeWithSession(session -> {
+            StaticSessionProvider.consumeSession(session -> {
                 // setup current thread session and handle all guilds within one session instead of opening a new session for each
                 for (Guild guild : shardManager.getGuilds()) {
                     guildManager.addGuild(guild);

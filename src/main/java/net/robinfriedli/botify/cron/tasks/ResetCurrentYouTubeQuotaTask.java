@@ -19,7 +19,7 @@ public class ResetCurrentYouTubeQuotaTask extends AbstractCronTask {
     @Override
     protected void run(JobExecutionContext jobExecutionContext) {
         YouTubeService youTubeService = Botify.get().getAudioManager().getYouTubeService();
-        StaticSessionProvider.invokeWithSession(session -> {
+        StaticSessionProvider.consumeSession(session -> {
             CurrentYouTubeQuotaUsage currentQuotaUsage = YouTubeService.getCurrentQuotaUsage(session);
             youTubeService.setAtomicQuotaUsage(0);
             currentQuotaUsage.setQuota(0);

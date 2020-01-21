@@ -9,7 +9,6 @@ import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.audio.PlayableFactory;
 import net.robinfriedli.botify.audio.exec.BlockingTrackLoadingExecutor;
 import net.robinfriedli.botify.audio.youtube.HollowYouTubeVideo;
-import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.command.commands.AbstractPlayableLoadingCommand;
@@ -26,12 +25,12 @@ public class AddCommand extends AbstractPlayableLoadingCommand {
     private final String definingArgument;
     private Playlist playlist;
 
-    public AddCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        this(commandContribution, context, commandManager, commandString, identifier, description, "to");
+    public AddCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, boolean requiresInput, String identifier, String description, Category category) {
+        this(commandContribution, context, commandManager, commandString, requiresInput, identifier, description, category, "to");
     }
 
-    public AddCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description, String definingArgument) {
-        super(commandContribution, context, commandManager, commandString, true, identifier, description, Category.PLAYLIST_MANAGEMENT, false, new BlockingTrackLoadingExecutor());
+    public AddCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, boolean requiresInput, String identifier, String description, Category category, String definingArgument) {
+        super(commandContribution, context, commandManager, commandString, requiresInput, identifier, description, category, false, new BlockingTrackLoadingExecutor());
         this.definingArgument = definingArgument;
     }
 
@@ -125,16 +124,6 @@ public class AddCommand extends AbstractPlayableLoadingCommand {
         PlayableFactory playableFactory = Botify.get().getAudioManager().createPlayableFactory(getSpotifyService(), new BlockingTrackLoadingExecutor());
         List<Playable> playables = playableFactory.createPlayables(false, option);
         addPlayables(playlist, playables);
-    }
-
-    @Override
-    public ArgumentContribution setupArguments() {
-        ArgumentContribution argumentContribution = super.setupArguments();
-        argumentContribution.map("to")
-            .setDescription("Mandatory argument to define the playlist to which you want to add the tracks.");
-        argumentContribution.map("queue").excludesArguments("youtube", "spotify")
-            .setDescription("Add items from the current queue to the specified playlist. The to argument may be dropped when using this argument. E.g. add $queue my list.");
-        return argumentContribution;
     }
 
     protected String getToAddString() {

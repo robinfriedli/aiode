@@ -4,7 +4,6 @@ import java.util.List;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.robinfriedli.botify.command.AbstractCommand;
-import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.command.parser.CommandParser;
@@ -18,16 +17,15 @@ import org.hibernate.Session;
 
 public class PresetCommand extends AbstractCommand {
 
-    public PresetCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContribution, context, commandManager, commandString, false, identifier, description, Category.CUSTOMISATION);
+    public PresetCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, boolean requiresInput, String identifier, String description, Category category) {
+        super(commandContribution, context, commandManager, commandString, requiresInput, identifier, description, category);
     }
 
     @Override
     public void doRun() {
         Session session = getContext().getSession();
-        String guildId = getContext().getGuild().getId();
         if (argumentSet("delete")) {
-            Preset preset = SearchEngine.searchPreset(session, getCommandInput(), guildId);
+            Preset preset = SearchEngine.searchPreset(session, getCommandInput());
 
             if (preset == null) {
                 throw new InvalidCommandException(String.format("No preset found for '%s'", getCommandInput()));
@@ -49,7 +47,7 @@ public class PresetCommand extends AbstractCommand {
         } else {
             String presetString = getCommandInput();
             String name = getArgumentValue("as");
-            Preset existingPreset = SearchEngine.searchPreset(getContext().getSession(), name, getContext().getGuild().getId());
+            Preset existingPreset = SearchEngine.searchPreset(getContext().getSession(), name);
             if (existingPreset != null) {
                 throw new InvalidCommandException("Preset " + name + " already exists");
             }
@@ -67,16 +65,6 @@ public class PresetCommand extends AbstractCommand {
     @Override
     public void onSuccess() {
         // success notification sent by interceptor
-    }
-
-    @Override
-    public ArgumentContribution setupArguments() {
-        ArgumentContribution argumentContribution = new ArgumentContribution(this);
-        argumentContribution.map("as").setRequiresValue(true).excludesArguments("delete")
-            .setDescription("Defines the name that will be used to call this preset. This argument is mandatory except when using the delete argument.");
-        argumentContribution.map("delete").setRequiresInput(true)
-            .setDescription("Delete an existing preset by its name.");
-        return argumentContribution;
     }
 
 }

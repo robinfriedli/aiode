@@ -6,6 +6,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -20,8 +21,6 @@ import javax.persistence.Table;
 import javax.validation.constraints.Size;
 
 import com.google.api.client.util.Sets;
-import com.google.common.base.Joiner;
-import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.wrapper.spotify.SpotifyApi;
@@ -31,10 +30,11 @@ import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.audio.PlayableFactory;
 import net.robinfriedli.botify.audio.spotify.SpotifyTrackBulkLoadingService;
 import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
+import net.robinfriedli.botify.boot.SpringPropertiesConfig;
 
 @Entity
 @Table(name = "playlist")
-public class Playlist implements Serializable {
+public class Playlist implements Serializable, SanitizedEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -67,15 +67,6 @@ public class Playlist implements Serializable {
         createdUserId = user.getId();
         this.guild = guild.getName();
         this.guildId = guild.getId();
-    }
-
-    public static String sanatizeName(String name) {
-        if (name.contains(" ")) {
-            Splitter splitter = Splitter.on(" ").trimResults().omitEmptyStrings();
-            return Joiner.on(" ").join(splitter.split(name));
-        }
-
-        return name;
     }
 
     public long getPk() {
@@ -239,6 +230,27 @@ public class Playlist implements Serializable {
 
     public boolean isEmpty() {
         return songs.isEmpty() && videos.isEmpty() && urlTracks.isEmpty();
+    }
+
+    @Override
+    public int getMaxEntityCount(SpringPropertiesConfig springPropertiesConfig) {
+        Integer playlistCountMax = springPropertiesConfig.getApplicationProperty(Integer.class, "botify.preferences.playlist_count_max");
+        return Objects.requireNonNullElse(playlistCountMax, 0);
+    }
+
+    @Override
+    public String getIdentifierPropertyName() {
+        return "name";
+    }
+
+    @Override
+    public String getIdentifier() {
+        return getName();
+    }
+
+    @Override
+    public void setSanitizedIdentifier(String sanitizedIdentifier) {
+        setName(sanitizedIdentifier);
     }
 
 }

@@ -19,7 +19,7 @@ public class PrefixProperty extends AbstractGuildProperty {
     }
 
     /**
-     * @return the prefix for a command based on the current context. Simply returns the prefix if, else returns the
+     * @return the prefix for a command based on the current context. Simply returns the prefix if set, else returns the
      * bot name plus a trailing whitespace if present or else "$botify ". This is meant to be used to format example commands.
      */
     public static String getEffectiveCommandStartForCurrentContext() {

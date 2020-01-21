@@ -1,5 +1,6 @@
 package net.robinfriedli.botify.boot.configurations;
 
+import net.robinfriedli.botify.entities.xml.ArgumentContribution;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 import net.robinfriedli.botify.entities.xml.CronJobContribution;
@@ -21,6 +22,8 @@ public class JxpComponent {
     public JxpBackend getJxpBackend() {
         return new JxpBuilder()
             .mapClass("command", CommandContribution.class)
+            .mapClass("abstractCommand", CommandContribution.AbstractCommandContribution.class)
+            .mapClass("argument", ArgumentContribution.class)
             .mapClass("commandInterceptor", CommandInterceptorContribution.class)
             .mapClass("httpHandler", HttpHandlerContribution.class)
             .mapClass("embedDocument", EmbedDocumentContribution.class)

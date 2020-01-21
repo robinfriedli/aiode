@@ -1,6 +1,7 @@
 package net.robinfriedli.botify.entities;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 import javax.persistence.Cacheable;
 import javax.persistence.Column;
@@ -13,6 +14,7 @@ import javax.validation.constraints.Size;
 
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.User;
+import net.robinfriedli.botify.boot.SpringPropertiesConfig;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
@@ -25,7 +27,7 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 @Table(name = "preset")
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-public class Preset implements Serializable {
+public class Preset implements Serializable, SanitizedEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -131,4 +133,26 @@ public class Preset implements Serializable {
 
         return presetContribution.instantiate(commandManager, context, commandBody);
     }
+
+    @Override
+    public int getMaxEntityCount(SpringPropertiesConfig springPropertiesConfig) {
+        Integer applicationProperty = springPropertiesConfig.getApplicationProperty(Integer.class, "botify.preferences.preset_count_max");
+        return Objects.requireNonNullElse(applicationProperty, 0);
+    }
+
+    @Override
+    public String getIdentifierPropertyName() {
+        return "name";
+    }
+
+    @Override
+    public String getIdentifier() {
+        return getName();
+    }
+
+    @Override
+    public void setSanitizedIdentifier(String sanitizedIdentifier) {
+        setName(sanitizedIdentifier);
+    }
+
 }

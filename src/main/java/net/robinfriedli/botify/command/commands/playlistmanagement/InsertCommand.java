@@ -2,7 +2,6 @@ package net.robinfriedli.botify.command.commands.playlistmanagement;
 
 import java.util.List;
 
-import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.Playlist;
@@ -15,8 +14,8 @@ public class InsertCommand extends AddCommand {
     private String toAddString;
     private int targetIndex;
 
-    public InsertCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContribution, context, commandManager, commandString, identifier, description);
+    public InsertCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, boolean requiresInput, String identifier, String description, Category category) {
+        super(commandContribution, context, commandManager, commandString, requiresInput, identifier, description, category);
     }
 
     @Override
@@ -56,11 +55,4 @@ public class InsertCommand extends AddCommand {
         return toAddString;
     }
 
-    @Override
-    public ArgumentContribution setupArguments() {
-        ArgumentContribution argumentContribution = super.setupArguments();
-        argumentContribution.map("at").setRequiresValue(true)
-            .setDescription("Mandatory argument to define the index at which to insert the tracks.");
-        return argumentContribution;
-    }
 }

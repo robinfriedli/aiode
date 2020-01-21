@@ -18,8 +18,8 @@ import static net.robinfriedli.jxp.queries.Conditions.*;
 
 public class LoadDocumentCommand extends AbstractAdminCommand {
 
-    public LoadDocumentCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContribution, context, commandManager, commandString, false, identifier, description);
+    public LoadDocumentCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, boolean requiresInput, String identifier, String description, Category category) {
+        super(commandContribution, context, commandManager, commandString, requiresInput, identifier, description, category);
     }
 
     @Override

@@ -25,37 +25,7 @@ import org.hibernate.Session;
 public interface YouTubeVideo extends Playable {
 
     /**
-     * @return the title of the YouTube video, or in case of a cancelled {@link HollowYouTubeVideo} throw an
-     * {@link UnavailableResourceException} to signal that loading the tracks has been cancelled, the checked method
-     * {@link Playable#display()} will then show the video as "[UNAVAILABLE]"
-     */
-    String getTitle() throws UnavailableResourceException;
-
-    /**
-     * like {@link #getTitle()} but throws a {@link TimeoutException} after the specified time limit if the
-     * {@link HollowYouTubeVideo} is not loaded in time, the method {@link Playable#display(long, TimeUnit)}
-     * will then show the video as "Loading..."
-     */
-    String getTitle(long timeOut, TimeUnit unit) throws UnavailableResourceException, TimeoutException;
-
-    @Override
-    default String getDisplay() throws UnavailableResourceException {
-        return getTitle();
-    }
-
-    @Override
-    default String getDisplay(long timeOut, TimeUnit unit) throws UnavailableResourceException, TimeoutException {
-        return getTitle(timeOut, unit);
-    }
-
-    @Override
-    default String getDisplayNow(String alternativeValue) throws UnavailableResourceException {
-        return getDisplay();
-    }
-
-    /**
-     * @return the id of the YouTube video, throwing an {@link UnavailableResourceException} if cancelled,
-     * see {@link #getTitle()}
+     * @return the id of the YouTube video, throwing an {@link UnavailableResourceException} if cancelled
      */
     String getVideoId() throws UnavailableResourceException;
 
@@ -65,19 +35,33 @@ public interface YouTubeVideo extends Playable {
     }
 
     @Override
+    default String getTitle() throws UnavailableResourceException {
+        return getRedirectedSpotifyTrack() != null ? getRedirectedSpotifyTrack().getName() : getDisplay();
+    }
+
+    @Override
+    default String getTitle(long timeOut, TimeUnit unit) throws UnavailableResourceException, TimeoutException {
+        return getRedirectedSpotifyTrack() != null ? getRedirectedSpotifyTrack().getName() : getDisplay(timeOut, unit);
+    }
+
+    @Override
+    default String getTitleNow(String alternativeValue) throws UnavailableResourceException {
+        return getRedirectedSpotifyTrack() != null ? getRedirectedSpotifyTrack().getName() : getDisplayNow(alternativeValue);
+    }
+
+    @Override
     default String getPlaybackUrl() throws UnavailableResourceException {
         return String.format("https://www.youtube.com/watch?v=%s", getVideoId());
     }
 
     /**
-     * @return the duration of the YouTube video in milliseconds or throw an {@link UnavailableResourceException} if cancelled,
-     * see {@link #getTitle()}
+     * @return the duration of the YouTube video in milliseconds or throw an {@link UnavailableResourceException} if cancelled
      */
     long getDuration() throws UnavailableResourceException;
 
     /**
      * @return the duration of the YouTube video in milliseconds or throw a {@link TimeoutException} if loading takes
-     * longer that the provided amount of time, see {@link #getTitle(long, TimeUnit)}
+     * longer that the provided amount of time
      */
     long getDuration(long timeOut, TimeUnit unit) throws UnavailableResourceException, TimeoutException;
 

@@ -13,7 +13,6 @@ import net.dv8tion.jda.api.entities.ISnowflake;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.AbstractAdminCommand;
-import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
@@ -25,6 +24,7 @@ import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
 import net.robinfriedli.botify.entities.Preset;
 import net.robinfriedli.botify.entities.Song;
+import net.robinfriedli.botify.entities.StoredScript;
 import net.robinfriedli.botify.entities.UrlTrack;
 import net.robinfriedli.botify.entities.Video;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
@@ -32,8 +32,8 @@ import org.hibernate.Session;
 
 public class CleanDbCommand extends AbstractAdminCommand {
 
-    public CleanDbCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContribution, context, commandManager, commandString, false, identifier, description);
+    public CleanDbCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, boolean requiresInput, String identifier, String description, Category category) {
+        super(commandContribution, context, commandManager, commandString, requiresInput, identifier, description, category);
     }
 
     @Override
@@ -119,7 +119,12 @@ public class CleanDbCommand extends AbstractAdminCommand {
 
             int affectedPresets = deleteStalePresets(cb, activeGuildIds, session);
             if (affectedPresets > 0) {
-                messageBuilder.append("Cleared ").append(affectedPresets).append(" presets");
+                messageBuilder.append("Cleared ").append(affectedPresets).append(" presets").append(System.lineSeparator());
+            }
+
+            int affectedScripts = deleteStaleScripts(cb, activeGuildIds, session);
+            if (affectedScripts > 0) {
+                messageBuilder.append("Cleared ").append(affectedScripts).append(" scripts");
             }
         });
 
@@ -200,16 +205,16 @@ public class CleanDbCommand extends AbstractAdminCommand {
         return session.createQuery(stalePresetsQuery).executeUpdate();
     }
 
-    @Override
-    public void onSuccess() {
+    private int deleteStaleScripts(CriteriaBuilder cb, Set<String> activeGuildIds, Session session) {
+        Set<Long> guildIdsLong = activeGuildIds.stream().map(Long::parseLong).collect(Collectors.toSet());
+        CriteriaDelete<StoredScript> staleScriptsQuery = cb.createCriteriaDelete(StoredScript.class);
+        Root<StoredScript> from = staleScriptsQuery.from(StoredScript.class);
+        staleScriptsQuery.where(cb.not(cb.in(from.get("guildId")).value(guildIdsLong)));
+        return session.createQuery(staleScriptsQuery).executeUpdate();
     }
 
     @Override
-    public ArgumentContribution setupArguments() {
-        ArgumentContribution argumentContribution = new ArgumentContribution(this);
-        argumentContribution.map("silent")
-            .setDescription("Disables alerting active guilds about the restart.");
-        return argumentContribution;
+    public void onSuccess() {
     }
 
 }

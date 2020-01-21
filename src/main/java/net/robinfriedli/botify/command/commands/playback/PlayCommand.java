@@ -21,14 +21,15 @@ import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 
 public class PlayCommand extends AbstractQueueLoadingCommand {
 
-    public PlayCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
+    public PlayCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, boolean requiresInput, String identifier, String description, Category category) {
         super(commandContribution,
             context,
             commandManager,
             commandString,
+            requiresInput,
             identifier,
             description,
-            Category.PLAYBACK,
+            category,
             true,
             context.getGuildContext().getReplaceableTrackLoadingExecutor());
     }

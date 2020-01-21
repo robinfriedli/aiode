@@ -37,7 +37,7 @@ public class Video extends PlaylistItem {
         super(user, playlist);
         try {
             id = video.getVideoId();
-            title = video.getTitle();
+            title = video.getDisplay();
             duration = video.getDuration();
 
             Track redirectedSpotifyTrack = video.getRedirectedSpotifyTrack();

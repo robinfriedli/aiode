@@ -10,8 +10,8 @@ import net.robinfriedli.botify.entities.xml.CommandContribution;
 
 public class YouTubeQuotaCommand extends AbstractAdminCommand {
 
-    public YouTubeQuotaCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContribution, context, commandManager, commandString, false, identifier, description);
+    public YouTubeQuotaCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, boolean requiresInput, String identifier, String description, Category category) {
+        super(commandContribution, context, commandManager, commandString, requiresInput, identifier, description, category);
     }
 
     @Override

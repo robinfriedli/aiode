@@ -1,8 +1,11 @@
 package net.robinfriedli.botify.command;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,13 +13,16 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Lists;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.interceptor.CommandInterceptorChain;
+import net.robinfriedli.botify.command.interceptor.interceptors.ScriptCommandInterceptor;
 import net.robinfriedli.botify.concurrent.CommandExecutionThread;
 import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.discord.listeners.CommandListener;
 import net.robinfriedli.botify.entities.Preset;
+import net.robinfriedli.botify.entities.StoredScript;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
+import net.robinfriedli.botify.exceptions.Abort;
 import net.robinfriedli.botify.exceptions.handlers.CommandExceptionHandler;
 import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
 import net.robinfriedli.jxp.api.JxpBackend;
@@ -38,6 +44,7 @@ import static net.robinfriedli.jxp.queries.Conditions.*;
 @Component
 public class CommandManager {
 
+    private final boolean isScriptingEnabled;
     private final Context commandContributionContext;
     private final Context commandInterceptorContext;
     private final Logger logger;
@@ -47,11 +54,14 @@ public class CommandManager {
      * The chain of interceptors to process the command
      */
     private CommandInterceptorChain interceptorChain;
+    private CommandInterceptorChain interceptorChainWithoutScripting;
 
-    public CommandManager(@Value("classpath:xml-contributions/commands.xml") Resource commandResource,
+    public CommandManager(@Value("${botify.preferences.enableScripting}") boolean isScriptingEnabled,
+                          @Value("classpath:xml-contributions/commands.xml") Resource commandResource,
                           @Value("classpath:xml-contributions/commandInterceptors.xml") Resource commandInterceptorResource,
                           JxpBackend jxpBackend,
                           QueryBuilderFactory queryBuilderFactory) {
+        this.isScriptingEnabled = isScriptingEnabled;
         try {
             this.commandContributionContext = jxpBackend.getContext(commandResource.getFile());
             this.commandInterceptorContext = jxpBackend.getContext(commandInterceptorResource.getFile());
@@ -66,7 +76,12 @@ public class CommandManager {
         CommandContext context = command.getContext();
         CommandExecutionThread commandExecutionThread = new CommandExecutionThread(command, executionQueue, () -> {
             try {
-                interceptorChain.intercept(command);
+                if (isScriptingEnabled) {
+                    interceptorChain.intercept(command);
+                } else {
+                    interceptorChainWithoutScripting.intercept(command);
+                }
+            } catch (Abort ignored) {
             } finally {
                 context.closeSession();
             }
@@ -78,19 +93,24 @@ public class CommandManager {
 
         if (queued) {
             MessageService messageService = Botify.get().getMessageService();
-            messageService.sendError("Executing too many commands concurrently. This command will be executed after one has finished.", context.getChannel());
+            messageService.sendError("Executing too many commands concurrently. This command will be executed after one has finished. " +
+                "You may use the abort command to cancel queued commands and interrupt running commands.", context.getChannel());
             logger.warn(String.format("Guild %s has reached the max concurrent commands limit.", context.getGuild()));
         }
     }
 
     public Optional<AbstractCommand> instantiateCommandForContext(CommandContext context, Session session) {
+        return instantiateCommandForContext(context, session, true);
+    }
+
+    public Optional<AbstractCommand> instantiateCommandForContext(CommandContext context, Session session, boolean includeScripts) {
         String commandBody = context.getCommandBody();
 
         if (commandBody.isBlank()) {
             return Optional.empty();
         }
 
-        String formattedCommandInput = commandBody.toLowerCase().replaceAll("'", "''");
+        String formattedCommandInput = commandBody.toLowerCase();
         CommandContribution commandContribution = getCommandContributionForInput(commandBody);
         AbstractCommand commandInstance;
         // find a preset where the preset name matches the beginning of the command, find the longest matching preset name
@@ -106,22 +126,90 @@ public class CommandManager {
             .setCacheable(true)
             .uniqueResultOptional();
 
-        if (commandContribution != null && optionalPreset.isPresent()) {
+        Optional<StoredScript> optionalStoredScript;
+        if (includeScripts) {
+            optionalStoredScript = queryBuilderFactory.find(StoredScript.class)
+                .where(((cb, root, subQueryFactory) -> cb.and(
+                    cb.equal(
+                        cb.lower(root.get("identifier")),
+                        cb.substring(cb.literal(formattedCommandInput), cb.literal(1), cb.length(root.get("identifier")))
+                    ),
+                    cb.equal(
+                        root.get("scriptUsage"),
+                        subQueryFactory.createUncorrelatedSubQuery(StoredScript.ScriptUsage.class, "pk")
+                            .where((cb1, root1) -> cb1.equal(root1.get("uniqueId"), "script"))
+                            .build(session)
+                    )
+                )))
+                .orderBy((root, cb) -> cb.desc(cb.length(root.get("identifier"))))
+                .build(session)
+                .setMaxResults(1)
+                .setCacheable(true)
+                .uniqueResultOptional();
+        } else {
+            optionalStoredScript = Optional.empty();
+        }
+
+        // there are 2 ^ 3 different combinations
+        // prioritise commands over presets and presets over scripts
+        // A: commandContribution exists
+        // B: optionalPreset is present
+        // C: optionalStoredScript is present
+
+        // A ∧ B ∧ C
+        if (commandContribution != null && optionalPreset.isPresent() && optionalStoredScript.isPresent()) {
             Preset preset = optionalPreset.get();
             String identifier = commandContribution.getIdentifier();
+            StoredScript storedScript = optionalStoredScript.get();
+            if (preset.getName().length() > identifier.length() && preset.getName().length() >= storedScript.getIdentifier().length()) {
+                commandInstance = preset.instantiateCommand(this, context, commandBody);
+            } else if (storedScript.getIdentifier().length() > identifier.length() && storedScript.getIdentifier().length() > preset.getName().length()) {
+                commandInstance = storedScript.asCommand(this, context, commandBody);
+            } else {
+                String commandInput = commandBody.substring(identifier.length()).trim();
+                commandInstance = commandContribution.instantiate(this, context, commandInput);
+            }
+        } else if (commandContribution != null && optionalPreset.isPresent()) {
+            // A ∧ B ∧ !C
+            String identifier = commandContribution.getIdentifier();
+            Preset preset = optionalPreset.get();
             if (preset.getName().length() > identifier.length()) {
                 commandInstance = preset.instantiateCommand(this, context, commandBody);
             } else {
                 String commandInput = commandBody.substring(identifier.length()).trim();
                 commandInstance = commandContribution.instantiate(this, context, commandInput);
             }
-        } else if (commandContribution != null) {
+        } else if (optionalPreset.isPresent() && optionalStoredScript.isPresent()) {
+            // !A ∧ B ∧ C
+            Preset preset = optionalPreset.get();
+            StoredScript storedScript = optionalStoredScript.get();
+            if (storedScript.getIdentifier().length() > preset.getName().length()) {
+                commandInstance = storedScript.asCommand(this, context, commandBody);
+            } else {
+                commandInstance = preset.instantiateCommand(this, context, commandBody);
+            }
+        } else if (commandContribution != null && optionalStoredScript.isPresent()) {
+            // A ∧ !B ∧ C
+            StoredScript storedScript = optionalStoredScript.get();
             String identifier = commandContribution.getIdentifier();
-            String commandInput = commandBody.substring(identifier.length()).trim();
-            commandInstance = commandContribution.instantiate(this, context, commandInput);
+            if (storedScript.getIdentifier().length() > identifier.length()) {
+                commandInstance = storedScript.asCommand(this, context, commandBody);
+            } else {
+                String commandInput = commandBody.substring(identifier.length()).trim();
+                commandInstance = commandContribution.instantiate(this, context, commandInput);
+            }
+        } else if (optionalStoredScript.isPresent()) {
+            // !A ∧ !B ∧ C
+            commandInstance = optionalStoredScript.get().asCommand(this, context, commandBody);
         } else if (optionalPreset.isPresent()) {
+            // !A ∧ B ∧ !C
             commandInstance = optionalPreset.get().instantiateCommand(this, context, commandBody);
+        } else if (commandContribution != null) {
+            // A ∧ !B ∧ !C
+            String commandInput = commandBody.substring(commandContribution.getIdentifier().length()).trim();
+            commandInstance = commandContribution.instantiate(this, context, commandInput);
         } else {
+            // !A ∧ !B ∧ !C
             return Optional.empty();
         }
 
@@ -165,8 +253,29 @@ public class CommandManager {
         ), CommandContribution.class).getOnlyResult();
     }
 
+    public CommandInterceptorChain getInterceptorChain() {
+        return interceptorChain;
+    }
+
+    public CommandInterceptorChain getInterceptorChainWithoutScripting() {
+        return interceptorChainWithoutScripting;
+    }
+
+    public Context getCommandInterceptorContext() {
+        return commandInterceptorContext;
+    }
+
+    public List<CommandInterceptorContribution> getCommandInterceptorContributions(Class<?>... skippedInterceptors) {
+        Set<String> skipped = Arrays.stream(skippedInterceptors).map(Class::getName).collect(Collectors.toSet());
+        return getCommandInterceptorContext().query(and(
+            instanceOf(CommandInterceptorContribution.class),
+            xmlElement -> !skipped.contains(xmlElement.getAttribute("implementation").getValue())
+        ), CommandInterceptorContribution.class).collect();
+    }
+
     public void initializeInterceptorChain() {
-        interceptorChain = new CommandInterceptorChain(commandInterceptorContext.getInstancesOf(CommandInterceptorContribution.class));
+        interceptorChain = new CommandInterceptorChain(getCommandInterceptorContributions());
+        interceptorChainWithoutScripting = new CommandInterceptorChain(getCommandInterceptorContributions(ScriptCommandInterceptor.class));
     }
 
 }

@@ -1,8 +1,9 @@
 package net.robinfriedli.botify.concurrent;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Vector;
+import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -13,16 +14,19 @@ public class ThreadExecutionQueue {
     private final String name;
     private final AtomicInteger threadNumber;
     private final ConcurrentLinkedQueue<QueuedThread> queue;
-    private final Set<QueuedThread> currentPool;
-    private final int size;
+    private final BlockingDeque<Object> slotStack;
+    private final Vector<QueuedThread> currentPool;
     private volatile boolean closed;
 
     public ThreadExecutionQueue(String name, int size) {
         this.name = name;
-        this.threadNumber = new AtomicInteger(1);
-        this.queue = new ConcurrentLinkedQueue<>();
-        currentPool = new HashSet<>(size);
-        this.size = size;
+        threadNumber = new AtomicInteger(1);
+        queue = new ConcurrentLinkedQueue<>();
+        slotStack = new LinkedBlockingDeque<>(size);
+        for (int i = 0; i < size; i++) {
+            slotStack.add(new Object());
+        }
+        currentPool = new Vector<>(size);
     }
 
     /**
@@ -50,7 +54,7 @@ public class ThreadExecutionQueue {
                 return true;
             } else {
                 queue.add(thread);
-                if (currentPool.size() < size) {
+                if (!slotStack.isEmpty()) {
                     runNext();
                     return true;
                 }
@@ -90,9 +94,17 @@ public class ThreadExecutionQueue {
         return currentPool.isEmpty() && queue.isEmpty();
     }
 
-    synchronized void freeSlot(QueuedThread thread) {
-        boolean removed = currentPool.remove(thread);
-        if (!closed && removed && !thread.isPrivileged()) {
+    Object takeSlot() throws InterruptedException {
+        return slotStack.take();
+    }
+
+    void removeFromPool(QueuedThread queuedThread) {
+        currentPool.remove(queuedThread);
+    }
+
+    synchronized void freeSlot(Object slot) {
+        slotStack.addLast(slot);
+        if (!closed) {
             runNext();
         }
     }

@@ -480,4 +480,47 @@ See RunLiquibaseUpdateTask
     </preConditions>
     <renameColumn tableName="song_artist" oldColumnName="artists_pk" newColumnName="artist_pk"/>
   </changeSet>
+  <changeSet author="robin (generated)" id="1579479827217-1">
+    <createTable tableName="script_usage">
+      <column autoIncrement="true" name="pk" type="BIGINT">
+        <constraints primaryKey="true" primaryKeyName="script_usagePK"/>
+      </column>
+      <column name="unique_id" type="VARCHAR(255)"/>
+    </createTable>
+  </changeSet>
+  <changeSet author="robin (generated)" id="1579479827217-2">
+    <createTable tableName="stored_script">
+      <column autoIncrement="true" name="pk" type="BIGINT">
+        <constraints primaryKey="true" primaryKeyName="stored_scriptPK"/>
+      </column>
+      <column name="guild_id" type="BIGINT"/>
+      <column name="identifier" type="VARCHAR(30)"/>
+      <column name="script" type="VARCHAR(1000)"/>
+      <column name="script_usage_pk" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+  </changeSet>
+  <changeSet author="robin (generated)" id="1579479827217-3">
+    <addUniqueConstraint columnNames="unique_id" constraintName="UC_SCRIPT_USAGEUNIQUE_ID_COL" tableName="script_usage"/>
+  </changeSet>
+  <changeSet author="robin (generated)" id="1579479827217-4">
+    <addForeignKeyConstraint baseColumnNames="script_usage_pk" baseTableName="stored_script" constraintName="FKg10vja0avuakaq46cbjabx036" deferrable="false" initiallyDeferred="false" referencedColumnNames="pk" referencedTableName="script_usage" validate="true"/>
+  </changeSet>
+  <changeSet id="add_script_usage_value-SDew2d/2.0" author="robinfriedli" context="initialvalue">
+    <preConditions onFail="MARK_RAN">
+      <sqlCheck expectedResult="0">select count(*) from script_usage where unique_id = 'interceptor'</sqlCheck>
+    </preConditions>
+    <insert tableName="script_usage">
+      <column name="unique_id" value="interceptor"/>
+    </insert>
+  </changeSet>
+  <changeSet id="add_script_usage_value-sd3Dc/2.0" author="robinfriedli" context="initialvalue">
+    <preConditions onFail="MARK_RAN">
+      <sqlCheck expectedResult="0">select count(*) from script_usage where unique_id = 'script'</sqlCheck>
+    </preConditions>
+    <insert tableName="script_usage">
+      <column name="unique_id" value="script"/>
+    </insert>
+  </changeSet>
 </databaseChangeLog>

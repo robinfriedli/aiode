@@ -7,7 +7,6 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.AbstractCommand;
-import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
@@ -20,8 +19,8 @@ import net.robinfriedli.botify.util.Table2;
 public class PropertyCommand extends AbstractCommand {
 
 
-    public PropertyCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContribution, context, commandManager, commandString, false, identifier, description, Category.CUSTOMISATION);
+    public PropertyCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, boolean requiresInput, String identifier, String description, Category category) {
+        super(commandContribution, context, commandManager, commandString, requiresInput, identifier, description, category);
     }
 
     @Override
@@ -78,17 +77,6 @@ public class PropertyCommand extends AbstractCommand {
     @Override
     public void onSuccess() {
         // notification sent by GuildPropertyInterceptor
-    }
-
-    @Override
-    public ArgumentContribution setupArguments() {
-        ArgumentContribution argumentContribution = new ArgumentContribution(this);
-        argumentContribution.map("toggle")
-            .setDescription("Toggles a property with a boolean value (e.g. \"playback notification\") to its opposite value");
-        argumentContribution.map("set").setRequiresValue(true).excludesArguments("toggle")
-            .setDescription("Set a property to the specified value this argument is required when not using the toggle argument. " +
-                "E.g. property default source $set youtube.");
-        return argumentContribution;
     }
 
     @Override

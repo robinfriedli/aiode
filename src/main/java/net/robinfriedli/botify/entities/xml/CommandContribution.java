@@ -10,12 +10,11 @@ import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
-import net.robinfriedli.jxp.api.AbstractXmlElement;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
 import org.w3c.dom.Element;
 
-public class CommandContribution extends AbstractXmlElement {
+public class CommandContribution extends CommandHierarchyNode {
 
     // invoked by JXP
     @SuppressWarnings("unused")
@@ -39,24 +38,17 @@ public class CommandContribution extends AbstractXmlElement {
         return getAttribute("identifier").getValue();
     }
 
-    @SuppressWarnings("unchecked")
     public AbstractCommand instantiate(CommandManager commandManager, CommandContext commandContext, String commandBody) {
         String identifier = getIdentifier();
-        String implementation = getAttribute("implementation").getValue();
+        boolean requiresInput = getAttribute("requiresInput").getBool();
         String description = getAttribute("description").getValue();
-        Class<? extends AbstractCommand> commandClass;
-        try {
-            commandClass = (Class<? extends AbstractCommand>) Class.forName(implementation);
-        } catch (ClassNotFoundException e) {
-            throw new IllegalStateException("Class " + implementation + " does not exist.");
-        } catch (ClassCastException e) {
-            throw new IllegalStateException("Class " + implementation + " is not an AbstractCommand");
-        }
+        AbstractCommand.Category category = AbstractCommand.Category.valueOf(getAttribute("category").getValue());
+        Class<? extends AbstractCommand> commandClass = getImplementationClass();
 
         try {
             Constructor<? extends AbstractCommand> constructor =
-                commandClass.getConstructor(CommandContribution.class, CommandContext.class, CommandManager.class, String.class, String.class, String.class);
-            return constructor.newInstance(this, commandContext, commandManager, commandBody, identifier, description);
+                commandClass.getConstructor(CommandContribution.class, CommandContext.class, CommandManager.class, String.class, boolean.class, String.class, String.class, AbstractCommand.Category.class);
+            return constructor.newInstance(this, commandContext, commandManager, commandBody, requiresInput, identifier, description, category);
         } catch (InvocationTargetException e) {
             Throwable cause = e.getCause();
             if (cause instanceof InvalidCommandException) {
@@ -70,6 +62,30 @@ public class CommandContribution extends AbstractXmlElement {
             throw new RuntimeException("Command class " + commandClass.getSimpleName() + " could not be instantiated.", e);
         } catch (IllegalAccessException e) {
             throw new RuntimeException("Cannot access constructor of " + commandClass.getSimpleName(), e);
+        }
+    }
+
+    public static class AbstractCommandContribution extends CommandHierarchyNode {
+
+        @SuppressWarnings("unused")
+        public AbstractCommandContribution(Element element, Context context) {
+            super(element, context);
+        }
+
+        @SuppressWarnings("unused")
+        public AbstractCommandContribution(Element element, List<XmlElement> subElements, Context context) {
+            super(element, subElements, context);
+        }
+
+        @Nullable
+        @Override
+        public String getId() {
+            return getAttribute("class").getValue();
+        }
+
+        @Override
+        protected String defineClassAttribute() {
+            return "class";
         }
     }
 

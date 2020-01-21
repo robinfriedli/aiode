@@ -798,7 +798,7 @@ public class YouTubeService extends AbstractShutdownable {
     }
 
     private void updatePersistentQuota(int newValue) {
-        hibernateComponent.invokeWithSession(session -> {
+        hibernateComponent.consumeSession(session -> {
             CurrentYouTubeQuotaUsage currentQuotaUsage = getCurrentQuotaUsage(session);
             currentQuotaUsage.setQuota(newValue);
         });

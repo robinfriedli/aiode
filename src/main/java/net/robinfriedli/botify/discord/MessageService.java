@@ -192,6 +192,24 @@ public class MessageService extends AbstractShutdownable {
         return futureMessage;
     }
 
+    public CompletableFuture<Message> sendTemporary(MessageEmbed messageEmbed, Guild guild) {
+        CompletableFuture<Message> futureMessage = send(messageEmbed, guild);
+        futureMessage.thenAccept(message -> new TempMessageDeletionTask(message).schedule());
+        return futureMessage;
+    }
+
+    public CompletableFuture<Message> sendTemporary(EmbedBuilder embedBuilder, Guild guild) {
+        CompletableFuture<Message> futureMessage = send(embedBuilder, guild);
+        futureMessage.thenAccept(message -> new TempMessageDeletionTask(message).schedule());
+        return futureMessage;
+    }
+
+    public CompletableFuture<Message> sendTemporary(String message, Guild guild) {
+        CompletableFuture<Message> futureMessage = send(message, guild);
+        futureMessage.thenAccept(msg -> new TempMessageDeletionTask(msg).schedule());
+        return futureMessage;
+    }
+
     public void sendWrapped(String message, String wrapper, MessageChannel channel) {
         if (message.length() < limit) {
             sendInternal(channel, wrapper + message + wrapper);
@@ -235,7 +253,7 @@ public class MessageService extends AbstractShutdownable {
             if (permission == Permission.MESSAGE_WRITE || permission == Permission.MESSAGE_READ) {
                 if (channel instanceof TextChannel && canTalk(((TextChannel) channel).getGuild())) {
                     Guild guild = ((TextChannel) channel).getGuild();
-                    send("I do not have permission to send any messages to channel " + channel.getName() + " so I'll send it here instead.", guild);
+                    sendTemporary("I do not have permission to send any messages to channel " + channel.getName() + " so I'll send it here instead.", guild);
                     executeMessageActionForGuild(guild, function).thenAccept(futureMessage::complete);
                 } else if (channel instanceof TextChannel) {
                     logger.warn("Unable to send messages to guild " + ((TextChannel) channel).getGuild());
@@ -279,9 +297,7 @@ public class MessageService extends AbstractShutdownable {
         GuildPropertyManager guildPropertyManager = botify.getGuildPropertyManager();
         AbstractGuildProperty defaultTextChannelProperty = guildPropertyManager.getProperty("defaultTextChannelId");
         if (defaultTextChannelProperty != null) {
-            String defaultTextChannelId = (String) hibernateComponent.invokeWithSession(session -> {
-                return defaultTextChannelProperty.get(guildContext.getSpecification(session));
-            });
+            String defaultTextChannelId = (String) hibernateComponent.invokeWithSession(session -> defaultTextChannelProperty.get(guildContext.getSpecification(session)));
 
             if (!Strings.isNullOrEmpty(defaultTextChannelId)) {
                 TextChannel textChannelById = guild.getTextChannelById(defaultTextChannelId);

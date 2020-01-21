@@ -4,7 +4,6 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.command.AbstractCommand;
-import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
@@ -13,8 +12,8 @@ import net.robinfriedli.botify.util.Util;
 
 public class ForwardCommand extends AbstractCommand {
 
-    public ForwardCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContribution, context, commandManager, commandString, true, identifier, description, Category.PLAYBACK);
+    public ForwardCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, boolean requiresInput, String identifier, String description, Category category) {
+        super(commandContribution, context, commandManager, commandString, requiresInput, identifier, description, category);
     }
 
     @Override
@@ -56,16 +55,6 @@ public class ForwardCommand extends AbstractCommand {
         AudioPlayback playback = Botify.get().getAudioManager().getPlaybackForGuild(getContext().getGuild());
         long currentPositionMs = playback.getCurrentPositionMs();
         sendSuccess("Set position to " + Util.normalizeMillis(currentPositionMs));
-    }
-
-    @Override
-    public ArgumentContribution setupArguments() {
-        ArgumentContribution argumentContribution = new ArgumentContribution(this);
-        argumentContribution.map("minutes")
-            .setDescription("Forward the given amount of minutes.");
-        argumentContribution.map("seconds")
-            .setDescription("Forward the given amount of seconds. This is default.");
-        return argumentContribution;
     }
 
 }

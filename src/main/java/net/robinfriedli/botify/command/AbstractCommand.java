@@ -29,6 +29,8 @@ import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
+import net.robinfriedli.botify.exceptions.Abort;
+import net.robinfriedli.botify.exceptions.CommandFailure;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.function.CheckedRunnable;
 import net.robinfriedli.botify.function.HibernateInvoker;
@@ -52,7 +54,7 @@ public abstract class AbstractCommand implements Command {
     private final CommandContribution commandContribution;
     private final CommandContext context;
     private final CommandManager commandManager;
-    private final ArgumentContribution argumentContribution;
+    private final ArgumentController argumentController;
     private final MessageService messageService;
     private final String commandBody;
     private final String identifier;
@@ -80,7 +82,7 @@ public abstract class AbstractCommand implements Command {
         this.identifier = identifier;
         this.description = description;
         this.category = category;
-        this.argumentContribution = setupArguments();
+        this.argumentController = new ArgumentController(this);
         this.messageService = Botify.get().getMessageService();
         commandInput = "";
     }
@@ -103,7 +105,7 @@ public abstract class AbstractCommand implements Command {
             throw new InvalidCommandException("That command requires more input!");
         }
 
-        getArgumentContribution().verify();
+        getArgumentController().verify();
     }
 
     /**
@@ -115,22 +117,34 @@ public abstract class AbstractCommand implements Command {
      */
     public AbstractCommand fork(CommandContext newContext) {
         AbstractCommand newInstance = commandContribution.instantiate(commandManager, newContext, commandBody);
-        newInstance.getArgumentContribution().transferValues(getArgumentContribution());
+        newInstance.getArgumentController().transferValues(getArgumentController());
         newInstance.setCommandInput(commandInput);
         return newInstance;
     }
 
     /**
-     * define the arguments that this command accepts
+     * Run a custom command like you would enter it to discord, this includes commands and presets but excludes scripts
+     * to avoid recursion.
+     * This method is mainly used in groovy scripts.
      *
-     * @return the {@link ArgumentContribution}
+     * @param command the command string
      */
-    public ArgumentContribution setupArguments() {
-        return new ArgumentContribution(this);
+    public void run(String command) {
+        CommandContext fork = context.fork(command);
+        AbstractCommand abstractCommand = commandManager.instantiateCommandForContext(fork, context.getSession(), false)
+            .orElseThrow(() -> new InvalidCommandException("No command found for input"));
+        abstractCommand.setThread(thread);
+        try {
+            commandManager.getInterceptorChainWithoutScripting().intercept(abstractCommand);
+        } catch (CommandFailure ignored) {
+            abort();
+        } finally {
+            fork.closeSession();
+        }
     }
 
-    public ArgumentContribution getArgumentContribution() {
-        return argumentContribution;
+    public ArgumentController getArgumentController() {
+        return argumentController;
     }
 
     public void invoke(CheckedRunnable runnable) {
@@ -208,7 +222,7 @@ public abstract class AbstractCommand implements Command {
     }
 
     protected boolean argumentSet(String argument) {
-        return argumentContribution.argumentSet(argument);
+        return argumentController.argumentSet(argument);
     }
 
     protected String getArgumentValue(String argument) {
@@ -220,16 +234,15 @@ public abstract class AbstractCommand implements Command {
     }
 
     protected <E> E getArgumentValue(String argument, Class<E> type, E alternativeValue) {
-        if (!argumentSet(argument)) {
+        ArgumentController.ArgumentUsage usedArgument = argumentController.getUsedArgument(argument);
+        if (usedArgument == null) {
             if (alternativeValue != null) {
                 return alternativeValue;
             }
             throw new InvalidCommandException("Expected argument: " + argument);
         }
 
-        ArgumentContribution.Argument arg = argumentContribution.require(argument, IllegalArgumentException.class);
-
-        if (!arg.hasValue()) {
+        if (!usedArgument.hasValue()) {
             if (alternativeValue != null) {
                 return alternativeValue;
             } else {
@@ -237,7 +250,7 @@ public abstract class AbstractCommand implements Command {
             }
         }
 
-        return arg.getValue(type);
+        return usedArgument.getValue(type);
     }
 
     protected boolean isPartitioned() {
@@ -303,6 +316,10 @@ public abstract class AbstractCommand implements Command {
     protected CompletableFuture<Message> sendMessage(EmbedBuilder message) {
         message.setColor(ColorSchemeProperty.getColor());
         return messageService.send(message.build(), getContext().getChannel());
+    }
+
+    protected CompletableFuture<Message> sendMessage(MessageEmbed messageEmbed) {
+        return messageService.send(messageEmbed, getContext().getChannel());
     }
 
     protected CompletableFuture<Message> sendMessage(User user, String message) {
@@ -397,6 +414,10 @@ public abstract class AbstractCommand implements Command {
         this.isFailed = isFailed;
     }
 
+    public void abort() {
+        throw new Abort();
+    }
+
     @Override
     public String display() {
         String contentDisplay = context.getMessage().getContentDisplay();
@@ -459,9 +480,9 @@ public abstract class AbstractCommand implements Command {
                     }
                     String argument = argString.substring(0, equalsIndex);
                     String value = argString.substring(equalsIndex + 1);
-                    argumentContribution.setArgument(argument.toLowerCase(), value);
+                    argumentController.setArgument(argument.toLowerCase(), value);
                 } else {
-                    argumentContribution.setArgument(argString.toLowerCase());
+                    argumentController.setArgument(argString.toLowerCase());
                 }
             } else if (!word.isBlank()) {
                 break;
@@ -480,6 +501,7 @@ public abstract class AbstractCommand implements Command {
         CUSTOMISATION("customisation", "Commands to customise the bot"),
         SPOTIFY("spotify", "Commands that manage the Spotify login or upload playlists to Spotify"),
         SEARCH("search", "Commands that search for botify playlists or list all of them or search for Spotify and Youtube tracks, videos and playlists"),
+        SCRIPTING("scripting", "Commands that execute or manage groovy scripts"),
         ADMIN("admin", "Commands only available to administrators defined in settings-private.properties");
 
         private final String name;

@@ -1,199 +1,642 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <commands xmlns="commandSpace">
-  <command identifier="add" implementation="net.robinfriedli.botify.command.commands.playlistmanagement.AddCommand"
+  <command identifier="add"
+           implementation="net.robinfriedli.botify.command.commands.playlistmanagement.AddCommand"
+           requiresInput="true"
+           category="PLAYLIST_MANAGEMENT"
            description="Add a specific song from spotify, youtube, the current queue or any URL to the specified local playlist. Which source is used is decided by the used arguments or the default source and default list source properties. Spotify search queries support the Spotify query syntax (i.e. the &quot;artist:&quot;, &quot;album:&quot; and &quot;track:&quot; filters). To add tracks to the queue see the queue command.">
-    <example title="Add a specific track">%sadd $spotify $own from the inside $to my list.</example>
-    <example title="Add tracks from the current queue to a list">%sadd $queue my list</example>
-    <example title="Add tracks from a url">%sadd http://someurl.com $to linkin park</example>
+    <argument identifier="to" description="Mandatory argument to define the playlist to which you want to add the tracks."/>
+    <argument identifier="queue" description="Add items from the current queue to the specified playlist. The to argument may be dropped when using this argument. E.g. add %2$squeue my list.">
+      <excludes argument="youtube"/>
+      <excludes argument="spotify"/>
+    </argument>
+    <example title="Add a specific track">%1$sadd %2$sspotify %2$sown from the inside %2$sto my list.</example>
+    <example title="Add tracks from the current queue to a list">%1$sadd %2$squeue my list</example>
+    <example title="Add tracks from a url">%1$sadd http://someurl.com %2$sto linkin park</example>
   </command>
-  <command identifier="answer" implementation="net.robinfriedli.botify.command.commands.general.AnswerCommand"
+  <command identifier="answer"
+           implementation="net.robinfriedli.botify.command.commands.general.AnswerCommand"
+           requiresInput="true"
+           category="GENERAL"
            description="Answer a question asked by the bot. Commands like the play command may ask you to specify what track you meant if several options where found.">
-    <example title="Choose option with key 2">%sanswer 2</example>
-    <example title="Choose options 2, 4 and 6">%sanswer 2,4,6</example>
+    <example title="Choose option with key 2">%1$sanswer 2</example>
+    <example title="Choose options 2, 4 and 6">%1$sanswer 2,4,6</example>
   </command>
-  <command identifier="create" implementation="net.robinfriedli.botify.command.commands.playlistmanagement.CreateCommand"
+  <command identifier="create"
+           implementation="net.robinfriedli.botify.command.commands.playlistmanagement.CreateCommand"
+           requiresInput="true"
+           category="PLAYLIST_MANAGEMENT"
            description="Create an empty local playlist with the given name.">
-    <example title="Create a playlist called &quot;my list&quot;">%screate my list</example>
+    <example title="Create a playlist called &quot;my list&quot;">%1$screate my list</example>
   </command>
-  <command identifier="delete" implementation="net.robinfriedli.botify.command.commands.playlistmanagement.DeleteCommand"
+  <command identifier="delete"
+           implementation="net.robinfriedli.botify.command.commands.playlistmanagement.DeleteCommand"
+           requiresInput="true"
+           category="PLAYLIST_MANAGEMENT"
            description="Delete the local playlist with the given name.">
-    <example title="Delete a playlist called &quot;my list&quot;">%sdelete my list</example>
+    <example title="Delete a playlist called &quot;my list&quot;">%1$sdelete my list</example>
   </command>
-  <command identifier="export" implementation="net.robinfriedli.botify.command.commands.playlistmanagement.ExportCommand"
+  <command identifier="export"
+           implementation="net.robinfriedli.botify.command.commands.playlistmanagement.ExportCommand"
+           requiresInput="true"
+           category="PLAYLIST_MANAGEMENT"
            description="Export the current tracks in the queue to a new local list.">
-    <example title="Create a playlist called &quot;my list&quot; with tracks from the current queue">%sexport my list</example>
+    <example title="Create a playlist called &quot;my list&quot; with tracks from the current queue">%1$sexport my list
+    </example>
   </command>
-  <command identifier="help" implementation="net.robinfriedli.botify.command.commands.general.HelpCommand"
+  <command identifier="help"
+           implementation="net.robinfriedli.botify.command.commands.general.HelpCommand"
+           requiresInput="false"
+           category="GENERAL"
            description="Lists all available commands and their descriptions or provides help with a specific command.">
-    <example title="Get help with the play command">%shelp play</example>
+    <example title="Get help with the play command">%1$shelp play</example>
   </command>
-  <command identifier="login" implementation="net.robinfriedli.botify.command.commands.spotify.LoginCommand"
+  <command identifier="login"
+           implementation="net.robinfriedli.botify.command.commands.spotify.LoginCommand"
+           requiresInput="false"
+           category="SPOTIFY"
            description="Login to spotify. This sends you a link to the spotify login page which then redirects to the botify callback.">
-    <example title="Login to Spotify.">%slogin</example>
+    <example title="Login to Spotify.">%1$slogin</example>
   </command>
-  <command identifier="play" implementation="net.robinfriedli.botify.command.commands.playback.PlayCommand"
+  <command identifier="play"
+           implementation="net.robinfriedli.botify.command.commands.playback.PlayCommand"
+           requiresInput="false"
+           category="PLAYBACK"
            description="Resume the paused playback, play the current track in the queue or play the specified track, video or playlist. Can play any URL or search youtube and spotify tracks or lists and also local playlists. Local playlists, like the queue, can contain tracks from any source (YouTube, Spotify and URL). Spotify search queries support the Spotify query syntax (i.e. the &quot;artist:&quot;, &quot;album:&quot; and &quot;track:&quot; filters). Which source is used is decided by the used arguments or the default source and default list source properties.">
-    <example title="Play the current queue or unpause playback">%splay</example>
-    <example title="Play a specific track from Spotify">%splay numb</example>
-    <example title="Play a track from a specific artist and album">%splay from the inside artist:linkin park album:meteora</example>
-    <example title="Play a URL">%splay someurl.com</example>
-    <example title="Play a video from YouTube">%splay $youtube youtube rewind 2018</example>
-    <example title="Play a playlist from YouTube, showing a selection of 5 results">%splay $youtube $list $limit=5 memes</example>
-    <example title="Play a YouTube playlist">%splay $youtube $list important videos</example>
-    <example title="Play a Spotify playlist">%splay $spotify $list this is linkin park</example>
-    <example title="Play a Spotify playlist from the current user's library">%splay $spotify $list $own goat</example>
+    <example title="Play the current queue or unpause playback">%1$splay</example>
+    <example title="Play a specific track from Spotify">%1$splay numb</example>
+    <example title="Play a track from a specific artist and album">%1$splay from the inside artist:linkin park album:meteora</example>
+    <example title="Play a URL">%1$splay someurl.com</example>
+    <example title="Play a video from YouTube">%1$splay %2$syoutube youtube rewind 2018</example>
+    <example title="Play a playlist from YouTube, showing a selection of 5 results">%1$splay %2$syoutube %2$slist %2$slimit=5 memes</example>
+    <example title="Play a YouTube playlist">%1$splay %2$syoutube %2$slist important videos</example>
+    <example title="Play a Spotify playlist">%1$splay %2$sspotify %2$slist this is linkin park</example>
+    <example title="Play a Spotify playlist from the current user's library">%1$splay %2$sspotify %2$slist %2$sown goat</example>
   </command>
-  <command identifier="pause" implementation="net.robinfriedli.botify.command.commands.playback.PauseCommand"
+  <command identifier="pause"
+           implementation="net.robinfriedli.botify.command.commands.playback.PauseCommand"
+           requiresInput="false"
+           category="PLAYBACK"
            description="Pause the current playback."/>
-  <command identifier="queue" implementation="net.robinfriedli.botify.command.commands.playback.QueueCommand"
+  <command identifier="queue"
+           implementation="net.robinfriedli.botify.command.commands.playback.QueueCommand"
+           requiresInput="false"
+           category="PLAYBACK"
            description="Display the current queue or add a youtube video or playlist, spotify track or playlist, local playlist or any URL to the current queue. Spotify search queries support the Spotify query syntax (i.e. the &quot;artist:&quot;, &quot;album:&quot; and &quot;track:&quot; filters). Which source is used is decided by the used arguments or the default source and default list source properties.">
-    <example title="Display the queue widget">%squeue</example>
-    <example title="Add a specific track from Spotify to the queue">%squeue numb</example>
-    <example title="Add a track from a specific artist and album">%squeue from the inside artist:linkin park album:meteora</example>
-    <example title="Add tracks from a local playlist to the queue">%squeue $list my list</example>
-    <example title="Add tracks from a Spotify playlist to the queue">%squeue $spotify $list this is linkin park</example>
-    <example title="Add tracks from a Spotify playlist in the current user's library to the queue">%squeue $list $spotify $own favs</example>
-    <example title="Add a YouTube playlist to the queue">%squeue $youtube $list memes</example>
-    <example title="Add a YouTube playlist to the queue, showing a selection of 5 results">%squeue $youtube $list $limit=5 memes</example>
+    <example title="Display the queue widget">%1$squeue</example>
+    <example title="Add a specific track from Spotify to the queue">%1$squeue numb</example>
+    <example title="Add a track from a specific artist and album">%1$squeue from the inside artist:linkin park album:meteora</example>
+    <example title="Add tracks from a local playlist to the queue">%1$squeue %2$slist my list</example>
+    <example title="Add tracks from a Spotify playlist to the queue">%1$squeue %2$sspotify %2$slist this is linkin park</example>
+    <example title="Add tracks from a Spotify playlist in the current user's library to the queue">%1$squeue %2$slist %2$sspotify %2$sown favs</example>
+    <example title="Add a YouTube playlist to the queue">%1$squeue %2$syoutube %2$slist memes</example>
+    <example title="Add a YouTube playlist to the queue, showing a selection of 5 results">%1$squeue %2$syoutube %2$slist %2$slimit=5 memes</example>
   </command>
-  <command identifier="remove" implementation="net.robinfriedli.botify.command.commands.playlistmanagement.RemoveCommand"
+  <command identifier="remove"
+           implementation="net.robinfriedli.botify.command.commands.playlistmanagement.RemoveCommand"
+           requiresInput="true"
+           category="PLAYLIST_MANAGEMENT"
            description="Remove an item from a local playlist. Put either the full title of the YouTube video or the Spotify track name. If it was a track added by URL from a different source you can either remove it via its title or URL.">
-    <example title="Remove a Spotify track from a playlist">%sremove numb $from my list</example>
-    <example title="Remove an item added by URL">%sremove http://someurl.com/video1 $from my list</example>
-    <example title="Remove the track at position 3 from a playlist">%sremove $index 3 $from my list</example>
-    <example title="Remove positions 13 through 19 from a playlist">%sremove $index 13-19 $from my list</example>
+    <argument identifier="from" requiresValue="true" description="Mandatory argument to specify the playlist from which to remove the items."/>
+    <argument identifier="index" description="Remove items by their index. You can also provide an index range like %2$sbotify remove 13-19 %2$sfrom list. This includes starting and end index."/>
+    <example title="Remove a Spotify track from a playlist">%1$sremove numb %2$sfrom my list</example>
+    <example title="Remove an item added by URL">%1$sremove http://someurl.com/video1 %2$sfrom my list</example>
+    <example title="Remove the track at position 3 from a playlist">%1$sremove %2$sindex 3 %2$sfrom my list</example>
+    <example title="Remove positions 13 through 19 from a playlist">%1$sremove %2$sindex 13-19 %2$sfrom my list</example>
   </command>
-  <command identifier="rename" implementation="net.robinfriedli.botify.command.commands.customisation.RenameCommand"
+  <command identifier="rename"
+           implementation="net.robinfriedli.botify.command.commands.customisation.RenameCommand"
+           requiresInput="true"
+           category="CUSTOMISATION"
            description="Change the name of the bot. This name will then be used as the bot's nickname (if the bot has the permission to change it) and can be used as command prefix instead of '$botify'">
-    <example title="Name the bot &quot;Patrice&quot;">%srename Patrice</example>
+    <example title="Name the bot &quot;Patrice&quot;">%1$srename Patrice</example>
   </command>
-  <command identifier="repeat" implementation="net.robinfriedli.botify.command.commands.playback.RepeatCommand"
-           description="Toggles repeat for either the entire queue (repeat $all) or the current track (repeat $one).">
-    <example title="Repeat the full queue">%srepeat</example>
-    <example title="Repeat the current track">%srepeat $one</example>
+  <command identifier="repeat"
+           implementation="net.robinfriedli.botify.command.commands.playback.RepeatCommand"
+           requiresInput="false"
+           category="PLAYBACK"
+           description="Toggles repeat for either the entire queue (repeat %2$sall) or the current track (repeat %2$sone).">
+    <argument identifier="one" description="Toggle repeat for the current track.">
+      <excludes argument="all"/>
+    </argument>
+    <argument identifier="all" description="Toggle repeat for all tracks in the queue. This is the default option.">
+      <excludes argument="one"/>
+    </argument>
+    <example title="Repeat the full queue">%1$srepeat</example>
+    <example title="Repeat the current track">%1$srepeat %2$sone</example>
   </command>
-  <command identifier="rewind" implementation="net.robinfriedli.botify.command.commands.playback.RewindCommand"
+  <command identifier="rewind"
+           implementation="net.robinfriedli.botify.command.commands.playback.RewindCommand"
+           requiresInput="false"
+           category="PLAYBACK"
            description="Go back to the previous track in the queue. You can provide a number to rewind more than one track.">
-    <example title="Rewind to the previous track in the queue">%srewind</example>
-    <example title="Rewind 6 tracks">%srewind 6</example>
+    <example title="Rewind to the previous track in the queue">%1$srewind</example>
+    <example title="Rewind 6 tracks">%1$srewind 6</example>
   </command>
-  <command identifier="search" implementation="net.robinfriedli.botify.command.commands.search.SearchCommand"
+  <command identifier="search"
+           implementation="net.robinfriedli.botify.command.commands.search.SearchCommand"
+           requiresInput="false"
+           category="SEARCH"
            description="Search for YouTube and Spotify tracks or playlists and local playlists or list all local playlists. Spotify search queries support the Spotify query syntax (i.e. the &quot;artist:&quot;, &quot;album:&quot; and &quot;track:&quot; filters). Which source is used is decided by the used arguments or the default source and default list source properties.">
-    <example title="List all local playlists">%ssearch $list</example>
-    <example title="Search for a specific local list">%ssearch $list my list</example>
-    <example title="Search for a Spotify track">%ssearch $spotify numb artist:linkin park album:meteora</example>
-    <example title="Search for a Spotify playlist">%ssearch $spotify $list this is linkin park</example>
-    <example title="Search for a YouTube playlist">%ssearch $youtube $list memes</example>
-    <example title="Search for a YouTube playlist, showing a selection of 5 results">%ssearch $youtube $list $limit=6 memes</example>
+    <argument identifier="spotify" requiresInput="true" description="Search for Spotify track or playlist. This supports Spotify query syntax (i.e. the filters &quot;artist:&quot;, &quot;album:&quot;, etc.). This is the default option when searching for tracks.">
+      <excludes argument="youtube"/>
+    </argument>
+    <argument identifier="youtube" requiresInput="true" description="Search for YouTube video or playlist.">
+      <excludes argument="spotify"/>
+    </argument>
+    <argument identifier="list" description="Search for a playlist."/>
+    <argument identifier="local" description="Search for a local playlist or list all of them. This is default when searching for lists.">
+      <excludes argument="youtube"/>
+      <excludes argument="spotify"/>
+      <requires argument="list"/>
+    </argument>
+    <argument identifier="own" description="Limit search to Spotify tracks or playlists in the current user's library. This requires a Spotify login.">
+      <rule errorMessage="Argument 'own' may only be used with Spotify.">command.getSource().isSpotify()</rule>
+    </argument>
+    <argument identifier="select" valueType="java.lang.Integer" description="Show a selection of YouTube playlists / videos or Spotify tracks to chose from. May be assigned a value from 1 to 20: %2$sselect=5">
+      <excludes argument="album"/>
+      <valueCheck errorMessage="Limit must be between 1 and 20" check="value &gt; 0 &amp;&amp; value &lt;= 20"/>
+      <rule errorMessage="Argument 'select' may only be used with YouTube videos / playlists or Spotify tracks.">
+        def source = command.getSource();
+        if (command.argumentSet("list")) {
+        source.isYouTube()
+        }
+
+        source.isYouTube() || source.isSpotify()
+      </rule>
+    </argument>
+    <argument identifier="album" requiresInput="true" description="Search for a Spotify album.">
+      <excludes argument="list"/>
+      <rule errorMessage="Argument 'album' may only be used with Spotify.">command.getSource().isSpotify()</rule>
+    </argument>
+    <example title="List all local playlists">%1$ssearch %2$slist</example>
+    <example title="Search for a specific local list">%1$ssearch %2$slist my list</example>
+    <example title="Search for a Spotify track">%1$ssearch %2$sspotify numb artist:linkin park album:meteora</example>
+    <example title="Search for a Spotify playlist">%1$ssearch %2$sspotify %2$slist this is linkin park</example>
+    <example title="Search for a YouTube playlist">%1$ssearch %2$syoutube %2$slist memes</example>
+    <example title="Search for a YouTube playlist, showing a selection of 5 results">%1$ssearch %2$syoutube %2$slist %2$slimit=6 memes</example>
   </command>
-  <command identifier="shuffle" implementation="net.robinfriedli.botify.command.commands.playback.ShuffleCommand"
+  <command identifier="shuffle"
+           implementation="net.robinfriedli.botify.command.commands.playback.ShuffleCommand"
+           requiresInput="false"
+           category="PLAYBACK"
            description="Toggles shuffle for this guild's queue. This generates a random order in which each track only appears once."/>
-  <command identifier="skip" implementation="net.robinfriedli.botify.command.commands.playback.SkipCommand"
+  <command identifier="skip"
+           implementation="net.robinfriedli.botify.command.commands.playback.SkipCommand"
+           requiresInput="false"
+           category="PLAYBACK"
            description="Skip to the next track in the queue or skip the specified amount of tracks. You can provide a number to skip more than one track.">
-    <example title="Skip to the next item in the queue">%sskip</example>
-    <example title="Skip 6 tracks">%sskip 6</example>
+    <example title="Skip to the next item in the queue">%1$sskip</example>
+    <example title="Skip 6 tracks">%1$sskip 6</example>
   </command>
-  <command identifier="stop" implementation="net.robinfriedli.botify.command.commands.playback.StopCommand"
+  <command identifier="stop"
+           implementation="net.robinfriedli.botify.command.commands.playback.StopCommand"
+           requiresInput="false"
+           category="PLAYBACK"
            description="Stop playback and empty the queue."/>
-  <command identifier="upload" implementation="net.robinfriedli.botify.command.commands.spotify.UploadCommand"
+  <command identifier="upload"
+           implementation="net.robinfriedli.botify.command.commands.spotify.UploadCommand"
+           requiresInput="true"
+           category="SPOTIFY"
            description="Upload the items from a local list to a new Spotify playlist. This ignores elements that are not Spotify tracks.">
-    <example title="Upload playlist &quot;my list&quot;">%supload my list</example>
+    <example title="Upload playlist &quot;my list&quot;">%1$supload my list</example>
   </command>
-  <command identifier="permission" implementation="net.robinfriedli.botify.command.commands.general.PermissionCommand"
+  <command identifier="permission"
+           implementation="net.robinfriedli.botify.command.commands.general.PermissionCommand"
+           requiresInput="false"
+           category="GENERAL"
            description="Add or remove a role required to run a certain command or list all commands and who they are available to. By default all commands are available to each user, except for this command which initially is only available to administrator roles. But as soon as a role has been added only those members with said role can use the command. The guild owner or members with administrator roles can always use any command.">
-    <example title="Add playbackmanager to the roles that can use command play">%spermission $grant play $to playbackmanager</example>
-    <example title="Remove playbackmanager from the roles that can use command add">%spermission $deny add $for playbackmanager</example>
-    <example title="Clear all restrictions for command shuffle">%spermission $clear shuffle</example>
-    <example title="grant all commands to the manager role">%spermission $grant $all manager</example>
-    <example title="grant all commands in the playback category to role playbackmanager">%spermission $grant $category playback $to playbackmanager</example>
-    <example title="make command add available to guild owner only">%spermission $lock add</example>
+    <argument identifier="to" description="Specify the roles to grant access for.">
+      <requires argument="grand"/>
+    </argument>
+    <argument identifier="for" description="Specify the roles to remove access privileges from when using the %2$sdeny argument.">
+      <excludes argument="to"/>
+      <requires argument="deny"/>
+    </argument>
+    <argument identifier="grant" requiresInput="true" description="Grant the selected commands to the selected roles. Limits the command to the selected roles if no roles were previously defined.">
+      <excludes argument="deny"/>
+    </argument>
+    <argument identifier="deny" requiresInput="true" description="Denies a role from using a command that has previously been added as a granted role">
+      <excludes argument="grant"/>
+    </argument>
+    <argument identifier="clear" description="Clear all restrictions for a command to make it available for everyone.">
+      <excludes argument="grant"/>
+      <excludes argument="deny"/>
+      <rule errorMessage="No commands selected! Either select commands (comma separated) or use the %2$sall or %2$scategory arguments">
+        !command.getCommandInput().isBlank() || command.argumentSet("all") || command.argumentSet("category")
+      </rule>
+    </argument>
+    <argument identifier="category" requiresInput="true" description="Manage a category of commands. Use the help command to show all categories."/>
+    <argument identifier="all" description="Manage all commands at once. The inline arguments %2$sto and %2$sfor are not required with this argument.">
+      <excludes argument="category"/>
+    </argument>
+    <argument identifier="lock" description="Make the selected commands available only to the guild owner and administrator roles.">
+      <excludes argument="grant"/>
+      <excludes argument="deny"/>
+      <excludes argument="clear"/>
+      <rule errorMessage="No commands selected! Either select commands (comma separated) or use the %2$sall or %2$scategory arguments">
+        !command.getCommandInput().isBlank() || command.argumentSet("all") || command.argumentSet("category")
+      </rule>
+    </argument>
+    <example title="Add playbackmanager to the roles that can use command play">%1$spermission %2$sgrant play %2$sto
+      playbackmanager
+    </example>
+    <example title="Remove playbackmanager from the roles that can use command add">%1$spermission %2$sdeny add %2$sfor
+      playbackmanager
+    </example>
+    <example title="Clear all restrictions for command shuffle">%1$spermission %2$sclear shuffle</example>
+    <example title="grant all commands to the manager role">%1$spermission %2$sgrant %2$sall manager</example>
+    <example title="grant all commands in the playback category to role playbackmanager">%1$spermission %2$sgrant %2$scategory
+      playback %2$sto playbackmanager
+    </example>
+    <example title="make command add available to guild owner only">%1$spermission %2$slock add</example>
   </command>
-  <command identifier="logout" implementation="net.robinfriedli.botify.command.commands.spotify.LogoutCommand"
+  <command identifier="logout"
+           implementation="net.robinfriedli.botify.command.commands.spotify.LogoutCommand"
+           requiresInput="false"
+           category="SPOTIFY"
            description="Log out from Spotify."/>
-  <command identifier="analytics" implementation="net.robinfriedli.botify.command.commands.general.AnalyticsCommand"
+  <command identifier="analytics"
+           implementation="net.robinfriedli.botify.command.commands.general.AnalyticsCommand"
+           requiresInput="false"
+           category="GENERAL"
            description="Show various analytics about this bot."/>
-  <command identifier="clear" implementation="net.robinfriedli.botify.command.commands.playback.ClearCommand"
+  <command identifier="clear"
+           implementation="net.robinfriedli.botify.command.commands.playback.ClearCommand"
+           requiresInput="false"
+           category="PLAYBACK"
            description="Clear the current queue of all tracks (except the currently playing track)."/>
-  <command identifier="forward" implementation="net.robinfriedli.botify.command.commands.playback.ForwardCommand"
+  <command identifier="forward"
+           implementation="net.robinfriedli.botify.command.commands.playback.ForwardCommand"
+           requiresInput="true"
+           category="PLAYBACK"
            description="Skip the given amount of seconds or minutes in the current track.">
-    <example title="Forward 110 seconds">%sforward 110</example>
-    <example title="Forward 2 minutes">%sforward $minutes 2</example>
+    <argument identifier="minutes" description="Forward the given amount of minutes."/>
+    <argument identifier="seconds" description="Forward the given amount of seconds. This is default.">
+      <excludes argument="minutes"/>
+    </argument>
+    <example title="Forward 110 seconds">%1$sforward 110</example>
+    <example title="Forward 2 minutes">%1$sforward %2$sminutes 2</example>
   </command>
-  <command identifier="reverse" implementation="net.robinfriedli.botify.command.commands.playback.ReverseCommand"
+  <command identifier="reverse"
+           implementation="net.robinfriedli.botify.command.commands.playback.ReverseCommand"
+           requiresInput="true"
+           category="PLAYBACK"
            description="Rewind the given amount of seconds or minutes in the current track.">
-    <example title="Rewind 110 seconds">%sreverse 110</example>
-    <example title="Rewind 2 minutes">%sreverse $minutes 2</example>
+    <argument identifier="minutes" description="Reverse the given amount of minutes."/>
+    <argument identifier="seconds" description="Reverse the given amount of seconds. This is default.">
+      <excludes argument="minutes"/>
+    </argument>
+    <example title="Rewind 110 seconds">%1$sreverse 110</example>
+    <example title="Rewind 2 minutes">%1$sreverse %2$sminutes 2</example>
   </command>
-  <command identifier="volume" implementation="net.robinfriedli.botify.command.commands.playback.VolumeCommand"
+  <command identifier="volume"
+           implementation="net.robinfriedli.botify.command.commands.playback.VolumeCommand"
+           requiresInput="true"
+           category="PLAYBACK"
            description="Change the music volume. Enter a value between 1 and 200."/>
-  <command identifier="preset" implementation="net.robinfriedli.botify.command.commands.customisation.PresetCommand"
-           description="Create or delete a command preset or show all saved presets. Command presets can be used as shortcuts for lengthy commands or creating an alias for a command. Presets han hold one variable marked by &quot;%%s&quot; that may be assigned a value when using the preset. Syntax to create a preset: [preset] $as [name]. Mind that if your preset contains arguments you either need to put the preset in quotation marks or escape the argument prefixes using the escape character '\\'; see the examples for references.">
-    <example title="Create a preset to add a track to your favourite list like: %sfav numb">%spreset &quot;add %%s $to favs&quot; $as fav</example>
-    <example title="Create a preset to play a local list like: %spl my list">%spreset &quot;play $list %%s&quot; $as pl</example>
-    <example title="Create an alias for command forward: %sff 20">%spreset forward %%s $as ff</example>
-    <example title="List all local playlist with one word: %slist">%spreset search \\$list $as list</example>
-    <example title="Create a preset to play one of the current user's Spotify playlists">%spreset &quot;play $spotify $own $list %%s&quot; $as psol</example>
-    <example title="List all saved presets">%spreset</example>
-    <example title="Delete a saved preset">%spreset $delete psol</example>
+  <command identifier="preset"
+           implementation="net.robinfriedli.botify.command.commands.customisation.PresetCommand"
+           requiresInput="false"
+           category="CUSTOMISATION"
+           description="Create or delete a command preset or show all saved presets. Command presets can be used as shortcuts for lengthy commands or creating an alias for a command. Presets han hold one variable marked by &quot;%%s&quot; that may be assigned a value when using the preset. Syntax to create a preset: [preset] %2$sas [name]. Mind that if your preset contains arguments you either need to put the preset in quotation marks or escape the argument prefixes using the escape character '\\'; see the examples for references.">
+    <argument identifier="as" requiresValue="true" description="Defines the name that will be used to call this preset. This argument is mandatory except when using the delete argument.">
+      <excludes argument="delete"/>
+    </argument>
+    <argument identifier="delete" requiresInput="true" description="Delete an existing preset by its name."/>
+    <example title="Create a preset to add a track to your favourite list like: %1$sfav numb">%1$spreset &quot;add %%s %2$sto favs&quot; %2$sas fav</example>
+    <example title="Create a preset to play a local list like: %1$spl my list">%1$spreset &quot;play %2$slist %%s&quot; %2$sas pl</example>
+    <example title="Create an alias for command forward: %1$sff 20">%1$spreset forward %%s %2$sas ff</example>
+    <example title="List all local playlist with one word: %1$slist">%1$spreset search \\%2$slist %2$sas list</example>
+    <example title="Create a preset to play one of the current user's Spotify playlists">%1$spreset &quot;play %2$sspotify %2$sown %2$slist %%s&quot; %2$sas psol</example>
+    <example title="List all saved presets">%1$spreset</example>
+    <example title="Delete a saved preset">%1$spreset %2$sdelete psol</example>
   </command>
-  <command identifier="prefix" implementation="net.robinfriedli.botify.command.commands.customisation.PrefixCommand"
+  <command identifier="prefix"
+           implementation="net.robinfriedli.botify.command.commands.customisation.PrefixCommand"
+           requiresInput="true"
+           category="CUSTOMISATION"
            description="Set a custom command prefix. Can be used instead of &quot;$botify&quot; or the bot name to start a command.">
-    <example title="Set the command prefix to &quot;.&quot; to start a command like this: .play numb">%sprefix .</example>
+    <example title="Set the command prefix to &quot;.&quot; to start a command like this: .play numb">%1$sprefix .</example>
   </command>
-  <command identifier="move" implementation="net.robinfriedli.botify.command.commands.playlistmanagement.MoveCommand"
-           description="Move one or several items in a botify playlist to a different index. When moving items down the playlist the items will end up behind the track that is currently at the target index or before when moving items upwards. When entering an index range to move it includes the start and end index. Indices are human, meaning they start at 1. To view full playlists with all indices search the list (%ssearch $list my list) and then click the view full list link.">
-    <example title="Move the item that is currently at index 5 to index 10">%smove 5 $to 10 $on my list</example>
-    <example title="Move the items that are currently in range 4 - 6 (including start &amp; end) down between the items that are currently at index 10 and 11.">%smove 4-6 $to 10 $on my list</example>
-    <example title="Move the items that are currently in range 14 - 16 (including start &amp; end) up between the items that are currently at index 9 and 10.">%smove 14-16 $to 10 $on my list</example>
+  <command identifier="move"
+           implementation="net.robinfriedli.botify.command.commands.playlistmanagement.MoveCommand"
+           requiresInput="true"
+           category="PLAYLIST_MANAGEMENT"
+           description="Move one or several items in a botify playlist to a different index. When moving items down the playlist the items will end up behind the track that is currently at the target index or before when moving items upwards. When entering an index range to move it includes the start and end index. Indices are human, meaning they start at 1. To view full playlists with all indices search the list (%1$ssearch %2$slist my list) and then click the view full list link.">
+    <argument identifier="to" requiresValue="true" description="Mandatory argument to specify the target index."/>
+    <argument identifier="on" requiresValue="true" description="Mandatory argument to define the playlist where you want to move the tracks."/>
+    <example title="Move the item that is currently at index 5 to index 10">%1$smove 5 %2$sto 10 %2$son my list</example>
+    <example title="Move the items that are currently in range 4 - 6 (including start &amp; end) down between the items that are currently at index 10 and 11.">%1$smove 4-6 %2$sto 10 %2$son my list</example>
+    <example title="Move the items that are currently in range 14 - 16 (including start &amp; end) up between the items that are currently at index 9 and 10.">%1$smove 14-16 %2$sto 10 %2$son my list</example>
   </command>
-  <command identifier="insert" implementation="net.robinfriedli.botify.command.commands.playlistmanagement.InsertCommand"
+  <command identifier="insert"
+           implementation="net.robinfriedli.botify.command.commands.playlistmanagement.InsertCommand"
+           requiresInput="true"
+           category="PLAYLIST_MANAGEMENT"
            description="Add a track to a botify playlist. This command is an extension to the add command that inserts the tracks at a specific index rather than adding them to the end of the list.">
-    <example title="Add tracks to the start of a playlist">%sinsert $spotify $own $list goat $to my list $at 1</example>
-    <example title="Insert tracks at index 10">%sinsert $youtube $list favs $to my list $at 10</example>
+    <argument identifier="at" requiresValue="true" description="Mandatory argument to define the index at which to insert the tracks."/>
+    <example title="Add tracks to the start of a playlist">%1$sinsert %2$sspotify %2$sown %2$slist goat %2$sto my list %2$sat 1</example>
+    <example title="Insert tracks at index 10">%1$sinsert %2$syoutube %2$slist favs %2$sto my list %2$sat 10</example>
   </command>
-  <command identifier="property" implementation="net.robinfriedli.botify.command.commands.customisation.PropertyCommand"
+  <command identifier="property"
+           implementation="net.robinfriedli.botify.command.commands.customisation.PropertyCommand"
+           requiresInput="false"
+           category="CUSTOMISATION"
            description="List all properties or change the value of a property. Properties are used to customize the bot. For example the &quot;color&quot; property changes the colour theme or &quot;playback notification&quot; changes whether you receive &quot;Now playing...&quot; messages.">
-    <example title="list all properties">%sproperty</example>
-    <example title="set the color of botify messages to blue">%sproperty color $set blue</example>
-    <example title="set the color to Spotify green">%sproperty color $set #1DB954</example>
-    <example title="toggle playback notifications">%sproperty $toggle playback notification</example>
-    <example title="set the default service when searching for a track">%sproperty default source $set youtube</example>
-    <example title="set the default service when searching for a list">%sproperty default list source $set local</example>
-    <example title="set the argument prefix to '-' to make commands look like this: %splay -youtube vid">%sproperty argument prefix $set -</example>
-    <example title="set the amount of seconds after which success and error messages disappear to 20">%sproperty message timeout $set 20</example>
-    <example title="disable the automatic removal of success and error messages">%sproperty message timeout $set 0</example>
-    <example title="set the default text channel to 'bot'">%sproperty default channel $set bot</example>
+    <argument identifier="toggle" description="Toggles a property with a boolean value (e.g. &quot;playback notification&quot;) to its opposite value"/>
+    <argument identifier="set" requiresValue="true" description="Set a property to the specified value. E.g. property default source %2$sset youtube.">
+      <excludes argument="toggle"/>
+    </argument>
+    <example title="list all properties">%1$sproperty</example>
+    <example title="set the color of botify messages to blue">%1$sproperty color %2$sset blue</example>
+    <example title="set the color to Spotify green">%1$sproperty color %2$sset #1DB954</example>
+    <example title="toggle playback notifications">%1$sproperty %2$stoggle playback notification</example>
+    <example title="set the default service when searching for a track">%1$sproperty default source %2$sset youtube</example>
+    <example title="set the default service when searching for a list">%1$sproperty default list source %2$sset local</example>
+    <example title="set the argument prefix to '-' to make commands look like this: %1$splay -youtube vid">%1$sproperty argument prefix %2$sset -</example>
+    <example title="set the amount of seconds after which success and error messages disappear to 20">%1$sproperty message timeout %2$sset 20</example>
+    <example title="disable the automatic removal of success and error messages">%1$sproperty message timeout %2$sset 0</example>
+    <example title="set the default text channel to 'bot'">%1$sproperty default channel %2$sset bot</example>
   </command>
-  <command identifier="charts" implementation="net.robinfriedli.botify.command.commands.general.ChartsCommand"
+  <command identifier="charts"
+           implementation="net.robinfriedli.botify.command.commands.general.ChartsCommand"
+           requiresInput="false"
+           category="GENERAL"
            description="Shows the most popular tracks and artists for this guild and globally"/>
-  <command identifier="abort" implementation="net.robinfriedli.botify.command.commands.general.AbortCommand"
+  <command identifier="abort"
+           implementation="net.robinfriedli.botify.command.commands.general.AbortCommand"
+           requiresInput="false"
+           category="GENERAL"
            description="Sends all currently running commands an interrupt signal and cancels all queued commands. Not all operations are affected by the interrupt signal but those that actually might take a long time, such as loading a large YouTube playlist, usually are. Use this command carefully as an emergency break if, for example, someone spammed to bot with large commands."/>
-  <command identifier="synchronise" implementation="net.robinfriedli.botify.command.commands.playlistmanagement.SynchroniseCommand"
+  <command identifier="synchronise"
+           implementation="net.robinfriedli.botify.command.commands.playlistmanagement.SynchroniseCommand"
+           requiresInput="true"
+           category="PLAYLIST_MANAGEMENT"
            description="Synchronise a botify playlist with an external playlist. In practice this the same as the add command but empties the selected list first.">
-    <example title="Sync the contents of a botify playlist with a YouTube playlist">%ssynchronise $youtube $list best of linkin park $with mylist</example>
-    <example title="Sync the contents of a botify playlist with a Spotify playlist">%ssynchronise $spotify $list 00s Rock Anthems $with mylist</example>
-    <example title="Sync the contents of a botify playlist with a URL">%ssynchronise `https://open.spotify.com/playlist/6XAFuwLF6q9wdGBobd8JPt?si=9upjrtjaSiaLboyKNlBhTQ` $with mylist</example>
+    <argument identifier="with" description="Specify the local botify playlist to synchronise the remote playlist with."/>
+    <removeArgument identifier="to"/>
+    <example title="Sync the contents of a botify playlist with a YouTube playlist">%1$ssynchronise %2$syoutube %2$slist best of linkin park %2$swith mylist</example>
+    <example title="Sync the contents of a botify playlist with a Spotify playlist">%1$ssynchronise %2$sspotify %2$slist 00s Rock Anthems %2$swith mylist</example>
+    <example title="Sync the contents of a botify playlist with a URL">%1$ssynchronise `https://open.spotify.com/playlist/6XAFuwLF6q9wdGBobd8JPt?si=9upjrtjaSiaLboyKNlBhTQ` %2$swith mylist</example>
   </command>
-  <command identifier="empty" implementation="net.robinfriedli.botify.command.commands.playlistmanagement.EmptyCommand"
+  <command identifier="empty"
+           implementation="net.robinfriedli.botify.command.commands.playlistmanagement.EmptyCommand"
+           requiresInput="true"
+           category="PLAYLIST_MANAGEMENT"
            description="Clears a botify playlist of all items.">
-    <example title="Empty the botify playlist 'favs'">%sempty favs</example>
+    <example title="Empty the botify playlist 'favs'">%1$sempty favs</example>
+  </command>
+  <command identifier="eval"
+           implementation="net.robinfriedli.botify.command.commands.scripting.EvalCommand"
+           requiresInput="true"
+           category="SCRIPTING"
+           description="Evaluate a groovy script. This command simply executes a groovy script and, if not null, prints the result.">
+    <example title="Provided variables:">
+```css
+#context
+context for the current command execution
+
+#command
+the command instance for this eval command invocation
+
+#messages
+an instance of the MessageService class
+
+#guildContext
+the GuildContext instance for current guild, derived from context
+
+#playback
+the AudioPlayback instance for current guild, derived from context
+
+#guild
+the Guild instance (JDA entity) representing the current guild, derived from context
+
+#message
+the Message instance (JDA entity) representing the message sent by the user, derived from context
+
+#channel
+the MessageChannel instance (JDA entity) representing the channel the message was sent from, derived from context
+
+#member
+the Member instance (JDA entity) representing the guild member that sent the message, derived from context
+
+#user
+the User instance (JDA entity) representing the user that sent the message, derived from context
+```
+    </example>
+    <example title="Get member count of current guild">```groovy
+%1$seval context.guild.members.size()```
+    </example>
+    <example title="Add reactions to your message, play a Spotify album, answer with the first option and send a message">
+```groovy
+%1$seval context.message.addReaction(':ok_hand:').submit()
+context.message.addReaction(':metal:').submit()
+command.run('play \$album meteora')
+command.run('answer 0')
+context.channel.sendMessage('done').submit()
+return null
+```
+    </example>
+    <example title="Send an embed message">```groovy
+%1$seval
+import net.dv8tion.jda.api.EmbedBuilder
+
+def embedBuilder = new EmbedBuilder()
+embedBuilder.setTitle('Title')
+embedBuilder.setDescription('description')
+context.channel.sendMessage(embedBuilder.build()).submit()
+return null
+```
+    </example>
+    <example title="Enable shuffle if disabled, play a playlist and skip to title 'Numb'">```groovy
+%1$seval def playback = context.guildContext.playback
+def queue = playback.audioQueue
+if (!playback.isShuffle()) {
+  command.run('shuffle')
+}
+command.run('play \$list spotify songs')
+while (queue.getCurrent().getTitle() != 'Numb') {
+  queue.iterate()
+}
+command.run('play')
+```
+    </example>
+  </command>
+  <command identifier="interceptor"
+           implementation="net.robinfriedli.botify.command.commands.scripting.InterceptorCommand"
+           requiresInput="false"
+           category="SCRIPTING"
+           description="Manage custom command interceptors. A command interceptor is a piece of code that is executed before running each command. Internally they are used to check permissions, parse the command input, check argument rules etc. The groovy scripting sandbox allows you to create additional custom interceptors that are queried and executed by the last interceptor in the chain before the actual command is executed. This command may create a new interceptor, delete an existing interceptor, display an interceptor or list all interceptors. Note that commands executed in scripts via 'command.run()' do not trigger custom command interceptors to avoid cycles. See the help page for the eval command for available variables.">
+    <example title="Create an interceptor that adds an 'ok hand' reaction to each message upon execution">
+```groovy
+%1$sinterceptor %2$sidentifier="reaction" message.addReaction(':ok_hand:').submit()
+```
+    </example>
+    <example title="Create an interceptor that introduces a chance to get rickrolled when entering a play command. This generates a random number up to 10000 and checks if it is divisible by 33, increase numbers to reduce likeness of rickroll.">
+```groovy
+%1$sinterceptor %2$sidentifier="rickroll"
+"if (command.getIdentifier() == 'play'
+  &amp;&amp; !command.getCommandInput().isBlank()) {
+def rand = new Random()
+// generate random number up to 10000
+def i = rand.nextInt(10000)
+// check if divisible by 33
+if (i %% 33 == 0) {
+  // send rickroll message
+  channel.sendMessage('Get rickrolled :clown:').submit()
+  // play Rick Astley - Never Gonna Give You Up on youtube
+  command.run('play https://www.youtube.com/watch?v=dQw4w9WgXcQ%%27)
+  // abort the actual command
+  command.abort()
+  }
+}"
+```
+    </example>
+    <example title="Show interceptor 'rickroll'">%1$sinterceptor rickroll</example>
+    <example title="List all interceptors">%1$sinterceptor</example>
+    <example title="Delete interceptor 'rickroll'">%1$sinterceptor %2$sdelete rickroll</example>
+  </command>
+  <command identifier="script"
+           implementation="net.robinfriedli.botify.command.commands.scripting.ScriptCommand"
+           requiresInput="false"
+           category="SCRIPTING"
+           description="This command manages persistent scripts for the groovy sandbox. In addition to the variables mentioned by the help page for the eval command, this command offers an 'input' variable to be used oin scripts that represents additional user input. Note that scripts can be run directly like normal commands or presets, thus '%1$smyscript myinput' is equivalent to '%1$sscript %2$sinvoke=&quot;myscript&quot;' myinput.">
+    <argument identifier="invoke" requiresValue="true" description="Specify the identifier of the script you want to execute. Note that scripts can be run directly like normal commands or presets, thus '%1$smyscript myinput' is equivalent to '%1$sscript %2$sinvoke=&quot;myscript&quot;' myinput.">
+      <excludes argument="delete"/>
+      <excludes argument="identifier"/>
+    </argument>
+    <example title="Create a script that adds a reaction to the command message, searches the album 'Meteora' and plays the first result">
+```groovy
+%1$sscript %2$sidentifier="meteora"
+"message.addReaction(':metal:').submit()
+command.run('play %2$salbum meteora')
+command.run('answer 0')"
+```
+    </example>
+    <example title="Create a script that enables shuffle if disabled">
+```groovy
+%1$sscript %2$sidentifier="enableShuffle" if (!playback.isShuffle()) command.run('shuffle')
+```
+    </example>
+    <example title="Create a script that skips to the specified track name in the queue (checking queue.hasNext with ignoreRepeat = true to avoid infinite loop)">
+```groovy
+%1$sscript %2$sidentifier="skipTo"
+"def queue = playback.audioQueue
+if (queue.isEmpty()) {
+  return null
+}
+def target = input.toLowerCase()
+while (queue.getCurrent().getTitle().toLowerCase() != target) {
+  if (!queue.hasNext(true)) {
+    messages.sendError(String.format('Could not find %s in upcoming tracks', input), channel)
+    break
+  }
+  queue.iterate()
+}
+command.run('play')"
+```
+    </example>
+    <example title="Show script 'meteora'">%1$sscript meteora</example>
+    <example title="List all interceptors">%1$sscript</example>
+    <example title="Delete interceptor 'meteora'">%1$sscript %2$sdelete meteora</example>
+    <example title="Run script 'skipTo' with input 'Numb'; this is equivalent to typing '%1$sskipTo Numb'">%1$sscript %2$sinvoke="skipTo" Numb</example>
   </command>
 
   <!-- Administrator commands -->
-  <command identifier="reboot" implementation="net.robinfriedli.botify.command.commands.admin.RebootCommand"
+  <command identifier="reboot"
+           implementation="net.robinfriedli.botify.command.commands.admin.RebootCommand"
+           requiresInput="false"
+           category="ADMIN"
            description="Restarts the bot"/>
-  <command identifier="quit" implementation="net.robinfriedli.botify.command.commands.admin.QuitCommand"
+  <command identifier="quit"
+           implementation="net.robinfriedli.botify.command.commands.admin.QuitCommand"
+           requiresInput="false"
+           category="ADMIN"
            description="Stops the bot"/>
-  <command identifier="reload context" implementation="net.robinfriedli.botify.command.commands.admin.ReloadContextCommand"
+  <command identifier="reload context"
+           implementation="net.robinfriedli.botify.command.commands.admin.ReloadContextCommand"
+           requiresInput="true"
+           category="ADMIN"
            description="Reload a cached XML context when you made changes to an xml contribution file."/>
-  <command identifier="update" implementation="net.robinfriedli.botify.command.commands.admin.UpdateCommand"
+  <command identifier="update"
+           implementation="net.robinfriedli.botify.command.commands.admin.UpdateCommand"
+           requiresInput="false"
+           category="ADMIN"
            description="Update the bot if the current branch needs to be rebased. Performs a rebase and maven clean install if necessary. A restart might be required if an update was pulled."/>
-  <command identifier="load document" implementation="net.robinfriedli.botify.command.commands.admin.LoadDocumentCommand"
+  <command identifier="load document"
+           implementation="net.robinfriedli.botify.command.commands.admin.LoadDocumentCommand"
+           requiresInput="false"
+           category="ADMIN"
            description="Load a document from the embedDocuments or list them."/>
-  <command identifier="cleandb" implementation="net.robinfriedli.botify.command.commands.admin.CleanDbCommand"
+  <command identifier="cleandb"
+           implementation="net.robinfriedli.botify.command.commands.admin.CleanDbCommand"
+           requiresInput="false"
+           category="ADMIN"
            description="Deletes data associated with guilds the bot is no longer a part of"/>
-  <command identifier="garbage collect" implementation="net.robinfriedli.botify.command.commands.admin.GarbageCollectCommand"
+  <command identifier="garbage collect"
+           implementation="net.robinfriedli.botify.command.commands.admin.GarbageCollectCommand"
+           requiresInput="false"
+           category="ADMIN"
            description="Executes a Java garbage collection to manually clean up memory when convenient"/>
-  <command identifier="youtube quota" implementation="net.robinfriedli.botify.command.commands.admin.YouTubeQuotaCommand"
+  <command identifier="youtube quota"
+           implementation="net.robinfriedli.botify.command.commands.admin.YouTubeQuotaCommand"
+           requiresInput="false"
+           category="ADMIN"
            description="Displays the current calculated usage of the daily YouTube API quota."/>
+
+  <!-- abstract super commands -->
+  <abstractCommand class="net.robinfriedli.botify.command.commands.AbstractPlayableLoadingCommand">
+    <argument identifier="list" requiresInput="true" description="Search for a youtube, spotify or botify playlist. Note that this argument is only required when searching, not when entering a URL."/>
+    <argument identifier="spotify" requiresInput="true" description="Search for a Spotify track, list or album. This supports Spotify query syntax (i.e. the filters &quot;artist:&quot;, &quot;album:&quot;, etc.). Note that this argument is only required when searching, not when entering a URL.">
+      <excludes argument="youtube"/>
+    </argument>
+    <argument identifier="youtube" requiresInput="true" description="Play a YouTube video or playlist. Note that this argument is only required when searching, not when entering a URL.">
+      <excludes argument="spotify"/>
+    </argument>
+    <argument identifier="own" requiresInput="true" description="Limit search to Spotify tracks, lists or albums that are in the current user's library. This requires a Spotify login.">
+      <rule errorMessage="Argument 'own' may only be used with Spotify.">command.getSource().isSpotify()</rule>
+    </argument>
+    <argument identifier="local" description="Search for a local botify playlist.">
+      <excludes argument="spotify"/>
+      <excludes argument="youtube"/>
+      <requires argument="list"/>
+    </argument>
+    <argument identifier="album" requiresInput="true" description="Search for a Spotify album. Note that this argument is only required when searching, not when entering a URL.">
+      <excludes argument="list"/>
+      <rule errorMessage="Argument 'album' may only be used with Spotify.">command.getSource().isSpotify()</rule>
+    </argument>
+    <argument identifier="select" valueType="java.lang.Integer" requiresInput="true" description="Show a selection of YouTube playlists / videos or Spotify tracks to chose from. May be assigned a value from 1 to 20: %2$sselect=5">
+      <excludes argument="album"/>
+      <valueCheck errorMessage="Limit must be between 1 and 20" check="value &gt; 0 &amp;&amp; value &lt;= 20"/>
+      <rule errorMessage="Argument 'select' may only be used with YouTube videos / playlists or Spotify tracks.">
+        def source = command.getSource();
+        if (command.argumentSet("list")) {
+          source.isYouTube()
+        }
+
+        source.isYouTube() || source.isSpotify()
+      </rule>
+    </argument>
+  </abstractCommand>
+  <abstractCommand class="net.robinfriedli.botify.command.commands.AbstractQueueLoadingCommand">
+    <argument identifier="preview" requiresInput="true" description="Load the short preview mp3 directly from Spotify instead of the full track from YouTube.">
+      <rule errorMessage="Argument 'preview' may only be used with Spotify.">
+        def source = command.getSource();
+        if (command.argumentSet("list")) {
+          source.isSpotify() || source.isLocal()
+        }
+
+        source.isSpotify()
+      </rule>
+    </argument>
+  </abstractCommand>
+  <abstractCommand class="net.robinfriedli.botify.command.commands.scripting.AbstractScriptCommand">
+    <argument identifier="delete" requiresInput="true" description="Specify a script / interceptor identifier to delete">
+      <excludes argument="identifier"/>
+    </argument>
+    <argument identifier="identifier" requiresValue="true" description="Define the name of the script / interceptor when creating a new script. E.g. '%2$sidentifier=&quot;myscript&quot;'">
+      <excludes argument="delete"/>
+    </argument>
+  </abstractCommand>
 </commands>

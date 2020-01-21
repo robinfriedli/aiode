@@ -83,7 +83,7 @@ public class SpotifyRedirectService {
                 youTubeVideo.setTitle(title);
                 return;
             } else {
-                SINGE_THREAD_EXECUTOR_SERVICE.execute(() -> StaticSessionProvider.invokeWithSession(otherThreadSession -> {
+                SINGE_THREAD_EXECUTOR_SERVICE.execute(() -> StaticSessionProvider.consumeSession(otherThreadSession -> {
                     Long modificationLocks = otherThreadSession
                         .createQuery("select count(*) from " + SpotifyRedirectIndexModificationLock.class.getName(), Long.class)
                         .uniqueResult();
@@ -97,7 +97,7 @@ public class SpotifyRedirectService {
 
         youTubeService.redirectSpotify(youTubeVideo);
         if (!youTubeVideo.isCanceled() && !Strings.isNullOrEmpty(spotifyTrack.getId())) {
-            SINGE_THREAD_EXECUTOR_SERVICE.execute(() -> StaticSessionProvider.invokeWithSession(otherThreadSession -> {
+            SINGE_THREAD_EXECUTOR_SERVICE.execute(() -> StaticSessionProvider.consumeSession(otherThreadSession -> {
                 try {
                     String videoId = youTubeVideo.getVideoId();
                     SpotifyRedirectIndex spotifyRedirectIndex = new SpotifyRedirectIndex(spotifyTrack.getId(), videoId);

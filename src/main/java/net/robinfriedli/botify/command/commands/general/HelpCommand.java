@@ -12,13 +12,14 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.AbstractCommand;
-import net.robinfriedli.botify.command.ArgumentContribution;
+import net.robinfriedli.botify.command.ArgumentController;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.discord.property.properties.ArgumentPrefixProperty;
 import net.robinfriedli.botify.discord.property.properties.PrefixProperty;
 import net.robinfriedli.botify.entities.AccessConfiguration;
 import net.robinfriedli.botify.entities.GuildSpecification;
+import net.robinfriedli.botify.entities.xml.ArgumentContribution;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.jxp.api.XmlElement;
@@ -28,8 +29,8 @@ import static net.robinfriedli.jxp.queries.Conditions.*;
 
 public class HelpCommand extends AbstractCommand {
 
-    public HelpCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContribution, context, commandManager, commandString, false, identifier, description, Category.GENERAL);
+    public HelpCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, boolean requiresInput, String identifier, String description, Category category) {
+        super(commandContribution, context, commandManager, commandString, requiresInput, identifier, description, category);
     }
 
     @Override
@@ -54,11 +55,12 @@ public class HelpCommand extends AbstractCommand {
             } else {
                 prefix = "$botify ";
             }
+            char argumentPrefix = ArgumentPrefixProperty.getForCurrentContext();
 
             EmbedBuilder embedBuilder = new EmbedBuilder();
             embedBuilder.setTitle("Command " + command.getIdentifier() + ":");
             String descriptionFormat = command.getDescription();
-            String descriptionText = descriptionFormat.contains("%s") ? String.format(descriptionFormat, prefix) : descriptionFormat;
+            String descriptionText = String.format(descriptionFormat, prefix, argumentPrefix);
             embedBuilder.setDescription(descriptionText);
             Guild guild = getContext().getGuild();
             AccessConfiguration accessConfiguration = Botify.get().getGuildManager().getAccessConfiguration(command.getIdentifier(), guild);
@@ -74,13 +76,12 @@ public class HelpCommand extends AbstractCommand {
 
                 embedBuilder.addField(title, text, false);
             }
-            ArgumentContribution argumentContribution = command.setupArguments();
-            if (!argumentContribution.isEmpty()) {
+            ArgumentController argumentController = command.getArgumentController();
+            if (argumentController.hasArguments()) {
                 embedBuilder.addField("__Arguments__", "Keywords that alter the command behavior or define a search scope.", false);
 
-                char argumentPrefix = ArgumentPrefixProperty.getForCurrentContext();
-                for (ArgumentContribution.Argument argument : argumentContribution.getArguments()) {
-                    embedBuilder.addField(argumentPrefix + argument.getIdentifier(), argument.getDescription(), false);
+                for (ArgumentContribution argument : argumentController.getArguments()) {
+                    embedBuilder.addField(argumentPrefix + argument.getIdentifier(), String.format(argument.getDescription(), prefix, argumentPrefix), false);
                 }
 
             }
@@ -89,10 +90,8 @@ public class HelpCommand extends AbstractCommand {
             if (!examples.isEmpty()) {
                 embedBuilder.addField("__Examples__", "Practical usage examples for this command.", false);
                 for (XmlElement example : examples) {
-                    String exampleFormat = example.getTextContent();
-                    String exampleText = exampleFormat.contains("%s") ? String.format(exampleFormat, prefix) : exampleFormat;
-                    String titleFormat = example.getAttribute("title").getValue();
-                    String titleText = titleFormat.contains("%s") ? String.format(titleFormat, prefix) : titleFormat;
+                    String exampleText = String.format(example.getTextContent(), prefix, argumentPrefix);
+                    String titleText = String.format(example.getAttribute("title").getValue(), prefix, argumentPrefix);
                     embedBuilder.addField(titleText, exampleText, false);
                 }
             }
@@ -138,5 +137,10 @@ public class HelpCommand extends AbstractCommand {
 
     @Override
     public void onSuccess() {
+    }
+
+    @Override
+    public boolean isPrivileged() {
+        return true;
     }
 }

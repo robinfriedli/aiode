@@ -14,8 +14,8 @@ import net.robinfriedli.botify.exceptions.InvalidCommandException;
 
 public class SkipCommand extends AbstractCommand {
 
-    public SkipCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContribution, context, commandManager, commandString, false, identifier, description, Category.PLAYBACK);
+    public SkipCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, boolean requiresInput, String identifier, String description, Category category) {
+        super(commandContribution, context, commandManager, commandString, requiresInput, identifier, description, category);
     }
 
     @Override

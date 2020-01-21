@@ -2,7 +2,6 @@ package net.robinfriedli.botify.command.commands.playlistmanagement;
 
 import java.util.List;
 
-import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.Playlist;
@@ -13,8 +12,8 @@ import org.hibernate.Session;
 
 public class SynchroniseCommand extends AddCommand {
 
-    public SynchroniseCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandBody, String identifier, String description) {
-        super(commandContribution, context, commandManager, commandBody, identifier, description, "with");
+    public SynchroniseCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandBody, boolean requiresInput, String identifier, String description, Category category) {
+        super(commandContribution, context, commandManager, commandBody, requiresInput, identifier, description, category, "with");
     }
 
     @Override
@@ -38,12 +37,4 @@ public class SynchroniseCommand extends AddCommand {
     public void onSuccess() {
     }
 
-    @Override
-    public ArgumentContribution setupArguments() {
-        ArgumentContribution argumentContribution = super.setupArguments();
-        argumentContribution.map("with")
-            .setDescription("Specify the remote playlist to synchronise the local list with.");
-        argumentContribution.remove("to");
-        return argumentContribution;
-    }
 }

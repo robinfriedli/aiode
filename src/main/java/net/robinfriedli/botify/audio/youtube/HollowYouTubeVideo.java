@@ -47,7 +47,7 @@ public class HollowYouTubeVideo extends AbstractSoftCachedPlayable implements Yo
     }
 
     @Override
-    public String getTitle() throws UnavailableResourceException {
+    public String getDisplay() throws UnavailableResourceException {
         return getCompleted(title);
     }
 
@@ -57,7 +57,7 @@ public class HollowYouTubeVideo extends AbstractSoftCachedPlayable implements Yo
     }
 
     @Override
-    public String getTitle(long timeOut, TimeUnit unit) throws UnavailableResourceException, TimeoutException {
+    public String getDisplay(long timeOut, TimeUnit unit) throws UnavailableResourceException, TimeoutException {
         return getWithTimeout(title, timeOut, unit);
     }
 
@@ -146,7 +146,7 @@ public class HollowYouTubeVideo extends AbstractSoftCachedPlayable implements Yo
         // only supported for Spotify redirect as YouTube does not allow loading specific playlist items
         if (isHollow() && redirectedSpotifyTrack != null) {
             markLoading();
-            EagerFetchQueue.submitFetch(() -> StaticSessionProvider.invokeWithSession((CheckedConsumer<Session>) session -> {
+            EagerFetchQueue.submitFetch(() -> StaticSessionProvider.consumeSession((CheckedConsumer<Session>) session -> {
                 SpotifyRedirectService spotifyRedirectService = new SpotifyRedirectService(session, youTubeService);
                 spotifyRedirectService.redirectTrack(this);
             }));

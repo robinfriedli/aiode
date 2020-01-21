@@ -19,7 +19,6 @@ import net.robinfriedli.botify.audio.youtube.YouTubePlaylist;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
 import net.robinfriedli.botify.boot.SpringPropertiesConfig;
-import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.command.commands.AbstractSourceDecidingCommand;
@@ -38,8 +37,8 @@ import org.hibernate.Session;
 
 public class SearchCommand extends AbstractSourceDecidingCommand {
 
-    public SearchCommand(CommandContribution commandContribution, CommandContext commandContext, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContribution, commandContext, commandManager, commandString, false, identifier, description, Category.SEARCH);
+    public SearchCommand(CommandContribution commandContribution, CommandContext commandContext, CommandManager commandManager, String commandString, boolean requiresInput, String identifier, String description, Category category) {
+        super(commandContribution, commandContext, commandManager, commandString, requiresInput, identifier, description, category);
     }
 
     @Override
@@ -107,7 +106,7 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
             } else {
                 askQuestion(youTubeVideos, youTubeVideo -> {
                     try {
-                        return youTubeVideo.getTitle();
+                        return youTubeVideo.getDisplay();
                     } catch (UnavailableResourceException e) {
                         // Unreachable since only HollowYouTubeVideos might get cancelled
                         throw new RuntimeException(e);
@@ -121,7 +120,7 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
 
     private void listYouTubeVideo(YouTubeVideo youTubeVideo) throws UnavailableResourceException {
         StringBuilder responseBuilder = new StringBuilder();
-        responseBuilder.append("Title: ").append(youTubeVideo.getTitle()).append(System.lineSeparator());
+        responseBuilder.append("Title: ").append(youTubeVideo.getDisplay()).append(System.lineSeparator());
         responseBuilder.append("Id: ").append(youTubeVideo.getVideoId()).append(System.lineSeparator());
         responseBuilder.append("Link: ").append("https://www.youtube.com/watch?v=").append(youTubeVideo.getVideoId()).append(System.lineSeparator());
         responseBuilder.append("Duration: ").append(Util.normalizeMillis(youTubeVideo.getDuration()));
@@ -336,37 +335,6 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
                 StringListImpl.create(album.getArtists(), ArtistSimplified::getName).toSeparatedString(", "),
                 "album/" + album.getId());
         }
-    }
-
-    @Override
-    public ArgumentContribution setupArguments() {
-        ArgumentContribution argumentContribution = new ArgumentContribution(this);
-        argumentContribution.map("spotify").excludesArguments("youtube").setRequiresInput(true)
-            .setDescription("Search for Spotify track or playlist. This supports Spotify query syntax (i.e. the filters \"artist:\", \"album:\", etc.). This is the default option when searching for tracks.");
-        argumentContribution.map("youtube").excludesArguments("spotify").setRequiresInput(true)
-            .setDescription("Search for YouTube video or playlist.");
-        argumentContribution.map("list")
-            .setDescription("Search for a playlist.");
-        argumentContribution.map("local").needsArguments("list").excludesArguments("youtube", "spotify")
-            .setDescription("Search for a local playlist or list all of them. This is default when searching for lists.");
-        argumentContribution.map("own")
-            .setDescription("Limit search to Spotify tracks or playlists in the current user's library. This requires a Spotify login.")
-            .addRule(ac -> getSource().isSpotify(), "Argument 'own' may only be used with Spotify.");
-        argumentContribution.map("select").excludesArguments("album")
-            .setDescription("Show a selection of YouTube playlists / videos or Spotify tracks to chose from. May be assigned a value from 1 to 20: $select=5")
-            .addRule(ac -> {
-                Source source = getSource();
-                if (ac.argumentSet("list")) {
-                    return source.isYouTube();
-                }
-
-                return source.isYouTube() || source.isSpotify();
-            }, "Argument 'select' may only be used with YouTube videos / playlists or Spotify tracks.")
-            .verifyValue(Integer.class, limit -> limit > 0 && limit <= 20, "Limit must be between 1 and 20");
-        argumentContribution.map("album").excludesArguments("list").setRequiresInput(true)
-            .setDescription("Search for a Spotify album. Note that this argument is only required when searching, not when entering a URL.")
-            .addRule(ac -> getSource().isSpotify(), "Argument 'album' may only be used with Spotify.");
-        return argumentContribution;
     }
 
 }

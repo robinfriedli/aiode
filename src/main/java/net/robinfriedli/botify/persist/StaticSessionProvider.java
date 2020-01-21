@@ -6,6 +6,7 @@ import java.util.function.Function;
 import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.function.HibernateInvoker;
+import net.robinfriedli.botify.persist.interceptors.InterceptorChain;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
@@ -31,12 +32,30 @@ public class StaticSessionProvider {
         return sessionFactory;
     }
 
-    public static void invokeWithSession(Consumer<Session> consumer) {
+    public static void consumeSession(Consumer<Session> consumer) {
         HibernateInvoker.create(provide()).invoke(consumer);
     }
 
     public static <E> E invokeWithSession(Function<Session, E> function) {
         return HibernateInvoker.create(provide()).invoke(function);
+    }
+
+    public static void consumeSessionWithoutInterceptors(Consumer<Session> sessionConsumer) {
+        InterceptorChain.INTERCEPTORS_MUTED.set(true);
+        try {
+            consumeSession(sessionConsumer);
+        } finally {
+            InterceptorChain.INTERCEPTORS_MUTED.set(false);
+        }
+    }
+
+    public static <E> E invokeSessionWithoutInterceptors(Function<Session, E> function) {
+        InterceptorChain.INTERCEPTORS_MUTED.set(true);
+        try {
+            return invokeWithSession(function);
+        } finally {
+            InterceptorChain.INTERCEPTORS_MUTED.set(false);
+        }
     }
 
 }

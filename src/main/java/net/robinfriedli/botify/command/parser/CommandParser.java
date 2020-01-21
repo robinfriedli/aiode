@@ -63,7 +63,9 @@ public class CommandParser {
                     currentMode = currentMode.handleLiteral(character);
                     isEscaped = false;
                 } else if (isOpenQuotation) {
-                    if (character == '"') {
+                    if (character == '\\') {
+                        isEscaped = true;
+                    } else if (character == '"') {
                         isOpenQuotation = false;
                     } else {
                         currentMode = currentMode.handleLiteral(character);

@@ -5,7 +5,6 @@ import java.util.List;
 import com.google.common.base.Splitter;
 import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.botify.command.AbstractCommand;
-import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.Playlist;
@@ -20,8 +19,8 @@ public class MoveCommand extends AbstractCommand {
 
     private final StringBuilder successMessageBuilder = new StringBuilder();
 
-    public MoveCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContribution, context, commandManager, commandString, true, identifier, description, Category.PLAYLIST_MANAGEMENT);
+    public MoveCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, boolean requiresInput, String identifier, String description, Category category) {
+        super(commandContribution, context, commandManager, commandString, requiresInput, identifier, description, category);
     }
 
     @Override
@@ -177,13 +176,4 @@ public class MoveCommand extends AbstractCommand {
         }
     }
 
-    @Override
-    public ArgumentContribution setupArguments() {
-        ArgumentContribution argumentContribution = new ArgumentContribution(this);
-        argumentContribution.map("to").setRequiresValue(true)
-            .setDescription("Mandatory argument to specify the target index.");
-        argumentContribution.map("on").setRequiresValue(true)
-            .setDescription("Mandatory argument to define the playlist where you want to move the tracks.");
-        return argumentContribution;
-    }
 }

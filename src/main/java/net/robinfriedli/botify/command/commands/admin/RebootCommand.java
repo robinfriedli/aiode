@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.AbstractAdminCommand;
-import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
@@ -18,8 +17,8 @@ import net.robinfriedli.botify.exceptions.InvalidCommandException;
 
 public class RebootCommand extends AbstractAdminCommand {
 
-    public RebootCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContribution, context, commandManager, commandString, false, identifier, description);
+    public RebootCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, boolean requiresInput, String identifier, String description, Category category) {
+        super(commandContribution, context, commandManager, commandString, requiresInput, identifier, description, category);
     }
 
     @Override
@@ -83,15 +82,4 @@ public class RebootCommand extends AbstractAdminCommand {
         }
     }
 
-    @Override
-    public ArgumentContribution setupArguments() {
-        ArgumentContribution argumentContribution = new ArgumentContribution(this);
-        argumentContribution.map("silent")
-            .setDescription("Disables alerting active guilds about the restart.");
-        argumentContribution.map("await")
-            .verifyValue(Integer.class, value -> value <= 600, "Maximum value is 600")
-            .verifyValue(Integer.class, value -> value >= 0, "Value needs to be 0 or greater")
-            .setDescription("The maximum amount of seconds to wait for pending actions to complete.");
-        return argumentContribution;
-    }
 }

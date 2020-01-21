@@ -4,7 +4,6 @@ import java.util.Collection;
 import java.util.List;
 
 import net.robinfriedli.botify.command.AbstractCommand;
-import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.Playlist;
@@ -21,9 +20,8 @@ import static java.lang.String.*;
 
 public class RemoveCommand extends AbstractCommand {
 
-    public RemoveCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, String identifier, String description) {
-        super(commandContribution, context, commandManager, commandString, true, identifier, description,
-            Category.PLAYLIST_MANAGEMENT);
+    public RemoveCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, boolean requiresInput, String identifier, String description, Category category) {
+        super(commandContribution, context, commandManager, commandString, requiresInput, identifier, description, category);
     }
 
     @Override
@@ -107,16 +105,6 @@ public class RemoveCommand extends AbstractCommand {
             }
         });
 
-    }
-
-    @Override
-    public ArgumentContribution setupArguments() {
-        ArgumentContribution argumentContribution = new ArgumentContribution(this);
-        argumentContribution.map("from").setRequiresValue(true)
-            .setDescription("Mandatory argument to specify the playlist from which to remove the items.");
-        argumentContribution.map("index").setDescription("Remove items by their index. You can also provide an index" +
-            "range like $botify remove 13-19 $from list. This includes starting and end index.");
-        return argumentContribution;
     }
 
 }

@@ -8,6 +8,7 @@ import javax.persistence.EntityManagerFactory;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.function.HibernateInvoker;
 import net.robinfriedli.botify.persist.StaticSessionProvider;
+import net.robinfriedli.botify.persist.interceptors.InterceptorChain;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -38,12 +39,30 @@ public class HibernateComponent {
         return sessionFactory;
     }
 
-    public void invokeWithSession(Consumer<Session> consumer) {
+    public void consumeSession(Consumer<Session> consumer) {
         HibernateInvoker.create(getCurrentSession()).invoke(consumer);
     }
 
     public <E> E invokeWithSession(Function<Session, E> function) {
         return HibernateInvoker.create(getCurrentSession()).invoke(function);
+    }
+
+    public void consumeSessionWithoutInterceptors(Consumer<Session> sessionConsumer) {
+        InterceptorChain.INTERCEPTORS_MUTED.set(true);
+        try {
+            consumeSession(sessionConsumer);
+        } finally {
+            InterceptorChain.INTERCEPTORS_MUTED.set(false);
+        }
+    }
+
+    public <E> E invokeSessionWithoutInterceptors(Function<Session, E> function) {
+        InterceptorChain.INTERCEPTORS_MUTED.set(true);
+        try {
+            return invokeWithSession(function);
+        } finally {
+            InterceptorChain.INTERCEPTORS_MUTED.set(false);
+        }
     }
 
 }

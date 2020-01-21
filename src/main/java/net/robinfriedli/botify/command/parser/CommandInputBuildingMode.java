@@ -24,7 +24,7 @@ public class CommandInputBuildingMode implements CommandParser.Mode {
 
     @Override
     public CommandParser.Mode handle(char character) {
-        if ((lastChar == ' ' || lastChar == '"') && (character == argumentPrefix || character == ArgumentPrefixProperty.DEFAULT)) {
+        if ((Character.isWhitespace(lastChar) || lastChar == '"') && (character == argumentPrefix || character == ArgumentPrefixProperty.DEFAULT)) {
             terminate();
             return new ArgumentBuildingMode(command, commandParser, argumentPrefix, true);
         }

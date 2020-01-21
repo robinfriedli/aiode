@@ -15,8 +15,8 @@ import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
 
 public class AbortCommand extends AbstractCommand {
 
-    public AbortCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandBody, String identifier, String description) {
-        super(commandContribution, context, commandManager, commandBody, false, identifier, description, Category.GENERAL);
+    public AbortCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandBody, boolean requiresInput, String identifier, String description, Category category) {
+        super(commandContribution, context, commandManager, commandBody, requiresInput, identifier, description, category);
     }
 
     @Override
