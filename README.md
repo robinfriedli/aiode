@@ -26,7 +26,7 @@ Milestones:
 - [ ] additional commands to alter existing playlist, incl. renaming and adding a thumbnail
 - [ ] support for PLS files to export / import playlists (maybe, evaluation pending)
 - [ ] enable search for soundcloud tracks using lavaplayer scsearch
-- [ ] fully configure command arguments in XML and use groovy scripts for rules
+- [x] fully configure command arguments in XML and use groovy scripts for rules
 - [ ] advanced queue management that allows removing items from the queue and reflects changes to queued playlists
 - [ ] store discord snowflake ids as long instead of string
 - [ ] better manage storage / retrieval of JDA entities (esp. on AudioPlayback, GuildContext and AbstractWidget)
@@ -36,7 +36,7 @@ Milestones:
 - [ ] save and restore playback states when rebooting (queue, current track position etc)
 - [ ] adjust charts command and add user specific charts
 - [ ] user specific track suggestions
-- [ ] evaluate command / scripting sandbox + custom scripted CommandInterceptors
+- [x] evaluate command / scripting sandbox + custom scripted CommandInterceptors
 - [ ] web client that communicates with Botify via rest (eval Rust + WebAssembly vs TypeScript)
 
 ## Invite it to your guild
