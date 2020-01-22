@@ -24,7 +24,7 @@ import net.robinfriedli.botify.scripting.GroovyWhitelistInterceptor;
 import net.robinfriedli.botify.scripting.SafeGroovyScriptRunner;
 import org.codehaus.groovy.control.CompilerConfiguration;
 
-public class ScriptCommandInterceptor extends AbstractChainableCommandInterceptor {
+public abstract class ScriptCommandInterceptor extends AbstractChainableCommandInterceptor {
 
     private final GroovySandboxComponent groovySandboxComponent;
     private final HibernateComponent hibernateComponent;
@@ -50,16 +50,21 @@ public class ScriptCommandInterceptor extends AbstractChainableCommandIntercepto
             return;
         }
 
+        String usageId = getUsageId();
         List<StoredScript> scriptInterceptors = hibernateComponent.invokeWithSession(session ->
             queryBuilderFactory.find(StoredScript.class)
                 .where((cb, root, subQueryFactory) -> cb.equal(
                     root.get("scriptUsage"),
                     subQueryFactory.createUncorrelatedSubQuery(StoredScript.ScriptUsage.class, "pk")
-                        .where((cb1, root1) -> cb1.equal(root1.get("uniqueId"), "interceptor"))
+                        .where((cb1, root1) -> cb1.equal(root1.get("uniqueId"), usageId))
                         .build(session)
                 ))
                 .build(session)
                 .getResultList());
+
+        if (scriptInterceptors.isEmpty()) {
+            return;
+        }
 
         CompilerConfiguration compilerConfiguration = groovySandboxComponent.getCompilerConfiguration();
         GroovyWhitelistInterceptor groovyWhitelistInterceptor = groovySandboxComponent.getGroovyWhitelistInterceptor();
@@ -80,12 +85,38 @@ public class ScriptCommandInterceptor extends AbstractChainableCommandIntercepto
                     throw new Abort();
                 } else {
                     EmbedBuilder embedBuilder = ExceptionUtils.buildErrorEmbed(error);
-                    embedBuilder.setTitle("Error occurred while executing custom command interceptor: " + scriptInterceptor.getIdentifier());
+                    embedBuilder.setTitle(String.format("Error occurred while executing custom command %s: %s", usageId, scriptInterceptor.getIdentifier()));
                     messageService.sendTemporary(embedBuilder.build(), context.getChannel());
                 }
             } catch (TimeoutException e) {
-                messageService.sendError(String.format("Execution of script command interceptors stopped because script '%s' has run into a timeout", scriptInterceptor.getIdentifier()), context.getChannel());
+                messageService.sendError(String.format("Execution of script command %ss stopped because script '%s' has run into a timeout", usageId, scriptInterceptor.getIdentifier()), context.getChannel());
             }
+        }
+    }
+
+    protected abstract String getUsageId();
+
+    public static class ScriptCommandInterceptorPreExecution extends ScriptCommandInterceptor {
+
+        public ScriptCommandInterceptorPreExecution(CommandInterceptorContribution contribution, CommandInterceptor next, GroovySandboxComponent groovySandboxComponent, HibernateComponent hibernateComponent, MessageService messageService, QueryBuilderFactory queryBuilderFactory) {
+            super(contribution, next, groovySandboxComponent, hibernateComponent, messageService, queryBuilderFactory);
+        }
+
+        @Override
+        protected String getUsageId() {
+            return "interceptor";
+        }
+    }
+
+    public static class ScriptCommandInterceptorFinalizer extends ScriptCommandInterceptor {
+
+        public ScriptCommandInterceptorFinalizer(CommandInterceptorContribution contribution, CommandInterceptor next, GroovySandboxComponent groovySandboxComponent, HibernateComponent hibernateComponent, MessageService messageService, QueryBuilderFactory queryBuilderFactory) {
+            super(contribution, next, groovySandboxComponent, hibernateComponent, messageService, queryBuilderFactory);
+        }
+
+        @Override
+        protected String getUsageId() {
+            return "finalizer";
         }
     }
 

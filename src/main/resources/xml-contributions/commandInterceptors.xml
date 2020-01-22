@@ -12,5 +12,9 @@
   </commandInterceptor>
   <commandInterceptor order="4" implementation="net.robinfriedli.botify.command.interceptor.interceptors.HistoryInterceptor"/>
   <commandInterceptor order="5" implementation="net.robinfriedli.botify.command.interceptor.interceptors.CommandMonitoringInterceptor"/>
-  <commandInterceptor order="6" implementation="net.robinfriedli.botify.command.interceptor.interceptors.ScriptCommandInterceptor"/>
+  <commandInterceptor order="6" implementation="net.robinfriedli.botify.command.interceptor.interceptors.ScriptCommandInterceptor$ScriptCommandInterceptorPreExecution"/>
+  <commandInterceptor order="7" implementation="net.robinfriedli.botify.command.interceptor.interceptors.CommandExecutionInterceptor">
+    <interruptingException class="java.lang.Exception"/>
+  </commandInterceptor>
+  <commandInterceptor order="8" implementation="net.robinfriedli.botify.command.interceptor.interceptors.ScriptCommandInterceptor$ScriptCommandInterceptorFinalizer"/>
 </commandInterceptors>

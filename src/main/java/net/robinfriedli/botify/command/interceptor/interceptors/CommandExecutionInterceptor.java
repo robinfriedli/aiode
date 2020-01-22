@@ -21,10 +21,12 @@ import net.robinfriedli.botify.boot.ShutdownableExecutorService;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.Command;
 import net.robinfriedli.botify.command.CommandContext;
+import net.robinfriedli.botify.command.interceptor.AbstractChainableCommandInterceptor;
 import net.robinfriedli.botify.command.interceptor.CommandInterceptor;
 import net.robinfriedli.botify.concurrent.LoggingThreadFactory;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.CommandHistory;
+import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 import net.robinfriedli.botify.exceptions.Abort;
 import net.robinfriedli.botify.exceptions.AmbiguousCommandException;
 import net.robinfriedli.botify.exceptions.CommandFailure;
@@ -37,7 +39,7 @@ import net.robinfriedli.botify.persist.StaticSessionProvider;
  * CommandInterceptor that runs the commands logic by calling {@link Command#doRun()} and handles exceptions thrown
  * during execution
  */
-public class CommandExecutionInterceptor implements CommandInterceptor {
+public class CommandExecutionInterceptor extends AbstractChainableCommandInterceptor {
 
     private static final ExecutorService COMMAND_HISTORY_SERVICE = Executors.newFixedThreadPool(3, new LoggingThreadFactory("command-history-pool"));
 
@@ -48,13 +50,14 @@ public class CommandExecutionInterceptor implements CommandInterceptor {
     private final MessageService messageService;
     private final Logger logger;
 
-    public CommandExecutionInterceptor(MessageService messageService) {
+    public CommandExecutionInterceptor(CommandInterceptorContribution commandInterceptorContribution, CommandInterceptor next, MessageService messageService) {
+        super(commandInterceptorContribution, next);
         this.messageService = messageService;
         this.logger = LoggerFactory.getLogger(getClass());
     }
 
     @Override
-    public void intercept(Command command) {
+    public void performChained(Command command) {
         boolean completedSuccessfully = false;
         boolean failedManually = false;
         String errorMessage = null;

@@ -275,7 +275,10 @@ public class CommandManager {
 
     public void initializeInterceptorChain() {
         interceptorChain = new CommandInterceptorChain(getCommandInterceptorContributions());
-        interceptorChainWithoutScripting = new CommandInterceptorChain(getCommandInterceptorContributions(ScriptCommandInterceptor.class));
+        interceptorChainWithoutScripting = new CommandInterceptorChain(getCommandInterceptorContributions(
+            ScriptCommandInterceptor.ScriptCommandInterceptorPreExecution.class,
+            ScriptCommandInterceptor.ScriptCommandInterceptorFinalizer.class
+        ));
     }
 
 }

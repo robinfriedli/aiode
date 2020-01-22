@@ -98,8 +98,10 @@ public class CommandContext {
     /**
      * @return A new CommandContext instance based on this one with a different input
      */
-    public CommandContext fork(String input) {
-        return new CommandContext(guild, guildContext, jda, member, message, sessionFactory, spotifyApi, input, user);
+    public CommandContext fork(String input, Session session) {
+        CommandContext commandContext = new CommandContext(guild, guildContext, jda, member, message, sessionFactory, spotifyApi, input, user);
+        commandContext.session = session;
+        return commandContext;
     }
 
     public Message getMessage() {

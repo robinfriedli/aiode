@@ -542,6 +542,20 @@ command.run('play')"
     <example title="Delete interceptor 'meteora'">%1$sscript %2$sdelete meteora</example>
     <example title="Run script 'skipTo' with input 'Numb'; this is equivalent to typing '%1$sskipTo Numb'">%1$sscript %2$sinvoke="skipTo" Numb</example>
   </command>
+  <command identifier="finalizer"
+           implementation="net.robinfriedli.botify.command.commands.scripting.FinalizerCommand"
+           requiresInput="false"
+           category="SCRIPTING"
+           description="Creates and manages script interceptors that are executed after the command finished successfully. If the command runs into an error finalizers are not executed. Essentially &quot;finalizers&quot; are just interceptors that are queried and executed by a different internal interceptor that runs after the one that executes the command. For more about interceptors see the help page for the interceptor command.">
+    <example title="Create a finalizer that deletes the command message after the command completes">
+```groovy
+%1$sfinalizer %2$sidentifier="deleteMessage" message.delete().submit()
+```
+    </example>
+    <example title="Show finalizer 'deleteMessage'">%1$sfinalizer deleteMessage</example>
+    <example title="List all finalizers">%1$sfinalizer</example>
+    <example title="Delete finalizer 'deleteMessage'">%1$sfinalizer %2$sdelete deleteMessage</example>
+  </command>
 
   <!-- Administrator commands -->
   <command identifier="reboot"

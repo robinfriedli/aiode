@@ -130,16 +130,17 @@ public abstract class AbstractCommand implements Command {
      * @param command the command string
      */
     public void run(String command) {
-        CommandContext fork = context.fork(command);
+        CommandContext fork = context.fork(command, context.getSession());
         AbstractCommand abstractCommand = commandManager.instantiateCommandForContext(fork, context.getSession(), false)
             .orElseThrow(() -> new InvalidCommandException("No command found for input"));
         abstractCommand.setThread(thread);
+        CommandContext.Current.set(fork);
         try {
             commandManager.getInterceptorChainWithoutScripting().intercept(abstractCommand);
         } catch (CommandFailure ignored) {
             abort();
         } finally {
-            fork.closeSession();
+            CommandContext.Current.set(context);
         }
     }
 

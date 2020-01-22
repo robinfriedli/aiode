@@ -523,4 +523,12 @@ See RunLiquibaseUpdateTask
       <column name="unique_id" value="script"/>
     </insert>
   </changeSet>
+  <changeSet id="add_script_usage_value-KD3cwc/2.0" author="robinfriedli" context="initialvalue">
+    <preConditions onFail="MARK_RAN">
+      <sqlCheck expectedResult="0">select count(*) from script_usage where unique_id = 'finalizer'</sqlCheck>
+    </preConditions>
+    <insert tableName="script_usage">
+      <column name="unique_id" value="finalizer"/>
+    </insert>
+  </changeSet>
 </databaseChangeLog>

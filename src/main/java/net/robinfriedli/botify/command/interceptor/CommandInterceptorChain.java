@@ -6,8 +6,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import net.robinfriedli.botify.command.Command;
-import net.robinfriedli.botify.command.interceptor.interceptors.CommandExecutionInterceptor;
-import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 import net.robinfriedli.botify.util.InjectorService;
 
@@ -44,7 +42,7 @@ public class CommandInterceptorChain implements CommandInterceptor {
                 if (next.hasNext()) {
                     parameters[i] = instantiate(next.next(), next);
                 } else {
-                    parameters[i] = new CommandExecutionInterceptor(InjectorService.get(MessageService.class));
+                    parameters[i] = new EmptyCommandInterceptor();
                 }
             } else if (parameterType.equals(CommandInterceptorContribution.class)) {
                 parameters[i] = interceptorContribution;

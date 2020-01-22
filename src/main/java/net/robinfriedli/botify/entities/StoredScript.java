@@ -52,7 +52,8 @@ public class StoredScript implements Serializable, SanitizedEntity {
 
     @Override
     public int getMaxEntityCount(SpringPropertiesConfig springPropertiesConfig) {
-        if (scriptUsage.getUniqueId().equals("interceptor")) {
+        String usageUniqueId = scriptUsage.getUniqueId();
+        if (usageUniqueId.equals("interceptor") || usageUniqueId.equals("finalizer")) {
             Integer interceptorCountMax = springPropertiesConfig.getApplicationProperty(Integer.class, "botify.preferences.interceptor_count_max");
             return Objects.requireNonNullElse(interceptorCountMax, 0);
         } else {
@@ -69,6 +70,49 @@ public class StoredScript implements Serializable, SanitizedEntity {
     @Override
     public void addCountUnit(List<CountUnit> countUnits, QueryBuilderFactory queryBuilderFactory, SpringPropertiesConfig springPropertiesConfig) {
         String scriptUsageId = getScriptUsage().getUniqueId();
+
+        if (scriptUsageId.equals("interceptor") || scriptUsageId.equals("finalizer")) {
+            boolean hasNoCountUnitForInterceptorUsage = countUnits.stream()
+                .map(CountUnit::getEntity)
+                .filter(e -> e instanceof StoredScript)
+                .map(e -> (StoredScript) e)
+                .noneMatch(s -> {
+                    String usageId = s.getScriptUsage().getUniqueId();
+                    return usageId.equals("interceptor") || usageId.equals("finalizer");
+                });
+
+            if (hasNoCountUnitForInterceptorUsage) {
+                int maxEntityCount = getMaxEntityCount(springPropertiesConfig);
+                CountUnit countUnit = new CountUnit(
+                    getClass(),
+                    this,
+                    session -> queryBuilderFactory.select(StoredScript.class, (from, cb) -> cb.count(from.get("pk")), Long.class)
+                        .where((cb, root, subQueryFactory) -> cb.or(
+                            cb.equal(
+                                root.get("scriptUsage"),
+                                subQueryFactory.createUncorrelatedSubQuery(StoredScript.ScriptUsage.class, "pk")
+                                    .where((cb1, root1) -> cb1.equal(root1.get("uniqueId"), "interceptor"))
+                                    .build(session)
+                            ),
+                            cb.equal(
+                                root.get("scriptUsage"),
+                                subQueryFactory.createUncorrelatedSubQuery(StoredScript.ScriptUsage.class, "pk")
+                                    .where((cb1, root1) -> cb1.equal(root1.get("uniqueId"), "finalizer"))
+                                    .build(session)
+                            )
+                        )),
+                    String.format("Maximum interceptor / finalizer count of %s reached", maxEntityCount),
+                    maxEntityCount
+                );
+
+                countUnits.add(countUnit);
+            }
+        } else {
+            addDefaultCountUnit(countUnits, scriptUsageId, queryBuilderFactory, springPropertiesConfig);
+        }
+    }
+
+    private void addDefaultCountUnit(List<CountUnit> countUnits, String scriptUsageId, QueryBuilderFactory queryBuilderFactory, SpringPropertiesConfig springPropertiesConfig) {
         boolean hasNoCountUnitForScriptUsageType = countUnits.stream()
             .map(CountUnit::getEntity)
             .filter(e -> e instanceof StoredScript)

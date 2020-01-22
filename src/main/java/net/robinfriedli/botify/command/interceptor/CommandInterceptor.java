@@ -10,4 +10,11 @@ public interface CommandInterceptor {
 
     void intercept(Command command);
 
+    class EmptyCommandInterceptor implements CommandInterceptor {
+
+        @Override
+        public void intercept(Command command) {
+        }
+    }
+
 }
