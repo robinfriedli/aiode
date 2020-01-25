@@ -21,13 +21,13 @@ import org.hibernate.type.Type;
 
 /**
  * Interceptor that verifies and maintains the integrity of a playlist upon changes are made.
- *
+ * <p>
  * Ensures that the item_index field always gets set and updated for items related to a playlist where the playlist items have changed.
  * Sets the ordinal field on the PlaylistItem for newly created items for sorting.
- *
+ * <p>
  * Also updates the collections on the playlist when an item gets deleted. When an item gets created this is done by the
  * constructor of the corresponding class or manually.
- *
+ * <p>
  * Verifies the playlist's name when one is saved and removes subsequent spaces.
  */
 public class VerifyPlaylistListener extends ChainableInterceptor {

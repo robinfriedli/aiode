@@ -19,7 +19,7 @@ import net.robinfriedli.botify.util.Util;
 /**
  * Represents a two sided conversation between user and bot triggered when a user enters an ambiguous command
  * E.g. a user enters a play command with a song name for which several tracks were found
- *
+ * <p>
  * This gets destroyed as soon as the user answers this question, enters a different command that triggers a question
  * or 5 minutes pass
  */

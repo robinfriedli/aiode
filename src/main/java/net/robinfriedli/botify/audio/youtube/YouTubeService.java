@@ -101,7 +101,7 @@ public class YouTubeService {
      * reasons. Gets the metadata and searches the corresponding YouTube video. The only way to stream from Spotify
      * directly is by using the $preview argument with the {@link PlayCommand} or {@link QueueCommand} which plays the
      * provided mp3 preview.
-     *
+     * <p>
      * However Spotify MIGHT release an SDK supporting full playback of songs across all devices, not just browsers in
      * which case this method and the corresponding block in {@link PlayableFactory#createPlayable(boolean, Object)} should
      * be removed.

@@ -16,7 +16,7 @@ import org.hibernate.SessionFactory;
 /**
  * Startup task that executes changesets defined in the src/main/resources/liquibase/dbchangelog.xml file. Executes all
  * changesets with follwing contexts in this order:
- *
+ * <p>
  * 1.: definition  : The context for schema definition changes that create or alter a table or column
  * 2.: initialvalue: The context for statements that insert or remove data
  * 3.: constraint  : The context for adding schema constraints, such as unique constraints
