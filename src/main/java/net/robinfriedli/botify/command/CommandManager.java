@@ -242,7 +242,7 @@ public class CommandManager {
         return commands;
     }
 
-    public List<CommandContribution> getAllCommandContributions() {
+    public List<CommandContribution> getCommandContributions() {
         return commandContributionContext.getInstancesOf(CommandContribution.class);
     }
 
@@ -255,6 +255,10 @@ public class CommandManager {
 
     public CommandInterceptorChain getInterceptorChain() {
         return interceptorChain;
+    }
+
+    public Context getCommandContributionContext() {
+        return commandContributionContext;
     }
 
     public CommandInterceptorChain getInterceptorChainWithoutScripting() {

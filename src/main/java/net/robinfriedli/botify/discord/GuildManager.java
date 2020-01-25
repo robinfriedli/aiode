@@ -29,6 +29,7 @@ import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.command.CommandContext;
+import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.AccessConfiguration;
 import net.robinfriedli.botify.entities.CommandHistory;
 import net.robinfriedli.botify.entities.GuildSpecification;
@@ -61,6 +62,7 @@ import static net.robinfriedli.jxp.queries.Conditions.*;
 @Component
 public class GuildManager {
 
+    private final CommandManager commandManager;
     private final File embedDocumentFile;
     private final File defaultPlaylistFile;
     private final HibernateComponent hibernateComponent;
@@ -71,12 +73,14 @@ public class GuildManager {
     private final QueryBuilderFactory queryBuilderFactory;
     private AudioManager audioManager;
 
-    public GuildManager(@Value("classpath:xml-contributions/embedDocuments.xml") Resource embedDocumentsResource,
+    public GuildManager(CommandManager commandManager,
+                        @Value("classpath:xml-contributions/embedDocuments.xml") Resource embedDocumentsResource,
                         @Value("classpath:playlists.xml") Resource playlistsResource,
                         HibernateComponent hibernateComponent,
                         JxpBackend jxpBackend,
                         @Value("${botify.preferences.mode_partitioned}") boolean modePartitioned,
                         QueryBuilderFactory queryBuilderFactory) {
+        this.commandManager = commandManager;
         try {
             embedDocumentFile = embedDocumentsResource.getFile();
             defaultPlaylistFile = playlistsResource.getFile();
@@ -122,15 +126,13 @@ public class GuildManager {
 
     @Nullable
     public AccessConfiguration getAccessConfiguration(String commandIdentifier, Guild guild) {
-        return hibernateComponent.invokeWithSession(session -> {
-            return queryBuilderFactory.find(AccessConfiguration.class)
-                .where((cb, root, subQueryFactory) -> cb.equal(root.get("commandIdentifier"), commandIdentifier))
-                .addInterceptors(new AccessConfigurationPartitionInterceptor(session, guild.getId()))
-                .build(session)
-                .setCacheable(true)
-                .uniqueResultOptional()
-                .orElse(null);
-        });
+        return hibernateComponent.invokeWithSession(session -> queryBuilderFactory.find(AccessConfiguration.class)
+            .where((cb, root, subQueryFactory) -> cb.equal(root.get("commandIdentifier"), commandIdentifier))
+            .addInterceptors(new AccessConfigurationPartitionInterceptor(session, guild.getId()))
+            .build(session)
+            .setCacheable(true)
+            .uniqueResultOptional()
+            .orElse(null));
     }
 
     public GuildContext getContextForGuild(Guild guild) {
@@ -216,7 +218,7 @@ public class GuildManager {
                 AudioPlayer player = audioManager.getPlayerManager().createPlayer();
 
                 Optional<Long> existingSpecification = queryBuilderFactory.select(GuildSpecification.class, "pk", Long.class)
-                    .where((cb, root, query) -> cb.equal(root.get("guildId"), guild.getId()))
+                    .where((cb, root) -> cb.equal(root.get("guildId"), guild.getId()))
                     .build(session)
                     .uniqueResultOptional();
 
@@ -227,9 +229,15 @@ public class GuildManager {
                 } else {
                     GuildSpecification newSpecification = HibernateInvoker.create(session).invoke(() -> {
                         GuildSpecification specification = new GuildSpecification(guild);
-                        AccessConfiguration permissionConfiguration = new AccessConfiguration("permission");
-                        session.persist(permissionConfiguration);
-                        specification.addAccessConfiguration(permissionConfiguration);
+                        commandManager.getCommandContributionContext()
+                            .query(attribute("restrictedAccess").is(true))
+                            .getResultStream()
+                            .map(elem -> elem.getAttribute("identifier").getValue())
+                            .forEach(restrictedCommandIdentifier -> {
+                                AccessConfiguration permissionConfiguration = new AccessConfiguration(restrictedCommandIdentifier);
+                                session.persist(permissionConfiguration);
+                                specification.addAccessConfiguration(permissionConfiguration);
+                            });
                         session.persist(specification);
                         return specification;
                     });

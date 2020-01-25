@@ -12,6 +12,25 @@
     <method name="getChannel"/>
     <method name="getCommandBody"/>
     <method name="getGuildContext"/>
+    <method name="getCommandHistory"/>
+  </whitelistMethods>
+  <whitelistMethods class="net.robinfriedli.botify.entities.CommandHistory">
+    <method name="getTimestamp"/>
+    <method name="getCommandIdentifier"/>
+    <method name="getInput"/>
+    <method name="getGuild"/>
+    <method name="getGuildId"/>
+    <method name="getUser"/>
+    <method name="getUserId"/>
+    <method name="isCompletedSuccessfully"/>
+    <method name="getDurationMs"/>
+    <method name="isUnexpectedException"/>
+    <method name="getErrorMessage"/>
+    <method name="isFailedManually"/>
+    <method name="getStartMillis"/>
+    <method name="getCommandBody"/>
+    <method name="getCommandContextId"/>
+    <method name="isWidget"/>
   </whitelistMethods>
   <whitelistMethods class="net.robinfriedli.botify.command.AbstractCommand">
     <method name="run" maxInvocationCount="5"/>
@@ -64,7 +83,7 @@
     <method name="getAlbumCoverUrl"/>
     <method name="fetch"/>
   </whitelistMethods>
-  <whitelistMethods class="net.robinfriedli.botify.discord.MessageService" maxMethodInvocations="10">
+  <whitelistMethods class="net.robinfriedli.botify.discord.MessageService" maxMethodInvocations="5">
     <method name="send"/>
     <method name="sendWithLogo"/>
     <method name="sendSuccess"/>
@@ -208,7 +227,10 @@
     <method name="sendMessage"/>
     <method name="sendMessageFormat"/>
   </whitelistMethods>
-  <whitelistMethods class="net.dv8tion.jda.api.requests.RestAction">
+  <whitelistMethods class="net.dv8tion.jda.api.entities.IMentionable">
+    <method name="getAsMention"/>
+  </whitelistMethods>
+  <whitelistMethods class="net.dv8tion.jda.api.requests.RestAction" maxMethodInvocations="5">
     <!--
     do not allow queue because of the async callbacks that method provides; these callbacks are executed in a thread
     were no GroovyInterceptor is registered, meaning within that closure the user would be free to execute anything
@@ -217,31 +239,31 @@
 
     with submit we can control what methods of CompletableFuture may be used
      -->
-    <method name="complete" maxInvocationCount="10"/>
-    <method name="submit" maxInvocationCount="10"/>
+    <method name="complete"/>
+    <method name="submit"/>
   </whitelistMethods>
 
   <!-- classes with full access -->
-  <whitelistAllMethods class="java.lang.Integer"/>
-  <whitelistAllMethods class="java.lang.Long"/>
-  <whitelistAllMethods class="java.lang.String"/>
-  <whitelistAllMethods class="java.lang.StringBuilder"/>
-  <whitelistAllMethods class="java.lang.Double"/>
-  <whitelistAllMethods class="java.lang.Float"/>
-  <whitelistAllMethods class="java.lang.Number"/>
-  <whitelistAllMethods class="java.lang.Character"/>
-  <whitelistAllMethods class="java.math.BigDecimal"/>
-  <whitelistAllMethods class="java.time.OffsetTime"/>
-  <whitelistAllMethods class="java.time.OffsetDateTime"/>
-  <whitelistAllMethods class="java.time.LocalDate"/>
-  <whitelistAllMethods class="java.time.LocalDateTime"/>
-  <whitelistAllMethods class="java.util.List"/>
-  <whitelistAllMethods class="java.util.Set"/>
-  <whitelistAllMethods class="java.util.Collection"/>
-  <whitelistAllMethods class="java.util.stream.Stream"/>
-  <whitelistAllMethods class="java.util.stream.Collectors"/>
-  <whitelistAllMethods class="java.util.Random"/>
-  <whitelistAllMethods class="net.dv8tion.jda.api.EmbedBuilder"/>
-  <whitelistAllMethods class="net.robinfriedli.botify.audio.AudioQueue"/>
-  <whitelistAllMethods class="org.kohsuke.groovy.sandbox.impl.Checker"/>
+  <whitelistClass class="java.lang.Integer"/>
+  <whitelistClass class="java.lang.Long"/>
+  <whitelistClass class="java.lang.String"/>
+  <whitelistClass class="java.lang.StringBuilder"/>
+  <whitelistClass class="java.lang.Double"/>
+  <whitelistClass class="java.lang.Float"/>
+  <whitelistClass class="java.lang.Number"/>
+  <whitelistClass class="java.lang.Character"/>
+  <whitelistClass class="java.math.BigDecimal"/>
+  <whitelistClass class="java.time.OffsetTime"/>
+  <whitelistClass class="java.time.OffsetDateTime"/>
+  <whitelistClass class="java.time.LocalDate"/>
+  <whitelistClass class="java.time.LocalDateTime"/>
+  <whitelistClass class="java.util.List"/>
+  <whitelistClass class="java.util.Set"/>
+  <whitelistClass class="java.util.Collection"/>
+  <whitelistClass class="java.util.stream.Stream"/>
+  <whitelistClass class="java.util.stream.Collectors"/>
+  <whitelistClass class="java.util.Random"/>
+  <whitelistClass class="net.dv8tion.jda.api.EmbedBuilder"/>
+  <whitelistClass class="net.robinfriedli.botify.audio.AudioQueue"/>
+  <whitelistClass class="org.kohsuke.groovy.sandbox.impl.Checker"/>
 </whitelistConfiguration>

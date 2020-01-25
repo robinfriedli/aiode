@@ -5,23 +5,27 @@
   <xs:complexType name="whitelistConfiguration">
     <xs:sequence>
       <xs:element name="whitelistMethods" type="whitelistMethods"/>
-      <xs:element name="whitelistAllMethods" type="whitelistAllMethods"/>
+      <xs:element name="whitelistClass" type="whitelistClass"/>
     </xs:sequence>
   </xs:complexType>
   <xs:complexType name="whitelistMethods">
     <xs:sequence>
       <xs:element name="method" type="method"/>
+      <xs:element name="writeProperty" type="writeProperty"/>
     </xs:sequence>
     <xs:attribute name="class" type="xs:string"/>
     <xs:attribute name="maxMethodInvocations" type="xs:int"/>
   </xs:complexType>
-  <xs:complexType name="whitelistAllMethods">
+  <xs:complexType name="whitelistClass">
     <xs:attribute name="class" type="xs:string"/>
     <xs:attribute name="maxMethodInvocations" type="xs:int"/>
   </xs:complexType>
   <xs:complexType name="method">
     <xs:attribute name="name" type="xs:string"/>
     <xs:attribute name="maxInvocationCount" type="xs:int" default="0"/>
+  </xs:complexType>
+  <xs:complexType name="writeProperty">
+    <xs:attribute name="name"/>
   </xs:complexType>
 
 </xs:schema>

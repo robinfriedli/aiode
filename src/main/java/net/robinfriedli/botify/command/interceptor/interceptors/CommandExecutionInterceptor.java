@@ -91,8 +91,7 @@ public class CommandExecutionInterceptor extends AbstractChainableCommandInterce
             } else {
                 throw e;
             }
-        } catch (Abort ignored) {
-        } catch (CommandFailure e) {
+        } catch (Abort | CommandFailure e) {
             throw e;
         } catch (NoLoginException e) {
             MessageChannel channel = command.getContext().getChannel();

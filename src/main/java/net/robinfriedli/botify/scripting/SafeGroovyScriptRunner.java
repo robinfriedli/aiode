@@ -122,7 +122,9 @@ public class SafeGroovyScriptRunner {
             if (error instanceof SecurityException) {
                 messageService.sendError(error.getMessage(), channel);
                 throw new CommandFailure(error);
-            } else if (!(error instanceof Abort)) {
+            } else if (error instanceof Abort) {
+                throw (Abort) error;
+            } else {
                 EmbedBuilder embedBuilder = ExceptionUtils.buildErrorEmbed(error);
                 embedBuilder.setTitle("Error occurred while executing script");
                 messageService.sendTemporary(embedBuilder.build(), channel);

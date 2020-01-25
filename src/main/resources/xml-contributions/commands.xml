@@ -205,7 +205,8 @@
            implementation="net.robinfriedli.botify.command.commands.general.PermissionCommand"
            requiresInput="false"
            category="GENERAL"
-           description="Add or remove a role required to run a certain command or list all commands and who they are available to. By default all commands are available to each user, except for this command which initially is only available to administrator roles. But as soon as a role has been added only those members with said role can use the command. The guild owner or members with administrator roles can always use any command.">
+           restrictedAccess="true"
+           description="Add or remove a role required to run a certain command or list all commands and who they are available to. By default all commands are available to each user, except for this command and the commands in the scripting category which initially are only available to administrator roles. But as soon as a role has been added only those members with said role can use the command. If you add several roles to one command a member only requires one of those roles. The guild owner or members with administrator roles can always use any command.">
     <argument identifier="to" description="Specify the roles to grant access for.">
       <requires argument="grand"/>
     </argument>
@@ -391,6 +392,7 @@
            implementation="net.robinfriedli.botify.command.commands.scripting.EvalCommand"
            requiresInput="true"
            category="SCRIPTING"
+           restrictedAccess="true"
            description="Evaluate a groovy script. This command simply executes a groovy script and, if not null, prints the result.">
     <example title="Provided variables:">
 ```css
@@ -467,6 +469,7 @@ command.run('play')
            implementation="net.robinfriedli.botify.command.commands.scripting.InterceptorCommand"
            requiresInput="false"
            category="SCRIPTING"
+           restrictedAccess="true"
            description="Manage custom command interceptors. A command interceptor is a piece of code that is executed before running each command. Internally they are used to check permissions, parse the command input, check argument rules etc. The groovy scripting sandbox allows you to create additional custom interceptors that are queried and executed by the last interceptor in the chain before the actual command is executed. This command may create a new interceptor, delete an existing interceptor, display an interceptor or list all interceptors. Note that commands executed in scripts via 'command.run()' do not trigger custom command interceptors to avoid cycles. See the help page for the eval command for available variables.">
     <example title="Create an interceptor that adds an 'ok hand' reaction to each message upon execution">
 ```groovy
@@ -484,9 +487,9 @@ def i = rand.nextInt(10000)
 // check if divisible by 33
 if (i %% 33 == 0) {
   // send rickroll message
-  channel.sendMessage('Get rickrolled :clown:').submit()
+  messages.sendTemporary('Get rickrolled :clown:', channel)
   // play Rick Astley - Never Gonna Give You Up on youtube
-  command.run('play https://www.youtube.com/watch?v=dQw4w9WgXcQ%%27)
+  command.run('play https://www.youtube.com/watch?v=dQw4w9WgXcQ ')
   // abort the actual command
   command.abort()
   }
@@ -501,7 +504,8 @@ if (i %% 33 == 0) {
            implementation="net.robinfriedli.botify.command.commands.scripting.ScriptCommand"
            requiresInput="false"
            category="SCRIPTING"
-           description="This command manages persistent scripts for the groovy sandbox. In addition to the variables mentioned by the help page for the eval command, this command offers an 'input' variable to be used oin scripts that represents additional user input. Note that scripts can be run directly like normal commands or presets, thus '%1$smyscript myinput' is equivalent to '%1$sscript %2$sinvoke=&quot;myscript&quot;' myinput.">
+           restrictedAccess="true"
+           description="This command manages persistent scripts for the groovy sandbox. In addition to the variables mentioned by the help page for the eval command, this command offers an 'input' variable to be used in scripts that represents additional user input. Note that scripts can be run directly like normal commands or presets, thus '%1$smyscript myinput' is equivalent to '%1$sscript %2$sinvoke=&quot;myscript&quot; myinput'.">
     <argument identifier="invoke" requiresValue="true" description="Specify the identifier of the script you want to execute. Note that scripts can be run directly like normal commands or presets, thus '%1$smyscript myinput' is equivalent to '%1$sscript %2$sinvoke=&quot;myscript&quot;' myinput.">
       <excludes argument="delete"/>
       <excludes argument="identifier"/>
@@ -529,7 +533,7 @@ if (queue.isEmpty()) {
 def target = input.toLowerCase()
 while (queue.getCurrent().getTitle().toLowerCase() != target) {
   if (!queue.hasNext(true)) {
-    messages.sendError(String.format('Could not find %s in upcoming tracks', input), channel)
+    messages.sendError(String.format('Could not find %%s in upcoming tracks', input), channel)
     break
   }
   queue.iterate()
@@ -538,14 +542,15 @@ command.run('play')"
 ```
     </example>
     <example title="Show script 'meteora'">%1$sscript meteora</example>
-    <example title="List all interceptors">%1$sscript</example>
-    <example title="Delete interceptor 'meteora'">%1$sscript %2$sdelete meteora</example>
+    <example title="List all scripts">%1$sscript</example>
+    <example title="Delete script 'meteora'">%1$sscript %2$sdelete meteora</example>
     <example title="Run script 'skipTo' with input 'Numb'; this is equivalent to typing '%1$sskipTo Numb'">%1$sscript %2$sinvoke="skipTo" Numb</example>
   </command>
   <command identifier="finalizer"
            implementation="net.robinfriedli.botify.command.commands.scripting.FinalizerCommand"
            requiresInput="false"
            category="SCRIPTING"
+           restrictedAccess="true"
            description="Creates and manages script interceptors that are executed after the command finished successfully. If the command runs into an error finalizers are not executed. Essentially &quot;finalizers&quot; are just interceptors that are queried and executed by a different internal interceptor that runs after the one that executes the command. For more about interceptors see the help page for the interceptor command.">
     <example title="Create a finalizer that deletes the command message after the command completes">
 ```groovy
