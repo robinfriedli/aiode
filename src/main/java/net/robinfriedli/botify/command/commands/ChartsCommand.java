@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.LoggerFactory;
+
 import com.google.common.collect.Lists;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.wrapper.spotify.model_objects.specification.Track;
@@ -106,10 +108,16 @@ public class ChartsCommand extends AbstractCommand {
         List<Playable> tracks = Lists.newArrayList();
         for (Object[] record : queryResults) {
             long playedAmount = (Long) record[2];
-            Playable track = getTrackForRecord(record);
-            if (track != null) {
-                tracksWithPlayedAmount.put(track, playedAmount);
-                tracks.add(track);
+            try {
+                Playable track = getTrackForRecord(record);
+                if (track != null) {
+                    tracksWithPlayedAmount.put(track, playedAmount);
+                    tracks.add(track);
+                }
+            } catch (UnsupportedOperationException e) {
+                throw e;
+            } catch (Throwable e) {
+                LoggerFactory.getLogger(getClass()).error(String.format("Error loading charts item from source %s: %s", record[0], record[1]), e);
             }
         }
 
