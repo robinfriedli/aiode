@@ -25,6 +25,7 @@ public class PropertiesLoadingService {
         return StringConverter.convert(property, type);
     }
 
+    @SuppressWarnings("RedundantCast") // compiler warning thrown without cast
     public static String requireProperty(String key, String... args) {
         String property = requireProperty(key);
         return String.format(property, (Object[]) args);
@@ -55,6 +56,7 @@ public class PropertiesLoadingService {
         return null;
     }
 
+    @SuppressWarnings("RedundantCast") // compiler warning thrown without cast
     @Nullable
     public static String loadProperty(String key, String... args) {
         String property = loadProperty(key);

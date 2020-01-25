@@ -9,12 +9,12 @@ import net.dv8tion.jda.api.EmbedBuilder;
 
 /**
  * Utility class for building and printing normalized tables. Necessary since Discord does not support markdown tables.
- *
+ * <p>
  * Hint: when sending the table to discord it should be wrapped in "```" markdown highlights to send the table as a code
  * snippet to make sure all characters are the same size.
- *
+ * <p>
  * As of botify 1.4 the table class has been replaced by the usage of {@link EmbedBuilder}
- *
+ * <p>
  * See {@link Table2} to create tables for the EmbedBuilder (since v1.5.1)
  */
 public class Table {

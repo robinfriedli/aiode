@@ -87,6 +87,7 @@ public class Botify {
         pb.start();
     }
 
+    @SuppressWarnings("RedundantCast") // compiler warning thrown without cast
     public static void registerListeners() {
         Botify botify = get();
         ShardManager shardManager = botify.getShardManager();
@@ -96,6 +97,7 @@ public class Botify {
         LOGGER.info("Registered listeners");
     }
 
+    @SuppressWarnings("RedundantCast") // compiler warning thrown without cast
     public static void shutdownListeners() {
         Botify botify = get();
         LOGGER.info("Shutting down listeners");
