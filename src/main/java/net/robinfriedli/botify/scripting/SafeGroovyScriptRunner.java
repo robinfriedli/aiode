@@ -1,10 +1,12 @@
 package net.robinfriedli.botify.scripting;
 
 import java.io.ByteArrayInputStream;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,7 +18,9 @@ import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
+import net.robinfriedli.botify.entities.StoredScript;
 import net.robinfriedli.botify.exceptions.Abort;
+import net.robinfriedli.botify.exceptions.CommandFailure;
 import net.robinfriedli.botify.exceptions.CommandRuntimeException;
 import net.robinfriedli.botify.exceptions.ExceptionUtils;
 
@@ -32,7 +36,34 @@ public class SafeGroovyScriptRunner {
         this.groovyWhitelistInterceptor = groovyWhitelistInterceptor;
     }
 
-    @SuppressWarnings("deprecation")
+    public void runScripts(List<StoredScript> scripts, AtomicReference<StoredScript> currentScript, long timeout, TimeUnit timeUnit) throws ExecutionException, TimeoutException {
+        CompletableFuture<Object> result = new CompletableFuture<>();
+        Thread interceptorExecutionThread = new Thread(() -> {
+            CommandContext.Current.set(context);
+            groovyWhitelistInterceptor.register();
+            try {
+                for (StoredScript script : scripts) {
+                    currentScript.set(script);
+                    groovyShell.evaluate(script.getScript());
+                }
+            } catch (ThreadDeath e) {
+                result.complete(null);
+                throw e;
+            } catch (Throwable e) {
+                if (e instanceof CommandRuntimeException && e.getCause() instanceof ThreadDeath) {
+                    result.complete(null);
+                }
+
+                result.completeExceptionally(e);
+            }
+            result.complete(null);
+        });
+
+        interceptorExecutionThread.setName("multiple-scripts-execution-thread-" + context);
+
+        runThreadWithTimeout(interceptorExecutionThread, result, timeout, timeUnit);
+    }
+
     public Object runWithTimeLimit(String script, long timeout, TimeUnit timeUnit) throws ExecutionException, TimeoutException {
         CompletableFuture<Object> result = new CompletableFuture<>();
         Thread scriptExecutionThread = new Thread(() -> {
@@ -40,14 +71,13 @@ public class SafeGroovyScriptRunner {
             groovyWhitelistInterceptor.register();
             try {
                 result.complete(groovyShell.evaluate(script));
-            } catch (SecurityException e) {
-                result.completeExceptionally(e);
-            } catch (ThreadDeath ignored) {
+            } catch (ThreadDeath e) {
                 result.complete(null);
+                throw e;
             } catch (Throwable e) {
                 if (e instanceof CommandRuntimeException && e.getCause() instanceof ThreadDeath) {
                     result.complete(null);
-                    return;
+                    throw (ThreadDeath) e.getCause();
                 }
 
                 result.completeExceptionally(e);
@@ -55,31 +85,7 @@ public class SafeGroovyScriptRunner {
         });
 
         scriptExecutionThread.setName("script-execution-thread-" + context);
-        scriptExecutionThread.start();
-
-        try {
-            return result.get(timeout, timeUnit);
-        } catch (TimeoutException | InterruptedException e) {
-            // first interrupt, in case the thread is holding any open connections or similar
-            scriptExecutionThread.interrupt();
-            try {
-                Object o = result.get(10, TimeUnit.SECONDS);
-
-                if (e instanceof TimeoutException) {
-                    throw new TimeoutException("Script execution timed out");
-                }
-
-                return o;
-            } catch (TimeoutException | InterruptedException e1) {
-                Logger logger = LoggerFactory.getLogger(getClass());
-                logger.warn("Forced script execution thread termination after waiting for an additional 10 seconds after sending interrupt signal");
-                // then force stop (e.g if script = `while (true) {}` there is not much else to do)
-                scriptExecutionThread.interrupt();
-                scriptExecutionThread.stop();
-                String message = "Script execution was forced to stop after the script did not respond to interrupt signal";
-                throw new TimeoutException(e instanceof TimeoutException ? message + " sent after timeout" : message);
-            }
-        }
+        return runThreadWithTimeout(scriptExecutionThread, result, timeout, timeUnit);
     }
 
     public void runAndSendResult(String script, long timeout, TimeUnit timeUnit) {
@@ -115,10 +121,41 @@ public class SafeGroovyScriptRunner {
 
             if (error instanceof SecurityException) {
                 messageService.sendError(error.getMessage(), channel);
+                throw new CommandFailure(error);
             } else if (!(error instanceof Abort)) {
                 EmbedBuilder embedBuilder = ExceptionUtils.buildErrorEmbed(error);
                 embedBuilder.setTitle("Error occurred while executing script");
                 messageService.sendTemporary(embedBuilder.build(), channel);
+                throw new CommandFailure(error);
+            }
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    private Object runThreadWithTimeout(Thread scriptExecutionThread, CompletableFuture<Object> result, long timeout, TimeUnit timeUnit) throws ExecutionException, TimeoutException {
+        scriptExecutionThread.start();
+
+        try {
+            return result.get(timeout, timeUnit);
+        } catch (TimeoutException | InterruptedException e) {
+            // first interrupt, in case the thread is holding any open connections or similar
+            scriptExecutionThread.interrupt();
+            try {
+                Object o = result.get(10, TimeUnit.SECONDS);
+
+                if (e instanceof TimeoutException) {
+                    throw new TimeoutException("Script execution timed out");
+                }
+
+                return o;
+            } catch (TimeoutException | InterruptedException e1) {
+                Logger logger = LoggerFactory.getLogger(getClass());
+                logger.warn("Forced script execution thread termination after waiting for an additional 10 seconds after sending interrupt signal");
+                // then force stop (e.g if script = `while (true) {}` there is not much else to do)
+                scriptExecutionThread.interrupt();
+                scriptExecutionThread.stop();
+                String message = "Script execution was forced to stop after the script did not respond to interrupt signal";
+                throw new TimeoutException(e instanceof TimeoutException ? message + " sent after timeout" : message);
             }
         }
     }

@@ -64,7 +64,7 @@
     <method name="getAlbumCoverUrl"/>
     <method name="fetch"/>
   </whitelistMethods>
-  <whitelistMethods class="net.robinfriedli.botify.discord.MessageService">
+  <whitelistMethods class="net.robinfriedli.botify.discord.MessageService" maxMethodInvocations="10">
     <method name="send"/>
     <method name="sendWithLogo"/>
     <method name="sendSuccess"/>

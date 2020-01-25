@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import groovy.lang.GroovyShell;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -75,22 +76,30 @@ public abstract class ScriptCommandInterceptor extends AbstractChainableCommandI
         groovyShell.setVariable("messages", messageService);
 
         SafeGroovyScriptRunner scriptRunner = new SafeGroovyScriptRunner(context, groovyShell, groovyWhitelistInterceptor);
-        for (StoredScript scriptInterceptor : scriptInterceptors) {
-            try {
-                scriptRunner.runWithTimeLimit(scriptInterceptor.getScript(), 5, TimeUnit.SECONDS);
-            } catch (ExecutionException e) {
-                Throwable error = e.getCause() != null ? e.getCause() : e;
+        AtomicReference<StoredScript> currentScriptReference = new AtomicReference<>();
+        try {
+            scriptRunner.runScripts(scriptInterceptors, currentScriptReference, 5, TimeUnit.SECONDS);
+        } catch (ExecutionException e) {
+            Throwable error = e.getCause() != null ? e.getCause() : e;
 
-                if (error instanceof Abort) {
-                    throw new Abort();
-                } else {
-                    EmbedBuilder embedBuilder = ExceptionUtils.buildErrorEmbed(error);
-                    embedBuilder.setTitle(String.format("Error occurred while executing custom command %s: %s", usageId, scriptInterceptor.getIdentifier()));
-                    messageService.sendTemporary(embedBuilder.build(), context.getChannel());
-                }
-            } catch (TimeoutException e) {
-                messageService.sendError(String.format("Execution of script command %ss stopped because script '%s' has run into a timeout", usageId, scriptInterceptor.getIdentifier()), context.getChannel());
+            if (error instanceof Abort) {
+                throw new Abort();
+            } else {
+                EmbedBuilder embedBuilder = ExceptionUtils.buildErrorEmbed(error);
+                StoredScript currentScript = currentScriptReference.get();
+                embedBuilder.setTitle(String.format("Error occurred while executing custom command %s%s",
+                    usageId,
+                    currentScript.getIdentifier() != null ? ": " + currentScript.getIdentifier() : "")
+                );
+                messageService.sendTemporary(embedBuilder.build(), context.getChannel());
             }
+        } catch (TimeoutException e) {
+            StoredScript currentScript = currentScriptReference.get();
+            messageService.sendError(String.format("Execution of script command %ss stopped because script%s has run into a timeout",
+                usageId,
+                currentScript.getIdentifier() != null ? String.format(" '%s'", currentScript.getIdentifier()) : ""),
+                context.getChannel()
+            );
         }
     }
 

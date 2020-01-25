@@ -13,9 +13,11 @@
       <xs:element name="method" type="method"/>
     </xs:sequence>
     <xs:attribute name="class" type="xs:string"/>
+    <xs:attribute name="maxMethodInvocations" type="xs:int"/>
   </xs:complexType>
   <xs:complexType name="whitelistAllMethods">
     <xs:attribute name="class" type="xs:string"/>
+    <xs:attribute name="maxMethodInvocations" type="xs:int"/>
   </xs:complexType>
   <xs:complexType name="method">
     <xs:attribute name="name" type="xs:string"/>
