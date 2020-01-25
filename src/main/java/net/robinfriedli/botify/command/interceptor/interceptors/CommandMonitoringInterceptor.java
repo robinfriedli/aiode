@@ -39,6 +39,7 @@ public class CommandMonitoringInterceptor extends AbstractChainableCommandInterc
     public void performChained(Command command) {
         CommandContext context = command.getContext();
         Thread monitoringThread = new Thread(() -> {
+            CommandContext.Current.set(context);
             CommandExecutionThread commandExecutionThread = command.getThread();
             CompletableFuture<Message> stillLoadingMessage = null;
             CompletableFuture<Message> warningMessage = null;
