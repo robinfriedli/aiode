@@ -442,8 +442,6 @@ return null
     </example>
     <example title="Send an embed message">```groovy
 %1$seval
-import net.dv8tion.jda.api.EmbedBuilder
-
 def embedBuilder = new EmbedBuilder()
 embedBuilder.setTitle('Title')
 embedBuilder.setDescription('description')

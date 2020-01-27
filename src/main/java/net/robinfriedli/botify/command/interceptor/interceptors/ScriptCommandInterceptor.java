@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import groovy.lang.GroovyShell;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.boot.configurations.GroovySandboxComponent;
 import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.command.AbstractCommand;
@@ -21,6 +22,7 @@ import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 import net.robinfriedli.botify.exceptions.Abort;
 import net.robinfriedli.botify.exceptions.ExceptionUtils;
 import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
+import net.robinfriedli.botify.scripting.GroovyVariables;
 import net.robinfriedli.botify.scripting.GroovyWhitelistInterceptor;
 import net.robinfriedli.botify.scripting.SafeGroovyScriptRunner;
 import org.codehaus.groovy.control.CompilerConfiguration;
@@ -71,9 +73,7 @@ public abstract class ScriptCommandInterceptor extends AbstractChainableCommandI
         GroovyWhitelistInterceptor groovyWhitelistInterceptor = groovySandboxComponent.getGroovyWhitelistInterceptor();
         GroovyShell groovyShell = new GroovyShell(compilerConfiguration);
         CommandContext context = command.getContext();
-        context.addScriptParameters(groovyShell);
-        groovyShell.setVariable("command", command);
-        groovyShell.setVariable("messages", messageService);
+        GroovyVariables.addVariables(groovyShell, context, command, messageService, Botify.get().getSecurityManager());
 
         SafeGroovyScriptRunner scriptRunner = new SafeGroovyScriptRunner(context, groovyShell, groovyWhitelistInterceptor);
         AtomicReference<StoredScript> currentScriptReference = new AtomicReference<>();

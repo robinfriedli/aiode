@@ -2,6 +2,215 @@
 <whitelistConfiguration xmlns="whitelistSpace">
   <whitelistMethods class="java.lang.Object">
     <method name="equals"/>
+    <method name="toString"/>
+    <method name="hashCode"/>
+  </whitelistMethods>
+  <whitelistMethods class="java.lang.String">
+    <method name="length"/>
+    <method name="isEmpty"/>
+    <method name="charAt"/>
+    <method name="codePointAt"/>
+    <method name="codePointBefore"/>
+    <method name="codePointCount"/>
+    <method name="offsetByCodePoints"/>
+    <method name="getChars"/>
+    <method name="getBytes"/>
+    <method name="contentEquals"/>
+    <method name="equalsIgnoreCase"/>
+    <method name="compareToIgnoreCase"/>
+    <method name="regionMatches"/>
+    <method name="startsWith"/>
+    <method name="endsWith"/>
+    <method name="indexOf"/>
+    <method name="lastIndexOf"/>
+    <method name="substring"/>
+    <method name="subSequence"/>
+    <method name="concat"/>
+    <method name="replace"/>
+    <method name="matches"/>
+    <method name="contains"/>
+    <method name="replaceFirst"/>
+    <method name="replaceAll"/>
+    <method name="replace"/>
+    <method name="split"/>
+    <method name="join"/>
+    <method name="toLowerCase"/>
+    <method name="toUpperCase"/>
+    <method name="trim"/>
+    <method name="strip"/>
+    <method name="stripLeading"/>
+    <method name="stripTrailing"/>
+    <method name="isBlank"/>
+    <method name="lines"/>
+    <method name="chars"/>
+    <method name="codePoints"/>
+    <method name="toCharArray"/>
+    <method name="format"/>
+    <method name="valueOf"/>
+    <method name="copyValueOf"/>
+    <method name="repeat"/>
+    <!-- groovy enhanced jdk -->
+    <method name="asType"/>
+    <method name="collectReplacements"/>
+    <method name="decodeBase64"/>
+    <method name="decodeBase64Url"/>
+    <method name="decodeHex"/>
+    <method name="drop"/>
+    <method name="eachMatch"/>
+    <method name="getAt"/>
+    <method name="leftShift"/>
+    <method name="plus"/>
+    <method name="size"/>
+    <method name="take"/>
+    <method name="toBoolean"/>
+    <method name="toCharacter"/>
+    <method name="toURI"/>
+    <method name="toURL"/>
+  </whitelistMethods>
+  <whitelistMethods class="java.lang.Comparable">
+    <method name="compareTo"/>
+  </whitelistMethods>
+  <whitelistMethods class="java.util.Collection">
+    <method name="size"/>
+    <method name="isEmpty"/>
+    <method name="contains"/>
+    <method name="iterator"/>
+    <method name="toArray"/>
+    <method name="add"/>
+    <method name="remove"/>
+    <method name="containsAll"/>
+    <method name="addAll"/>
+    <method name="removeAll"/>
+    <method name="removeIf"/>
+    <method name="retainAll"/>
+    <method name="clear"/>
+    <method name="spliterator"/>
+    <method name="stream"/>
+    <!-- groovy enhanced jdk -->
+    <method name="asBoolean"/>
+    <method name="asImmutable"/>
+    <method name="asType"/>
+    <method name="asUnmodifiable"/>
+    <method name="collectNested"/>
+    <method name="each"/>
+    <method name="eachWithIndex"/>
+    <method name="find"/>
+    <method name="findAll"/>
+    <method name="flatten"/>
+    <method name="getAt"/>
+    <method name="getIndices"/>
+    <method name="grep"/>
+    <method name="inject"/>
+    <method name="intersect"/>
+    <method name="isCase"/>
+    <method name="leftShift"/>
+    <method name="minus"/>
+    <method name="plus"/>
+    <method name="split"/>
+    <method name="toListString"/>
+    <method name="toSet"/>
+    <method name="unique"/>
+  </whitelistMethods>
+  <whitelistMethods class="java.util.List">
+    <method name="replaceAll"/>
+    <method name="sort"/>
+    <method name="get"/>
+    <method name="set"/>
+    <method name="set"/>
+    <method name="indexOf"/>
+    <method name="lastIndexOf"/>
+    <method name="subList"/>
+    <method name="of"/>
+    <!-- groovy enhanced jdk -->
+    <method name="drop"/>
+    <method name="dropRight"/>
+    <method name="dropWhile"/>
+    <method name="findAll"/>
+    <method name="first"/>
+    <method name="head"/>
+    <method name="multiply"/>
+    <method name="pop"/>
+    <method name="push"/>
+    <method name="putAt"/>
+    <method name="removeAt"/>
+    <method name="removeLast"/>
+    <method name="reverse"/>
+    <method name="reverseEach"/>
+    <method name="subsequences"/>
+    <method name="swap"/>
+    <method name="tail"/>
+    <method name="take"/>
+    <method name="takeRight"/>
+    <method name="takeWhile"/>
+    <method name="toUnique"/>
+  </whitelistMethods>
+  <whitelistMethods class="java.util.Set">
+    <method name="of"/>
+  </whitelistMethods>
+  <whitelistMethods class="java.lang.Iterable">
+    <method name="iterator"/>
+    <method name="forEach"/>
+    <method name="spliterator"/>
+    <!-- groovy enhanced jdk -->
+    <method name="any"/>
+    <method name="asCollection"/>
+    <method name="asList"/>
+    <method name="asType"/>
+    <method name="chop"/>
+    <method name="collate"/>
+    <method name="collect"/>
+    <method name="collectEntries"/>
+    <method name="collectMany"/>
+    <method name="collectNested"/>
+    <method name="combinations"/>
+    <method name="contains"/>
+    <method name="containsAll"/>
+    <method name="count"/>
+    <method name="countBy"/>
+    <method name="disjoint"/>
+    <method name="drop"/>
+    <method name="dropRight"/>
+    <method name="dropWhile"/>
+    <method name="each"/>
+    <method name="eachCombination"/>
+    <method name="eachPermutation"/>
+    <method name="eachWithIndex"/>
+    <method name="every"/>
+    <method name="findIndexesOf"/>
+    <method name="findIndexValues"/>
+    <method name="findLastIndexOf"/>
+    <method name="findResult"/>
+    <method name="first"/>
+    <method name="flatten"/>
+    <method name="getAt"/>
+    <method name="groupBy"/>
+    <method name="head"/>
+    <method name="indexed"/>
+    <method name="init"/>
+    <method name="inits"/>
+    <method name="intersect"/>
+    <method name="isEmpty"/>
+    <method name="join"/>
+    <method name="last"/>
+    <method name="max"/>
+    <method name="min"/>
+    <method name="minus"/>
+    <method name="multiply"/>
+    <method name="permutations"/>
+    <method name="plus"/>
+    <method name="size"/>
+    <method name="sort"/>
+    <method name="sum"/>
+    <method name="tail"/>
+    <method name="tails"/>
+    <method name="take"/>
+    <method name="takeRight"/>
+    <method name="takeWhile"/>
+    <method name="toList"/>
+    <method name="toSet"/>
+    <method name="toSorted"/>
+    <method name="toUnique"/>
+    <method name="withIndex"/>
   </whitelistMethods>
   <whitelistMethods class="net.robinfriedli.botify.command.CommandContext">
     <method name="getMessage"/>
@@ -230,6 +439,12 @@
   <whitelistMethods class="net.dv8tion.jda.api.entities.IMentionable">
     <method name="getAsMention"/>
   </whitelistMethods>
+  <whitelistMethods class="net.dv8tion.jda.api.entities.ISnowflake">
+    <method name="getId"/>
+    <method name="getIdLong"/>
+    <method name="getTimeCreated"/>
+    <writeProperty/>
+  </whitelistMethods>
   <whitelistMethods class="net.dv8tion.jda.api.requests.RestAction" maxMethodInvocations="5">
     <!--
     do not allow queue because of the async callbacks that method provides; these callbacks are executed in a thread
@@ -242,11 +457,19 @@
     <method name="complete"/>
     <method name="submit"/>
   </whitelistMethods>
-
-  <!-- classes with full access -->
+  <whitelistMethods class="java.lang.Thread">
+    <method name="currentThread"/>
+    <method name="isInterrupted"/>
+  </whitelistMethods>
+  <whitelistMethods class="groovy.lang.Closure">
+    <method name="call"/>
+  </whitelistMethods>
+  <whitelistMethods class="groovy.lang.Script">
+    <method name="invokeMethod"/>
+  </whitelistMethods>
+  <!-- classes with full access, this also applies to all subclasses, including methods declared in a subclass -->
   <whitelistClass class="java.lang.Integer"/>
   <whitelistClass class="java.lang.Long"/>
-  <whitelistClass class="java.lang.String"/>
   <whitelistClass class="java.lang.StringBuilder"/>
   <whitelistClass class="java.lang.Double"/>
   <whitelistClass class="java.lang.Float"/>
@@ -257,13 +480,11 @@
   <whitelistClass class="java.time.OffsetDateTime"/>
   <whitelistClass class="java.time.LocalDate"/>
   <whitelistClass class="java.time.LocalDateTime"/>
-  <whitelistClass class="java.util.List"/>
-  <whitelistClass class="java.util.Set"/>
-  <whitelistClass class="java.util.Collection"/>
   <whitelistClass class="java.util.stream.Stream"/>
   <whitelistClass class="java.util.stream.Collectors"/>
   <whitelistClass class="java.util.Random"/>
   <whitelistClass class="net.dv8tion.jda.api.EmbedBuilder"/>
   <whitelistClass class="net.robinfriedli.botify.audio.AudioQueue"/>
+  <whitelistClass class="net.robinfriedli.botify.command.SecurityManager"/>
   <whitelistClass class="org.kohsuke.groovy.sandbox.impl.Checker"/>
 </whitelistConfiguration>

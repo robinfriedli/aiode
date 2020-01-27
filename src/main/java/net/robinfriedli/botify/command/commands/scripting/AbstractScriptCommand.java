@@ -13,6 +13,8 @@ import net.robinfriedli.botify.entities.StoredScript;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
+import net.robinfriedli.botify.scripting.GroovyVariables;
+import net.robinfriedli.botify.scripting.SafeGroovyScriptRunner;
 import net.robinfriedli.botify.util.SearchEngine;
 import net.robinfriedli.botify.util.Table2;
 import org.codehaus.groovy.control.CompilationFailedException;
@@ -83,11 +85,9 @@ public abstract class AbstractScriptCommand extends AbstractCommand {
         }
 
         GroovyShell groovyShell = new GroovyShell();
-        context.addScriptParameters(groovyShell);
-        groovyShell.setVariable("messages", getMessageService());
-        groovyShell.setVariable("command", this);
+        GroovyVariables.addVariables(groovyShell, context, this, getMessageService(), Botify.get().getSecurityManager());
         try {
-            groovyShell.parse(script);
+            groovyShell.parse(SafeGroovyScriptRunner.transformScript(script));
         } catch (CompilationFailedException e) {
             throw new InvalidCommandException("Could not compile provided script: " + e.getMessage());
         }

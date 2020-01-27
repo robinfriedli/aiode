@@ -9,6 +9,7 @@ import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
+import net.robinfriedli.botify.scripting.GroovyVariables;
 import net.robinfriedli.botify.scripting.GroovyWhitelistInterceptor;
 import net.robinfriedli.botify.scripting.SafeGroovyScriptRunner;
 import org.codehaus.groovy.control.CompilerConfiguration;
@@ -26,9 +27,7 @@ public class EvalCommand extends AbstractCommand {
         CompilerConfiguration compilerConfiguration = groovySandboxComponent.getCompilerConfiguration();
         GroovyWhitelistInterceptor groovyWhitelistInterceptor = groovySandboxComponent.getGroovyWhitelistInterceptor();
         GroovyShell groovyShell = new GroovyShell(compilerConfiguration);
-        context.addScriptParameters(groovyShell);
-        groovyShell.setVariable("messages", getMessageService());
-        groovyShell.setVariable("command", this);
+        GroovyVariables.addVariables(groovyShell, context, this, getMessageService(), Botify.get().getSecurityManager());
         SafeGroovyScriptRunner groovyScriptRunner = new SafeGroovyScriptRunner(context, groovyShell, groovyWhitelistInterceptor);
 
         groovyScriptRunner.runAndSendResult(getCommandInput(), 1, TimeUnit.MINUTES);

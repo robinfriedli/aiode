@@ -11,6 +11,7 @@ import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.StoredScript;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
+import net.robinfriedli.botify.scripting.GroovyVariables;
 import net.robinfriedli.botify.scripting.GroovyWhitelistInterceptor;
 import net.robinfriedli.botify.scripting.SafeGroovyScriptRunner;
 import net.robinfriedli.botify.util.SearchEngine;
@@ -46,10 +47,8 @@ public class ScriptCommand extends AbstractScriptCommand {
         GroovyWhitelistInterceptor groovyWhitelistInterceptor = groovySandboxComponent.getGroovyWhitelistInterceptor();
         CompilerConfiguration compilerConfiguration = groovySandboxComponent.getCompilerConfiguration();
         GroovyShell groovyShell = new GroovyShell(compilerConfiguration);
-        context.addScriptParameters(groovyShell);
-        groovyShell.setVariable("command", this);
+        GroovyVariables.addVariables(groovyShell, context, this, getMessageService(), botify.getSecurityManager());
         groovyShell.setVariable("input", getCommandInput());
-        groovyShell.setVariable("messages", getMessageService());
         SafeGroovyScriptRunner groovyScriptRunner = new SafeGroovyScriptRunner(context, groovyShell, groovyWhitelistInterceptor);
 
         String scriptString;

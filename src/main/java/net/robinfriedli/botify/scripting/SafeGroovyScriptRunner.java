@@ -36,31 +36,31 @@ public class SafeGroovyScriptRunner {
         this.groovyWhitelistInterceptor = groovyWhitelistInterceptor;
     }
 
+    public static String transformScript(String script) {
+        // add ThreadInterrupt annotation; this injects interrupt checks into loops and method calls and thus enables
+        // interrupting infinite loops
+        return String.format("import net.dv8tion.jda.api.EmbedBuilder%1$s" +
+            "import java.util.stream.Collectors%1$s" +
+            "@groovy.transform.ThreadInterrupt%1$s" +
+            "def scriptMethod = {%1$s%2$s%1$s}%1$s" +
+            "scriptMethod()", System.lineSeparator(), script);
+    }
+
     public void runScripts(List<StoredScript> scripts, AtomicReference<StoredScript> currentScript, long timeout, TimeUnit timeUnit) throws ExecutionException, TimeoutException {
         CompletableFuture<Object> result = new CompletableFuture<>();
         Thread interceptorExecutionThread = new Thread(() -> {
             CommandContext.Current.set(context);
             groovyWhitelistInterceptor.register();
-            try {
+            scriptExecution(result, () -> {
                 for (StoredScript script : scripts) {
                     currentScript.set(script);
-                    groovyShell.evaluate(script.getScript());
+                    groovyShell.evaluate(transformScript(script.getScript()));
                 }
-            } catch (ThreadDeath e) {
                 result.complete(null);
-                throw e;
-            } catch (Throwable e) {
-                if (e instanceof CommandRuntimeException && e.getCause() instanceof ThreadDeath) {
-                    result.complete(null);
-                }
-
-                result.completeExceptionally(e);
-            }
-            result.complete(null);
+            });
         });
 
         interceptorExecutionThread.setName("multiple-scripts-execution-thread-" + context);
-
         runThreadWithTimeout(interceptorExecutionThread, result, timeout, timeUnit);
     }
 
@@ -69,19 +69,7 @@ public class SafeGroovyScriptRunner {
         Thread scriptExecutionThread = new Thread(() -> {
             CommandContext.Current.set(context);
             groovyWhitelistInterceptor.register();
-            try {
-                result.complete(groovyShell.evaluate(script));
-            } catch (ThreadDeath e) {
-                result.complete(null);
-                throw e;
-            } catch (Throwable e) {
-                if (e instanceof CommandRuntimeException && e.getCause() instanceof ThreadDeath) {
-                    result.complete(null);
-                    throw (ThreadDeath) e.getCause();
-                }
-
-                result.completeExceptionally(e);
-            }
+            scriptExecution(result, () -> result.complete(groovyShell.evaluate(transformScript(script))));
         });
 
         scriptExecutionThread.setName("script-execution-thread-" + context);
@@ -133,6 +121,29 @@ public class SafeGroovyScriptRunner {
         }
     }
 
+    private void scriptExecution(CompletableFuture<Object> result, Runnable execution) {
+        try {
+            execution.run();
+        } catch (ThreadDeath e) {
+            result.complete(null);
+            throw e;
+        } catch (Throwable e) {
+            // GroovyShell#evaluate does not throw checked exceptions so a catch block for InterruptedException would not
+            // compile but the groovy script can throw any kind of exception
+            //noinspection ConstantConditions
+            if (e instanceof InterruptedException || (e instanceof CommandRuntimeException && e.getCause() instanceof InterruptedException)) {
+                result.complete(null);
+                return;
+            }
+            if (e instanceof CommandRuntimeException && e.getCause() instanceof ThreadDeath) {
+                result.complete(null);
+                throw (ThreadDeath) e.getCause();
+            }
+
+            result.completeExceptionally(e);
+        }
+    }
+
     @SuppressWarnings("deprecation")
     private Object runThreadWithTimeout(Thread scriptExecutionThread, CompletableFuture<Object> result, long timeout, TimeUnit timeUnit) throws ExecutionException, TimeoutException {
         scriptExecutionThread.start();
@@ -143,13 +154,7 @@ public class SafeGroovyScriptRunner {
             // first interrupt, in case the thread is holding any open connections or similar
             scriptExecutionThread.interrupt();
             try {
-                Object o = result.get(10, TimeUnit.SECONDS);
-
-                if (e instanceof TimeoutException) {
-                    throw new TimeoutException("Script execution timed out");
-                }
-
-                return o;
+                result.get(10, TimeUnit.SECONDS);
             } catch (TimeoutException | InterruptedException e1) {
                 Logger logger = LoggerFactory.getLogger(getClass());
                 logger.warn("Forced script execution thread termination after waiting for an additional 10 seconds after sending interrupt signal");
@@ -159,6 +164,8 @@ public class SafeGroovyScriptRunner {
                 String message = "Script execution was forced to stop after the script did not respond to interrupt signal";
                 throw new TimeoutException(e instanceof TimeoutException ? message + " sent after timeout" : message);
             }
+
+            throw new TimeoutException("Script execution timed out");
         }
     }
 
