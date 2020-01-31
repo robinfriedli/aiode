@@ -1,10 +1,15 @@
 package net.robinfriedli.botify.scripting;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
 import net.robinfriedli.jxp.queries.Conditions;
@@ -63,7 +68,6 @@ public class GroovyWhitelistInterceptor extends GroovyInterceptor {
             writeableProperties.put(allowedClass, writeablePropertyNames);
         }
 
-
         return new GroovyWhitelistInterceptor(allowedClasses, allowedMethods, writeableProperties);
     }
 
@@ -102,14 +106,12 @@ public class GroovyWhitelistInterceptor extends GroovyInterceptor {
             if (allowedClassContribution.getMaxMethodInvocations() > 0 && allowedClassContribution.getCurrentMethodInvocationCount() > allowedClassContribution.getMaxMethodInvocations()) {
                 throw new SecurityException(String.format("The maximum method invocation count of %s for %s reached", allowedClassContribution.getMaxMethodInvocations(), type));
             }
-
         } else {
             WhitelistedMethodContribution methodContribution = findAllowedMethods(type, method);
             String methodDisplay = type.getName() + "#" + method;
             if (methodContribution == null) {
                 throw new SecurityException("Method does not exist or is not allowed: " + methodDisplay);
             }
-
 
             WhitelistedClassContribution classContribution = methodContribution.getClassContribution();
             classContribution.incrementMethodInvocationCount();
@@ -118,66 +120,69 @@ public class GroovyWhitelistInterceptor extends GroovyInterceptor {
                 throw new SecurityException(String.format("The maximum method invocation count of %s for %s reached", classContribution.getMaxMethodInvocations(), type));
             }
 
-
             methodContribution.incrementInvocationCount();
             if (methodContribution.getMaxInvocationCount() > 0 && methodContribution.getCurrentInvocationCount() > methodContribution.getMaxInvocationCount()) {
                 throw new SecurityException(String.format("Method '%s' may only be invoked %s times per script execution thread", methodDisplay, methodContribution.getMaxInvocationCount()));
             }
-
         }
-
     }
 
     private WhitelistedClassContribution findAllowedClasses(Class<?> declarationClass) {
-        if (declarationClass != null) {
-            WhitelistedClassContribution allowedClassContribution = allowedClasses.get(declarationClass);
-            if (allowedClassContribution != null) {
-                return allowedClassContribution;
-            }
+        Set<WhitelistedClassContribution> foundContributions = allowedClasses.entrySet().stream()
+            .filter(entry -> entry.getKey().isAssignableFrom(declarationClass))
+            .map(Map.Entry::getValue)
+            .collect(Collectors.toSet());
 
-
-            for (Class<?> interfaceType : declarationClass.getInterfaces()) {
-                WhitelistedClassContribution allowedInterface = findAllowedClasses(interfaceType);
-                if (allowedInterface != null) {
-                    return allowedInterface;
-                }
-
-            }
-
-            return findAllowedClasses(declarationClass.getSuperclass());
-        }
-
-
-        return null;
+        return selectClosestNode(foundContributions, declarationClass);
     }
 
-    private WhitelistedMethodContribution findAllowedMethods(Class<?> declaringClass, final String method) {
-        if (declaringClass != null) {
-            Set<WhitelistedMethodContribution> methods = allowedMethods.get(declaringClass);
-            if (methods != null) {
-                WhitelistedMethodContribution allowedMethodsForClass = methods.stream().filter(contribution -> contribution.getMethod().equals(method)).findAny().orElse(null);
-                if (allowedMethodsForClass != null) {
-                    return allowedMethodsForClass;
-                }
+    private WhitelistedMethodContribution findAllowedMethods(Class<?> declaringClass, String method) {
+        List<WhitelistedMethodContribution> methodContributions = allowedMethods.entrySet().stream()
+            .filter(entry -> entry.getKey().isAssignableFrom(declaringClass))
+            .flatMap(entry -> entry.getValue().stream())
+            .filter(contribution -> contribution.getMethod().equals(method))
+            .collect(Collectors.toList());
 
-            }
-
-
-            for (Class<?> interfaceType : declaringClass.getInterfaces()) {
-                WhitelistedMethodContribution interfaceAllowedMethods = findAllowedMethods(interfaceType, method);
-                if (interfaceAllowedMethods != null) {
-                    return interfaceAllowedMethods;
-                }
-
-            }
-
-            return findAllowedMethods(declaringClass.getSuperclass(), method);
-        }
-
-        return null;
+        return selectClosestNode(methodContributions, declaringClass);
     }
 
-    private static class WhitelistedClassContribution {
+    private <T extends ClassContributionNode> T selectClosestNode(Collection<T> results, Class<?> declarationClass) {
+        if (results.size() == 1) {
+            return results.iterator().next();
+        } else if (results.isEmpty()) {
+            return null;
+        } else {
+            Optional<T> exactMatch = results.stream().filter(contribution -> contribution.getType().equals(declarationClass)).findFirst();
+            if (exactMatch.isPresent()) {
+                return exactMatch.get();
+            }
+
+            // if several contributions were found describing different super classes, count the number of super (or equal)
+            // classes for each, the one with the most supers is the lowest class and closest to the declaration class
+            Multimap<Long, T> classesByInheritanceLevel = HashMultimap.create();
+            for (T foundContribution : results) {
+                Class<?> currentType = foundContribution.getType();
+                long numberOfAssignables = results.stream().map(T::getType).filter(type -> type.isAssignableFrom(currentType)).count();
+                classesByInheritanceLevel.put(numberOfAssignables, foundContribution);
+            }
+
+            @SuppressWarnings("OptionalGetWithoutIsPresent")
+            long maxLevelCount = classesByInheritanceLevel.entries().stream().mapToLong(Map.Entry::getKey).max().getAsLong();
+            Collection<T> closestMatches = classesByInheritanceLevel.get(maxLevelCount);
+            return closestMatches.iterator().next();
+        }
+    }
+
+    private interface ClassContributionNode {
+
+        /**
+         * @return the described class
+         */
+        Class<?> getType();
+
+    }
+
+    private static class WhitelistedClassContribution implements ClassContributionNode {
 
         private final Class<?> type;
         private final int maxMethodInvocations;
@@ -189,6 +194,7 @@ public class GroovyWhitelistInterceptor extends GroovyInterceptor {
             currentInvocationCount = ThreadLocal.withInitial(() -> 0);
         }
 
+        @Override
         public Class<?> getType() {
             return type;
         }
@@ -206,7 +212,7 @@ public class GroovyWhitelistInterceptor extends GroovyInterceptor {
         }
     }
 
-    private static class WhitelistedMethodContribution {
+    private static class WhitelistedMethodContribution implements ClassContributionNode {
 
         private final String method;
         private final int maxInvocationCount;
@@ -241,6 +247,11 @@ public class GroovyWhitelistInterceptor extends GroovyInterceptor {
 
         public WhitelistedClassContribution getClassContribution() {
             return classContribution;
+        }
+
+        @Override
+        public Class<?> getType() {
+            return classContribution.getType();
         }
     }
 }

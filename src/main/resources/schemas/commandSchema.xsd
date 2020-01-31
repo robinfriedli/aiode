@@ -20,6 +20,8 @@
     <xs:attribute name="category" type="xs:string" use="required"/>
     <!-- restricted commands are only available to admins per default -->
     <xs:attribute name="restrictedAccess" type="xs:boolean" default="false"/>
+    <!-- commands with this attribute will not trigger script interceptors and finalizers -->
+    <xs:attribute name="disableScriptInterceptors" type="xs:boolean" default="false"/>
     <xs:attribute name="description" type="xs:string" use="required"/>
   </xs:complexType>
   <xs:complexType name="example">

@@ -36,16 +36,6 @@ public class SafeGroovyScriptRunner {
         this.groovyWhitelistInterceptor = groovyWhitelistInterceptor;
     }
 
-    public static String transformScript(String script) {
-        // add ThreadInterrupt annotation; this injects interrupt checks into loops and method calls and thus enables
-        // interrupting infinite loops
-        return String.format("import net.dv8tion.jda.api.EmbedBuilder%1$s" +
-            "import java.util.stream.Collectors%1$s" +
-            "@groovy.transform.ThreadInterrupt%1$s" +
-            "def scriptMethod = {%1$s%2$s%1$s}%1$s" +
-            "scriptMethod()", System.lineSeparator(), script);
-    }
-
     public void runScripts(List<StoredScript> scripts, AtomicReference<StoredScript> currentScript, long timeout, TimeUnit timeUnit) throws ExecutionException, TimeoutException {
         CompletableFuture<Object> result = new CompletableFuture<>();
         Thread interceptorExecutionThread = new Thread(() -> {
@@ -54,7 +44,7 @@ public class SafeGroovyScriptRunner {
             scriptExecution(result, () -> {
                 for (StoredScript script : scripts) {
                     currentScript.set(script);
-                    groovyShell.evaluate(transformScript(script.getScript()));
+                    groovyShell.evaluate(script.getScript());
                 }
                 result.complete(null);
             });
@@ -69,7 +59,7 @@ public class SafeGroovyScriptRunner {
         Thread scriptExecutionThread = new Thread(() -> {
             CommandContext.Current.set(context);
             groovyWhitelistInterceptor.register();
-            scriptExecution(result, () -> result.complete(groovyShell.evaluate(transformScript(script))));
+            scriptExecution(result, () -> result.complete(groovyShell.evaluate(script)));
         });
 
         scriptExecutionThread.setName("script-execution-thread-" + context);

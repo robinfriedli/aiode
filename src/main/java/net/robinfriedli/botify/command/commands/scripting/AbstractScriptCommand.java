@@ -14,7 +14,6 @@ import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
 import net.robinfriedli.botify.scripting.GroovyVariables;
-import net.robinfriedli.botify.scripting.SafeGroovyScriptRunner;
 import net.robinfriedli.botify.util.SearchEngine;
 import net.robinfriedli.botify.util.Table2;
 import org.codehaus.groovy.control.CompilationFailedException;
@@ -84,10 +83,10 @@ public abstract class AbstractScriptCommand extends AbstractCommand {
             throw new InvalidCommandException(String.format("%s with identifier '%s' already exists", scriptUsageId, identifier));
         }
 
-        GroovyShell groovyShell = new GroovyShell();
+        GroovyShell groovyShell = new GroovyShell(Botify.get().getGroovySandboxComponent().getCompilerConfiguration());
         GroovyVariables.addVariables(groovyShell, context, this, getMessageService(), Botify.get().getSecurityManager());
         try {
-            groovyShell.parse(SafeGroovyScriptRunner.transformScript(script));
+            groovyShell.parse(script);
         } catch (CompilationFailedException e) {
             throw new InvalidCommandException("Could not compile provided script: " + e.getMessage());
         }

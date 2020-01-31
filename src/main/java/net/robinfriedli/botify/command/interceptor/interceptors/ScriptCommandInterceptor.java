@@ -49,7 +49,7 @@ public abstract class ScriptCommandInterceptor extends AbstractChainableCommandI
 
     @Override
     public void performChained(Command command) {
-        if (!(command instanceof AbstractCommand)) {
+        if (!(command instanceof AbstractCommand && !((AbstractCommand) command).getCommandContribution().isDisableScriptInterceptors())) {
             return;
         }
 

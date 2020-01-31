@@ -1,12 +1,16 @@
 package net.robinfriedli.botify.boot.configurations;
 
 import java.io.IOException;
+import java.util.HashMap;
 
 import groovy.lang.GroovyShell;
+import groovy.transform.ThreadInterrupt;
 import net.robinfriedli.botify.scripting.GroovyWhitelistInterceptor;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.persist.Context;
 import org.codehaus.groovy.control.CompilerConfiguration;
+import org.codehaus.groovy.control.customizers.ASTTransformationCustomizer;
+import org.codehaus.groovy.control.customizers.ImportCustomizer;
 import org.kohsuke.groovy.sandbox.SandboxTransformer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -28,15 +32,16 @@ public class GroovySandboxComponent {
 
     @Bean
     public GroovyShell getConfiguredShell() {
-        CompilerConfiguration compilerConfiguration = new CompilerConfiguration();
-        compilerConfiguration.addCompilationCustomizers(new SandboxTransformer());
-        return new GroovyShell(compilerConfiguration);
+        return new GroovyShell(getCompilerConfiguration());
     }
 
     @Bean
     public CompilerConfiguration getCompilerConfiguration() {
         CompilerConfiguration compilerConfiguration = new CompilerConfiguration();
-        compilerConfiguration.addCompilationCustomizers(new SandboxTransformer());
+        ASTTransformationCustomizer threadInterruptCustomizer = new ASTTransformationCustomizer(new HashMap<>(), ThreadInterrupt.class);
+        ImportCustomizer importCustomizer = new ImportCustomizer();
+        importCustomizer.addImports("net.dv8tion.jda.api.EmbedBuilder", "java.util.stream.Collectors");
+        compilerConfiguration.addCompilationCustomizers(new SandboxTransformer(), threadInterruptCustomizer, importCustomizer);
         return compilerConfiguration;
     }
 

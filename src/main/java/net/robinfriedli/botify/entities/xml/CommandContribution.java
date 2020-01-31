@@ -38,6 +38,10 @@ public class CommandContribution extends CommandHierarchyNode {
         return getAttribute("identifier").getValue();
     }
 
+    public boolean isDisableScriptInterceptors() {
+        return getAttribute("disableScriptInterceptors").getBool();
+    }
+
     public AbstractCommand instantiate(CommandManager commandManager, CommandContext commandContext, String commandBody) {
         String identifier = getIdentifier();
         boolean requiresInput = getAttribute("requiresInput").getBool();

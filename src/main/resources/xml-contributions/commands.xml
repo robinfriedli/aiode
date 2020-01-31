@@ -468,7 +468,8 @@ command.run('play')
            requiresInput="false"
            category="SCRIPTING"
            restrictedAccess="true"
-           description="Manage custom command interceptors. A command interceptor is a piece of code that is executed before running each command. Internally they are used to check permissions, parse the command input, check argument rules etc. The groovy scripting sandbox allows you to create additional custom interceptors that are queried and executed by the last interceptor in the chain before the actual command is executed. This command may create a new interceptor, delete an existing interceptor, display an interceptor or list all interceptors. Note that commands executed in scripts via 'command.run()' do not trigger custom command interceptors to avoid cycles. See the help page for the eval command for available variables.">
+           disableScriptInterceptors="true"
+           description="Manage custom command interceptors. A command interceptor is a piece of code that is executed before running each command. Internally they are used to check permissions, parse the command input, check argument rules etc. The groovy scripting sandbox allows you to create additional custom interceptors that are queried and executed by the last interceptor in the chain before the actual command is executed. This command may create a new interceptor, delete an existing interceptor, display an interceptor or list all interceptors. Note that commands executed in scripts via 'command.run()' do not trigger custom command interceptors to avoid cycles. The interceptor and finalizer commands also do not trigger interceptors / finalizers so that malicious interceptors may always be deleted. See the help page for the eval command for available variables.">
     <example title="Create an interceptor that adds an 'ok hand' reaction to each message upon execution">
 ```groovy
 %1$sinterceptor %2$sidentifier="reaction" message.addReaction(':ok_hand:').submit()
@@ -549,7 +550,8 @@ command.run('play')"
            requiresInput="false"
            category="SCRIPTING"
            restrictedAccess="true"
-           description="Creates and manages script interceptors that are executed after the command finished successfully. If the command runs into an error finalizers are not executed. Essentially &quot;finalizers&quot; are just interceptors that are queried and executed by a different internal interceptor that runs after the one that executes the command. For more about interceptors see the help page for the interceptor command.">
+           disableScriptInterceptors="true"
+           description="Creates and manages script interceptors that are executed after the command finished successfully. If the command runs into an error finalizers are not executed. Essentially &quot;finalizers&quot; are just interceptors that are queried and executed by a different internal interceptor that runs after the one that executes the command. Like the interceptor command running this command will not trigger custom command interceptors / finalizers. For more about interceptors see the help page for the interceptor command.">
     <example title="Create a finalizer that deletes the command message after the command completes">
 ```groovy
 %1$sfinalizer %2$sidentifier="deleteMessage" message.delete().submit()
@@ -565,12 +567,24 @@ command.run('play')"
            implementation="net.robinfriedli.botify.command.commands.admin.RebootCommand"
            requiresInput="false"
            category="ADMIN"
-           description="Restarts the bot"/>
+           description="Restarts the bot">
+    <argument identifier="silent" description="Disables alerting active guilds about the restart."/>
+    <argument identifier="await" description="The maximum amount of seconds to wait for pending actions to complete.">
+      <valueCheck errorMessage="Maximum value is 600" check="value &lt;= 600"/>
+      <valueCheck errorMessage="Value needs to be 0 or greater" check="value &gt;= 0"/>
+    </argument>
+  </command>
   <command identifier="quit"
            implementation="net.robinfriedli.botify.command.commands.admin.QuitCommand"
            requiresInput="false"
            category="ADMIN"
-           description="Stops the bot"/>
+           description="Stops the bot">
+    <argument identifier="silent" description="Disables alerting active guilds about the shutdown."/>
+    <argument identifier="await" description="The maximum amount of seconds to wait for pending actions to complete.">
+      <valueCheck errorMessage="Maximum value is 600" check="value &lt;= 600"/>
+      <valueCheck errorMessage="Value needs to be 0 or greater" check="value &gt;= 0"/>
+    </argument>
+  </command>
   <command identifier="reload context"
            implementation="net.robinfriedli.botify.command.commands.admin.ReloadContextCommand"
            requiresInput="true"
@@ -590,7 +604,9 @@ command.run('play')"
            implementation="net.robinfriedli.botify.command.commands.admin.CleanDbCommand"
            requiresInput="false"
            category="ADMIN"
-           description="Deletes data associated with guilds the bot is no longer a part of"/>
+           description="Deletes data associated with guilds the bot is no longer a part of. Discord listeners will be suspended during that time.">
+    <argument identifier="silent" description="Disables alerting active guilds about the cleanup and associated suspension."/>
+  </command>
   <command identifier="garbage collect"
            implementation="net.robinfriedli.botify.command.commands.admin.GarbageCollectCommand"
            requiresInput="false"
