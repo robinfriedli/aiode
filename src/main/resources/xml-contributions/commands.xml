@@ -569,7 +569,7 @@ command.run('play')"
            category="ADMIN"
            description="Restarts the bot">
     <argument identifier="silent" description="Disables alerting active guilds about the restart."/>
-    <argument identifier="await" description="The maximum amount of seconds to wait for pending actions to complete.">
+    <argument identifier="await" valueType="java.lang.Integer" description="The maximum amount of seconds to wait for pending actions to complete.">
       <valueCheck errorMessage="Maximum value is 600" check="value &lt;= 600"/>
       <valueCheck errorMessage="Value needs to be 0 or greater" check="value &gt;= 0"/>
     </argument>
@@ -580,7 +580,7 @@ command.run('play')"
            category="ADMIN"
            description="Stops the bot">
     <argument identifier="silent" description="Disables alerting active guilds about the shutdown."/>
-    <argument identifier="await" description="The maximum amount of seconds to wait for pending actions to complete.">
+    <argument identifier="await" valueType="java.lang.Integer" description="The maximum amount of seconds to wait for pending actions to complete.">
       <valueCheck errorMessage="Maximum value is 600" check="value &lt;= 600"/>
       <valueCheck errorMessage="Value needs to be 0 or greater" check="value &gt;= 0"/>
     </argument>
