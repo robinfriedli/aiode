@@ -17,6 +17,7 @@ import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder;
 import net.dv8tion.jda.api.sharding.ShardManager;
+import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
@@ -115,6 +116,7 @@ public class Launcher {
             ShardManager shardManager = new DefaultShardManagerBuilder()
                 .setToken(discordToken)
                 .setStatus(OnlineStatus.IDLE)
+                .setChunkingFilter(ChunkingFilter.NONE)
                 .build();
 
             shardManager.getShards().forEach((CheckedConsumer<JDA>) JDA::awaitReady);
