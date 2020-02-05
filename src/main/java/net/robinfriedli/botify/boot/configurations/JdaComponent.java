@@ -7,6 +7,7 @@ import javax.security.auth.login.LoginException;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder;
 import net.dv8tion.jda.api.sharding.ShardManager;
+import net.dv8tion.jda.api.utils.ChunkingFilter;
 import okhttp3.OkHttpClient;
 import okhttp3.Protocol;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +27,7 @@ public class JdaComponent {
                 .setToken(discordToken)
                 .setHttpClientBuilder(new OkHttpClient.Builder().protocols(Collections.singletonList(Protocol.HTTP_1_1)))
                 .setStatus(OnlineStatus.IDLE)
+                .setChunkingFilter(ChunkingFilter.NONE)
                 .build();
         } catch (LoginException e) {
             throw new RuntimeException("Failed to log in to discord", e);
