@@ -19,7 +19,7 @@ import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager;
 import com.sedmelluq.lava.extensions.youtuberotator.YoutubeIpRotatorSetup;
-import com.sedmelluq.lava.extensions.youtuberotator.planner.NanoIpRoutePlanner;
+import com.sedmelluq.lava.extensions.youtuberotator.planner.RotatingNanoIpRoutePlanner;
 import com.sedmelluq.lava.extensions.youtuberotator.tools.ip.IpBlock;
 import com.sedmelluq.lava.extensions.youtuberotator.tools.ip.Ipv6Block;
 import net.dv8tion.jda.api.entities.Guild;
@@ -88,7 +88,7 @@ public class AudioManager {
                 .map(Ipv6Block::new)
                 .collect(Collectors.toList());
 
-            YoutubeIpRotatorSetup rotatorSetup = new YoutubeIpRotatorSetup(new NanoIpRoutePlanner(ipv6BlockList, true));
+            YoutubeIpRotatorSetup rotatorSetup = new YoutubeIpRotatorSetup(new RotatingNanoIpRoutePlanner(ipv6BlockList, ip -> true, true));
             rotatorSetup.forSource(youtubeAudioSourceManager).setup();
             logger.info(String.format("YouTubeIpRotator set up with '%s'", ipv6Blocks));
         }
