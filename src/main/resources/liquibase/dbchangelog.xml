@@ -46,4 +46,13 @@ See RunLiquibaseUpdateTask
     </preConditions>
     <delete tableName="spotify_redirect_index_modification_lock"/>
   </changeSet>
+  <changeSet id="set_last_used_now-DF4c3/1.6.LTS" author="robinfriedli" context="initialvalue">
+    <preConditions>
+      <columnExists tableName="spotify_redirect_index" columnName="last_used"/>
+    </preConditions>
+    <update tableName="spotify_redirect_index">
+      <column name="last_used" valueDate="NOW()"/>
+      <where>last_used is null</where>
+    </update>
+  </changeSet>
 </databaseChangeLog>
