@@ -46,6 +46,7 @@ public class SpotifyRedirectIndex implements Serializable {
         this.spotifyId = spotifyId;
         this.youTubeId = youTubeId;
         lastUpdated = LocalDate.now();
+        lastUsed = LocalDate.now();
     }
 
     public static Optional<SpotifyRedirectIndex> queryExistingIndex(Session session, String spotifyTrackId) {
