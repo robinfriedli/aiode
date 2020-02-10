@@ -36,6 +36,8 @@ public class SpotifyRedirectIndex implements Serializable {
     private String youTubeId;
     @Column(name = "last_updated")
     private LocalDate lastUpdated;
+    @Column(name = "last_used")
+    private LocalDate lastUsed;
 
     public SpotifyRedirectIndex() {
     }
@@ -89,4 +91,11 @@ public class SpotifyRedirectIndex implements Serializable {
         this.lastUpdated = lastUpdated;
     }
 
+    public LocalDate getLastUsed() {
+        return lastUsed;
+    }
+
+    public void setLastUsed(LocalDate lastUsed) {
+        this.lastUsed = lastUsed;
+    }
 }
