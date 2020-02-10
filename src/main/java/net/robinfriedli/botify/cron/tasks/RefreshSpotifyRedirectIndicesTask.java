@@ -72,13 +72,13 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
             SpotifyTrackBulkLoadingService spotifyTrackBulkLoadingService = new SpotifyTrackBulkLoadingService(spotifyApi, true);
 
             LocalDate currentDate = LocalDate.now();
-            LocalDate date2WeeksAgo = currentDate.minusDays(28);
+            LocalDate date4WeeksAgo = currentDate.minusDays(28);
 
             StaticSessionProvider.consumeSession(session -> {
                 CriteriaBuilder cb = session.getCriteriaBuilder();
                 CriteriaQuery<SpotifyRedirectIndex> query = cb.createQuery(SpotifyRedirectIndex.class);
                 Root<SpotifyRedirectIndex> root = query.from(SpotifyRedirectIndex.class);
-                query.where(cb.lessThan(root.get("lastUpdated"), date2WeeksAgo));
+                query.where(cb.lessThan(root.get("lastUpdated"), date4WeeksAgo));
                 query.orderBy(cb.asc(root.get("lastUpdated")));
                 List<SpotifyRedirectIndex> indices = session.createQuery(query).setLockOptions(new LockOptions(LockMode.PESSIMISTIC_WRITE)).getResultList();
 
@@ -156,18 +156,23 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
                     return;
                 }
 
-                HollowYouTubeVideo hollowYouTubeVideo = new HollowYouTubeVideo(youTubeService, track);
-                try {
-                    youTubeService.redirectSpotify(hollowYouTubeVideo);
-                } catch (CommandRuntimeException e) {
-                    throw e.getCause();
-                }
-                if (!hollowYouTubeVideo.isCanceled() && !Strings.isNullOrEmpty(track.getId())) {
-                    String videoId = hollowYouTubeVideo.getVideoId();
-                    index.setYouTubeId(videoId);
-                    index.setLastUpdated(LocalDate.now());
-                } else {
+                LocalDate date2WeeksAgo = LocalDate.now().minusDays(14);
+                if (index.getLastUsed().compareTo(date2WeeksAgo) < 0) {
                     session.delete(index);
+                } else {
+                    HollowYouTubeVideo hollowYouTubeVideo = new HollowYouTubeVideo(youTubeService, track);
+                    try {
+                        youTubeService.redirectSpotify(hollowYouTubeVideo);
+                    } catch (CommandRuntimeException e) {
+                        throw e.getCause();
+                    }
+                    if (!hollowYouTubeVideo.isCanceled() && !Strings.isNullOrEmpty(track.getId())) {
+                        String videoId = hollowYouTubeVideo.getVideoId();
+                        index.setYouTubeId(videoId);
+                        index.setLastUpdated(LocalDate.now());
+                    } else {
+                        session.delete(index);
+                    }
                 }
             } catch (UnavailableResourceException e) {
                 logger.warn("Tried creating a SpotifyRedirectIndex for an unavailable Video for track id " + track.getId());

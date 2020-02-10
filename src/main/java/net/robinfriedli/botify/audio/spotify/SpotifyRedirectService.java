@@ -1,9 +1,11 @@
 package net.robinfriedli.botify.audio.spotify;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,17 +83,17 @@ public class SpotifyRedirectService {
                 String artistString = StringListImpl.create(spotifyTrack.getArtists(), ArtistSimplified::getName).toSeparatedString(", ");
                 String title = String.format("%s by %s", name, artistString);
                 youTubeVideo.setTitle(title);
+
+                runUpdateTask(otherThreadSession -> {
+                    spotifyRedirectIndex.setLastUsed(LocalDate.now());
+                    otherThreadSession.update(spotifyRedirectIndex);
+                });
                 return;
             } else {
-                SINGE_THREAD_EXECUTOR_SERVICE.execute(() -> StaticSessionProvider.consumeSession(otherThreadSession -> {
-                    Long modificationLocks = otherThreadSession
-                        .createQuery("select count(*) from " + SpotifyRedirectIndexModificationLock.class.getName(), Long.class)
-                        .uniqueResult();
-                    if (modificationLocks == 0) {
-                        Object mergedIndex = otherThreadSession.merge(spotifyRedirectIndex);
-                        invoker.invoke(() -> otherThreadSession.delete(mergedIndex));
-                    }
-                }));
+                runUpdateTask(otherThreadSession -> {
+                    Object mergedIndex = otherThreadSession.merge(spotifyRedirectIndex);
+                    otherThreadSession.delete(mergedIndex);
+                });
             }
         }
 
@@ -112,6 +114,17 @@ public class SpotifyRedirectService {
                 }
             }));
         }
+    }
+
+    private void runUpdateTask(Consumer<Session> sessionConsumer) {
+        SINGE_THREAD_EXECUTOR_SERVICE.execute(() -> StaticSessionProvider.consumeSession(otherThreadSession -> {
+            Long modificationLocks = otherThreadSession
+                .createQuery("select count(*) from " + SpotifyRedirectIndexModificationLock.class.getName(), Long.class)
+                .uniqueResult();
+            if (modificationLocks == 0) {
+                invoker.invoke(sessionConsumer);
+            }
+        }));
     }
 
 }
