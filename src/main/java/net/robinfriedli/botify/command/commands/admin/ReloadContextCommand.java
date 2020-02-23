@@ -1,6 +1,8 @@
 package net.robinfriedli.botify.command.commands.admin;
 
 import java.net.URL;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.AbstractAdminCommand;
@@ -27,7 +29,7 @@ public class ReloadContextCommand extends AbstractAdminCommand {
         }
         String file = resource.getFile();
 
-        Context context = jxpBackend.getExistingContext(file);
+        Context context = jxpBackend.getExistingContext(URLDecoder.decode(file, StandardCharsets.UTF_8));
 
         if (context == null) {
             throw new InvalidCommandException("No context mapped to " + getCommandInput());
