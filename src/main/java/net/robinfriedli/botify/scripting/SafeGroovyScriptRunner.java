@@ -16,6 +16,7 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.CommandContext;
+import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.entities.StoredScript;
@@ -39,7 +40,7 @@ public class SafeGroovyScriptRunner {
     public void runScripts(List<StoredScript> scripts, AtomicReference<StoredScript> currentScript, long timeout, TimeUnit timeUnit) throws ExecutionException, TimeoutException {
         CompletableFuture<Object> result = new CompletableFuture<>();
         Thread interceptorExecutionThread = new Thread(() -> {
-            CommandContext.Current.set(context);
+            ExecutionContext.Current.set(context);
             groovyWhitelistInterceptor.register();
             scriptExecution(result, () -> {
                 for (StoredScript script : scripts) {
@@ -57,7 +58,7 @@ public class SafeGroovyScriptRunner {
     public Object runWithTimeLimit(String script, long timeout, TimeUnit timeUnit) throws ExecutionException, TimeoutException {
         CompletableFuture<Object> result = new CompletableFuture<>();
         Thread scriptExecutionThread = new Thread(() -> {
-            CommandContext.Current.set(context);
+            ExecutionContext.Current.set(context);
             groovyWhitelistInterceptor.register();
             scriptExecution(result, () -> result.complete(groovyShell.evaluate(script)));
         });

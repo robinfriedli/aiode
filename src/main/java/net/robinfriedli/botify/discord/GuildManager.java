@@ -16,6 +16,7 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.wrapper.spotify.SpotifyApi;
@@ -23,13 +24,17 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.boot.configurations.HibernateComponent;
-import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
+import net.robinfriedli.botify.concurrent.ExecutionContext;
+import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
+import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.entities.AccessConfiguration;
 import net.robinfriedli.botify.entities.CommandHistory;
 import net.robinfriedli.botify.entities.GuildSpecification;
@@ -44,8 +49,8 @@ import net.robinfriedli.botify.persist.interceptors.VerifyPlaylistInterceptor;
 import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
 import net.robinfriedli.botify.persist.qb.interceptor.interceptors.AccessConfigurationPartitionInterceptor;
 import net.robinfriedli.botify.persist.tasks.HibernatePlaylistMigrator;
-import net.robinfriedli.botify.util.ISnowflakeMap;
 import net.robinfriedli.botify.util.SearchEngine;
+import net.robinfriedli.botify.util.SnowflakeMap;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.persist.Context;
 import org.hibernate.Session;
@@ -66,7 +71,7 @@ public class GuildManager {
     private final File embedDocumentFile;
     private final File defaultPlaylistFile;
     private final HibernateComponent hibernateComponent;
-    private final ISnowflakeMap<GuildContext> guildContexts = new ISnowflakeMap<>();
+    private final SnowflakeMap<GuildContext> guildContexts = new SnowflakeMap<>();
     private final JxpBackend jxpBackend;
     private final Logger logger;
     private final Mode mode;
@@ -165,8 +170,8 @@ public class GuildManager {
         Set<Guild> activeGuilds = Sets.newHashSet();
         Set<String> activeGuildIds = Sets.newHashSet();
 
-        if (CommandContext.Current.isSet()) {
-            activeGuilds.add(CommandContext.Current.require().getGuild());
+        if (ExecutionContext.Current.isSet()) {
+            activeGuilds.add(ExecutionContext.Current.require().getGuild());
         }
 
         for (Guild guild : shardManager.getGuilds()) {
@@ -198,6 +203,49 @@ public class GuildManager {
         }
 
         return activeGuilds;
+    }
+
+    public TextChannel getDefaultTextChannelForGuild(Guild guild) {
+        Botify botify = Botify.get();
+        GuildContext guildContext = getContextForGuild(guild);
+
+        // fetch the default text channel from the customised property
+        GuildPropertyManager guildPropertyManager = botify.getGuildPropertyManager();
+        AbstractGuildProperty defaultTextChannelProperty = guildPropertyManager.getProperty("defaultTextChannelId");
+        if (defaultTextChannelProperty != null) {
+            String defaultTextChannelId = (String) hibernateComponent.invokeWithSession(session -> defaultTextChannelProperty.get(guildContext.getSpecification(session)));
+
+            if (!Strings.isNullOrEmpty(defaultTextChannelId)) {
+                TextChannel textChannelById = guild.getTextChannelById(defaultTextChannelId);
+                if (textChannelById != null && textChannelById.canTalk()) {
+                    return textChannelById;
+                }
+            }
+        }
+
+        // check if the guild's playback has a current communication text channel
+        MessageChannel playbackCommunicationChannel = guildContext.getPlayback().getCommunicationChannel();
+        if (playbackCommunicationChannel instanceof TextChannel && ((TextChannel) playbackCommunicationChannel).canTalk()) {
+            return (TextChannel) playbackCommunicationChannel;
+        }
+
+        // use guild default defined by discord
+        TextChannel defaultChannel = guild.getDefaultChannel();
+        if (defaultChannel != null && defaultChannel.canTalk()) {
+            return defaultChannel;
+        } else {
+            TextChannel systemChannel = guild.getSystemChannel();
+            if (systemChannel != null && systemChannel.canTalk()) {
+                return systemChannel;
+            }
+        }
+
+        List<TextChannel> availableChannels = guild.getTextChannels().stream().filter(TextChannel::canTalk).collect(Collectors.toList());
+        if (availableChannels.isEmpty()) {
+            return null;
+        } else {
+            return availableChannels.get(0);
+        }
     }
 
     public Set<GuildContext> getGuildContexts() {

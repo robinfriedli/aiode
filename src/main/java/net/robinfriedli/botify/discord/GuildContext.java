@@ -9,8 +9,8 @@ import net.robinfriedli.botify.audio.exec.TrackLoadingExecutor;
 import net.robinfriedli.botify.command.AbstractWidget;
 import net.robinfriedli.botify.command.ClientQuestionEvent;
 import net.robinfriedli.botify.command.ClientQuestionEventManager;
-import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.widgets.WidgetManager;
+import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
 import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
@@ -58,13 +58,13 @@ public class GuildContext {
     }
 
     public GuildSpecification getSpecification() {
-        CommandContext commandContext = CommandContext.Current.get();
+        ExecutionContext executionContext = ExecutionContext.Current.get();
 
-        if (commandContext == null) {
+        if (executionContext == null) {
             throw new IllegalStateException("No command context setup, session needs to be provided explicitly as operating on a potential proxy from a different session is unsafe");
         }
 
-        return getSpecification(commandContext.getSession());
+        return getSpecification(executionContext.getSession());
     }
 
     public String getBotName() {

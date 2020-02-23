@@ -545,4 +545,48 @@ See RunLiquibaseUpdateTask
       <where>last_used is null</where>
     </update>
   </changeSet>
+  <changeSet author="robin (generated)" id="1581484740467-1">
+    <createTable tableName="client_session">
+      <column autoIncrement="true" name="pk" type="BIGINT">
+        <constraints primaryKey="true" primaryKeyName="client_sessionPK"/>
+      </column>
+      <column name="guild_id" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="ip_address" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="last_refresh" type="TIMESTAMP WITHOUT TIME ZONE">
+        <constraints nullable="false"/>
+      </column>
+      <column name="session_id" type="UUID">
+        <constraints nullable="false"/>
+      </column>
+      <column name="text_channel_id" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="user_id" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+  </changeSet>
+  <changeSet author="robin (generated)" id="1581484740467-2">
+    <createTable tableName="generated_token">
+      <column autoIncrement="true" name="pk" type="BIGINT">
+        <constraints primaryKey="true" primaryKeyName="generated_tokenPK"/>
+      </column>
+      <column name="ip" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="token" type="UUID">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+  </changeSet>
+  <changeSet author="robin (generated)" id="1581484740467-3">
+    <addUniqueConstraint columnNames="session_id" constraintName="UC_CLIENT_SESSIONSESSION_ID_COL" tableName="client_session"/>
+  </changeSet>
+  <changeSet author="robin (generated)" id="1581484740467-4">
+    <addUniqueConstraint columnNames="token" constraintName="UC_GENERATED_TOKENTOKEN_COL" tableName="generated_token"/>
+  </changeSet>
 </databaseChangeLog>

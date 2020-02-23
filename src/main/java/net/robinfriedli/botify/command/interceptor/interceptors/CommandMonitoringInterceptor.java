@@ -13,6 +13,7 @@ import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.interceptor.AbstractChainableCommandInterceptor;
 import net.robinfriedli.botify.command.interceptor.CommandInterceptor;
 import net.robinfriedli.botify.concurrent.CommandExecutionThread;
+import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
@@ -39,7 +40,7 @@ public class CommandMonitoringInterceptor extends AbstractChainableCommandInterc
     public void performChained(Command command) {
         CommandContext context = command.getContext();
         Thread monitoringThread = new Thread(() -> {
-            CommandContext.Current.set(context);
+            ExecutionContext.Current.set(context);
             CommandExecutionThread commandExecutionThread = command.getThread();
             CompletableFuture<Message> stillLoadingMessage = null;
             CompletableFuture<Message> warningMessage = null;

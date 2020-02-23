@@ -104,8 +104,8 @@ public class UrlPlayable implements Playable {
     }
 
     @Override
-    public String getSource() {
-        return "Url";
+    public Source getSource() {
+        return Source.URL;
     }
 
     @Nullable

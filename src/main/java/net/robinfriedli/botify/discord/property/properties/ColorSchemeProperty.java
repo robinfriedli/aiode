@@ -3,7 +3,7 @@ package net.robinfriedli.botify.discord.property.properties;
 import java.awt.Color;
 
 import net.robinfriedli.botify.Botify;
-import net.robinfriedli.botify.command.CommandContext;
+import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.entities.GuildSpecification;
@@ -34,7 +34,7 @@ public class ColorSchemeProperty extends AbstractGuildProperty {
         GuildPropertyManager guildPropertyManager = Botify.get().getGuildPropertyManager();
         ColorSchemeProperty colorProperty = (ColorSchemeProperty) guildPropertyManager.getProperty("color");
         if (colorProperty != null) {
-            if (CommandContext.Current.isSet()) {
+            if (ExecutionContext.Current.isSet()) {
                 return colorProperty.getAsColor();
             } else {
                 return ColorSchemeProperty.parseColor(colorProperty.getDefaultValue());

@@ -1,8 +1,6 @@
 package net.robinfriedli.botify.discord.listeners;
 
 import java.time.LocalDateTime;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import javax.annotation.Nonnull;
 
@@ -14,9 +12,8 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
-import net.robinfriedli.botify.boot.Shutdownable;
 import net.robinfriedli.botify.boot.configurations.HibernateComponent;
-import net.robinfriedli.botify.concurrent.LoggingThreadFactory;
+import net.robinfriedli.botify.concurrent.EventHandlerPool;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
@@ -27,23 +24,20 @@ import org.springframework.stereotype.Component;
  * Listener responsible for listening for VoiceChannel events; currently used for the auto pause feature
  */
 @Component
-public class VoiceChannelListener extends ListenerAdapter implements Shutdownable {
+public class VoiceChannelListener extends ListenerAdapter {
 
     private final AudioManager audioManager;
-    private final ExecutorService executorService;
     private final HibernateComponent hibernateComponent;
 
     public VoiceChannelListener(AudioManager audioManager, HibernateComponent hibernateComponent) {
         this.audioManager = audioManager;
-        executorService = Executors.newCachedThreadPool(new LoggingThreadFactory("voice-channel-listener-pool"));
         this.hibernateComponent = hibernateComponent;
-        register();
     }
 
     @Override
     public void onGuildVoiceLeave(GuildVoiceLeaveEvent event) {
         if (!event.getMember().getUser().isBot()) {
-            executorService.execute(() -> {
+            EventHandlerPool.POOL.execute(() -> {
                 VoiceChannel channel = event.getChannelLeft();
                 Guild guild = event.getGuild();
                 AudioPlayback playback = audioManager.getPlaybackForGuild(guild);
@@ -63,7 +57,7 @@ public class VoiceChannelListener extends ListenerAdapter implements Shutdownabl
     @Override
     public void onGuildVoiceJoin(@Nonnull GuildVoiceJoinEvent event) {
         if (!event.getMember().getUser().isBot()) {
-            executorService.execute(() -> {
+            EventHandlerPool.POOL.execute(() -> {
                 Guild guild = event.getGuild();
                 AudioPlayback playback = audioManager.getPlaybackForGuild(guild);
                 if (event.getChannelJoined().equals(playback.getVoiceChannel())) {
@@ -90,10 +84,5 @@ public class VoiceChannelListener extends ListenerAdapter implements Shutdownabl
 
             return true;
         });
-    }
-
-    @Override
-    public void shutdown(int delayMs) {
-        executorService.shutdown();
     }
 }

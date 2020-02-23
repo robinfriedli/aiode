@@ -7,7 +7,7 @@ import org.slf4j.Logger;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import net.dv8tion.jda.api.entities.MessageChannel;
-import net.robinfriedli.botify.command.CommandContext;
+import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
@@ -19,9 +19,9 @@ public class AlertPlaylistModificationInterceptor extends CollectingInterceptor 
     private final MessageChannel channel;
     private final MessageService messageService;
 
-    public AlertPlaylistModificationInterceptor(Interceptor next, Logger logger, CommandContext commandContext, MessageService messageService) {
+    public AlertPlaylistModificationInterceptor(Interceptor next, Logger logger, ExecutionContext executionContext, MessageService messageService) {
         super(next, logger);
-        channel = commandContext.getChannel();
+        channel = executionContext.getChannel();
         this.messageService = messageService;
     }
 

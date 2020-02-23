@@ -1,8 +1,6 @@
 package net.robinfriedli.botify.discord.listeners;
 
 import java.util.Objects;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -24,9 +22,8 @@ import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateNicknameE
 import net.dv8tion.jda.api.events.role.RoleDeleteEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.sharding.ShardManager;
-import net.robinfriedli.botify.boot.Shutdownable;
 import net.robinfriedli.botify.boot.configurations.HibernateComponent;
-import net.robinfriedli.botify.concurrent.LoggingThreadFactory;
+import net.robinfriedli.botify.concurrent.EventHandlerPool;
 import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.GuildManager;
@@ -42,12 +39,11 @@ import org.springframework.stereotype.Component;
  * Listener responsible for handling the bot joining or leaving a guild or relevant changes to the guild configuration
  */
 @Component
-public class GuildManagementListener extends ListenerAdapter implements Shutdownable {
+public class GuildManagementListener extends ListenerAdapter {
 
     private final CommandExecutionQueueManager executionQueueManager;
     @Nullable
     private final DiscordBotListAPI discordBotListAPI;
-    private final ExecutorService guildEventHandlerExecutorService;
     private final GuildManager guildManager;
     private final HibernateComponent hibernateComponent;
     private final Logger logger;
@@ -63,17 +59,15 @@ public class GuildManagementListener extends ListenerAdapter implements Shutdown
         this.executionQueueManager = executionQueueManager;
         this.discordBotListAPI = discordBotListAPI;
         this.messageService = messageService;
-        guildEventHandlerExecutorService = Executors.newFixedThreadPool(3, new LoggingThreadFactory("guild-management-listener-pool"));
         this.guildManager = guildManager;
         this.hibernateComponent = hibernateComponent;
         logger = LoggerFactory.getLogger(getClass());
         this.shardManager = shardManager;
-        register();
     }
 
     @Override
     public void onGuildJoin(@NotNull GuildJoinEvent event) {
-        guildEventHandlerExecutorService.execute(() -> {
+        EventHandlerPool.POOL.execute(() -> {
             Guild guild = event.getGuild();
             guildManager.addGuild(guild);
             executionQueueManager.addGuild(guild);
@@ -89,7 +83,7 @@ public class GuildManagementListener extends ListenerAdapter implements Shutdown
 
     @Override
     public void onGuildLeave(@NotNull GuildLeaveEvent event) {
-        guildEventHandlerExecutorService.execute(() -> {
+        EventHandlerPool.POOL.execute(() -> {
             Guild guild = event.getGuild();
             guildManager.removeGuild(guild);
             executionQueueManager.removeGuild(guild);
@@ -105,7 +99,7 @@ public class GuildManagementListener extends ListenerAdapter implements Shutdown
 
     @Override
     public void onRoleDelete(@Nonnull RoleDeleteEvent event) {
-        guildEventHandlerExecutorService.execute(() -> {
+        EventHandlerPool.POOL.execute(() -> {
             Role role = event.getRole();
             String roleId = role.getId();
             hibernateComponent.consumeSession(session -> {
@@ -124,7 +118,7 @@ public class GuildManagementListener extends ListenerAdapter implements Shutdown
                     embedBuilder.setTitle("Deletion of role referenced by your permission configuration");
                     embedBuilder.setDescription(String.format("The deleted role '%s' was referenced by the permission configuration. Check the current permissions by using the permission command.", role.getName()));
                     embedBuilder.setColor(ColorSchemeProperty.getColor(guildContext.getSpecification(session)));
-                    TextChannel textChannel = messageService.getTextChannelForGuild(guild);
+                    TextChannel textChannel = guildManager.getDefaultTextChannelForGuild(guild);
                     if (textChannel != null) {
                         messageService.sendTemporary(embedBuilder.build(), textChannel);
                     }
@@ -140,7 +134,7 @@ public class GuildManagementListener extends ListenerAdapter implements Shutdown
             // synchronise invoked transaction per guild, as invoked transactions executed by commands via AbstractCommand#invoke
             // are always synchronised per guild this makes sure that if this event is triggered by the rename command this task will
             // run after the rename command has committed its transaction
-            guildEventHandlerExecutorService.execute(() -> HibernateInvoker.create(guild).invoke(session -> {
+            EventHandlerPool.POOL.execute(() -> HibernateInvoker.create(guild).invoke(session -> {
                     GuildContext guildContext = guildManager.getContextForGuild(guild);
                     String botName = guildContext.getBotName();
                     String name = event.getNewNickname();
@@ -151,7 +145,7 @@ public class GuildManagementListener extends ListenerAdapter implements Shutdown
                         embedBuilder.setTitle("Renamed");
                         embedBuilder.setDescription(String.format("Botify has been renamed to '%s'. This new name can be used as command prefix.", name));
                         embedBuilder.setColor(ColorSchemeProperty.getColor(guildContext.getSpecification(session)));
-                        TextChannel textChannel = messageService.getTextChannelForGuild(guild);
+                        TextChannel textChannel = guildManager.getDefaultTextChannelForGuild(guild);
                         if (textChannel != null) {
                             messageService.sendTemporary(embedBuilder.build(), textChannel);
                         }
@@ -159,10 +153,5 @@ public class GuildManagementListener extends ListenerAdapter implements Shutdown
                 }
             ));
         }
-    }
-
-    @Override
-    public void shutdown(int delayMs) {
-        guildEventHandlerExecutorService.shutdown();
     }
 }

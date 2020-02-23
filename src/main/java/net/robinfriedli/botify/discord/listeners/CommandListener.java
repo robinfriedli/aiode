@@ -1,8 +1,6 @@
 package net.robinfriedli.botify.discord.listeners;
 
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,12 +12,12 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.robinfriedli.botify.boot.Shutdownable;
 import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.concurrent.LoggingThreadFactory;
+import net.robinfriedli.botify.concurrent.EventHandlerPool;
+import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
 import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
 import net.robinfriedli.botify.discord.GuildContext;
@@ -35,11 +33,10 @@ import org.springframework.stereotype.Component;
  * {@link CommandManager}
  */
 @Component
-public class CommandListener extends ListenerAdapter implements Shutdownable {
+public class CommandListener extends ListenerAdapter {
 
     private final CommandExecutionQueueManager executionQueueManager;
     private final CommandManager commandManager;
-    private final ExecutorService commandConceptionPool;
     private final GuildManager guildManager;
     private final HibernateComponent hibernateComponent;
     private final Logger logger;
@@ -54,41 +51,41 @@ public class CommandListener extends ListenerAdapter implements Shutdownable {
                            SpotifyApi.Builder spotifyApiBuilder) {
         this.executionQueueManager = executionQueueManager;
         this.commandManager = commandManager;
-        this.commandConceptionPool = Executors.newCachedThreadPool(new LoggingThreadFactory("command-conception-pool"));
         this.guildManager = guildManager;
         this.hibernateComponent = hibernateComponent;
         this.messageService = messageService;
         this.spotifyApiBuilder = spotifyApiBuilder;
         this.logger = LoggerFactory.getLogger(getClass());
-        register();
     }
 
     @Override
     public void onGuildMessageReceived(GuildMessageReceivedEvent event) {
-        if (!event.getAuthor().isBot()) {
-            commandConceptionPool.execute(() -> {
-                // DO NOT use StaticSessionProvider#invokeWithSession here. Since a CommandContext will be set on this thread
-                // and this thread will be reused, StaticSessionProvider#invokeWithSession does not close the session,
-                // causing a connection leak filling up the C3P0 connection pool.
-                try (Session session = hibernateComponent.getSessionFactory().openSession()) {
-                    Guild guild = event.getGuild();
-                    Message message = event.getMessage();
-                    String msg = message.getContentDisplay();
-                    GuildContext guildContext = guildManager.getContextForGuild(guild);
-                    GuildSpecification specification = guildContext.getSpecification(session);
-                    String botName = specification.getBotName();
-                    String prefix = specification.getPrefix();
-
-                    String lowerCaseMsg = msg.toLowerCase();
-                    boolean startsWithPrefix = !Strings.isNullOrEmpty(prefix) && lowerCaseMsg.startsWith(prefix.toLowerCase());
-                    boolean startsWithName = !Strings.isNullOrEmpty(botName) && lowerCaseMsg.startsWith(botName.toLowerCase());
-                    if (startsWithPrefix || startsWithName || lowerCaseMsg.startsWith("$botify")) {
-                        String usedPrefix = extractUsedPrefix(message, lowerCaseMsg, botName, prefix, startsWithName, startsWithPrefix);
-                        startCommandExecution(usedPrefix, message, guild, guildContext, session, event);
-                    }
-                }
-            });
+        if (event.getAuthor().isBot() || event.isWebhookMessage()) {
+            return;
         }
+
+        EventHandlerPool.POOL.execute(() -> {
+            // DO NOT use StaticSessionProvider#invokeWithSession here. Since a CommandContext will be set on this thread
+            // and this thread will be reused, StaticSessionProvider#invokeWithSession does not close the session,
+            // causing a connection leak filling up the C3P0 connection pool.
+            try (Session session = hibernateComponent.getSessionFactory().openSession()) {
+                Guild guild = event.getGuild();
+                Message message = event.getMessage();
+                String msg = message.getContentDisplay();
+                GuildContext guildContext = guildManager.getContextForGuild(guild);
+                GuildSpecification specification = guildContext.getSpecification(session);
+                String botName = specification.getBotName();
+                String prefix = specification.getPrefix();
+
+                String lowerCaseMsg = msg.toLowerCase();
+                boolean startsWithPrefix = !Strings.isNullOrEmpty(prefix) && lowerCaseMsg.startsWith(prefix.toLowerCase());
+                boolean startsWithName = !Strings.isNullOrEmpty(botName) && lowerCaseMsg.startsWith(botName.toLowerCase());
+                if (startsWithPrefix || startsWithName || lowerCaseMsg.startsWith("$botify")) {
+                    String usedPrefix = extractUsedPrefix(message, lowerCaseMsg, botName, prefix, startsWithName, startsWithPrefix);
+                    startCommandExecution(usedPrefix, message, guild, guildContext, session, event);
+                }
+            }
+        });
     }
 
     private String extractUsedPrefix(Message message, String lowerCaseMsg, String botName, String prefix, boolean startsWithName, boolean startsWithPrefix) {
@@ -123,7 +120,7 @@ public class CommandListener extends ListenerAdapter implements Shutdownable {
         ThreadExecutionQueue queue = executionQueueManager.getForGuild(guild);
         String commandBody = message.getContentDisplay().substring(namePrefix.length()).trim();
         CommandContext commandContext = new CommandContext(event, guildContext, hibernateComponent.getSessionFactory(), spotifyApiBuilder.build(), commandBody);
-        CommandContext.Current.set(commandContext);
+        ExecutionContext.Current.set(commandContext);
         try {
             Optional<AbstractCommand> commandInstance = commandManager.instantiateCommandForContext(commandContext, session);
             commandInstance.ifPresent(command -> commandManager.runCommand(command, queue));
@@ -133,8 +130,4 @@ public class CommandListener extends ListenerAdapter implements Shutdownable {
         }
     }
 
-    @Override
-    public void shutdown(int delayMs) {
-        commandConceptionPool.shutdown();
-    }
 }

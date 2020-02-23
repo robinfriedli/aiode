@@ -185,9 +185,9 @@ public interface Playable {
     PlaylistItem export(Playlist playlist, User user, Session session);
 
     /**
-     * @return the name of the source of the Playable. Spotify, YouTube or URL.
+     * @return source of the Playable. Spotify, YouTube or URL.
      */
-    String getSource();
+    Source getSource();
 
     /**
      * @return a cached instance of the AudioTrack that was the result of loading this Playable. Note that the same
@@ -217,6 +217,24 @@ public interface Playable {
      */
     default Playable fetch() {
         return this;
+    }
+
+    enum Source {
+
+        SPOTIFY("Spotify"),
+        YOUTUBE("YouTube"),
+        URL("Url");
+
+        private final String name;
+
+        Source(String name) {
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
+
     }
 
 }

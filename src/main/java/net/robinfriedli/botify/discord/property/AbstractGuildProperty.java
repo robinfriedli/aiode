@@ -2,7 +2,7 @@ package net.robinfriedli.botify.discord.property;
 
 import java.util.Optional;
 
-import net.robinfriedli.botify.command.CommandContext;
+import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.xml.GuildPropertyContribution;
@@ -49,7 +49,7 @@ public abstract class AbstractGuildProperty {
      * @param value the value as entered by the user
      */
     public void set(String value) {
-        set(value, CommandContext.Current.require().getGuildContext());
+        set(value, ExecutionContext.Current.require().getGuildContext());
     }
 
     public void set(String value, GuildContext guildContext) {
@@ -69,7 +69,7 @@ public abstract class AbstractGuildProperty {
      * define the target GuildSpecification explicitly when this is not the case.
      */
     public Object get() {
-        return get(CommandContext.Current.require().getGuildContext().getSpecification());
+        return get(ExecutionContext.Current.require().getGuildContext().getSpecification());
     }
 
     public <E> E get(Class<E> type) {
@@ -98,7 +98,7 @@ public abstract class AbstractGuildProperty {
      * Get the set value for the current context.
      */
     public Optional<Object> getSetValue() {
-        return getSetValue(CommandContext.Current.require().getGuildContext().getSpecification());
+        return getSetValue(ExecutionContext.Current.require().getGuildContext().getSpecification());
     }
 
     /**
@@ -109,7 +109,7 @@ public abstract class AbstractGuildProperty {
     }
 
     public <E> Optional<E> getSetValue(Class<E> type) {
-        return getSetValue(type, CommandContext.Current.require().getGuildContext().getSpecification());
+        return getSetValue(type, ExecutionContext.Current.require().getGuildContext().getSpecification());
     }
 
     public <E> Optional<E> getSetValue(Class<E> type, GuildSpecification guildSpecification) {

@@ -15,6 +15,7 @@ import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.AbstractAdminCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
+import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.entities.AccessConfiguration;
@@ -50,7 +51,7 @@ public class CleanDbCommand extends AbstractAdminCommand {
             CommandExecutionQueueManager executionQueueManager = Botify.get().getExecutionQueueManager();
             CommandContext context = getContext();
             Thread cleanupThread = new Thread(() -> {
-                CommandContext.Current.set(context);
+                ExecutionContext.Current.set(context);
                 try {
                     Thread joiningThread = new Thread(() -> {
                         try {

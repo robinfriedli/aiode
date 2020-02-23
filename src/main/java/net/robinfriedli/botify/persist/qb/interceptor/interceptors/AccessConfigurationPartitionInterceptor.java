@@ -2,7 +2,7 @@ package net.robinfriedli.botify.persist.qb.interceptor.interceptors;
 
 import java.util.Optional;
 
-import net.robinfriedli.botify.command.CommandContext;
+import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.entities.AccessConfiguration;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.persist.qb.QueryBuilder;
@@ -34,10 +34,10 @@ public class AccessConfigurationPartitionInterceptor implements QueryInterceptor
 
     @Override
     public void intercept(QueryBuilder<?, ?, ?, ?> queryBuilder) {
-        Optional<CommandContext> commandContext = CommandContext.Current.optional();
-        if (commandContext.isPresent() || (session != null && guildId != null)) {
-            Session session = commandContext.map(CommandContext::getSession).orElse(this.session);
-            String id = commandContext.map(ctx -> ctx.getGuild().getId()).orElse(guildId);
+        Optional<ExecutionContext> executionContext = ExecutionContext.Current.optional();
+        if (executionContext.isPresent() || (session != null && guildId != null)) {
+            Session session = executionContext.map(ExecutionContext::getSession).orElse(this.session);
+            String id = executionContext.map(ctx -> ctx.getGuild().getId()).orElse(guildId);
             queryBuilder.where((cb, root, subQueryFactory) -> cb.equal(
                 root.get("guildSpecification"),
                 subQueryFactory.createUncorrelatedSubQuery(GuildSpecification.class, "pk").where((cb1, root1, subQueryFactory1) ->

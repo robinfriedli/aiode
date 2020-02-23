@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -25,6 +26,7 @@ import net.robinfriedli.botify.command.interceptor.CommandInterceptorChain;
 import net.robinfriedli.botify.command.interceptor.interceptors.CommandParserInterceptor;
 import net.robinfriedli.botify.command.parser.CommandParser;
 import net.robinfriedli.botify.concurrent.CommandExecutionThread;
+import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
@@ -38,9 +40,9 @@ import net.robinfriedli.botify.function.SpotifyInvoker;
 import net.robinfriedli.botify.login.Login;
 import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
 import net.robinfriedli.botify.util.Util;
-import net.robinfriedli.jxp.exec.modes.SynchronisationMode;
 import net.robinfriedli.stringlist.StringList;
 import net.robinfriedli.stringlist.StringListImpl;
+import org.hibernate.Session;
 
 /**
  * Abstract class to extend for any text based command implementation. Implementations need to be added and configured in the
@@ -134,39 +136,18 @@ public abstract class AbstractCommand implements Command {
         AbstractCommand abstractCommand = commandManager.instantiateCommandForContext(fork, context.getSession(), false)
             .orElseThrow(() -> new InvalidCommandException("No command found for input"));
         abstractCommand.setThread(thread);
-        CommandContext.Current.set(fork);
+        ExecutionContext.Current.set(fork);
         try {
             commandManager.getInterceptorChainWithoutScripting().intercept(abstractCommand);
         } catch (CommandFailure ignored) {
             abort();
         } finally {
-            CommandContext.Current.set(context);
+            ExecutionContext.Current.set(context);
         }
     }
 
     public ArgumentController getArgumentController() {
         return argumentController;
-    }
-
-    public void invoke(CheckedRunnable runnable) {
-        invoke(() -> {
-            runnable.doRun();
-            return null;
-        });
-    }
-
-    /**
-     * Invoke a task in a hibernate transaction. This uses the {@link SynchronisationMode} with the current guild
-     * as lock to make sure the same guild cannot invoke the task concurrently. This is to counteract the
-     * spamming of a command that uses this method, e.g. spamming the add command concurrently could evade the playlist
-     * size limit.
-     *
-     * @param callable
-     * @param <E>
-     * @return
-     */
-    public <E> E invoke(Callable<E> callable) {
-        return HibernateInvoker.create(getContext().getSession(), getContext().getGuild()).invoke(callable);
     }
 
     @Override
@@ -201,6 +182,37 @@ public abstract class AbstractCommand implements Command {
     @Override
     public void setThread(CommandExecutionThread thread) {
         this.thread = thread;
+    }
+
+    protected void invoke(CheckedRunnable runnable) {
+        invoke(() -> {
+            runnable.doRun();
+            return null;
+        });
+    }
+
+    protected <E> E invoke(Callable<E> callable) {
+        return createSynchronisedHibernateInvoker().invoke(callable);
+    }
+
+    protected void consumeSession(Consumer<Session> sessionConsumer) {
+        invokeWithSession(session -> {
+            sessionConsumer.accept(session);
+            return null;
+        });
+    }
+
+    protected <E> E invokeWithSession(Function<Session, E> function) {
+        return createSynchronisedHibernateInvoker().invoke(function);
+    }
+
+    /**
+     * @return a {@link HibernateInvoker} that uses the current guild object as synchronisation lock to make sure the
+     * same guild cannot invoke the task concurrently. This is to counteract the spamming of a command that uses this
+     * method, e.g. spamming the add command concurrently could evade the playlist size limit.
+     */
+    protected HibernateInvoker createSynchronisedHibernateInvoker() {
+        return HibernateInvoker.create(getContext().getSession(), getContext().getGuild());
     }
 
     /**
@@ -501,8 +513,9 @@ public abstract class AbstractCommand implements Command {
         GENERAL("general", "General commands that manage this bot"),
         CUSTOMISATION("customisation", "Commands to customise the bot"),
         SPOTIFY("spotify", "Commands that manage the Spotify login or upload playlists to Spotify"),
-        SEARCH("search", "Commands that search for botify playlists or list all of them or search for Spotify and Youtube tracks, videos and playlists"),
         SCRIPTING("scripting", "Commands that execute or manage groovy scripts"),
+        SEARCH("search", "Commands that search for botify playlists or list all of them or search for Spotify and Youtube tracks, videos and playlists"),
+        WEB("web", "Commands that manage the web client"),
         ADMIN("admin", "Commands only available to administrators defined in settings-private.properties");
 
         private final String name;

@@ -109,8 +109,8 @@ public class TrackWrapper extends AbstractSoftCachedPlayable implements Playable
     }
 
     @Override
-    public String getSource() {
-        return "Spotify";
+    public Source getSource() {
+        return Source.SPOTIFY;
     }
 
     public Track getTrack() {

@@ -2,7 +2,7 @@ package net.robinfriedli.botify.discord;
 
 import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
-import net.robinfriedli.botify.util.ISnowflakeMap;
+import net.robinfriedli.botify.util.SnowflakeMap;
 import org.springframework.stereotype.Component;
 
 /**
@@ -11,10 +11,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class CommandExecutionQueueManager {
 
-    private final ISnowflakeMap<ThreadExecutionQueue> guildExecutionQueues;
+    private final SnowflakeMap<ThreadExecutionQueue> guildExecutionQueues;
 
     public CommandExecutionQueueManager() {
-        this.guildExecutionQueues = new ISnowflakeMap<>();
+        this.guildExecutionQueues = new SnowflakeMap<>();
     }
 
     public void addGuild(Guild guild) {
@@ -37,7 +37,7 @@ public class CommandExecutionQueueManager {
         return threadExecutionQueue;
     }
 
-    public ISnowflakeMap<ThreadExecutionQueue> getGuildExecutionQueues() {
+    public SnowflakeMap<ThreadExecutionQueue> getGuildExecutionQueues() {
         return guildExecutionQueues;
     }
 

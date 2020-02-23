@@ -489,6 +489,8 @@ if (i %% 33 == 0) {
   messages.sendTemporary('Get rickrolled :clown:', channel)
   // play Rick Astley - Never Gonna Give You Up on youtube
   command.run('play https://www.youtube.com/watch?v=dQw4w9WgXcQ ')
+  // uncomment the following line to queue the actual input instead
+  // command.run('queue ' + command.getCommandBody())
   // abort the actual command
   command.abort()
   }
@@ -560,6 +562,13 @@ command.run('play')"
     <example title="Show finalizer 'deleteMessage'">%1$sfinalizer deleteMessage</example>
     <example title="List all finalizers">%1$sfinalizer</example>
     <example title="Delete finalizer 'deleteMessage'">%1$sfinalizer %2$sdelete deleteMessage</example>
+  </command>
+  <command identifier="connect"
+           implementation="net.robinfriedli.botify.command.commands.web.ConnectCommand"
+           category="WEB"
+           requiresInput="false"
+           description="Connect a web client. After using this command you can DM me the token provided by the web client. This will prepare a session connected to this guild and user enabling the client to connect via the token.">
+    <example title="Prepare a session based on this guild and user">%1$sconnect</example>
   </command>
 
   <!-- Administrator commands -->

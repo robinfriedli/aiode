@@ -5,7 +5,7 @@ import java.util.function.Function;
 
 import javax.persistence.EntityManagerFactory;
 
-import net.robinfriedli.botify.command.CommandContext;
+import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.function.HibernateInvoker;
 import net.robinfriedli.botify.persist.StaticSessionProvider;
 import net.robinfriedli.botify.persist.interceptors.InterceptorChain;
@@ -27,7 +27,7 @@ public class HibernateComponent {
 
     public Session getCurrentSession() {
         SessionFactory sessionFactory = getSessionFactory();
-        return CommandContext.Current.optional().map(CommandContext::getSession).orElse(sessionFactory.getCurrentSession());
+        return ExecutionContext.Current.optional().map(ExecutionContext::getSession).orElse(sessionFactory.getCurrentSession());
     }
 
     public SessionFactory getSessionFactory() {

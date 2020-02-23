@@ -5,7 +5,7 @@ import java.util.List;
 import org.slf4j.Logger;
 
 import net.dv8tion.jda.api.entities.MessageChannel;
-import net.robinfriedli.botify.command.CommandContext;
+import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.Preset;
 import net.robinfriedli.stringlist.StringListImpl;
@@ -16,9 +16,9 @@ public class AlertPresetCreationInterceptor extends CollectingInterceptor {
     private final MessageChannel channel;
     private final MessageService messageService;
 
-    public AlertPresetCreationInterceptor(Interceptor next, Logger logger, CommandContext commandContext, MessageService messageService) {
+    public AlertPresetCreationInterceptor(Interceptor next, Logger logger, ExecutionContext executionContext, MessageService messageService) {
         super(next, logger);
-        channel = commandContext.getChannel();
+        channel = executionContext.getChannel();
         this.messageService = messageService;
     }
 

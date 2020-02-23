@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.LoggerFactory;
 
 import net.dv8tion.jda.api.entities.MessageChannel;
-import net.robinfriedli.botify.command.CommandContext;
+import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.exceptions.handlers.TrackLoadingExceptionHandler;
 
@@ -33,14 +33,14 @@ public class ReplaceableTrackLoadingExecutor implements TrackLoadingExecutor {
         Thread thread = new ReplaceableThread(trackLoadingRunnable);
         thread.setName("replaceable-track-loading-guild-" + guildContext.getGuild().getId() + "-thread-" + threadNumber.getAndIncrement());
         MessageChannel channel;
-        CommandContext commandContext = null;
-        if (CommandContext.Current.isSet()) {
-            commandContext = CommandContext.Current.require();
-            channel = commandContext.getChannel();
+        ExecutionContext executionContext = null;
+        if (ExecutionContext.Current.isSet()) {
+            executionContext = ExecutionContext.Current.require();
+            channel = executionContext.getChannel();
         } else {
             channel = guildContext.getPlayback().getCommunicationChannel();
         }
-        thread.setUncaughtExceptionHandler(new TrackLoadingExceptionHandler(LoggerFactory.getLogger(getClass()), channel, commandContext));
+        thread.setUncaughtExceptionHandler(new TrackLoadingExceptionHandler(LoggerFactory.getLogger(getClass()), channel, executionContext));
         registerTrackLoading(thread);
         thread.start();
     }

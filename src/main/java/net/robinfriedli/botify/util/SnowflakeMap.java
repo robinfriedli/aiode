@@ -16,7 +16,7 @@ import org.jetbrains.annotations.NotNull;
  * snowflake's id instead of the {@link Object#equals(Object)} method. This map is mainly used for caching of, for
  * example, {@link GuildContext} and thus can experience many concurrent operations under high traffic.
  */
-public class ISnowflakeMap<V> extends AbstractMap<ISnowflake, V> {
+public class SnowflakeMap<V> extends AbstractMap<ISnowflake, V> {
 
     private final ISnowflakeEntrySet<V> entrySet = new ISnowflakeEntrySet<>();
 

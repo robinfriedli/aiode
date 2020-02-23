@@ -1,20 +1,18 @@
 package net.robinfriedli.botify.scripting;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
+import net.robinfriedli.botify.util.ClassDescriptorNode;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
 import net.robinfriedli.jxp.queries.Conditions;
 import org.kohsuke.groovy.sandbox.GroovyInterceptor;
 
+import static net.robinfriedli.botify.util.ClassDescriptorNode.*;
 import static net.robinfriedli.jxp.queries.Conditions.*;
 
 public class GroovyWhitelistInterceptor extends GroovyInterceptor {
@@ -146,43 +144,7 @@ public class GroovyWhitelistInterceptor extends GroovyInterceptor {
         return selectClosestNode(methodContributions, declaringClass);
     }
 
-    private <T extends ClassContributionNode> T selectClosestNode(Collection<T> results, Class<?> declarationClass) {
-        if (results.size() == 1) {
-            return results.iterator().next();
-        } else if (results.isEmpty()) {
-            return null;
-        } else {
-            Optional<T> exactMatch = results.stream().filter(contribution -> contribution.getType().equals(declarationClass)).findFirst();
-            if (exactMatch.isPresent()) {
-                return exactMatch.get();
-            }
-
-            // if several contributions were found describing different super classes, count the number of super (or equal)
-            // classes for each, the one with the most supers is the lowest class and closest to the declaration class
-            Multimap<Long, T> classesByInheritanceLevel = HashMultimap.create();
-            for (T foundContribution : results) {
-                Class<?> currentType = foundContribution.getType();
-                long numberOfAssignables = results.stream().map(T::getType).filter(type -> type.isAssignableFrom(currentType)).count();
-                classesByInheritanceLevel.put(numberOfAssignables, foundContribution);
-            }
-
-            @SuppressWarnings("OptionalGetWithoutIsPresent")
-            long maxLevelCount = classesByInheritanceLevel.entries().stream().mapToLong(Map.Entry::getKey).max().getAsLong();
-            Collection<T> closestMatches = classesByInheritanceLevel.get(maxLevelCount);
-            return closestMatches.iterator().next();
-        }
-    }
-
-    private interface ClassContributionNode {
-
-        /**
-         * @return the described class
-         */
-        Class<?> getType();
-
-    }
-
-    private static class WhitelistedClassContribution implements ClassContributionNode {
+    private static class WhitelistedClassContribution implements ClassDescriptorNode {
 
         private final Class<?> type;
         private final int maxMethodInvocations;
@@ -212,7 +174,7 @@ public class GroovyWhitelistInterceptor extends GroovyInterceptor {
         }
     }
 
-    private static class WhitelistedMethodContribution implements ClassContributionNode {
+    private static class WhitelistedMethodContribution implements ClassDescriptorNode {
 
         private final String method;
         private final int maxInvocationCount;

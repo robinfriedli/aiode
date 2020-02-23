@@ -73,7 +73,7 @@ public class PlaybackHistory implements Serializable {
             } else {
                 title = playable.getDisplay();
             }
-            this.source = playable.getSource();
+            this.source = playable.getSource().getName();
             this.trackId = playable.getId();
             this.guild = guild.getName();
             this.guildId = guild.getId();

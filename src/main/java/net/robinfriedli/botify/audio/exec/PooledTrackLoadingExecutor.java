@@ -3,7 +3,7 @@ package net.robinfriedli.botify.audio.exec;
 import org.slf4j.LoggerFactory;
 
 import net.dv8tion.jda.api.entities.MessageChannel;
-import net.robinfriedli.botify.command.CommandContext;
+import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.concurrent.QueuedThread;
 import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
 import net.robinfriedli.botify.discord.GuildContext;
@@ -30,14 +30,14 @@ public class PooledTrackLoadingExecutor implements TrackLoadingExecutor {
     public void execute(Runnable trackLoadingRunnable) {
         QueuedThread thread = new QueuedThread(pool, trackLoadingRunnable);
         MessageChannel channel;
-        CommandContext commandContext = null;
-        if (CommandContext.Current.isSet()) {
-            commandContext = CommandContext.Current.require();
-            channel = commandContext.getChannel();
+        ExecutionContext executionContext = null;
+        if (ExecutionContext.Current.isSet()) {
+            executionContext = ExecutionContext.Current.require();
+            channel = executionContext.getChannel();
         } else {
             channel = guildContext.getPlayback().getCommunicationChannel();
         }
-        thread.setUncaughtExceptionHandler(new TrackLoadingExceptionHandler(LoggerFactory.getLogger(getClass()), channel, commandContext));
+        thread.setUncaughtExceptionHandler(new TrackLoadingExceptionHandler(LoggerFactory.getLogger(getClass()), channel, executionContext));
         pool.add(thread);
     }
 

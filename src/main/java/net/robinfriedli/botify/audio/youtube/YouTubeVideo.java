@@ -105,8 +105,8 @@ public interface YouTubeVideo extends Playable {
     }
 
     @Override
-    default String getSource() {
-        return getRedirectedSpotifyTrack() != null ? "Spotify" : "YouTube";
+    default Source getSource() {
+        return getRedirectedSpotifyTrack() != null ? Source.SPOTIFY : Source.YOUTUBE;
     }
 
     /**

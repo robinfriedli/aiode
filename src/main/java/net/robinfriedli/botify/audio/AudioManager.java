@@ -32,9 +32,9 @@ import net.robinfriedli.botify.audio.spotify.SpotifyService;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.boot.AbstractShutdownable;
 import net.robinfriedli.botify.boot.configurations.HibernateComponent;
-import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.widgets.NowPlayingWidget;
 import net.robinfriedli.botify.command.widgets.WidgetManager;
+import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.concurrent.LoggingThreadFactory;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.GuildManager;
@@ -119,8 +119,8 @@ public class AudioManager extends AbstractShutdownable {
             throw new InvalidCommandException("Not in a voice channel");
         }
 
-        if (CommandContext.Current.isSet()) {
-            playback.setCommunicationChannel(CommandContext.Current.require().getChannel());
+        if (ExecutionContext.Current.isSet()) {
+            playback.setCommunicationChannel(ExecutionContext.Current.require().getChannel());
         }
 
         if (playback.isPaused() && resumePaused) {

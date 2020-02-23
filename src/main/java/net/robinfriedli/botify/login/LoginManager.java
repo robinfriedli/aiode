@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 
 import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.exceptions.NoLoginException;
-import net.robinfriedli.botify.util.ISnowflakeMap;
+import net.robinfriedli.botify.util.SnowflakeMap;
 import org.springframework.stereotype.Component;
 
 /**
@@ -15,8 +15,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class LoginManager {
 
-    private ISnowflakeMap<Login> logins = new ISnowflakeMap<>();
-    private ISnowflakeMap<CompletableFuture<Login>> expectedLogins = new ISnowflakeMap<>();
+    private SnowflakeMap<Login> logins = new SnowflakeMap<>();
+    private SnowflakeMap<CompletableFuture<Login>> expectedLogins = new SnowflakeMap<>();
 
     public void addLogin(Login login) {
         logins.put(login.getUser(), login);

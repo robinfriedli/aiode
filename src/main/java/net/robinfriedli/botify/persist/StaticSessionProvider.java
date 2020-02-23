@@ -5,6 +5,7 @@ import java.util.function.Function;
 
 import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.command.CommandContext;
+import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.function.HibernateInvoker;
 import net.robinfriedli.botify.persist.interceptors.InterceptorChain;
 import org.hibernate.Session;
@@ -21,7 +22,7 @@ public class StaticSessionProvider {
 
     public static Session provide() {
         SessionFactory sessionFactory = getSessionFactory();
-        return CommandContext.Current.optional().map(CommandContext::getSession).orElse(sessionFactory.getCurrentSession());
+        return ExecutionContext.Current.optional().map(ExecutionContext::getSession).orElse(sessionFactory.getCurrentSession());
     }
 
     public static SessionFactory getSessionFactory() {

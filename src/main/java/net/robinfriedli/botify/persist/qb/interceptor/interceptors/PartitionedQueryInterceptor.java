@@ -4,7 +4,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
-import net.robinfriedli.botify.command.CommandContext;
+import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.Preset;
@@ -37,9 +37,9 @@ public class PartitionedQueryInterceptor implements QueryInterceptor {
 
     @Override
     public void intercept(QueryBuilder<?, ?, ?, ?> queryBuilder) {
-        Optional<CommandContext> commandContext = CommandContext.Current.optional();
-        if (guildManager.getMode() == GuildManager.Mode.PARTITIONED && (commandContext.isPresent() || guildId != null)) {
-            String id = commandContext.map(ctx -> ctx.getGuild().getId()).orElse(guildId);
+        Optional<ExecutionContext> executionContext = ExecutionContext.Current.optional();
+        if (guildManager.getMode() == GuildManager.Mode.PARTITIONED && (executionContext.isPresent() || guildId != null)) {
+            String id = executionContext.map(ctx -> ctx.getGuild().getId()).orElse(guildId);
             queryBuilder.where(((cb, root, query) -> cb.equal(root.get("guildId"), id)));
         }
     }

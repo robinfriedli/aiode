@@ -5,9 +5,9 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -349,9 +349,7 @@ public class PlayableFactory {
 
     private Map<String, String> getParameterMap(URI uri) {
         List<NameValuePair> parameters = URLEncodedUtils.parse(uri, StandardCharsets.UTF_8);
-        Map<String, String> parameterMap = new HashMap<>();
-        parameters.forEach(param -> parameterMap.put(param.getName(), param.getValue()));
-        return parameterMap;
+        return parameters.stream().collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
     }
 
 }

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+        <meta name="description" content="Web client for botify">
+
+        <link rel="icon" type="image/png" href="/img/botify-logo-small.png">
+        <link href="https://fonts.googleapis.com/css?family=Montserrat|Open+Sans|Open+Sans+Condensed:300|Roboto+Mono|Source+Code+Pro&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+        <link href="/css/style.css" rel="stylesheet">
+
+        <title>botify</title>
+    </head>
+
+    <body style="background-color: black">
+        <section id="app"></section>
+        <script type="module">
+            import init from '/pkg/package.js';
+            init('/pkg/package_bg.wasm');
+        </script>
+    </body>
+
+    <script type="text/javascript">
+        function copy_to_clipboard(element_id) {
+            var copyText = document.getElementById(element_id);
+            copyText.select();
+            copyText.setSelectionRange(0, 99999);
+            document.execCommand("copy");
+        }
+    </script>
+
+</html>

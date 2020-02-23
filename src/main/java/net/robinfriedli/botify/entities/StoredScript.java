@@ -188,7 +188,7 @@ public class StoredScript implements Serializable, SanitizedEntity {
 
     @Entity
     @Table(name = "script_usage")
-    public static class ScriptUsage {
+    public static class ScriptUsage implements Serializable {
 
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)

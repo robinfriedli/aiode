@@ -18,6 +18,7 @@ import net.robinfriedli.botify.concurrent.CommandExecutionThread;
 import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.discord.listeners.CommandListener;
+import net.robinfriedli.botify.discord.listeners.EventWaiter;
 import net.robinfriedli.botify.entities.Preset;
 import net.robinfriedli.botify.entities.StoredScript;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
@@ -47,6 +48,7 @@ public class CommandManager {
     private final boolean isScriptingEnabled;
     private final Context commandContributionContext;
     private final Context commandInterceptorContext;
+    private final EventWaiter eventWaiter;
     private final Logger logger;
     private final QueryBuilderFactory queryBuilderFactory;
 
@@ -59,6 +61,7 @@ public class CommandManager {
     public CommandManager(@Value("${botify.preferences.enableScripting}") boolean isScriptingEnabled,
                           @Value("classpath:xml-contributions/commands.xml") Resource commandResource,
                           @Value("classpath:xml-contributions/commandInterceptors.xml") Resource commandInterceptorResource,
+                          EventWaiter eventWaiter,
                           JxpBackend jxpBackend,
                           QueryBuilderFactory queryBuilderFactory) {
         this.isScriptingEnabled = isScriptingEnabled;
@@ -68,6 +71,7 @@ public class CommandManager {
         } catch (IOException e) {
             throw new RuntimeException("Could not instantiate " + getClass().getSimpleName(), e);
         }
+        this.eventWaiter = eventWaiter;
         this.logger = LoggerFactory.getLogger(getClass());
         this.queryBuilderFactory = queryBuilderFactory;
     }
@@ -285,4 +289,7 @@ public class CommandManager {
         ));
     }
 
+    public EventWaiter getEventWaiter() {
+        return eventWaiter;
+    }
 }

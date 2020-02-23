@@ -18,7 +18,7 @@ public class CommandExecutionThread extends QueuedThread {
 
     @Override
     public void run() {
-        CommandContext.Current.set(getCommandContext());
+        ExecutionContext.Current.set(getCommandContext());
         command.setThread(this);
         super.run();
     }

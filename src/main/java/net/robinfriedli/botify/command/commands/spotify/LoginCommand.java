@@ -16,6 +16,7 @@ import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
+import net.robinfriedli.botify.concurrent.CompletableFutures;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.UserException;
 import net.robinfriedli.botify.login.Login;
@@ -40,8 +41,12 @@ public class LoginCommand extends AbstractCommand {
         CompletableFuture<Login> pendingLogin = new CompletableFuture<>();
         loginManager.expectLogin(user, pendingLogin);
 
-        String response = String.format("Your login link:\n%s", uriRequest.execute().toString());
-        CompletableFuture<Message> futurePrivateMessage = sendMessage(user, response);
+        String loginUri = uriRequest.execute().toString();
+        EmbedBuilder loginLinkBuilder = new EmbedBuilder()
+            .setTitle("Spotify login")
+            .setDescription(String.format("Click [here](%s) to be redirected to Spotify", loginUri))
+            .setColor(0x1DB954);
+        CompletableFuture<Message> futurePrivateMessage = getMessageService().send(loginLinkBuilder.build(), user);
         CompletableFuture<Message> futureNoticeMessage = new CompletableFuture<>();
         try {
             futurePrivateMessage.get();
@@ -54,23 +59,26 @@ public class LoginCommand extends AbstractCommand {
         } catch (InterruptedException ignored) {
         }
 
-        pendingLogin.orTimeout(10, TimeUnit.MINUTES).whenComplete((login, throwable) -> {
+        CompletableFuture<Login> futureLogin = pendingLogin.orTimeout(10, TimeUnit.MINUTES);
+        CompletableFutures.handleWhenComplete(futureLogin, (login, throwable) -> {
             futureNoticeMessage.thenAccept(message -> message.delete().queue());
+            futurePrivateMessage.thenAccept(message -> message.delete().queue());
             if (login != null) {
+                getMessageService().sendSuccess("You have successfully connected your Spotify account and may now search and play tracks from your library", user);
                 sendSuccess("User " + getContext().getUser().getName() + " logged in to Spotify");
             }
             if (throwable != null) {
                 loginManager.removePendingLogin(user);
 
                 if (throwable instanceof TimeoutException) {
-                    sendMessage(user, "Login attempt timed out");
+                    getMessageService().sendError("Login attempt timed out", user);
                 } else {
                     getMessageService().sendException("There has been an unexpected error while completing your login, please try again.", getContext().getChannel());
                     LoggerFactory.getLogger(getClass()).error("unexpected exception while completing login", throwable);
                 }
                 setFailed(true);
             }
-        });
+        }, e -> LoggerFactory.getLogger(getClass()).error("Unexpected error in whenComplete of pending login handler", e));
     }
 
     @Override

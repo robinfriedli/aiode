@@ -1,7 +1,7 @@
 package net.robinfriedli.botify.concurrent;
 
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
 import org.jetbrains.annotations.NotNull;
@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NotNull;
 public class LoggingThreadFactory implements ThreadFactory {
 
     private final String poolName;
-    private final AtomicInteger threadNumber = new AtomicInteger(1);
+    private final AtomicLong threadNumber = new AtomicLong(1);
 
     public LoggingThreadFactory(String poolName) {
         this.poolName = poolName;

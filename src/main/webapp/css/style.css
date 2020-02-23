@@ -1,0 +1,50 @@
+.standard_text {
+    font-family: "Montserrat", Arial, serif;
+}
+
+.white {
+    color: white;
+}
+
+.green {
+    color: #1DB954;
+}
+
+.green_background {
+    background-color: #1DB954;
+}
+
+.grey_background {
+    background-color: dimgrey;
+}
+
+.red {
+    color: red;
+}
+
+.center {
+    text-align: center;
+    margin: 0 auto;
+}
+
+.left {
+    display:inline-block;
+    float: left;
+}
+
+.right {
+    display:inline-block;
+    float: right;
+}
+
+.standard_table {
+    border-spacing: 10px;
+}
+
+.round {
+    border-radius: 50%;
+}
+
+.no_border {
+    border: 0 solid black;
+}
