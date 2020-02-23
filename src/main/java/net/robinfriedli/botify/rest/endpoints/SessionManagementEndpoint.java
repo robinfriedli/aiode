@@ -43,7 +43,7 @@ public class SessionManagementEndpoint {
         this.shardManager = shardManager;
     }
 
-    @PostMapping(path = "/generate_token/{previous_token}")
+    @PostMapping(path = {"/generate_token/", "/generate_token/{previous_token}"})
     public String generateToken(@PathVariable(name = "previous_token", required = false) String oldTokenStr, HttpServletRequest request, HttpServletResponse response) {
         String remoteAddr = request.getRemoteAddr();
 
