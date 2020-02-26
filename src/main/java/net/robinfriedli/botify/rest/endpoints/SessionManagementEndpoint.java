@@ -139,11 +139,15 @@ public class SessionManagementEndpoint {
     }
 
     @GetMapping(path = "/session_exists/{session_id}")
-    public boolean sessionExists(@PathVariable(name = "session_id") String sessionId, HttpServletResponse response) {
+    public boolean sessionExists(@PathVariable(name = "session_id") String sessionId, HttpServletRequest request, HttpServletResponse response) {
         UUID uuid = UUID.fromString(sessionId);
+        String remoteAddr = request.getRemoteAddr();
 
         Long matchingSessionCount = hibernateComponent.invokeWithSession(session -> queryBuilderFactory.select(ClientSession.class, (from, cb) -> cb.count(from.get("pk")), Long.class)
-            .where((cb, root) -> cb.equal(root.get("sessionId"), uuid))
+            .where((cb, root) -> cb.and(
+                cb.equal(root.get("sessionId"), uuid),
+                cb.equal(root.get("ipAddress"), remoteAddr)
+            ))
             .build(session)
             .uniqueResult());
 

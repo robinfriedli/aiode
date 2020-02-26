@@ -50,38 +50,24 @@ impl Default for CurrentModel {
 }
 
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
-    let storage: storage::Storage = seed::storage::get_storage().unwrap();
+    let storage: storage::Storage = seed::storage::get_storage().expect("Failed to get seed storage");
     match msg {
         SessionChecked(result) => {
             match result {
                 Ok(valid_session) => {
                     if valid_session {
-                        let client = storage::load_data::<Client>(&storage, session::SESSION_STORAGE_KEY).unwrap();
+                        let client = storage::load_data::<Client>(&storage, session::SESSION_STORAGE_KEY).expect("Could not load stored Client despite the session check returning true");
 
                         model.status = SessionPrepared(client);
                         model.current_model = Home(page::home::Model);
                     } else {
-                        match storage::load_data::<String>(&storage, session::TOKEN_STORAGE_KEY) {
-                            Some(token) => {
-                                orders.perform_cmd(session::fetch_session(token, TokenChecked));
-                            }
-                            None => {
-                                orders.perform_cmd(session::generate_token(None, TokenFetched));
-                            }
-                        }
+                        check_stored_token(&storage, orders);
                     }
                 }
                 Err(err) => {
                     error!("Error while checking stored session");
                     error!(err);
-                    match storage::load_data::<String>(&storage, session::TOKEN_STORAGE_KEY) {
-                        Some(token) => {
-                            orders.perform_cmd(session::fetch_session(token, TokenChecked));
-                        }
-                        None => {
-                            orders.perform_cmd(session::generate_token(None, TokenFetched));
-                        }
-                    }
+                    check_stored_token(&storage, orders);
                 }
             }
         }
@@ -110,10 +96,10 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         TokenFetched(result) => {
             match result {
                 Ok(token) => {
-                    let storage: storage::Storage = seed::storage::get_storage().unwrap();
+                    let storage: storage::Storage = seed::storage::get_storage().expect("Failed to get seed storage");
                     seed::storage::store_data(&storage, session::TOKEN_STORAGE_KEY, &token.to_string());
                     model.status = AuthenticationRequired(token);
-                    model.current_model = Auth(page::auth::Model::default())
+                    model.current_model = Auth(page::auth::Model::default());
                 }
                 Err(err) => {
                     error!("Error while fetching token");
@@ -136,7 +122,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 }
 
 fn after_mount(_url: Url, orders: &mut impl Orders<Msg>) -> AfterMount<Model> {
-    let storage: storage::Storage = seed::storage::get_storage().unwrap();
+    let storage: storage::Storage = seed::storage::get_storage().expect("Failed to get seed storage");
     match seed::storage::load_data::<Client>(&storage, session::SESSION_STORAGE_KEY) {
         Some(client) => {
             let session_id = String::from(client.session_id);
@@ -162,6 +148,17 @@ fn view(model: &Model) -> Node<Msg> {
         SessionPrepared(client) => page::home::view(&page::home::Model, client).map_msg(HomeMsg),
         Loading => {
             div![h1!["Loading"]]
+        }
+    }
+}
+
+fn check_stored_token(storage: &storage::Storage, orders: &mut impl Orders<Msg>) {
+    match storage::load_data::<String>(storage, session::TOKEN_STORAGE_KEY) {
+        Some(token) => {
+            orders.perform_cmd(session::fetch_session(token, TokenChecked));
+        }
+        None => {
+            orders.perform_cmd(session::generate_token(None, TokenFetched));
         }
     }
 }

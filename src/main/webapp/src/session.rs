@@ -54,8 +54,7 @@ impl Session {
 }
 
 pub async fn fetch_session<Ms: 'static>(session_id: String, f: fn(Result<Option<Client>, FailReason<String>>) -> Ms) -> Result<Ms, Ms> {
-    let url = format!("{}{}", "fetch_session/", session_id);
-    Request::new(url)
+    Request::new(format!("{}{}", "fetch_session/", session_id))
         .method(Method::Get)
         .fetch_string_data(|result| {
             f(result.map(|s| {
@@ -73,6 +72,7 @@ pub async fn generate_token<Ms: 'static>(old_token: Option<String>, f: fn(Result
         Some(token) => format!("{}{}", "generate_token/", token),
         None => String::from("generate_token/")
     };
+
     Request::new(url)
         .method(Method::Post)
         .fetch_string_data(|result| {
@@ -83,12 +83,9 @@ pub async fn generate_token<Ms: 'static>(old_token: Option<String>, f: fn(Result
 }
 
 pub async fn check_valid_session<Ms: 'static>(session_id: String, f: fn(Result<bool, FailReason<String>>) -> Ms) -> Result<Ms, Ms> {
-    let url = format!("{}{}", "session_exists/", session_id);
-    let session_exists_result = Request::new(url)
+    Request::new(format!("{}{}", "session_exists/", session_id))
         .method(Method::Get)
         .fetch_string_data(|result| {
-            f(result.map(|s| bool::from_str(s.borrow()).unwrap()))
-        }).await;
-
-    session_exists_result
+            f(result.map(|s| bool::from_str(s.borrow()).expect("Could not parse result as boolean")))
+        }).await
 }

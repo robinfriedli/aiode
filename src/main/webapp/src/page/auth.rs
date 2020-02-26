@@ -44,16 +44,15 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     match msg {
         Msg::Clipboard => copy_to_clipboard("uuid_box"),
         Msg::RefreshToken => {
-            let storage: storage::Storage = seed::storage::get_storage().unwrap();
+            let storage: storage::Storage = seed::storage::get_storage().expect("Failed to get seed storage");
             let old_token = seed::storage::load_data::<String>(&storage, session::TOKEN_STORAGE_KEY);
-            storage.remove_item(session::TOKEN_STORAGE_KEY).expect("could not remove session storage data");
 
             orders.perform_cmd(session::generate_token(old_token, TokenRefreshed));
         }
         Msg::TokenRefreshed(result) => {
             match result {
                 Ok(token) => {
-                    let storage: storage::Storage = seed::storage::get_storage().unwrap();
+                    let storage: storage::Storage = seed::storage::get_storage().expect("Failed to get seed storage");
                     seed::storage::store_data(&storage, session::TOKEN_STORAGE_KEY, &token.to_string());
                 }
                 Err(err) => {
@@ -94,7 +93,7 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 }
 
 pub fn view(model: &Model) -> Node<Msg> {
-    let storage: storage::Storage = seed::storage::get_storage().unwrap();
+    let storage: storage::Storage = seed::storage::get_storage().expect("Failed to get seed storage");
     let token_str: String = storage::load_data(&storage, session::TOKEN_STORAGE_KEY).unwrap_or(String::from(""));
     let connection_failed = model.status == ConnectionFailed;
     let connecting = model.status == Connecting;
