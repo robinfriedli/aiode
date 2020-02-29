@@ -6,7 +6,6 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Sets;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.sharding.ShardManager;
@@ -45,7 +44,7 @@ public class DeleteGrantedRolesForDeletedRolesTask extends AbstractCronTask {
                 }
 
                 for (AccessConfiguration accessConfiguration : guildSpecification.getAccessConfigurations()) {
-                    Set<GrantedRole> grantedRoles = Sets.newHashSet(accessConfiguration.getRoles());
+                    Set<GrantedRole> grantedRoles = accessConfiguration.getRoles();
                     for (GrantedRole grantedRole : grantedRoles) {
                         Role guildRole = grantedRole.getRole(guild);
 

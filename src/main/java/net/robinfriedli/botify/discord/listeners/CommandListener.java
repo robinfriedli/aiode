@@ -17,7 +17,6 @@ import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.concurrent.EventHandlerPool;
-import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
 import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
 import net.robinfriedli.botify.discord.GuildContext;
@@ -120,7 +119,6 @@ public class CommandListener extends ListenerAdapter {
         ThreadExecutionQueue queue = executionQueueManager.getForGuild(guild);
         String commandBody = message.getContentDisplay().substring(namePrefix.length()).trim();
         CommandContext commandContext = new CommandContext(event, guildContext, hibernateComponent.getSessionFactory(), spotifyApiBuilder.build(), commandBody);
-        ExecutionContext.Current.set(commandContext);
         try {
             Optional<AbstractCommand> commandInstance = commandManager.instantiateCommandForContext(commandContext, session);
             commandInstance.ifPresent(command -> commandManager.runCommand(command, queue));

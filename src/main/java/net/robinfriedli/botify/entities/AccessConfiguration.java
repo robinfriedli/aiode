@@ -55,7 +55,7 @@ public class AccessConfiguration implements Serializable {
     }
 
     public boolean canAccess(Member member) {
-        Set<String> roles = this.roles.stream().map(GrantedRole::getId).collect(Collectors.toSet());
+        Set<String> roles = getRoles().stream().map(GrantedRole::getId).collect(Collectors.toSet());
 
         if (roles.isEmpty()) {
             return false;
@@ -78,32 +78,32 @@ public class AccessConfiguration implements Serializable {
     }
 
     public Optional<GrantedRole> getRole(String id) {
-        return roles.stream().filter(role -> role.getId().equals(id)).findAny();
+        return getRoles().stream().filter(role -> role.getId().equals(id)).findAny();
     }
 
     public void addRole(GrantedRole role) {
         role.setAccessConfiguration(this);
-        this.roles.add(role);
+        roles.add(role);
     }
 
     public void removeRole(GrantedRole role) {
-        this.roles.remove(role);
+        roles.remove(role);
     }
 
     public boolean hasRole(String id) {
-        return roles.stream().anyMatch(role -> role.getId().equals(id));
+        return getRoles().stream().anyMatch(role -> role.getId().equals(id));
     }
 
     public Set<String> getRoleIds() {
-        return roles.stream().map(GrantedRole::getId).collect(Collectors.toSet());
+        return getRoles().stream().map(GrantedRole::getId).collect(Collectors.toSet());
     }
 
     public Set<GrantedRole> getRoles() {
-        return roles;
+        return Sets.newHashSet(roles);
     }
 
     public List<Role> getRoles(Guild guild) {
-        return roles.stream().map(role -> role.getRole(guild)).filter(Objects::nonNull).collect(Collectors.toList());
+        return getRoles().stream().map(role -> role.getRole(guild)).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
     public GuildSpecification getGuildSpecification() {
