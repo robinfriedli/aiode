@@ -10,13 +10,14 @@ import groovy.lang.GroovyShell;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.boot.configurations.GroovySandboxComponent;
-import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.Command;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.interceptor.AbstractChainableCommandInterceptor;
 import net.robinfriedli.botify.command.interceptor.CommandInterceptor;
 import net.robinfriedli.botify.discord.MessageService;
+import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
+import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.entities.StoredScript;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 import net.robinfriedli.botify.exceptions.Abort;
@@ -26,22 +27,23 @@ import net.robinfriedli.botify.scripting.GroovyVariables;
 import net.robinfriedli.botify.scripting.GroovyWhitelistInterceptor;
 import net.robinfriedli.botify.scripting.SafeGroovyScriptRunner;
 import org.codehaus.groovy.control.CompilerConfiguration;
+import org.hibernate.Session;
 
 public abstract class ScriptCommandInterceptor extends AbstractChainableCommandInterceptor {
 
     private final GroovySandboxComponent groovySandboxComponent;
-    private final HibernateComponent hibernateComponent;
+    private final GuildPropertyManager guildPropertyManager;
     private final MessageService messageService;
     private final QueryBuilderFactory queryBuilderFactory;
 
     public ScriptCommandInterceptor(CommandInterceptorContribution contribution,
                                     CommandInterceptor next,
                                     GroovySandboxComponent groovySandboxComponent,
-                                    HibernateComponent hibernateComponent,
+                                    GuildPropertyManager guildPropertyManager,
                                     MessageService messageService,
                                     QueryBuilderFactory queryBuilderFactory) {
         super(contribution, next);
-        this.hibernateComponent = hibernateComponent;
+        this.guildPropertyManager = guildPropertyManager;
         this.queryBuilderFactory = queryBuilderFactory;
         this.groovySandboxComponent = groovySandboxComponent;
         this.messageService = messageService;
@@ -53,17 +55,27 @@ public abstract class ScriptCommandInterceptor extends AbstractChainableCommandI
             return;
         }
 
+        CommandContext context = command.getContext();
+        Session session = context.getSession();
+        AbstractGuildProperty enableScriptingProperty = guildPropertyManager.getProperty("enableScripting");
+        if (enableScriptingProperty != null) {
+            Boolean enableScripting = enableScriptingProperty.get(Boolean.class, context.getGuildContext().getSpecification(session));
+
+            if (!(enableScripting != null && enableScripting)) {
+                return;
+            }
+        }
+
         String usageId = getUsageId();
-        List<StoredScript> scriptInterceptors = hibernateComponent.invokeWithSession(session ->
-            queryBuilderFactory.find(StoredScript.class)
-                .where((cb, root, subQueryFactory) -> cb.equal(
-                    root.get("scriptUsage"),
-                    subQueryFactory.createUncorrelatedSubQuery(StoredScript.ScriptUsage.class, "pk")
-                        .where((cb1, root1) -> cb1.equal(root1.get("uniqueId"), usageId))
-                        .build(session)
-                ))
-                .build(session)
-                .getResultList());
+        List<StoredScript> scriptInterceptors = queryBuilderFactory.find(StoredScript.class)
+            .where((cb, root, subQueryFactory) -> cb.equal(
+                root.get("scriptUsage"),
+                subQueryFactory.createUncorrelatedSubQuery(StoredScript.ScriptUsage.class, "pk")
+                    .where((cb1, root1) -> cb1.equal(root1.get("uniqueId"), usageId))
+                    .build(session)
+            ))
+            .build(session)
+            .getResultList();
 
         if (scriptInterceptors.isEmpty()) {
             return;
@@ -72,7 +84,6 @@ public abstract class ScriptCommandInterceptor extends AbstractChainableCommandI
         CompilerConfiguration compilerConfiguration = groovySandboxComponent.getCompilerConfiguration();
         GroovyWhitelistInterceptor groovyWhitelistInterceptor = groovySandboxComponent.getGroovyWhitelistInterceptor();
         GroovyShell groovyShell = new GroovyShell(compilerConfiguration);
-        CommandContext context = command.getContext();
         GroovyVariables.addVariables(groovyShell, context, command, messageService, Botify.get().getSecurityManager());
 
         SafeGroovyScriptRunner scriptRunner = new SafeGroovyScriptRunner(context, groovyShell, groovyWhitelistInterceptor);
@@ -107,8 +118,13 @@ public abstract class ScriptCommandInterceptor extends AbstractChainableCommandI
 
     public static class ScriptCommandInterceptorPreExecution extends ScriptCommandInterceptor {
 
-        public ScriptCommandInterceptorPreExecution(CommandInterceptorContribution contribution, CommandInterceptor next, GroovySandboxComponent groovySandboxComponent, HibernateComponent hibernateComponent, MessageService messageService, QueryBuilderFactory queryBuilderFactory) {
-            super(contribution, next, groovySandboxComponent, hibernateComponent, messageService, queryBuilderFactory);
+        public ScriptCommandInterceptorPreExecution(CommandInterceptorContribution contribution,
+                                                    CommandInterceptor next,
+                                                    GroovySandboxComponent groovySandboxComponent,
+                                                    GuildPropertyManager guildPropertyManager,
+                                                    MessageService messageService,
+                                                    QueryBuilderFactory queryBuilderFactory) {
+            super(contribution, next, groovySandboxComponent, guildPropertyManager, messageService, queryBuilderFactory);
         }
 
         @Override
@@ -119,8 +135,13 @@ public abstract class ScriptCommandInterceptor extends AbstractChainableCommandI
 
     public static class ScriptCommandInterceptorFinalizer extends ScriptCommandInterceptor {
 
-        public ScriptCommandInterceptorFinalizer(CommandInterceptorContribution contribution, CommandInterceptor next, GroovySandboxComponent groovySandboxComponent, HibernateComponent hibernateComponent, MessageService messageService, QueryBuilderFactory queryBuilderFactory) {
-            super(contribution, next, groovySandboxComponent, hibernateComponent, messageService, queryBuilderFactory);
+        public ScriptCommandInterceptorFinalizer(CommandInterceptorContribution contribution,
+                                                 CommandInterceptor next,
+                                                 GroovySandboxComponent groovySandboxComponent,
+                                                 GuildPropertyManager guildPropertyManager,
+                                                 MessageService messageService,
+                                                 QueryBuilderFactory queryBuilderFactory) {
+            super(contribution, next, groovySandboxComponent, guildPropertyManager, messageService, queryBuilderFactory);
         }
 
         @Override

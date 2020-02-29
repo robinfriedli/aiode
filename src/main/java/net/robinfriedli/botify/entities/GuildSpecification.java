@@ -57,6 +57,8 @@ public class GuildSpecification implements Serializable {
     private Integer tempMessageTimeout;
     @Column(name = "default_text_channel_id")
     private String defaultTextChannelId;
+    @Column(name = "enable_scripting")
+    private Boolean enableScripting;
     @OneToMany(mappedBy = "guildSpecification")
     private Set<AccessConfiguration> accessConfigurations = Sets.newHashSet();
 
@@ -64,7 +66,7 @@ public class GuildSpecification implements Serializable {
     }
 
     public GuildSpecification(Guild guild) {
-        this.guildId = guild.getId();
+        guildId = guild.getId();
         guildName = guild.getName();
     }
 
@@ -195,5 +197,13 @@ public class GuildSpecification implements Serializable {
 
     public void setDefaultTextChannelId(String defaultTextChannelId) {
         this.defaultTextChannelId = defaultTextChannelId;
+    }
+
+    public Boolean isEnableScripting() {
+        return enableScripting;
+    }
+
+    public void setEnableScripting(Boolean enableScripting) {
+        this.enableScripting = enableScripting;
     }
 }

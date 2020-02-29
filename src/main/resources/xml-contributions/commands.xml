@@ -344,6 +344,7 @@
            implementation="net.robinfriedli.botify.command.commands.customisation.PropertyCommand"
            requiresInput="false"
            category="CUSTOMISATION"
+           restrictedAccess="true"
            description="List all properties or change the value of a property. Properties are used to customize the bot. For example the &quot;color&quot; property changes the colour theme or &quot;playback notification&quot; changes whether you receive &quot;Now playing...&quot; messages.">
     <argument identifier="toggle" description="Toggles a property with a boolean value (e.g. &quot;playback notification&quot;) to its opposite value"/>
     <argument identifier="set" requiresValue="true" description="Set a property to the specified value. E.g. property default source %2$sset youtube.">

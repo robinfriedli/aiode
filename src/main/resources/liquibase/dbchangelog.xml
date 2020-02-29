@@ -9,7 +9,7 @@ databasechangelog table by liquibase, to rerun change the id.
 2.: initialvalue: The context for statements that insert or remove data
 3.: constraint  : The context for adding schema constraints, such as unique constraints
 
-See RunLiquibaseUpdateTask
+See application.properties -> spring.liquibase.contexts
 -->
 <databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
   <!-- complete db schema as of botify 1 -->
@@ -422,6 +422,9 @@ See RunLiquibaseUpdateTask
     </preConditions>
     <addForeignKeyConstraint baseColumnNames="playbackhistory_pk" baseTableName="playback_history_artist" constraintName="fkrxie5r6i0lyey1ar08jfw914e" deferrable="false" initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION" referencedColumnNames="pk" referencedTableName="playback_history" validate="true"/>
   </changeSet>
+  <!-- end of initial schema -->
+
+
 
   <changeSet id="create_current_youtube_quota_usage-sd23d/1.6.LTS" author="robinfriedli" context="initialvalue" runAlways="true">
     <preConditions onFail="MARK_RAN">
@@ -588,5 +591,10 @@ See RunLiquibaseUpdateTask
   </changeSet>
   <changeSet author="robin (generated)" id="1581484740467-4">
     <addUniqueConstraint columnNames="token" constraintName="UC_GENERATED_TOKENTOKEN_COL" tableName="generated_token"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1582994667748-1">
+    <addColumn tableName="guild_specification">
+      <column name="enable_scripting" type="boolean"/>
+    </addColumn>
   </changeSet>
 </databaseChangeLog>

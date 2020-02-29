@@ -10,10 +10,13 @@ import net.robinfriedli.botify.command.SecurityManager;
 import net.robinfriedli.botify.command.interceptor.AbstractChainableCommandInterceptor;
 import net.robinfriedli.botify.command.interceptor.CommandInterceptor;
 import net.robinfriedli.botify.discord.GuildManager;
+import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
+import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.entities.AccessConfiguration;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 import net.robinfriedli.botify.exceptions.ForbiddenCommandException;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
+import org.hibernate.Session;
 
 /**
  * Interceptor that checks whether a member is allowed to use the current command
@@ -21,12 +24,14 @@ import net.robinfriedli.botify.exceptions.InvalidCommandException;
 public class SecurityInterceptor extends AbstractChainableCommandInterceptor {
 
     private final GuildManager guildManager;
+    private final GuildPropertyManager guildPropertyManager;
     private final SecurityManager securityManager;
     private final SpringPropertiesConfig springPropertiesConfig;
 
-    public SecurityInterceptor(CommandInterceptorContribution contribution, CommandInterceptor next, GuildManager guildManager, SecurityManager securityManager, SpringPropertiesConfig springPropertiesConfig) {
+    public SecurityInterceptor(CommandInterceptorContribution contribution, CommandInterceptor next, GuildManager guildManager, GuildPropertyManager guildPropertyManager, SecurityManager securityManager, SpringPropertiesConfig springPropertiesConfig) {
         super(contribution, next);
         this.guildManager = guildManager;
+        this.guildPropertyManager = guildPropertyManager;
         this.securityManager = securityManager;
         this.springPropertiesConfig = springPropertiesConfig;
     }
@@ -37,10 +42,21 @@ public class SecurityInterceptor extends AbstractChainableCommandInterceptor {
         User user = context.getUser();
         Guild guild = context.getGuild();
 
-        if (command instanceof AbstractCommand
-            && ((AbstractCommand) command).getCategory() == AbstractCommand.Category.SCRIPTING
-            && !springPropertiesConfig.requireApplicationProperty(Boolean.class, "botify.preferences.enableScripting")) {
-            throw new InvalidCommandException("Scripting disabled. None of the commands in the scripting category may be used.");
+        if (command instanceof AbstractCommand && ((AbstractCommand) command).getCategory() == AbstractCommand.Category.SCRIPTING) {
+            if (!springPropertiesConfig.requireApplicationProperty(Boolean.class, "botify.preferences.enableScripting")) {
+                throw new InvalidCommandException("The bot hoster disabled scripting. None of the commands in the scripting category may be used.");
+            }
+
+            AbstractGuildProperty enableScriptingProperty = guildPropertyManager.getProperty("enableScripting");
+            if (enableScriptingProperty != null) {
+                Session session = context.getSession();
+                Boolean enableScripting = enableScriptingProperty.get(Boolean.class, context.getGuildContext().getSpecification(session));
+
+                if (!(enableScripting != null && enableScripting)) {
+                    throw new InvalidCommandException("Scripting has been disabled for this guild. None of the commands in the scripting category may be used. " +
+                        "Toggle the enable scripting property using the property command to enable / disable scripting.");
+                }
+            }
         }
 
         if (!securityManager.askPermission(command.getIdentifier(), context.getMember())) {
