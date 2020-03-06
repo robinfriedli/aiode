@@ -6,7 +6,7 @@ import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.AbstractWidget;
 import net.robinfriedli.botify.command.Command;
 import net.robinfriedli.botify.command.CommandContext;
-import net.robinfriedli.botify.concurrent.CommandExecutionThread;
+import net.robinfriedli.botify.concurrent.CommandExecutionTask;
 
 /**
  * Abstract class to implement for any action that may be added to widget. Maps the action to the given emoji that will
@@ -20,7 +20,7 @@ public abstract class AbstractWidgetAction implements Command {
     private final String emojiUnicode;
     private final GuildMessageReactionAddEvent event;
     private boolean resetRequired;
-    private CommandExecutionThread thread;
+    private CommandExecutionTask task;
 
     /**
      * This constructor is called when instantiating the widget action reflectively, all implementations must have
@@ -80,13 +80,13 @@ public abstract class AbstractWidgetAction implements Command {
     }
 
     @Override
-    public CommandExecutionThread getThread() {
-        return thread;
+    public CommandExecutionTask getTask() {
+        return task;
     }
 
     @Override
-    public void setThread(CommandExecutionThread thread) {
-        this.thread = thread;
+    public void setTask(CommandExecutionTask task) {
+        this.task = task;
     }
 
     @Override

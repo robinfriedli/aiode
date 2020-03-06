@@ -47,6 +47,7 @@ import net.robinfriedli.botify.boot.AbstractShutdownable;
 import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.command.commands.playback.PlayCommand;
 import net.robinfriedli.botify.command.commands.playback.QueueCommand;
+import net.robinfriedli.botify.concurrent.EagerFetchQueue;
 import net.robinfriedli.botify.concurrent.LoggingThreadFactory;
 import net.robinfriedli.botify.entities.CurrentYouTubeQuotaUsage;
 import net.robinfriedli.botify.exceptions.CommandRuntimeException;
@@ -560,9 +561,8 @@ public class YouTubeService extends AbstractShutdownable {
             }
             videoIds.add(id);
         }
-        // TrackLoadingExceptionHandler
-        Thread.UncaughtExceptionHandler uncaughtExceptionHandler = Thread.currentThread().getUncaughtExceptionHandler();
-        Thread durationLoadingThread = new Thread(() -> {
+
+        EagerFetchQueue.submitFetch(() -> {
             try {
                 Map<String, Long> durationMillis = getDurationMillis(videoIds);
                 for (HollowYouTubeVideo video : videos) {
@@ -578,9 +578,6 @@ public class YouTubeService extends AbstractShutdownable {
                 throw new RuntimeException("Exception occurred while loading durations", e);
             }
         });
-        durationLoadingThread.setUncaughtExceptionHandler(uncaughtExceptionHandler);
-        durationLoadingThread.setName(Thread.currentThread().getName() + " (durations)");
-        durationLoadingThread.start();
     }
 
     /**

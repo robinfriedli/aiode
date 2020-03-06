@@ -14,7 +14,9 @@ import com.google.common.collect.Lists;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.interceptor.CommandInterceptorChain;
 import net.robinfriedli.botify.command.interceptor.interceptors.ScriptCommandInterceptor;
-import net.robinfriedli.botify.concurrent.CommandExecutionThread;
+import net.robinfriedli.botify.concurrent.CommandExecutionTask;
+import net.robinfriedli.botify.concurrent.ExecutionContext;
+import net.robinfriedli.botify.concurrent.ThreadContext;
 import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.discord.listeners.CommandListener;
@@ -24,7 +26,7 @@ import net.robinfriedli.botify.entities.StoredScript;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 import net.robinfriedli.botify.exceptions.Abort;
-import net.robinfriedli.botify.exceptions.handlers.CommandExceptionHandler;
+import net.robinfriedli.botify.exceptions.ExceptionUtils;
 import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.persist.Context;
@@ -76,22 +78,34 @@ public class CommandManager {
         this.queryBuilderFactory = queryBuilderFactory;
     }
 
+    /**
+     * Run command in the current thread. This is only used for widget actions, {@link AbstractCommand} instances trigger
+     * custom script command interceptors making it unpredictable how long they would block the thread (up to 10 seconds
+     * max for interceptors).
+     *
+     * @param command the command to run
+     */
+    public void runCommand(Command command) {
+        ExecutionContext.Current.set(command.getContext());
+        try {
+            doRunCommand(command);
+        } catch (Throwable e) {
+            ExceptionUtils.handleCommandException(e, command, logger);
+        } finally {
+            ThreadContext.Current.clear();
+        }
+    }
+
+    /**
+     * Run command in a new thread, to be enqueued in the provided {@link ThreadExecutionQueue}.
+     *
+     * @param command        the command to run
+     * @param executionQueue the target execution queue
+     */
     public void runCommand(Command command, ThreadExecutionQueue executionQueue) {
         CommandContext context = command.getContext();
-        CommandExecutionThread commandExecutionThread = new CommandExecutionThread(command, executionQueue, () -> {
-            try {
-                if (isScriptingEnabled) {
-                    interceptorChain.intercept(command);
-                } else {
-                    interceptorChainWithoutScripting.intercept(command);
-                }
-            } catch (Abort ignored) {
-            } finally {
-                context.closeSession();
-            }
-        });
+        CommandExecutionTask commandExecutionThread = new CommandExecutionTask(command, executionQueue, this);
 
-        commandExecutionThread.setUncaughtExceptionHandler(new CommandExceptionHandler(command, logger));
         commandExecutionThread.setName("botify-command-execution-" + context);
         boolean queued = !executionQueue.add(commandExecutionThread, false);
 
@@ -100,6 +114,19 @@ public class CommandManager {
             messageService.sendError("Executing too many commands concurrently. This command will be executed after one has finished. " +
                 "You may use the abort command to cancel queued commands and interrupt running commands.", context.getChannel());
             logger.warn(String.format("Guild %s has reached the max concurrent commands limit.", context.getGuild()));
+        }
+    }
+
+    public void doRunCommand(Command command) {
+        try {
+            if (isScriptingEnabled) {
+                interceptorChain.intercept(command);
+            } else {
+                interceptorChainWithoutScripting.intercept(command);
+            }
+        } catch (Abort ignored) {
+        } finally {
+            command.getContext().closeSession();
         }
     }
 
@@ -292,4 +319,5 @@ public class CommandManager {
     public EventWaiter getEventWaiter() {
         return eventWaiter;
     }
+
 }

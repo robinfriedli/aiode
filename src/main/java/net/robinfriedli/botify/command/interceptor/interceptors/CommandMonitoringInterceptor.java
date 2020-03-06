@@ -2,6 +2,8 @@ package net.robinfriedli.botify.command.interceptor.interceptors;
 
 import java.awt.Color;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,8 +14,7 @@ import net.robinfriedli.botify.command.Command;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.interceptor.AbstractChainableCommandInterceptor;
 import net.robinfriedli.botify.command.interceptor.CommandInterceptor;
-import net.robinfriedli.botify.concurrent.CommandExecutionThread;
-import net.robinfriedli.botify.concurrent.ExecutionContext;
+import net.robinfriedli.botify.concurrent.CommandExecutionTask;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
@@ -39,21 +40,26 @@ public class CommandMonitoringInterceptor extends AbstractChainableCommandInterc
     @Override
     public void performChained(Command command) {
         CommandContext context = command.getContext();
+
+        CommandExecutionTask task = command.getTask();
+        if (task == null) {
+            return;
+        }
+
+        CountDownLatch countDownLatch = task.getCountDownLatch();
         Thread monitoringThread = new Thread(() -> {
-            ExecutionContext.Current.set(context);
-            CommandExecutionThread commandExecutionThread = command.getThread();
             CompletableFuture<Message> stillLoadingMessage = null;
             CompletableFuture<Message> warningMessage = null;
             try {
-                commandExecutionThread.join(MESSAGE_AFTER_THRESHOLD);
+                countDownLatch.await(MESSAGE_AFTER_THRESHOLD, TimeUnit.MILLISECONDS);
 
-                if (commandExecutionThread.isAlive()) {
+                if (!task.isDone()) {
                     EmbedBuilder embedBuilder = new EmbedBuilder();
                     embedBuilder.setDescription("Still loading...");
                     stillLoadingMessage = messageService.send(embedBuilder, context.getChannel());
 
-                    commandExecutionThread.join(LOGGER_WARNING_AFTER_THRESHOLD);
-                    if (commandExecutionThread.isAlive()) {
+                    countDownLatch.await(LOGGER_WARNING_AFTER_THRESHOLD, TimeUnit.MILLISECONDS);
+                    if (!task.isDone()) {
                         EmbedBuilder warningEmbed = new EmbedBuilder();
                         warningEmbed.setColor(Color.RED);
                         warningEmbed.setTitle("Command timeout");
@@ -69,7 +75,7 @@ public class CommandMonitoringInterceptor extends AbstractChainableCommandInterc
                             command.display(), context.getGuild(), MESSAGE_AFTER_THRESHOLD + LOGGER_WARNING_AFTER_THRESHOLD));
                     }
 
-                    commandExecutionThread.join();
+                    countDownLatch.await();
                     deleteMessages(stillLoadingMessage, warningMessage);
                 }
             } catch (InterruptedException e) {

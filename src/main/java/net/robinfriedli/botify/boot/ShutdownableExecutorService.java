@@ -12,7 +12,7 @@ public class ShutdownableExecutorService implements Shutdownable {
 
     @Override
     public void shutdown(int delayMs) {
-        executorService.shutdownNow();
+        executorService.shutdown();
     }
 
 }

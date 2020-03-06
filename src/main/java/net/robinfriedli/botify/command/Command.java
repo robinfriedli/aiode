@@ -1,7 +1,9 @@
 package net.robinfriedli.botify.command;
 
+import javax.annotation.Nullable;
+
 import net.robinfriedli.botify.command.widgets.AbstractWidgetAction;
-import net.robinfriedli.botify.concurrent.CommandExecutionThread;
+import net.robinfriedli.botify.concurrent.CommandExecutionTask;
 import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
 
 /**
@@ -46,9 +48,27 @@ public interface Command {
      */
     boolean isPrivileged();
 
-    CommandExecutionThread getThread();
+    /**
+     * @return the dedicated thread executing this command, i.e. the thread that is executing the {@link CommandExecutionTask}.
+     */
+    @Nullable
+    default Thread getThread() {
+        CommandExecutionTask task = getTask();
+        if (task != null) {
+            return task.getThread();
+        }
 
-    void setThread(CommandExecutionThread thread);
+        return null;
+    }
+
+    /**
+     * @return the enqueued task submitted to a {@link ThreadExecutionQueue}, if this command is not executed asynchronously
+     * this returns null. This task can be monitored to be notified when it is complete.
+     */
+    @Nullable
+    CommandExecutionTask getTask();
+
+    void setTask(CommandExecutionTask task);
 
     /**
      * @return the body of the command, for text based commands this is the input following the command name before

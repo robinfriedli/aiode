@@ -1,14 +1,16 @@
 package net.robinfriedli.botify.discord.listeners;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 
-import com.google.common.collect.HashMultimap;
+import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import net.dv8tion.jda.api.events.GenericEvent;
@@ -20,18 +22,23 @@ import org.springframework.stereotype.Component;
 public class EventWaiter extends ListenerAdapter {
 
     @SuppressWarnings("rawtypes")
-    private final Multimap<Class<? extends GenericEvent>, AwaitedEvent> awaitedEventMap = HashMultimap.create();
+    private final Multimap<Class<? extends GenericEvent>, AwaitedEvent> awaitedEventMap = LinkedHashMultimap.create();
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public void onGenericEvent(@Nonnull GenericEvent event) {
-        EventHandlerPool.POOL.execute(() -> Lists.newArrayList(awaitedEventMap.get(event.getClass()))
+        List<AwaitedEvent> awaitedEvents = Lists.newArrayList(awaitedEventMap.get(event.getClass()))
             .stream()
             .filter(awaitedEvent -> awaitedEvent.getFilterPredicate().test(event))
-            .forEach(awaitedEvent -> {
+            .collect(Collectors.toList());
+
+        if (!awaitedEvents.isEmpty()) {
+            EventHandlerPool.execute(() -> awaitedEvents.forEach(awaitedEvent -> {
+                // completing the future might trigger afterCompletion handles in the current thread
                 awaitedEvent.getCompletableFuture().complete(event);
                 awaitedEventMap.remove(awaitedEvent.getEventType(), awaitedEvent);
             }));
+        }
     }
 
     public <E extends GenericEvent> E awaitEvent(Class<E> eventType, Predicate<E> predicate, long timeout, TimeUnit timeUnit) throws InterruptedException, TimeoutException {

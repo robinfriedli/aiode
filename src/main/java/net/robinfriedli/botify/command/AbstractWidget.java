@@ -16,7 +16,7 @@ import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.widgets.AbstractWidgetAction;
 import net.robinfriedli.botify.command.widgets.WidgetManager;
-import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
+import net.robinfriedli.botify.concurrent.CommandExecutionQueueManager;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.xml.WidgetContribution;
 import net.robinfriedli.botify.exceptions.UserException;
@@ -136,8 +136,7 @@ public abstract class AbstractWidget {
             .filter(actionContribution -> actionContribution.getEmojiUnicode().equals(reaction.getReactionEmote().getName()))
             .findAny()
             .map(actionContribution -> actionContribution.instantiate(context, this, event));
-        actionOptional.ifPresent(abstractWidgetAction ->
-            commandManager.runCommand(abstractWidgetAction, executionQueueManager.getForGuild(event.getGuild())));
+        actionOptional.ifPresent(commandManager::runCommand);
     }
 
     public WidgetManager getWidgetManager() {

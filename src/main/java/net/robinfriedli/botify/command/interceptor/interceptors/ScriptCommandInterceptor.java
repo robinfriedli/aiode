@@ -21,6 +21,7 @@ import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.entities.StoredScript;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 import net.robinfriedli.botify.exceptions.Abort;
+import net.robinfriedli.botify.exceptions.CommandFailure;
 import net.robinfriedli.botify.exceptions.ExceptionUtils;
 import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
 import net.robinfriedli.botify.scripting.GroovyVariables;
@@ -59,9 +60,9 @@ public abstract class ScriptCommandInterceptor extends AbstractChainableCommandI
         Session session = context.getSession();
         AbstractGuildProperty enableScriptingProperty = guildPropertyManager.getProperty("enableScripting");
         if (enableScriptingProperty != null) {
-            Boolean enableScripting = enableScriptingProperty.get(Boolean.class, context.getGuildContext().getSpecification(session));
+            boolean enableScripting = enableScriptingProperty.get(Boolean.class, context.getGuildContext().getSpecification(session));
 
-            if (!(enableScripting != null && enableScripting)) {
+            if (!enableScripting) {
                 return;
             }
         }
@@ -95,6 +96,11 @@ public abstract class ScriptCommandInterceptor extends AbstractChainableCommandI
 
             if (error instanceof Abort) {
                 throw new Abort();
+            } else if (error instanceof CommandFailure) {
+                messageService.sendError(
+                    String.format("Executing command %1$ss failed due to an error in %1$s '%2$s'", usageId, currentScriptReference.get().getIdentifier()),
+                    context.getChannel()
+                );
             } else {
                 EmbedBuilder embedBuilder = ExceptionUtils.buildErrorEmbed(error);
                 StoredScript currentScript = currentScriptReference.get();

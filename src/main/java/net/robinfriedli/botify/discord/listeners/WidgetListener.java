@@ -45,7 +45,7 @@ public class WidgetListener extends ListenerAdapter {
     @Override
     public void onGuildMessageReactionAdd(GuildMessageReactionAddEvent event) {
         if (!event.getUser().isBot()) {
-            EventHandlerPool.POOL.execute(() -> {
+            EventHandlerPool.execute(() -> {
                 String messageId = event.getMessageId();
                 WidgetManager widgetManager = guildManager.getContextForGuild(event.getGuild()).getWidgetManager();
 
@@ -57,7 +57,7 @@ public class WidgetListener extends ListenerAdapter {
 
     @Override
     public void onGuildMessageDelete(@NotNull GuildMessageDeleteEvent event) {
-        EventHandlerPool.POOL.execute(() -> {
+        EventHandlerPool.execute(() -> {
             WidgetManager widgetManager = guildManager.getContextForGuild(event.getGuild()).getWidgetManager();
             widgetManager.getActiveWidget(event.getMessageId()).ifPresent(widget -> {
                 widget.setMessageDeleted(true);

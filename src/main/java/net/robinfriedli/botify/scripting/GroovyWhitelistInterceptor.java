@@ -1,5 +1,6 @@
 package net.robinfriedli.botify.scripting;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,6 +98,11 @@ public class GroovyWhitelistInterceptor extends GroovyInterceptor {
         return super.onSetProperty(invoker, receiver, property, value);
     }
 
+    public void resetInvocationCount() {
+        allowedClasses.values().forEach(WhitelistedClassContribution::resetCurrentInvocationCount);
+        allowedMethods.values().stream().flatMap(Collection::stream).forEach(WhitelistedMethodContribution::resetCurrentInvocationCount);
+    }
+
     private void checkMethodCall(Class<?> type, String method) {
         WhitelistedClassContribution allowedClassContribution = findAllowedClasses(type);
         if (allowedClassContribution != null) {
@@ -169,6 +175,10 @@ public class GroovyWhitelistInterceptor extends GroovyInterceptor {
             return currentInvocationCount.get();
         }
 
+        public void resetCurrentInvocationCount() {
+            currentInvocationCount.set(0);
+        }
+
         public void incrementMethodInvocationCount() {
             currentInvocationCount.set(getCurrentMethodInvocationCount() + 1);
         }
@@ -201,6 +211,11 @@ public class GroovyWhitelistInterceptor extends GroovyInterceptor {
 
         public int getCurrentInvocationCount() {
             return currentInvocationCount.get();
+        }
+
+        public void resetCurrentInvocationCount() {
+            classContribution.resetCurrentInvocationCount();
+            currentInvocationCount.set(0);
         }
 
         public void incrementInvocationCount() {

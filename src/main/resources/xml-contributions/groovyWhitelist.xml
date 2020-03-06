@@ -443,7 +443,6 @@
     <method name="getId"/>
     <method name="getIdLong"/>
     <method name="getTimeCreated"/>
-    <writeProperty/>
   </whitelistMethods>
   <whitelistMethods class="net.dv8tion.jda.api.requests.RestAction" maxMethodInvocations="5">
     <!--

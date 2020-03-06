@@ -30,7 +30,7 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
 /**
- * Provides context for the task executed by the current thread. This is setup by {@link CommandExecutionThread} upon
+ * Provides context for the task executed by the current thread. This is setup by {@link CommandExecutionTask} upon
  * execution.
  */
 public class ExecutionContext {
@@ -54,15 +54,29 @@ public class ExecutionContext {
                             SessionFactory sessionFactory,
                             SpotifyApi spotifyApi,
                             TextChannel textChannel) {
+        this(guild, guildContext, jda, member, sessionFactory, spotifyApi, UUID.randomUUID().toString(), textChannel, member.getUser(), null);
+    }
+
+    public ExecutionContext(Guild guild,
+                            GuildContext guildContext,
+                            JDA jda,
+                            Member member,
+                            SessionFactory sessionFactory,
+                            SpotifyApi spotifyApi,
+                            String id,
+                            TextChannel textChannel,
+                            User user,
+                            SpotifyService spotifyService) {
         this.guild = guild;
         this.guildContext = guildContext;
         this.jda = jda;
         this.member = member;
         this.sessionFactory = sessionFactory;
         this.spotifyApi = spotifyApi;
+        this.id = id;
         this.textChannel = textChannel;
-        this.user = member.getUser();
-        id = UUID.randomUUID().toString();
+        this.user = user;
+        this.spotifyService = spotifyService;
     }
 
     @Nullable
@@ -179,7 +193,17 @@ public class ExecutionContext {
     }
 
     /**
-     * Static access to the current CommandContext, if the current thread is a CommandExecutionThread
+     * @return a thread safe copy of this execution context that may be passed to sub tasks. This excludes the hibernate
+     * session and simply returns the current session for {@link #getSession()} as no manual session management is
+     * guaranteed for sub tasks.
+     */
+    public ExecutionContext threadSafe() {
+        return new ThreadSafeExecutionContext(guild, guildContext, jda, member, sessionFactory, spotifyApi, id, textChannel, user, spotifyService);
+    }
+
+    /**
+     * Static access to the current CommandContext, if the current thread is a CommandExecutionThread. Shortcut for
+     * {@link ThreadContext.Current}
      */
     public static class Current {
 
@@ -241,6 +265,23 @@ public class ExecutionContext {
             return optional().map(ec -> ec.unwrap(contextType));
         }
 
+    }
+
+    public static class ThreadSafeExecutionContext extends ExecutionContext {
+
+
+        public ThreadSafeExecutionContext(Guild guild, GuildContext guildContext, JDA jda, Member member, SessionFactory sessionFactory, SpotifyApi spotifyApi, String id, TextChannel textChannel, User user, SpotifyService spotifyService) {
+            super(guild, guildContext, jda, member, sessionFactory, spotifyApi, id, textChannel, user, spotifyService);
+        }
+
+        @Override
+        public Session getSession() {
+            return sessionFactory.getCurrentSession();
+        }
+
+        @Override
+        public void closeSession() {
+        }
     }
 
 }

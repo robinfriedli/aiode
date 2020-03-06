@@ -11,7 +11,6 @@ import net.robinfriedli.botify.command.ClientQuestionEvent;
 import net.robinfriedli.botify.command.ClientQuestionEventManager;
 import net.robinfriedli.botify.command.widgets.WidgetManager;
 import net.robinfriedli.botify.concurrent.ExecutionContext;
-import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
 import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.entities.GuildSpecification;
@@ -38,9 +37,7 @@ public class GuildContext {
         clientQuestionEventManager = new ClientQuestionEventManager();
         this.guild = guild;
         this.specificationPk = specificationPk;
-        pooledTrackLoadingExecutor = new PooledTrackLoadingExecutor(
-            new ThreadExecutionQueue("pooled-track-loading-guild-" + guild.getId(), 3), this
-        );
+        pooledTrackLoadingExecutor = new PooledTrackLoadingExecutor(guild.getId(), this);
         replaceableTrackLoadingExecutor = new ReplaceableTrackLoadingExecutor(this);
         widgetManager = new WidgetManager();
     }

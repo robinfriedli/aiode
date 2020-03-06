@@ -13,10 +13,11 @@ import net.dv8tion.jda.api.entities.ISnowflake;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.AbstractAdminCommand;
+import net.robinfriedli.botify.command.Command;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.concurrent.ExecutionContext;
-import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
+import net.robinfriedli.botify.concurrent.CommandExecutionQueueManager;
+import net.robinfriedli.botify.concurrent.ThreadContext;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.entities.AccessConfiguration;
 import net.robinfriedli.botify.entities.GrantedRole;
@@ -49,26 +50,18 @@ public class CleanDbCommand extends AbstractAdminCommand {
             }
 
             CommandExecutionQueueManager executionQueueManager = Botify.get().getExecutionQueueManager();
-            CommandContext context = getContext();
+            Command command = this;
             Thread cleanupThread = new Thread(() -> {
-                ExecutionContext.Current.set(context);
+                ThreadContext.Current.install(command);
                 try {
-                    Thread joiningThread = new Thread(() -> {
-                        try {
-                            executionQueueManager.joinAll();
-                        } catch (InterruptedException ignored) {
-                        }
-                    });
-                    joiningThread.start();
                     try {
-                        joiningThread.join(60000);
-                        joiningThread.interrupt();
-                    } catch (InterruptedException ignored) {
+                        executionQueueManager.joinAll(60000);
+                    } catch (InterruptedException e) {
+                        return;
                     }
 
-                    doClean();
+                    consumeSession(this::doClean);
                 } finally {
-                    context.closeSession();
                     Botify.registerListeners();
                 }
             });
@@ -84,9 +77,8 @@ public class CleanDbCommand extends AbstractAdminCommand {
         }
     }
 
-    private void doClean() {
+    private void doClean(Session session) {
         ShardManager shardManager = Botify.get().getShardManager();
-        Session session = getContext().getSession();
 
         Set<String> activeGuildIds = shardManager.getGuilds().stream().map(ISnowflake::getId).collect(Collectors.toSet());
         GuildManager guildManager = Botify.get().getGuildManager();
@@ -96,38 +88,36 @@ public class CleanDbCommand extends AbstractAdminCommand {
         Set<Long> staleGuildSpecificationIds = getStaleGuildSpecificationIds(cb, activeGuildIds, session);
         StringBuilder messageBuilder = new StringBuilder();
 
-        invoke(() -> {
-            if (!stalePlaylistIds.isEmpty()) {
-                deleteStalePlaylistItems(cb, stalePlaylistIds, session, Song.class);
-                deleteStalePlaylistItems(cb, stalePlaylistIds, session, Video.class);
-                deleteStalePlaylistItems(cb, stalePlaylistIds, session, UrlTrack.class);
-                deleteStalePlaylists(cb, stalePlaylistIds, session);
-                messageBuilder.append("Cleared ").append(stalePlaylistIds.size()).append(" playlists").append(System.lineSeparator());
-            }
+        if (!stalePlaylistIds.isEmpty()) {
+            deleteStalePlaylistItems(cb, stalePlaylistIds, session, Song.class);
+            deleteStalePlaylistItems(cb, stalePlaylistIds, session, Video.class);
+            deleteStalePlaylistItems(cb, stalePlaylistIds, session, UrlTrack.class);
+            deleteStalePlaylists(cb, stalePlaylistIds, session);
+            messageBuilder.append("Cleared ").append(stalePlaylistIds.size()).append(" playlists").append(System.lineSeparator());
+        }
 
-            if (!staleGuildSpecificationIds.isEmpty()) {
-                Set<Long> staleAccessConfigurationsIds = getStaleAccessConfigurationsIds(cb, staleGuildSpecificationIds, session);
-                if (!staleAccessConfigurationsIds.isEmpty()) {
-                    deleteStaleGrantedRoles(cb, staleAccessConfigurationsIds, session);
-                    deleteStaleAccessConfigurations(cb, staleAccessConfigurationsIds, session);
-                    messageBuilder.append("Cleared ").append(staleAccessConfigurationsIds.size()).append(" access configurations")
-                        .append(System.lineSeparator());
-                }
-                deleteStaleGuildSpecifications(cb, staleGuildSpecificationIds, session);
-                messageBuilder.append("Cleared ").append(staleGuildSpecificationIds.size()).append(" guild specifications")
+        if (!staleGuildSpecificationIds.isEmpty()) {
+            Set<Long> staleAccessConfigurationsIds = getStaleAccessConfigurationsIds(cb, staleGuildSpecificationIds, session);
+            if (!staleAccessConfigurationsIds.isEmpty()) {
+                deleteStaleGrantedRoles(cb, staleAccessConfigurationsIds, session);
+                deleteStaleAccessConfigurations(cb, staleAccessConfigurationsIds, session);
+                messageBuilder.append("Cleared ").append(staleAccessConfigurationsIds.size()).append(" access configurations")
                     .append(System.lineSeparator());
             }
+            deleteStaleGuildSpecifications(cb, staleGuildSpecificationIds, session);
+            messageBuilder.append("Cleared ").append(staleGuildSpecificationIds.size()).append(" guild specifications")
+                .append(System.lineSeparator());
+        }
 
-            int affectedPresets = deleteStalePresets(cb, activeGuildIds, session);
-            if (affectedPresets > 0) {
-                messageBuilder.append("Cleared ").append(affectedPresets).append(" presets").append(System.lineSeparator());
-            }
+        int affectedPresets = deleteStalePresets(cb, activeGuildIds, session);
+        if (affectedPresets > 0) {
+            messageBuilder.append("Cleared ").append(affectedPresets).append(" presets").append(System.lineSeparator());
+        }
 
-            int affectedScripts = deleteStaleScripts(cb, activeGuildIds, session);
-            if (affectedScripts > 0) {
-                messageBuilder.append("Cleared ").append(affectedScripts).append(" scripts");
-            }
-        });
+        int affectedScripts = deleteStaleScripts(cb, activeGuildIds, session);
+        if (affectedScripts > 0) {
+            messageBuilder.append("Cleared ").append(affectedScripts).append(" scripts");
+        }
 
 
         String message = messageBuilder.toString();

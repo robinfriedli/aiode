@@ -11,7 +11,7 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
-import net.robinfriedli.botify.concurrent.CommandExecutionThread;
+import net.robinfriedli.botify.concurrent.CommandExecutionTask;
 import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.entities.CommandHistory;
@@ -22,7 +22,7 @@ import org.hibernate.SessionFactory;
  * Provides context for a command request, including JDA information specific to this command such as the message and
  * guild where this command originated, a per-request hibernate session with applied interceptors, the history entry for
  * this command and command monitoring. The current CommandContext can be accessed statically using the
- * CommandContext.Current class from anywhere in a {@link CommandExecutionThread}
+ * CommandContext.Current class from anywhere in a {@link CommandExecutionTask}
  */
 public class CommandContext extends ExecutionContext {
 

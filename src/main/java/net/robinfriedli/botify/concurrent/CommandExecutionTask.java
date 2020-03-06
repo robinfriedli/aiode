@@ -2,25 +2,31 @@ package net.robinfriedli.botify.concurrent;
 
 import net.robinfriedli.botify.command.Command;
 import net.robinfriedli.botify.command.CommandContext;
+import net.robinfriedli.botify.command.CommandManager;
 
 /**
  * Type of thread used to run commands that sets up the current {@link CommandContext} before running and extends
- * {@link QueuedThread} to be added to a {@link ThreadExecutionQueue}
+ * {@link QueuedTask} to be added to a {@link ThreadExecutionQueue}
  */
-public class CommandExecutionThread extends QueuedThread {
+public class CommandExecutionTask extends QueuedTask {
 
     private final Command command;
 
-    public CommandExecutionThread(Command command, ThreadExecutionQueue queue, Runnable runnable) {
-        super(queue, runnable);
+    public CommandExecutionTask(Command command, ThreadExecutionQueue queue, CommandManager commandManager) {
+        super(queue, () -> commandManager.doRunCommand(command));
         this.command = command;
     }
 
     @Override
     public void run() {
         ExecutionContext.Current.set(getCommandContext());
-        command.setThread(this);
-        super.run();
+        ThreadContext.Current.install(command);
+        command.setTask(this);
+        try {
+            super.run();
+        } finally {
+            ThreadContext.Current.clear();
+        }
     }
 
     @Override

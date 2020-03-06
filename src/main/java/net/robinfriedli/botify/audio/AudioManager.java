@@ -3,8 +3,6 @@ package net.robinfriedli.botify.audio;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
@@ -35,7 +33,7 @@ import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.command.widgets.NowPlayingWidget;
 import net.robinfriedli.botify.command.widgets.WidgetManager;
 import net.robinfriedli.botify.concurrent.ExecutionContext;
-import net.robinfriedli.botify.concurrent.LoggingThreadFactory;
+import net.robinfriedli.botify.concurrent.HistoryPool;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.entities.PlaybackHistory;
@@ -54,7 +52,6 @@ public class AudioManager extends AbstractShutdownable {
 
     private final AudioPlayerManager playerManager;
     private final AudioTrackLoader audioTrackLoader;
-    private final ExecutorService executorService;
     private final GuildManager guildManager;
     private final HibernateComponent hibernateComponent;
     private final Logger logger;
@@ -66,8 +63,6 @@ public class AudioManager extends AbstractShutdownable {
                         @Value("${botify.preferences.ipv6_blocks}") String ipv6Blocks) {
         playerManager = new DefaultAudioPlayerManager();
         audioTrackLoader = new AudioTrackLoader(playerManager);
-
-        executorService = Executors.newFixedThreadPool(3, new LoggingThreadFactory("audio-manager-pool"));
 
         this.guildManager = guildManager;
         this.hibernateComponent = hibernateComponent;
@@ -153,7 +148,7 @@ public class AudioManager extends AbstractShutdownable {
     }
 
     void createHistoryEntry(Playable playable, Guild guild, VoiceChannel voiceChannel) {
-        executorService.execute(() -> {
+        HistoryPool.execute(() -> {
             try {
                 hibernateComponent.consumeSession(session -> {
                     PlaybackHistory playbackHistory = new PlaybackHistory(LocalDateTime.now(), playable, guild, session);
@@ -198,6 +193,5 @@ public class AudioManager extends AbstractShutdownable {
             guildContext.getPlayback().stop();
         }
         playerManager.shutdown();
-        executorService.shutdown();
     }
 }

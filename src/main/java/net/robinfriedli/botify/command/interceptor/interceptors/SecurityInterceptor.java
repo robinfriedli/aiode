@@ -50,9 +50,9 @@ public class SecurityInterceptor extends AbstractChainableCommandInterceptor {
             AbstractGuildProperty enableScriptingProperty = guildPropertyManager.getProperty("enableScripting");
             if (enableScriptingProperty != null) {
                 Session session = context.getSession();
-                Boolean enableScripting = enableScriptingProperty.get(Boolean.class, context.getGuildContext().getSpecification(session));
+                boolean enableScripting = enableScriptingProperty.get(Boolean.class, context.getGuildContext().getSpecification(session));
 
-                if (!(enableScripting != null && enableScripting)) {
+                if (!enableScripting) {
                     throw new InvalidCommandException("Scripting has been disabled for this guild. None of the commands in the scripting category may be used. " +
                         "Toggle the enable scripting property using the property command to enable / disable scripting.");
                 }

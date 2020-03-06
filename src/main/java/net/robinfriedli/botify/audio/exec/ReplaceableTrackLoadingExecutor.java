@@ -1,5 +1,6 @@
 package net.robinfriedli.botify.audio.exec;
 
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -7,8 +8,9 @@ import org.slf4j.LoggerFactory;
 
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.robinfriedli.botify.concurrent.ExecutionContext;
+import net.robinfriedli.botify.concurrent.ThreadContext;
 import net.robinfriedli.botify.discord.GuildContext;
-import net.robinfriedli.botify.exceptions.handlers.TrackLoadingExceptionHandler;
+import net.robinfriedli.botify.exceptions.ExceptionUtils;
 
 /**
  * TrackLoadingExecutor implementation that holds one single thread to execute the task with asynchronously. If another
@@ -19,19 +21,17 @@ import net.robinfriedli.botify.exceptions.handlers.TrackLoadingExceptionHandler;
 public class ReplaceableTrackLoadingExecutor implements TrackLoadingExecutor {
 
     private final AtomicInteger threadNumber;
-    private final AtomicReference<Thread> currentThreadReference;
+    private final AtomicReference<Future<?>> currentTask;
     private final GuildContext guildContext;
 
     public ReplaceableTrackLoadingExecutor(GuildContext guildContext) {
-        threadNumber = new AtomicInteger(1);
-        currentThreadReference = new AtomicReference<>();
+        threadNumber = new AtomicInteger(0);
+        currentTask = new AtomicReference<>();
         this.guildContext = guildContext;
     }
 
     @Override
     public synchronized void execute(Runnable trackLoadingRunnable) {
-        Thread thread = new ReplaceableThread(trackLoadingRunnable);
-        thread.setName("replaceable-track-loading-guild-" + guildContext.getGuild().getId() + "-thread-" + threadNumber.getAndIncrement());
         MessageChannel channel;
         ExecutionContext executionContext = null;
         if (ExecutionContext.Current.isSet()) {
@@ -40,45 +40,49 @@ public class ReplaceableTrackLoadingExecutor implements TrackLoadingExecutor {
         } else {
             channel = guildContext.getPlayback().getCommunicationChannel();
         }
-        thread.setUncaughtExceptionHandler(new TrackLoadingExceptionHandler(LoggerFactory.getLogger(getClass()), channel, executionContext));
-        registerTrackLoading(thread);
-        thread.start();
-    }
 
-    private void registerTrackLoading(Thread thread) {
-        Thread currentThread = currentThreadReference.get();
-        if (currentThread != null && currentThread.isAlive()) {
-            currentThread.interrupt();
+        Future<?> runningTask = currentTask.get();
+        if (runningTask != null) {
+            runningTask.cancel(true);
         }
-        currentThreadReference.set(thread);
+
+        int expectedThreadNumber = threadNumber.incrementAndGet();
+        ExecutionContext finalExecutionContext = executionContext != null ? executionContext.threadSafe() : null;
+        Future<?> future = PooledTrackLoadingExecutor.GLOBAL_POOL.submit(() -> {
+            try {
+                if (finalExecutionContext != null) {
+                    ExecutionContext.Current.set(finalExecutionContext);
+                }
+
+                if (channel != null) {
+                    ThreadContext.Current.install(channel);
+                }
+
+
+                trackLoadingRunnable.run();
+            } catch (Throwable e) {
+                ExceptionUtils.handleTrackLoadingException(e, LoggerFactory.getLogger(ReplaceableTrackLoadingExecutor.class), finalExecutionContext, channel);
+                throw e;
+            } finally {
+                ThreadContext.Current.clear();
+                if (expectedThreadNumber == threadNumber.get()) {
+                    currentTask.set(null);
+                }
+            }
+        });
+        currentTask.set(future);
     }
 
     public void abort() {
-        Thread thread = currentThreadReference.get();
-        if (thread != null && thread.isAlive()) {
-            thread.interrupt();
+        Future<?> future = currentTask.get();
+        if (future != null && !future.isDone()) {
+            future.cancel(true);
         }
     }
 
     public boolean isIdle() {
-        Thread thread = currentThreadReference.get();
-        return thread == null || !thread.isAlive();
-    }
-
-    private final class ReplaceableThread extends Thread {
-
-        private ReplaceableThread(Runnable runnable) {
-            super(runnable);
-        }
-
-        @Override
-        public void run() {
-            try {
-                super.run();
-            } finally {
-                currentThreadReference.compareAndExchange(this, null);
-            }
-        }
+        Future<?> future = currentTask.get();
+        return future == null || future.isDone();
     }
 
 }

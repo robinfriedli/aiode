@@ -1,6 +1,10 @@
 package net.robinfriedli.botify.discord.listeners;
 
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -22,15 +26,18 @@ import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateNicknameE
 import net.dv8tion.jda.api.events.role.RoleDeleteEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.sharding.ShardManager;
+import net.robinfriedli.botify.Botify;
+import net.robinfriedli.botify.boot.ShutdownableExecutorService;
 import net.robinfriedli.botify.boot.configurations.HibernateComponent;
+import net.robinfriedli.botify.command.commands.customisation.RenameCommand;
+import net.robinfriedli.botify.concurrent.CommandExecutionQueueManager;
 import net.robinfriedli.botify.concurrent.EventHandlerPool;
-import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
+import net.robinfriedli.botify.concurrent.LoggingThreadFactory;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.entities.GrantedRole;
-import net.robinfriedli.botify.function.HibernateInvoker;
 import org.discordbots.api.client.DiscordBotListAPI;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
@@ -40,6 +47,15 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class GuildManagementListener extends ListenerAdapter {
+
+    private static final ExecutorService STATS_UPDATE_POOL = new ThreadPoolExecutor(0, 1,
+        10L, TimeUnit.SECONDS,
+        new LinkedBlockingQueue<>(),
+        new LoggingThreadFactory("topgg-stats-update-pool"));
+
+    static {
+        Botify.SHUTDOWNABLES.add(new ShutdownableExecutorService(STATS_UPDATE_POOL));
+    }
 
     private final CommandExecutionQueueManager executionQueueManager;
     @Nullable
@@ -67,39 +83,39 @@ public class GuildManagementListener extends ListenerAdapter {
 
     @Override
     public void onGuildJoin(@NotNull GuildJoinEvent event) {
-        EventHandlerPool.POOL.execute(() -> {
-            Guild guild = event.getGuild();
-            guildManager.addGuild(guild);
-            executionQueueManager.addGuild(guild);
+        if (discordBotListAPI != null) {
+            STATS_UPDATE_POOL.execute(() -> {
+                Guild guild = event.getGuild();
+                guildManager.addGuild(guild);
+                executionQueueManager.addGuild(guild);
 
-            if (discordBotListAPI != null) {
                 for (JDA shard : shardManager.getShards()) {
                     JDA.ShardInfo shardInfo = shard.getShardInfo();
                     discordBotListAPI.setStats(shardInfo.getShardId(), shardInfo.getShardTotal(), shard.getGuilds().size());
                 }
-            }
-        });
+            });
+        }
     }
 
     @Override
     public void onGuildLeave(@NotNull GuildLeaveEvent event) {
-        EventHandlerPool.POOL.execute(() -> {
-            Guild guild = event.getGuild();
-            guildManager.removeGuild(guild);
-            executionQueueManager.removeGuild(guild);
+        if (discordBotListAPI != null) {
+            STATS_UPDATE_POOL.execute(() -> {
+                Guild guild = event.getGuild();
+                guildManager.removeGuild(guild);
+                executionQueueManager.removeGuild(guild);
 
-            if (discordBotListAPI != null) {
                 for (JDA shard : shardManager.getShards()) {
                     JDA.ShardInfo shardInfo = shard.getShardInfo();
                     discordBotListAPI.setStats(shardInfo.getShardId(), shardInfo.getShardTotal(), shard.getGuilds().size());
                 }
-            }
-        });
+            });
+        }
     }
 
     @Override
     public void onRoleDelete(@Nonnull RoleDeleteEvent event) {
-        EventHandlerPool.POOL.execute(() -> {
+        EventHandlerPool.execute(() -> {
             Role role = event.getRole();
             String roleId = role.getId();
             hibernateComponent.consumeSession(session -> {
@@ -131,24 +147,23 @@ public class GuildManagementListener extends ListenerAdapter {
     public void onGuildMemberUpdateNickname(@Nonnull GuildMemberUpdateNicknameEvent event) {
         Guild guild = event.getGuild();
         if (event.getMember().equals(guild.getSelfMember())) {
-            // synchronise invoked transaction per guild, as invoked transactions executed by commands via AbstractCommand#invoke
-            // are always synchronised per guild this makes sure that if this event is triggered by the rename command this task will
-            // run after the rename command has committed its transaction
-            EventHandlerPool.POOL.execute(() -> HibernateInvoker.create(guild).invoke(session -> {
+            EventHandlerPool.execute(() -> RenameCommand.RENAME_SYNC.execute(guild.getIdLong(), () -> {
                     GuildContext guildContext = guildManager.getContextForGuild(guild);
                     String botName = guildContext.getBotName();
                     String name = event.getNewNickname();
                     if (!Objects.equals(name, botName)) {
-                        guildContext.setBotName(name);
+                        hibernateComponent.consumeSession(session -> {
+                            guildContext.setBotName(name);
 
-                        EmbedBuilder embedBuilder = new EmbedBuilder();
-                        embedBuilder.setTitle("Renamed");
-                        embedBuilder.setDescription(String.format("Botify has been renamed to '%s'. This new name can be used as command prefix.", name));
-                        embedBuilder.setColor(ColorSchemeProperty.getColor(guildContext.getSpecification(session)));
-                        TextChannel textChannel = guildManager.getDefaultTextChannelForGuild(guild);
-                        if (textChannel != null) {
-                            messageService.sendTemporary(embedBuilder.build(), textChannel);
-                        }
+                            EmbedBuilder embedBuilder = new EmbedBuilder();
+                            embedBuilder.setTitle("Renamed");
+                            embedBuilder.setDescription(String.format("Botify has been renamed to '%s'. This new name can be used as command prefix.", name));
+                            embedBuilder.setColor(ColorSchemeProperty.getColor(guildContext.getSpecification(session)));
+                            TextChannel textChannel = guildManager.getDefaultTextChannelForGuild(guild);
+                            if (textChannel != null) {
+                                messageService.sendTemporary(embedBuilder.build(), textChannel);
+                            }
+                        });
                     }
                 }
             ));

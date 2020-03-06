@@ -1,8 +1,6 @@
 package net.robinfriedli.botify.command.interceptor.interceptors;
 
 import java.awt.Color;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,14 +14,12 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
-import net.robinfriedli.botify.Botify;
-import net.robinfriedli.botify.boot.ShutdownableExecutorService;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.Command;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.interceptor.AbstractChainableCommandInterceptor;
 import net.robinfriedli.botify.command.interceptor.CommandInterceptor;
-import net.robinfriedli.botify.concurrent.LoggingThreadFactory;
+import net.robinfriedli.botify.concurrent.HistoryPool;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.CommandHistory;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
@@ -40,12 +36,6 @@ import net.robinfriedli.botify.persist.StaticSessionProvider;
  * during execution
  */
 public class CommandExecutionInterceptor extends AbstractChainableCommandInterceptor {
-
-    private static final ExecutorService COMMAND_HISTORY_SERVICE = Executors.newFixedThreadPool(3, new LoggingThreadFactory("command-history-pool"));
-
-    static {
-        Botify.SHUTDOWNABLES.add(new ShutdownableExecutorService(COMMAND_HISTORY_SERVICE));
-    }
 
     private final MessageService messageService;
     private final Logger logger;
@@ -66,7 +56,7 @@ public class CommandExecutionInterceptor extends AbstractChainableCommandInterce
             try {
                 command.doRun();
             } catch (Throwable e) {
-                if (command.getThread().isTerminated()) {
+                if ((command.getTask() != null && command.getTask().isTerminated()) || Thread.currentThread().isInterrupted()) {
                     logger.warn(String.format("Suppressed '%s' because command execution was interrupted.", e));
                     return;
                 }
@@ -177,7 +167,7 @@ public class CommandExecutionInterceptor extends AbstractChainableCommandInterce
                              boolean unexpectedException) {
         CommandContext context = command.getContext();
         context.interruptMonitoring();
-        COMMAND_HISTORY_SERVICE.execute(() -> {
+        HistoryPool.execute(() -> {
             CommandHistory history = context.getCommandHistory();
             if (history != null) {
                 history.setDurationMs(System.currentTimeMillis() - history.getStartMillis());

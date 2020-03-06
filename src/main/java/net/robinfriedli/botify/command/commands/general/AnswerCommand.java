@@ -47,7 +47,6 @@ public class AnswerCommand extends AbstractCommand {
             }
             try {
                 targetCommand = sourceCommand.fork(getContext());
-                targetCommand.setThread(getThread());
                 targetCommand.withUserResponse(option);
                 question.destroy();
             } catch (RuntimeException e) {

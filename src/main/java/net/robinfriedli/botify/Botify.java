@@ -21,8 +21,8 @@ import net.robinfriedli.botify.boot.configurations.GroovySandboxComponent;
 import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.command.SecurityManager;
+import net.robinfriedli.botify.concurrent.CommandExecutionQueueManager;
 import net.robinfriedli.botify.cron.CronJobService;
-import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
@@ -183,9 +183,10 @@ public class Botify {
         forceShutdownThread.start();
 
         executionQueueManager.closeAll();
+        executionQueueManager.cancelEnqueued();
         try {
             LOGGER.info("Waiting for commands to finish");
-            executionQueueManager.joinAll();
+            executionQueueManager.joinAll(0);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             forceShutdownThread.interrupt();

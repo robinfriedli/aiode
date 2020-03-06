@@ -7,6 +7,11 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.Lists;
 
+/**
+ * Allows static access to a thread local storage of objects useful during the execution of a thread. The best example
+ * is the{@link ExecutionContext} but this is also used to store message channel or command objects used in uncaught
+ * exception handlers created by thread factories or other scenarios where the value may not be passed directly.
+ */
 public class ThreadContext {
 
     private final List<Object> installedContexts = Lists.newArrayList();

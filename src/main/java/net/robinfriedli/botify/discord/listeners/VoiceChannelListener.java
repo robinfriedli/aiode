@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import javax.annotation.Nonnull;
 
+import com.antkorwin.xsync.XSync;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.VoiceChannel;
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceJoinEvent;
@@ -28,18 +29,20 @@ public class VoiceChannelListener extends ListenerAdapter {
 
     private final AudioManager audioManager;
     private final HibernateComponent hibernateComponent;
+    private final XSync<Long> xSync;
 
     public VoiceChannelListener(AudioManager audioManager, HibernateComponent hibernateComponent) {
         this.audioManager = audioManager;
         this.hibernateComponent = hibernateComponent;
+        this.xSync = new XSync<>();
     }
 
     @Override
     public void onGuildVoiceLeave(GuildVoiceLeaveEvent event) {
         if (!event.getMember().getUser().isBot()) {
-            EventHandlerPool.POOL.execute(() -> {
+            Guild guild = event.getGuild();
+            EventHandlerPool.execute(() -> xSync.execute(guild.getIdLong(), () -> {
                 VoiceChannel channel = event.getChannelLeft();
-                Guild guild = event.getGuild();
                 AudioPlayback playback = audioManager.getPlaybackForGuild(guild);
                 if (channel.equals(playback.getVoiceChannel())
                     && noOtherMembersLeft(channel, guild)) {
@@ -50,20 +53,20 @@ public class VoiceChannelListener extends ListenerAdapter {
                         playback.setAloneSince(LocalDateTime.now());
                     }
                 }
-            });
+            }));
         }
     }
 
     @Override
     public void onGuildVoiceJoin(@Nonnull GuildVoiceJoinEvent event) {
         if (!event.getMember().getUser().isBot()) {
-            EventHandlerPool.POOL.execute(() -> {
-                Guild guild = event.getGuild();
+            Guild guild = event.getGuild();
+            EventHandlerPool.execute(() -> xSync.execute(guild.getIdLong(), () -> {
                 AudioPlayback playback = audioManager.getPlaybackForGuild(guild);
                 if (event.getChannelJoined().equals(playback.getVoiceChannel())) {
                     playback.setAloneSince(null);
                 }
-            });
+            }));
         }
     }
 
@@ -79,7 +82,7 @@ public class VoiceChannelListener extends ListenerAdapter {
             GuildSpecification specification = guildManager.getContextForGuild(guild).getSpecification(session);
             AbstractGuildProperty enableAutoPauseProperty = guildPropertyManager.getProperty("enableAutoPause");
             if (enableAutoPauseProperty != null) {
-                return (boolean) enableAutoPauseProperty.get(specification);
+                return enableAutoPauseProperty.get(Boolean.class, specification);
             }
 
             return true;

@@ -7,8 +7,9 @@ import net.robinfriedli.botify.audio.exec.ReplaceableTrackLoadingExecutor;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
+import net.robinfriedli.botify.concurrent.CommandExecutionQueueManager;
+import net.robinfriedli.botify.concurrent.CommandExecutionTask;
 import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
-import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
@@ -21,11 +22,14 @@ public class AbortCommand extends AbstractCommand {
 
     @Override
     public void doRun() {
-        Thread commandExecutionThread = Thread.currentThread();
+        CommandExecutionTask commandExecutionTask = getTask();
+
         Thread abortThread = new Thread(() -> {
-            try {
-                commandExecutionThread.join();
-            } catch (InterruptedException ignored) {
+            if (commandExecutionTask != null) {
+                try {
+                    commandExecutionTask.getCountDownLatch().await();
+                } catch (InterruptedException ignored) {
+                }
             }
 
             CommandExecutionQueueManager executionQueueManager = Botify.get().getExecutionQueueManager();

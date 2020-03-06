@@ -12,6 +12,8 @@ import java.util.function.Function;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import com.antkorwin.xsync.XMutexFactory;
+import com.antkorwin.xsync.XMutexFactoryImpl;
 import com.google.api.client.util.Sets;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.MessageBuilder;
@@ -25,14 +27,13 @@ import net.robinfriedli.botify.command.commands.general.AnswerCommand;
 import net.robinfriedli.botify.command.interceptor.CommandInterceptorChain;
 import net.robinfriedli.botify.command.interceptor.interceptors.CommandParserInterceptor;
 import net.robinfriedli.botify.command.parser.CommandParser;
-import net.robinfriedli.botify.concurrent.CommandExecutionThread;
+import net.robinfriedli.botify.concurrent.CommandExecutionTask;
 import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.Abort;
-import net.robinfriedli.botify.exceptions.CommandFailure;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.function.CheckedRunnable;
 import net.robinfriedli.botify.function.HibernateInvoker;
@@ -53,6 +54,8 @@ import org.hibernate.Session;
  */
 public abstract class AbstractCommand implements Command {
 
+    private static final XMutexFactory<Long> GUILD_MUTEX_FACTORY = new XMutexFactoryImpl<>();
+
     private final CommandContribution commandContribution;
     private final CommandContext context;
     private final CommandManager commandManager;
@@ -66,7 +69,7 @@ public abstract class AbstractCommand implements Command {
     private String commandInput;
     // used to prevent onSuccess being called when no exception has been thrown but the command failed anyway
     private boolean isFailed;
-    private CommandExecutionThread thread;
+    private CommandExecutionTask task;
 
     public AbstractCommand(CommandContribution commandContribution,
                            CommandContext context,
@@ -135,12 +138,9 @@ public abstract class AbstractCommand implements Command {
         CommandContext fork = context.fork(command, context.getSession());
         AbstractCommand abstractCommand = commandManager.instantiateCommandForContext(fork, context.getSession(), false)
             .orElseThrow(() -> new InvalidCommandException("No command found for input"));
-        abstractCommand.setThread(thread);
         ExecutionContext.Current.set(fork);
         try {
             commandManager.getInterceptorChainWithoutScripting().intercept(abstractCommand);
-        } catch (CommandFailure ignored) {
-            abort();
         } finally {
             ExecutionContext.Current.set(context);
         }
@@ -168,20 +168,14 @@ public abstract class AbstractCommand implements Command {
         return false;
     }
 
-    /**
-     * @return the thread that is executing this command
-     */
     @Override
-    public CommandExecutionThread getThread() {
-        return thread;
+    public CommandExecutionTask getTask() {
+        return task;
     }
 
-    /**
-     * @param thread the thread that is executing this command
-     */
     @Override
-    public void setThread(CommandExecutionThread thread) {
-        this.thread = thread;
+    public void setTask(CommandExecutionTask task) {
+        this.task = task;
     }
 
     protected void invoke(CheckedRunnable runnable) {
@@ -212,7 +206,7 @@ public abstract class AbstractCommand implements Command {
      * method, e.g. spamming the add command concurrently could evade the playlist size limit.
      */
     protected HibernateInvoker createSynchronisedHibernateInvoker() {
-        return HibernateInvoker.create(getContext().getSession(), getContext().getGuild());
+        return HibernateInvoker.create(getContext().getSession(), GUILD_MUTEX_FACTORY.getMutex(context.getGuild().getIdLong()));
     }
 
     /**

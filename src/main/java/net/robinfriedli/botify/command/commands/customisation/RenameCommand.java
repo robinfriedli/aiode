@@ -1,5 +1,6 @@
 package net.robinfriedli.botify.command.commands.customisation;
 
+import com.antkorwin.xsync.XSync;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.robinfriedli.botify.command.AbstractCommand;
@@ -9,6 +10,8 @@ import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 
 public class RenameCommand extends AbstractCommand {
+
+    public static final XSync<Long> RENAME_SYNC = new XSync<>();
 
     private boolean couldChangeNickname;
 
@@ -26,11 +29,9 @@ public class RenameCommand extends AbstractCommand {
             throw new InvalidCommandException("Length should be 1 - 32 characters");
         }
 
-        // create enclosing transaction that is blocked until the nickname is set
-        invoke(() -> {
-            context.getGuildContext().setBotName(name);
+        RENAME_SYNC.execute(guild.getIdLong(), () -> {
+            invoke(() -> context.getGuildContext().setBotName(name));
             try {
-                // use complete() in this case to make the transaction wait fo the nickname change to complete
                 guild.getSelfMember().modifyNickname(name).complete();
                 couldChangeNickname = true;
             } catch (InsufficientPermissionException ignored) {

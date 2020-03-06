@@ -16,9 +16,9 @@ import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
+import net.robinfriedli.botify.concurrent.CommandExecutionQueueManager;
 import net.robinfriedli.botify.concurrent.EventHandlerPool;
 import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
-import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.MessageService;
@@ -63,28 +63,23 @@ public class CommandListener extends ListenerAdapter {
             return;
         }
 
-        EventHandlerPool.POOL.execute(() -> {
-            // DO NOT use StaticSessionProvider#invokeWithSession here. Since a CommandContext will be set on this thread
-            // and this thread will be reused, StaticSessionProvider#invokeWithSession does not close the session,
-            // causing a connection leak filling up the C3P0 connection pool.
-            try (Session session = hibernateComponent.getSessionFactory().openSession()) {
-                Guild guild = event.getGuild();
-                Message message = event.getMessage();
-                String msg = message.getContentDisplay();
-                GuildContext guildContext = guildManager.getContextForGuild(guild);
-                GuildSpecification specification = guildContext.getSpecification(session);
-                String botName = specification.getBotName();
-                String prefix = specification.getPrefix();
+        EventHandlerPool.execute(() -> hibernateComponent.consumeSession(session -> {
+            Guild guild = event.getGuild();
+            Message message = event.getMessage();
+            String msg = message.getContentDisplay();
+            GuildContext guildContext = guildManager.getContextForGuild(guild);
+            GuildSpecification specification = guildContext.getSpecification(session);
+            String botName = specification.getBotName();
+            String prefix = specification.getPrefix();
 
-                String lowerCaseMsg = msg.toLowerCase();
-                boolean startsWithPrefix = !Strings.isNullOrEmpty(prefix) && lowerCaseMsg.startsWith(prefix.toLowerCase());
-                boolean startsWithName = !Strings.isNullOrEmpty(botName) && lowerCaseMsg.startsWith(botName.toLowerCase());
-                if (startsWithPrefix || startsWithName || lowerCaseMsg.startsWith("$botify")) {
-                    String usedPrefix = extractUsedPrefix(message, lowerCaseMsg, botName, prefix, startsWithName, startsWithPrefix);
-                    startCommandExecution(usedPrefix, message, guild, guildContext, session, event);
-                }
+            String lowerCaseMsg = msg.toLowerCase();
+            boolean startsWithPrefix = !Strings.isNullOrEmpty(prefix) && lowerCaseMsg.startsWith(prefix.toLowerCase());
+            boolean startsWithName = !Strings.isNullOrEmpty(botName) && lowerCaseMsg.startsWith(botName.toLowerCase());
+            if (startsWithPrefix || startsWithName || lowerCaseMsg.startsWith("$botify")) {
+                String usedPrefix = extractUsedPrefix(message, lowerCaseMsg, botName, prefix, startsWithName, startsWithPrefix);
+                startCommandExecution(usedPrefix, message, guild, guildContext, session, event);
             }
-        });
+        }));
     }
 
     private String extractUsedPrefix(Message message, String lowerCaseMsg, String botName, String prefix, boolean startsWithName, boolean startsWithPrefix) {

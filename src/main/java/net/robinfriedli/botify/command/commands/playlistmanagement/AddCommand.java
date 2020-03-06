@@ -89,7 +89,7 @@ public class AddCommand extends AbstractPlayableLoadingCommand {
     }
 
     private void addPlayables(Playlist playlist, List<Playable> playables) {
-        if (getThread().isTerminated()) {
+        if ((getTask() != null && getTask().isTerminated()) || Thread.currentThread().isInterrupted()) {
             return;
         }
         Session session = getContext().getSession();

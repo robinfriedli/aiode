@@ -52,7 +52,7 @@ public class WidgetManager {
     }
 
     public synchronized void registerWidget(AbstractWidget widget) {
-        List<AbstractWidget> toRemove = com.google.common.collect.Lists.newArrayList();
+        List<AbstractWidget> toRemove = Lists.newArrayList();
         try {
             activeWidgets.stream()
                 .filter(w -> widget.getGuildId().equals(w.getGuildId()))
