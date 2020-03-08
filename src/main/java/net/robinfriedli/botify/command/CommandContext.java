@@ -1,6 +1,7 @@
 package net.robinfriedli.botify.command;
 
 import java.util.Objects;
+import java.util.concurrent.Future;
 
 import com.wrapper.spotify.SpotifyApi;
 import groovy.lang.GroovyShell;
@@ -29,7 +30,7 @@ public class CommandContext extends ExecutionContext {
     private final Message message;
     private final String commandBody;
     private CommandHistory commandHistory;
-    private Thread monitoringThread;
+    private Future<?> monitoring;
 
     public CommandContext(GuildMessageReceivedEvent event,
                           GuildContext guildContext,
@@ -87,19 +88,13 @@ public class CommandContext extends ExecutionContext {
         this.commandHistory = commandHistory;
     }
 
-    public void registerMonitoring(Thread monitoringThread) {
-        this.monitoringThread = monitoringThread;
-    }
-
-    public void startMonitoring() {
-        if (monitoringThread != null) {
-            monitoringThread.start();
-        }
+    public void registerMonitoring(Future<?> monitoring) {
+        this.monitoring = monitoring;
     }
 
     public void interruptMonitoring() {
-        if (monitoringThread != null) {
-            monitoringThread.interrupt();
+        if (monitoring != null) {
+            monitoring.cancel(true);
         }
     }
 

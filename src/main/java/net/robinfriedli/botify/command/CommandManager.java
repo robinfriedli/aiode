@@ -104,10 +104,10 @@ public class CommandManager {
      */
     public void runCommand(Command command, ThreadExecutionQueue executionQueue) {
         CommandContext context = command.getContext();
-        CommandExecutionTask commandExecutionThread = new CommandExecutionTask(command, executionQueue, this);
+        CommandExecutionTask commandExecutionTask = new CommandExecutionTask(command, executionQueue, this);
 
-        commandExecutionThread.setName("botify-command-execution-" + context);
-        boolean queued = !executionQueue.add(commandExecutionThread, false);
+        commandExecutionTask.setName("command-execution-" + context);
+        boolean queued = !executionQueue.add(commandExecutionTask, false);
 
         if (queued) {
             MessageService messageService = Botify.get().getMessageService();

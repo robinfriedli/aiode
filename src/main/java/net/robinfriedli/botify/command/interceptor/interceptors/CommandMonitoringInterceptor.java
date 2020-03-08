@@ -3,6 +3,7 @@ package net.robinfriedli.botify.command.interceptor.interceptors;
 import java.awt.Color;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -15,9 +16,10 @@ import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.interceptor.AbstractChainableCommandInterceptor;
 import net.robinfriedli.botify.command.interceptor.CommandInterceptor;
 import net.robinfriedli.botify.concurrent.CommandExecutionTask;
+import net.robinfriedli.botify.concurrent.DaemonThreadPool;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
-import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
+import net.robinfriedli.botify.function.LoggingRunnable;
 
 /**
  * Interceptor that monitors a command execution and sends a "Still loading..." message if the command takes longer than
@@ -47,7 +49,11 @@ public class CommandMonitoringInterceptor extends AbstractChainableCommandInterc
         }
 
         CountDownLatch countDownLatch = task.getCountDownLatch();
-        Thread monitoringThread = new Thread(() -> {
+        Future<?> monitoring = DaemonThreadPool.submit((LoggingRunnable) () -> {
+            Thread thread = Thread.currentThread();
+            String oldName = thread.getName();
+            thread.setName("command-monitoring-" + context);
+
             CompletableFuture<Message> stillLoadingMessage = null;
             CompletableFuture<Message> warningMessage = null;
             try {
@@ -81,13 +87,11 @@ public class CommandMonitoringInterceptor extends AbstractChainableCommandInterc
             } catch (InterruptedException e) {
                 // CommandExecutionInterceptor interrupts monitoring in post command
                 deleteMessages(stillLoadingMessage, warningMessage);
+            } finally {
+                thread.setName(oldName);
             }
         });
-        monitoringThread.setUncaughtExceptionHandler(new LoggingExceptionHandler());
-        monitoringThread.setName("botify command monitoring: " + context);
-        monitoringThread.setDaemon(true);
-        context.registerMonitoring(monitoringThread);
-        context.startMonitoring();
+        context.registerMonitoring(monitoring);
     }
 
     private void deleteMessages(CompletableFuture<Message> stillLoadingMessage, CompletableFuture<Message> warningMessage) {

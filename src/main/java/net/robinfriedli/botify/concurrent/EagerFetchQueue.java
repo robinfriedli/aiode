@@ -13,7 +13,7 @@ import net.robinfriedli.botify.boot.ShutdownableExecutorService;
  */
 public class EagerFetchQueue {
 
-    public static final ExecutorService FETCH_POOL = new EagerlyScalingThreadPoolExecutor("eager-fetch-pool", 5, 20, 1, TimeUnit.MINUTES);
+    public static final ExecutorService FETCH_POOL = new EagerlyScalingThreadPoolExecutor("eager-fetch-pool", 3, 20, 1, TimeUnit.MINUTES);
 
     static {
         Botify.SHUTDOWNABLES.add(new ShutdownableExecutorService(FETCH_POOL));

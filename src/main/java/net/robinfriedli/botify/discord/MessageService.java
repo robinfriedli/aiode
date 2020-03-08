@@ -7,8 +7,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -32,10 +30,8 @@ import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.requests.restaction.MessageAction;
 import net.robinfriedli.botify.Botify;
-import net.robinfriedli.botify.boot.AbstractShutdownable;
 import net.robinfriedli.botify.boot.SpringPropertiesConfig;
 import net.robinfriedli.botify.boot.configurations.HibernateComponent;
-import net.robinfriedli.botify.concurrent.LoggingThreadFactory;
 import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
@@ -47,9 +43,7 @@ import org.hibernate.Session;
 import org.springframework.stereotype.Component;
 
 @Component
-public class MessageService extends AbstractShutdownable {
-
-    private static final ScheduledExecutorService TEMP_MESSAGE_DELETION_SCHEDULER = Executors.newScheduledThreadPool(3, new LoggingThreadFactory("temp-message-deletion-scheduler"));
+public class MessageService {
 
     private final int limit = 1000;
     private final GuildManager guildManager;
@@ -62,11 +56,6 @@ public class MessageService extends AbstractShutdownable {
         this.hibernateComponent = hibernateComponent;
         this.logger = LoggerFactory.getLogger(getClass());
         this.springPropertiesConfig = springPropertiesConfig;
-    }
-
-    @Override
-    public void shutdown(int delayMs) {
-        TEMP_MESSAGE_DELETION_SCHEDULER.shutdownNow();
     }
 
     public CompletableFuture<Message> send(String message, MessageChannel channel) {
@@ -441,7 +430,7 @@ public class MessageService extends AbstractShutdownable {
         }
     }
 
-    private class TempMessageDeletionTask implements Runnable {
+    private class TempMessageDeletionTask {
 
         private final Message message;
 
@@ -449,19 +438,7 @@ public class MessageService extends AbstractShutdownable {
             this.message = message;
         }
 
-        @Override
-        public void run() {
-            try {
-                message.delete().queue(v -> {
-                }, this::logError);
-            } catch (InsufficientPermissionException e) {
-                logger.warn(String.format("Insufficient permission to delete temp message %s on guild %s", message, message.getGuild()));
-            } catch (Throwable e) {
-                logError(e);
-            }
-        }
-
-        void schedule() {
+        private void schedule() {
             int timeoutSeconds;
             try {
                 timeoutSeconds = getTimeout();
@@ -471,7 +448,14 @@ public class MessageService extends AbstractShutdownable {
             }
 
             if (timeoutSeconds > 0) {
-                TEMP_MESSAGE_DELETION_SCHEDULER.schedule(this, timeoutSeconds, TimeUnit.SECONDS);
+                try {
+                    message.delete().queueAfter(timeoutSeconds, TimeUnit.SECONDS, v -> {
+                    }, this::logError);
+                } catch (InsufficientPermissionException e) {
+                    logger.warn(String.format("Insufficient permission to delete temp message %s on guild %s", message, message.getGuild()));
+                } catch (Throwable e) {
+                    logError(e);
+                }
             }
         }
 

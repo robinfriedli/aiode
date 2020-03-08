@@ -11,7 +11,7 @@ import net.robinfriedli.botify.boot.ShutdownableExecutorService;
  */
 public class HistoryPool {
 
-    private static final ExecutorService POOL = Executors.newFixedThreadPool(3, new LoggingThreadFactory("history-pool"));
+    public static final ExecutorService POOL = Executors.newFixedThreadPool(3, new LoggingThreadFactory("history-pool"));
 
     static {
         Botify.SHUTDOWNABLES.add(new ShutdownableExecutorService(POOL));
