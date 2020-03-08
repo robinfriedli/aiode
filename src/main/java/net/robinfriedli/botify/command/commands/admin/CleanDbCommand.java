@@ -30,6 +30,7 @@ import net.robinfriedli.botify.entities.StoredScript;
 import net.robinfriedli.botify.entities.UrlTrack;
 import net.robinfriedli.botify.entities.Video;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
+import net.robinfriedli.botify.persist.StaticSessionProvider;
 import org.hibernate.Session;
 
 public class CleanDbCommand extends AbstractAdminCommand {
@@ -60,12 +61,12 @@ public class CleanDbCommand extends AbstractAdminCommand {
                         return;
                     }
 
-                    consumeSession(this::doClean);
+                    StaticSessionProvider.consumeSession(this::doClean);
                 } finally {
                     Botify.registerListeners();
                 }
             });
-            cleanupThread.setName("Botify database cleanup thread");
+            cleanupThread.setName("database-cleanup-thread-" + command.getContext().toString());
             Thread.UncaughtExceptionHandler commandExecutionExceptionHandler = Thread.currentThread().getUncaughtExceptionHandler();
             if (commandExecutionExceptionHandler != null) {
                 cleanupThread.setUncaughtExceptionHandler(commandExecutionExceptionHandler);
