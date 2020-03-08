@@ -1,10 +1,6 @@
 package net.robinfriedli.botify.discord.listeners;
 
 import java.util.Objects;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -26,13 +22,10 @@ import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateNicknameE
 import net.dv8tion.jda.api.events.role.RoleDeleteEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.sharding.ShardManager;
-import net.robinfriedli.botify.Botify;
-import net.robinfriedli.botify.boot.ShutdownableExecutorService;
 import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.command.commands.customisation.RenameCommand;
 import net.robinfriedli.botify.concurrent.CommandExecutionQueueManager;
 import net.robinfriedli.botify.concurrent.EventHandlerPool;
-import net.robinfriedli.botify.concurrent.LoggingThreadFactory;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.MessageService;
@@ -48,15 +41,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class GuildManagementListener extends ListenerAdapter {
 
-    private static final ExecutorService STATS_UPDATE_POOL = new ThreadPoolExecutor(0, 1,
-        10L, TimeUnit.SECONDS,
-        new LinkedBlockingQueue<>(),
-        new LoggingThreadFactory("topgg-stats-update-pool"));
-
-    static {
-        Botify.SHUTDOWNABLES.add(new ShutdownableExecutorService(STATS_UPDATE_POOL));
-    }
-
     private final CommandExecutionQueueManager executionQueueManager;
     @Nullable
     private final DiscordBotListAPI discordBotListAPI;
@@ -64,6 +48,7 @@ public class GuildManagementListener extends ListenerAdapter {
     private final HibernateComponent hibernateComponent;
     private final Logger logger;
     private final MessageService messageService;
+    private final Object statsUpdateLock;
     private final ShardManager shardManager;
 
     public GuildManagementListener(CommandExecutionQueueManager executionQueueManager,
@@ -74,43 +59,48 @@ public class GuildManagementListener extends ListenerAdapter {
                                    ShardManager shardManager) {
         this.executionQueueManager = executionQueueManager;
         this.discordBotListAPI = discordBotListAPI;
-        this.messageService = messageService;
         this.guildManager = guildManager;
         this.hibernateComponent = hibernateComponent;
         logger = LoggerFactory.getLogger(getClass());
+        this.messageService = messageService;
+        statsUpdateLock = new Object();
         this.shardManager = shardManager;
     }
 
     @Override
     public void onGuildJoin(@NotNull GuildJoinEvent event) {
-        if (discordBotListAPI != null) {
-            STATS_UPDATE_POOL.execute(() -> {
-                Guild guild = event.getGuild();
-                guildManager.addGuild(guild);
-                executionQueueManager.addGuild(guild);
+        EventHandlerPool.execute(() -> {
+            Guild guild = event.getGuild();
+            guildManager.addGuild(guild);
+            executionQueueManager.addGuild(guild);
 
-                for (JDA shard : shardManager.getShards()) {
-                    JDA.ShardInfo shardInfo = shard.getShardInfo();
-                    discordBotListAPI.setStats(shardInfo.getShardId(), shardInfo.getShardTotal(), shard.getGuilds().size());
+            if (discordBotListAPI != null) {
+                synchronized (statsUpdateLock) {
+                    for (JDA shard : shardManager.getShards()) {
+                        JDA.ShardInfo shardInfo = shard.getShardInfo();
+                        discordBotListAPI.setStats(shardInfo.getShardId(), shardInfo.getShardTotal(), shard.getGuilds().size());
+                    }
                 }
-            });
-        }
+            }
+        });
     }
 
     @Override
     public void onGuildLeave(@NotNull GuildLeaveEvent event) {
-        if (discordBotListAPI != null) {
-            STATS_UPDATE_POOL.execute(() -> {
-                Guild guild = event.getGuild();
-                guildManager.removeGuild(guild);
-                executionQueueManager.removeGuild(guild);
+        EventHandlerPool.execute(() -> {
+            Guild guild = event.getGuild();
+            guildManager.removeGuild(guild);
+            executionQueueManager.removeGuild(guild);
 
-                for (JDA shard : shardManager.getShards()) {
-                    JDA.ShardInfo shardInfo = shard.getShardInfo();
-                    discordBotListAPI.setStats(shardInfo.getShardId(), shardInfo.getShardTotal(), shard.getGuilds().size());
+            if (discordBotListAPI != null) {
+                synchronized (statsUpdateLock) {
+                    for (JDA shard : shardManager.getShards()) {
+                        JDA.ShardInfo shardInfo = shard.getShardInfo();
+                        discordBotListAPI.setStats(shardInfo.getShardId(), shardInfo.getShardTotal(), shard.getGuilds().size());
+                    }
                 }
-            });
-        }
+            }
+        });
     }
 
     @Override

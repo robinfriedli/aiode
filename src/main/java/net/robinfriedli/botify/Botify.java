@@ -7,7 +7,6 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.antkorwin.xsync.XSync;
 import com.google.api.client.util.Sets;
 import com.wrapper.spotify.SpotifyApi;
 import net.dv8tion.jda.api.OnlineStatus;
@@ -69,7 +68,6 @@ public class Botify {
     private final SpotifyApi.Builder spotifyApiBuilder;
     private final SpringPropertiesConfig springPropertiesConfig;
     private final VersionManager versionManager;
-    private final XSync<String> stringSync;
 
     public Botify(ApplicationContext springBootContext,
                   AudioManager audioManager,
@@ -90,7 +88,6 @@ public class Botify {
                   SpotifyApi.Builder spotifyApiBuilder,
                   SpringPropertiesConfig springPropertiesConfig,
                   VersionManager versionManager,
-                  XSync<String> stringSync,
                   ListenerAdapter... listeners) {
         this.springBootContext = springBootContext;
         this.audioManager = audioManager;
@@ -111,7 +108,6 @@ public class Botify {
         this.spotifyApiBuilder = spotifyApiBuilder;
         this.springPropertiesConfig = springPropertiesConfig;
         this.versionManager = versionManager;
-        this.stringSync = stringSync;
         this.registeredListeners = listeners;
         instance = this;
     }
@@ -288,7 +284,4 @@ public class Botify {
         return versionManager;
     }
 
-    public XSync<String> getStringSync() {
-        return stringSync;
-    }
 }

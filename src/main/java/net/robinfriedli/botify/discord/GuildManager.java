@@ -16,6 +16,7 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.antkorwin.xsync.XSync;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
@@ -76,6 +77,7 @@ public class GuildManager {
     private final Logger logger;
     private final Mode mode;
     private final QueryBuilderFactory queryBuilderFactory;
+    private final XSync<Long> guildSetupSync;
     private AudioManager audioManager;
 
     public GuildManager(CommandManager commandManager,
@@ -89,18 +91,19 @@ public class GuildManager {
         try {
             embedDocumentFile = embedDocumentsResource.getFile();
             defaultPlaylistFile = playlistsResource.getFile();
-            this.hibernateComponent = hibernateComponent;
-            this.jxpBackend = jxpBackend;
-            logger = LoggerFactory.getLogger(getClass());
-            this.mode = modePartitioned ? GuildManager.Mode.PARTITIONED : GuildManager.Mode.SHARED;
-            this.queryBuilderFactory = queryBuilderFactory;
         } catch (IOException e) {
             throw new RuntimeException("Could not instantiate " + getClass().getSimpleName(), e);
         }
+        this.hibernateComponent = hibernateComponent;
+        this.jxpBackend = jxpBackend;
+        logger = LoggerFactory.getLogger(getClass());
+        this.mode = modePartitioned ? GuildManager.Mode.PARTITIONED : GuildManager.Mode.SHARED;
+        this.queryBuilderFactory = queryBuilderFactory;
+        guildSetupSync = new XSync<>();
     }
 
     public void addGuild(Guild guild) {
-        initializeGuild(guild);
+        guildSetupSync.evaluate(guild.getIdLong(), () -> initializeGuild(guild));
     }
 
     public void removeGuild(Guild guild) {
@@ -141,13 +144,15 @@ public class GuildManager {
     }
 
     public GuildContext getContextForGuild(Guild guild) {
-        GuildContext guildContext = guildContexts.get(guild);
+        return guildSetupSync.evaluate(guild.getIdLong(), () -> {
+            GuildContext guildContext = guildContexts.get(guild);
 
-        if (guildContext == null) {
-            return initializeGuild(guild);
-        }
+            if (guildContext == null) {
+                return initializeGuild(guild);
+            }
 
-        return guildContext;
+            return guildContext;
+        });
     }
 
     public Set<Guild> getActiveGuilds(Session session) {
@@ -261,43 +266,41 @@ public class GuildManager {
     }
 
     private GuildContext initializeGuild(Guild guild) {
-        synchronized (guild) {
-            return hibernateComponent.invokeWithSession(session -> {
-                AudioPlayer player = audioManager.getPlayerManager().createPlayer();
+        return hibernateComponent.invokeWithSession(session -> {
+            AudioPlayer player = audioManager.getPlayerManager().createPlayer();
 
-                Optional<Long> existingSpecification = queryBuilderFactory.select(GuildSpecification.class, "pk", Long.class)
-                    .where((cb, root) -> cb.equal(root.get("guildId"), guild.getId()))
-                    .build(session)
-                    .uniqueResultOptional();
+            Optional<Long> existingSpecification = queryBuilderFactory.select(GuildSpecification.class, "pk", Long.class)
+                .where((cb, root) -> cb.equal(root.get("guildId"), guild.getId()))
+                .build(session)
+                .uniqueResultOptional();
 
-                if (existingSpecification.isPresent()) {
-                    GuildContext guildContext = new GuildContext(guild, new AudioPlayback(player, guild), existingSpecification.get());
-                    guildContexts.put(guild, guildContext);
-                    return guildContext;
-                } else {
-                    GuildSpecification newSpecification = HibernateInvoker.create(session).invoke(() -> {
-                        GuildSpecification specification = new GuildSpecification(guild);
-                        commandManager.getCommandContributionContext()
-                            .query(attribute("restrictedAccess").is(true))
-                            .getResultStream()
-                            .map(elem -> elem.getAttribute("identifier").getValue())
-                            .forEach(restrictedCommandIdentifier -> {
-                                AccessConfiguration permissionConfiguration = new AccessConfiguration(restrictedCommandIdentifier);
-                                session.persist(permissionConfiguration);
-                                specification.addAccessConfiguration(permissionConfiguration);
-                            });
-                        session.persist(specification);
-                        return specification;
-                    });
+            if (existingSpecification.isPresent()) {
+                GuildContext guildContext = new GuildContext(guild, new AudioPlayback(player, guild), existingSpecification.get());
+                guildContexts.put(guild, guildContext);
+                return guildContext;
+            } else {
+                GuildSpecification newSpecification = HibernateInvoker.create(session).invoke(() -> {
+                    GuildSpecification specification = new GuildSpecification(guild);
+                    commandManager.getCommandContributionContext()
+                        .query(attribute("restrictedAccess").is(true))
+                        .getResultStream()
+                        .map(elem -> elem.getAttribute("identifier").getValue())
+                        .forEach(restrictedCommandIdentifier -> {
+                            AccessConfiguration permissionConfiguration = new AccessConfiguration(restrictedCommandIdentifier);
+                            session.persist(permissionConfiguration);
+                            specification.addAccessConfiguration(permissionConfiguration);
+                        });
+                    session.persist(specification);
+                    return specification;
+                });
 
-                    GuildContext guildContext = new GuildContext(guild, new AudioPlayback(player, guild), newSpecification.getPk());
-                    guildContexts.put(guild, guildContext);
+                GuildContext guildContext = new GuildContext(guild, new AudioPlayback(player, guild), newSpecification.getPk());
+                guildContexts.put(guild, guildContext);
 
-                    handleNewGuild(guild);
-                    return guildContext;
-                }
-            });
-        }
+                handleNewGuild(guild);
+                return guildContext;
+            }
+        });
     }
 
     private void handleNewGuild(Guild guild) {
@@ -320,30 +323,25 @@ public class GuildManager {
             if (defaultPlaylistFile.exists()) {
                 try (Context context = jxpBackend.createLazyContext(defaultPlaylistFile)) {
                     HibernatePlaylistMigrator hibernatePlaylistMigrator = new HibernatePlaylistMigrator(context, guild, spotifyApiBuilder.build(), session);
-                    Map<Playlist, List<PlaylistItem>> playlistMap;
-                    try {
-                        playlistMap = hibernatePlaylistMigrator.perform();
-                    } catch (Exception e) {
-                        logger.error("Exception while migrating hibernate playlists", e);
-                        session.close();
-                        return;
-                    }
+                    Map<Playlist, List<PlaylistItem>> playlistMap = hibernatePlaylistMigrator.perform();
 
                     Mode mode = getMode();
-                    session.beginTransaction();
-                    for (Playlist playlist : playlistMap.keySet()) {
-                        Playlist existingList = SearchEngine.searchLocalList(session, playlist.getName(), mode == GuildManager.Mode.PARTITIONED, guild.getId());
-                        if (existingList == null) {
-                            playlistMap.get(playlist).forEach(item -> {
-                                item.add();
-                                session.persist(item);
-                            });
-                            session.persist(playlist);
+                    HibernateInvoker.create(session).invoke(currentSession -> {
+                        for (Playlist playlist : playlistMap.keySet()) {
+                            Playlist existingList = SearchEngine.searchLocalList(currentSession, playlist.getName(), mode == GuildManager.Mode.PARTITIONED, guild.getId());
+                            if (existingList == null) {
+                                playlistMap.get(playlist).forEach(item -> {
+                                    item.add();
+                                    currentSession.persist(item);
+                                });
+                                currentSession.persist(playlist);
+                            }
                         }
-                    }
-                    session.getTransaction().commit();
+                    });
                 }
             }
+        } catch (Throwable e) {
+            logger.error("Exception while setting up default playlists", e);
         }
     }
 
