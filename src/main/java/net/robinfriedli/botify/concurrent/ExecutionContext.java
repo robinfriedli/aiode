@@ -46,6 +46,7 @@ public class ExecutionContext {
     protected final User user;
     protected Session session;
     protected SpotifyService spotifyService;
+    private Thread thread;
 
     public ExecutionContext(Guild guild,
                             GuildContext guildContext,
@@ -130,6 +131,13 @@ public class ExecutionContext {
      * no ExecutionContext setup since some Interceptors try to inject the current context.
      */
     public Session getSession() {
+        ExecutionContext executionContext = Current.get();
+        if (executionContext != this) {
+            throw new IllegalStateException("Invoking ExecutionContext#getSession from a thread that is not associated with this ExecutionContext. " +
+                "It is not safe to pass Sessions between threads, as such this method can only be called by the thread " +
+                "where this ExecutionContext is installed as current ExecutionContext. You may use ExecutionContext#threadSafe to create a thread safe copy.");
+        }
+
         if (session != null && session.isOpen()) {
             return session;
         } else {
@@ -199,6 +207,14 @@ public class ExecutionContext {
      */
     public ExecutionContext threadSafe() {
         return new ThreadSafeExecutionContext(guild, guildContext, jda, member, sessionFactory, spotifyApi, id, textChannel, user, spotifyService);
+    }
+
+    public void setThread(Thread thread) {
+        if (this.thread != null && this.thread != thread) {
+            throw new IllegalStateException(String.format("Cannot install ExecutionContext for thread '%s', already installed on thread '%s'. Use ExecutionContext#threadSafe to create a thread safe copy.", thread, this.thread));
+        }
+
+        this.thread = thread;
     }
 
     /**

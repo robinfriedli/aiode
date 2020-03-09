@@ -29,6 +29,7 @@ import net.robinfriedli.botify.command.interceptor.interceptors.CommandParserInt
 import net.robinfriedli.botify.command.parser.CommandParser;
 import net.robinfriedli.botify.concurrent.CommandExecutionTask;
 import net.robinfriedli.botify.concurrent.ExecutionContext;
+import net.robinfriedli.botify.concurrent.ThreadContext;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
@@ -39,6 +40,7 @@ import net.robinfriedli.botify.function.CheckedRunnable;
 import net.robinfriedli.botify.function.HibernateInvoker;
 import net.robinfriedli.botify.function.SpotifyInvoker;
 import net.robinfriedli.botify.login.Login;
+import net.robinfriedli.botify.persist.StaticSessionProvider;
 import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
 import net.robinfriedli.botify.util.Util;
 import net.robinfriedli.stringlist.StringList;
@@ -135,15 +137,22 @@ public abstract class AbstractCommand implements Command {
      * @param command the command string
      */
     public void run(String command) {
-        CommandContext fork = context.fork(command, context.getSession());
-        AbstractCommand abstractCommand = commandManager.instantiateCommandForContext(fork, context.getSession(), false)
-            .orElseThrow(() -> new InvalidCommandException("No command found for input"));
-        ExecutionContext.Current.set(fork);
-        try {
-            commandManager.getInterceptorChainWithoutScripting().intercept(abstractCommand);
-        } finally {
-            ExecutionContext.Current.set(context);
-        }
+        StaticSessionProvider.consumeSession(session -> {
+            CommandContext fork = context.fork(command, session);
+            AbstractCommand abstractCommand = commandManager.instantiateCommandForContext(fork, session, false)
+                .orElseThrow(() -> new InvalidCommandException("No command found for input"));
+            ExecutionContext oldExecutionContext = ExecutionContext.Current.get();
+            ExecutionContext.Current.set(fork);
+            try {
+                commandManager.getInterceptorChainWithoutScripting().intercept(abstractCommand);
+            } finally {
+                if (oldExecutionContext != null) {
+                    ExecutionContext.Current.set(oldExecutionContext);
+                } else {
+                    ThreadContext.Current.drop(ExecutionContext.class);
+                }
+            }
+        });
     }
 
     public ArgumentController getArgumentController() {

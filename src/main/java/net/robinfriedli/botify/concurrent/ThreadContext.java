@@ -68,6 +68,10 @@ public class ThreadContext {
         }
 
         public static void install(Object o) {
+            if (o instanceof ExecutionContext) {
+                ((ExecutionContext) o).setThread(Thread.currentThread());
+            }
+
             get().install(o);
         }
 
