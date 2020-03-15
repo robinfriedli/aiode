@@ -4,6 +4,7 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.robinfriedli.botify.Botify;
+import net.robinfriedli.botify.command.commands.customisation.RenameCommand;
 import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
@@ -38,18 +39,22 @@ public class BotNameProperty extends AbstractGuildProperty {
         Botify botify = Botify.get();
         Guild guild = guildSpecification.getGuild(botify.getShardManager());
         if (guild != null) {
-            try {
-                guild.getSelfMember().modifyNickname(value).queue();
-            } catch (InsufficientPermissionException e) {
-                ExecutionContext executionContext = ExecutionContext.Current.get();
-                if (executionContext != null) {
-                    MessageService messageService = botify.getMessageService();
-                    TextChannel channel = executionContext.getChannel();
-                    messageService.sendError("I do not have permission to change my nickname, but you can still call me " + value, channel);
+            RenameCommand.RENAME_SYNC.execute(guild.getIdLong(), () -> {
+                try {
+                    guild.getSelfMember().modifyNickname(value).queue();
+                } catch (InsufficientPermissionException e) {
+                    ExecutionContext executionContext = ExecutionContext.Current.get();
+                    if (executionContext != null) {
+                        MessageService messageService = botify.getMessageService();
+                        TextChannel channel = executionContext.getChannel();
+                        messageService.sendError("I do not have permission to change my nickname, but you can still call me " + value, channel);
+                    }
                 }
-            }
+                guildSpecification.setBotName(value);
+            });
+        } else {
+            guildSpecification.setBotName(value);
         }
-        guildSpecification.setBotName(value);
     }
 
     @Override
