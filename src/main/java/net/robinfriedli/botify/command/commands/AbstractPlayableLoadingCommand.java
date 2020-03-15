@@ -7,6 +7,9 @@ import java.util.concurrent.Callable;
 import org.apache.commons.validator.routines.UrlValidator;
 
 import com.google.common.collect.Lists;
+import com.sedmelluq.discord.lavaplayer.track.AudioItem;
+import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.wrapper.spotify.model_objects.specification.AlbumSimplified;
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
 import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
@@ -14,8 +17,10 @@ import com.wrapper.spotify.model_objects.specification.Track;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
+import net.robinfriedli.botify.audio.AudioTrackLoader;
 import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.audio.PlayableFactory;
+import net.robinfriedli.botify.audio.UrlPlayable;
 import net.robinfriedli.botify.audio.exec.TrackLoadingExecutor;
 import net.robinfriedli.botify.audio.spotify.SpotifyService;
 import net.robinfriedli.botify.audio.spotify.SpotifyTrackResultHandler;
@@ -31,7 +36,7 @@ import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 import net.robinfriedli.botify.exceptions.NoSpotifyResultsFoundException;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.botify.util.SearchEngine;
-import net.robinfriedli.stringlist.StringListImpl;
+import net.robinfriedli.stringlist.StringList;
 
 public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecidingCommand {
 
@@ -44,6 +49,8 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
     protected PlaylistSimplified loadedSpotifyPlaylist;
     protected Playable loadedTrack;
     protected AlbumSimplified loadedAlbum;
+    protected AudioTrack loadedAudioTrack;
+    protected AudioPlaylist loadedAudioPlaylist;
 
     public AbstractPlayableLoadingCommand(CommandContribution commandContribution,
                                           CommandContext context,
@@ -82,6 +89,8 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
             Source source = getSource();
             if (source.isYouTube()) {
                 loadYouTubeVideo(audioManager);
+            } else if (source.isSoundCloud()) {
+                loadSoundCloudTrack(audioManager);
             } else if (argumentSet("album")) {
                 loadSpotifyAlbum(audioManager);
             } else {
@@ -212,7 +221,7 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
         } else if (albums.isEmpty()) {
             throw new NoSpotifyResultsFoundException(String.format("No albums found for '%s'", getCommandInput()));
         } else {
-            askQuestion(albums, AlbumSimplified::getName, album -> StringListImpl.create(album.getArtists(), ArtistSimplified::getName).toSeparatedString(", "));
+            askQuestion(albums, AlbumSimplified::getName, album -> StringList.create(album.getArtists(), ArtistSimplified::getName).toSeparatedString(", "));
         }
     }
 
@@ -233,13 +242,34 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
         } else {
             if (argumentSet("select")) {
                 askQuestion(found, track -> {
-                    String artistString = StringListImpl.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", ");
+                    String artistString = StringList.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", ");
                     return String.format("%s by %s", track.getName(), artistString);
                 }, track -> track.getAlbum().getName());
             } else {
                 SpotifyTrackResultHandler resultHandler = new SpotifyTrackResultHandler(getContext().getGuild(), getContext().getSession());
                 createPlayableForTrack(resultHandler.getBestResult(getCommandInput(), found), audioManager);
             }
+        }
+    }
+
+    private void loadSoundCloudTrack(AudioManager audioManager) {
+        AudioTrackLoader audioTrackLoader = new AudioTrackLoader(audioManager.getPlayerManager());
+        String commandInput = getCommandInput();
+        AudioItem audioItem = audioTrackLoader.loadByIdentifier("scsearch:" + commandInput);
+        if (audioItem instanceof AudioTrack) {
+            AudioTrack audioTrack = (AudioTrack) audioItem;
+            handleResults(Lists.newArrayList(new UrlPlayable(audioTrack)));
+            this.loadedAudioTrack = audioTrack;
+        } else if (audioItem == null) {
+            throw new NoResultsFoundException(String.format("No soundcloud track found for '%s'", commandInput));
+        } else if (audioItem instanceof AudioPlaylist) {
+            int limit = getArgumentValue("select", Integer.class, 20);
+            List<AudioTrack> tracks = ((AudioPlaylist) audioItem).getTracks();
+            if (tracks.size() > limit) {
+                tracks = tracks.subList(0, limit);
+            }
+
+            askQuestion(tracks, audioTrack -> audioTrack.getInfo().title, audioTrack -> audioTrack.getInfo().author);
         }
     }
 

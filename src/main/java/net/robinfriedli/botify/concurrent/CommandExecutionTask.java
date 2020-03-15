@@ -27,8 +27,6 @@ public class CommandExecutionTask extends QueuedTask {
         command.setTask(this);
         try {
             super.run();
-        } catch (Throwable e) {
-            ExceptionUtils.handleCommandException(e, command, LoggerFactory.getLogger(getClass()));
         } finally {
             ThreadContext.Current.clear();
         }
@@ -37,6 +35,11 @@ public class CommandExecutionTask extends QueuedTask {
     @Override
     protected boolean isPrivileged() {
         return command.isPrivileged();
+    }
+
+    @Override
+    protected void handleException(Throwable e) {
+        ExceptionUtils.handleCommandException(e, command, LoggerFactory.getLogger(getClass()));
     }
 
     public Command getCommand() {

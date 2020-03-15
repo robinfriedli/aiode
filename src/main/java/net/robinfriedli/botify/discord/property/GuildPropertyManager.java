@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import javax.annotation.Nullable;
+
 import net.robinfriedli.botify.entities.xml.GenericClassContribution;
 import net.robinfriedli.botify.entities.xml.GuildPropertyContribution;
 import net.robinfriedli.botify.util.SearchEngine;
@@ -38,6 +40,7 @@ public class GuildPropertyManager {
             .collect(Collectors.toList());
     }
 
+    @Nullable
     public AbstractGuildProperty getProperty(String property) {
         GuildPropertyContribution contribution = propertyContext.query(attribute("property").is(property), GuildPropertyContribution.class).getOnlyResult();
 
@@ -52,6 +55,7 @@ public class GuildPropertyManager {
         return Optional.ofNullable(getProperty(property)).orElseThrow();
     }
 
+    @Nullable
     public AbstractGuildProperty getPropertyByName(String name) {
         GuildPropertyContribution contribution = propertyContext
             .query(SearchEngine.editDistanceAttributeCondition("name", name), GuildPropertyContribution.class)

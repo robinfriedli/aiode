@@ -8,7 +8,7 @@ import net.dv8tion.jda.api.entities.MessageChannel;
 import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.Preset;
-import net.robinfriedli.stringlist.StringListImpl;
+import net.robinfriedli.stringlist.StringList;
 import org.hibernate.Interceptor;
 
 public class AlertPresetCreationInterceptor extends CollectingInterceptor {
@@ -34,7 +34,7 @@ public class AlertPresetCreationInterceptor extends CollectingInterceptor {
                 messageService.sendSuccess("Saved preset " + createdPreset.getName(), channel);
             } else {
                 messageService.sendSuccess("Saved presets "
-                    + StringListImpl.create(createdPresets, Preset::getName).toSeparatedString(", "), channel);
+                    + StringList.create(createdPresets, Preset::getName).toSeparatedString(", "), channel);
             }
         }
 
@@ -44,7 +44,7 @@ public class AlertPresetCreationInterceptor extends CollectingInterceptor {
                 messageService.sendSuccess("Deleted preset " + deletedPreset.getName(), channel);
             } else {
                 messageService.sendSuccess("Deleted presets "
-                    + StringListImpl.create(deletedPresets, Preset::getName).toSeparatedString(", "), channel);
+                    + StringList.create(deletedPresets, Preset::getName).toSeparatedString(", "), channel);
             }
         }
     }

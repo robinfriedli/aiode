@@ -20,7 +20,7 @@ import com.wrapper.spotify.exceptions.SpotifyWebApiException;
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.api.entities.User;
-import net.robinfriedli.stringlist.StringListImpl;
+import net.robinfriedli.stringlist.StringList;
 import org.hibernate.Session;
 
 @Entity
@@ -72,7 +72,7 @@ public class Song extends PlaylistItem {
 
     @Override
     public String display() {
-        String artistString = StringListImpl.create(artists, Artist::getName).toSeparatedString(", ");
+        String artistString = StringList.create(artists, Artist::getName).toSeparatedString(", ");
         return name + " by " + artistString;
     }
 

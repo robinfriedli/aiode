@@ -2,6 +2,8 @@ package net.robinfriedli.botify.concurrent;
 
 import java.util.concurrent.CountDownLatch;
 
+import net.robinfriedli.botify.exceptions.CommandRuntimeException;
+
 /**
  * Thread type that may be added to a {@link ThreadExecutionQueue} that frees up its slot after completion
  */
@@ -39,6 +41,8 @@ public class QueuedTask implements Runnable {
             } else {
                 runWithSlot();
             }
+        } catch (Throwable e) {
+            handleException(e);
         } finally {
             complete = true;
             countDownLatch.countDown();
@@ -97,6 +101,17 @@ public class QueuedTask implements Runnable {
 
     protected boolean isPrivileged() {
         return false;
+    }
+
+    protected void handleException(Throwable e) {
+        // default implementation: pass exception to uncaught exception handler
+        if (e instanceof RuntimeException) {
+            throw (RuntimeException) e;
+        } else if (e instanceof Error) {
+            throw (Error) e;
+        } else {
+            throw new CommandRuntimeException(e);
+        }
     }
 
     private void runWithSlot() {

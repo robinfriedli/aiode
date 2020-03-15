@@ -5,6 +5,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import com.google.common.base.Strings;
+import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.wrapper.spotify.model_objects.specification.AlbumSimplified;
 import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
@@ -76,20 +79,31 @@ public class QueueCommand extends AbstractQueueLoadingCommand {
             sendSuccess("Queued " + loadedTrack.display());
         }
         if (loadedLocalList != null) {
-            sendSuccess("Queued playlist " + loadedLocalList.getName());
+            sendSuccess(String.format("Queued playlist '%s'", loadedLocalList.getName()));
         }
         if (loadedSpotifyPlaylist != null) {
-            sendSuccess("Queued playlist " + loadedSpotifyPlaylist.getName());
+            sendSuccess(String.format("Queued playlist '%s'", loadedSpotifyPlaylist.getName()));
         }
         if (loadedYouTubePlaylist != null) {
-            sendSuccess("Queued playlist " + loadedYouTubePlaylist.getTitle());
+            sendSuccess(String.format("Queued playlist '%s'", loadedYouTubePlaylist.getTitle()));
         }
         if (loadedAlbum != null) {
-            sendSuccess("Queued album " + loadedAlbum.getName());
+            sendSuccess(String.format("Queued album '%s'", loadedAlbum.getName()));
         }
         if (loadedAmount > 0) {
-            String loadedString = loadedAmount > 1 ? "items" : "item";
-            sendSuccess("Queued " + loadedAmount + " " + loadedString);
+            sendSuccess(String.format("Queued %d item%s", loadedAmount, loadedAmount == 1 ? "" : "s"));
+        }
+        if (loadedAudioTrack != null) {
+            sendSuccess("Queued track " + loadedAudioTrack.getInfo().title);
+        }
+        if (loadedAudioPlaylist != null) {
+            String name = loadedAudioPlaylist.getName();
+            if (!Strings.isNullOrEmpty(name)) {
+                sendSuccess("Queued playlist " + name);
+            } else {
+                int size = loadedAudioPlaylist.getTracks().size();
+                sendSuccess(String.format("Queued %d item%s", size, size == 1 ? "" : "s"));
+            }
         }
     }
 
@@ -101,7 +115,7 @@ public class QueueCommand extends AbstractQueueLoadingCommand {
 
         List<Playable> playables;
         if (chosenOption instanceof Collection) {
-            playables = playableFactory.createPlayables(!argumentSet("preview"), chosenOption);
+            playables = playableFactory.createPlayables(shouldRedirectSpotify(), chosenOption);
             loadedAmount = playables.size();
         } else {
             playables = getPlayablesForOption(chosenOption, playableFactory);
@@ -112,13 +126,13 @@ public class QueueCommand extends AbstractQueueLoadingCommand {
 
     private List<Playable> getPlayablesForOption(Object chosenOption, PlayableFactory playableFactory) throws Exception {
         if (chosenOption instanceof Track || chosenOption instanceof YouTubeVideo) {
-            Playable track = playableFactory.createPlayable(!argumentSet("preview"), chosenOption);
+            Playable track = playableFactory.createPlayable(shouldRedirectSpotify(), chosenOption);
             loadedTrack = track;
             return Collections.singletonList(track);
         } else if (chosenOption instanceof PlaylistSimplified) {
             PlaylistSimplified playlist = (PlaylistSimplified) chosenOption;
             List<Track> tracks = runWithCredentials(() -> getSpotifyService().getPlaylistTracks(playlist));
-            List<Playable> playables = playableFactory.createPlayables(!argumentSet("preview"), tracks);
+            List<Playable> playables = playableFactory.createPlayables(shouldRedirectSpotify(), tracks);
             loadedSpotifyPlaylist = playlist;
             return playables;
         } else if (chosenOption instanceof YouTubePlaylist) {
@@ -129,8 +143,16 @@ public class QueueCommand extends AbstractQueueLoadingCommand {
         } else if (chosenOption instanceof AlbumSimplified) {
             AlbumSimplified album = (AlbumSimplified) chosenOption;
             List<Track> tracks = runWithCredentials(() -> getSpotifyService().getAlbumTracks(album.getId()));
-            List<Playable> playables = playableFactory.createPlayables(!argumentSet("preview"), tracks);
+            List<Playable> playables = playableFactory.createPlayables(shouldRedirectSpotify(), tracks);
             loadedAlbum = album;
+            return playables;
+        } else if (chosenOption instanceof AudioTrack) {
+            Playable playable = playableFactory.createPlayable(shouldRedirectSpotify(), chosenOption);
+            loadedAudioTrack = (AudioTrack) chosenOption;
+            return Collections.singletonList(playable);
+        } else if (chosenOption instanceof AudioPlaylist) {
+            List<Playable> playables = playableFactory.createPlayables(shouldRedirectSpotify(), chosenOption);
+            loadedAudioPlaylist = (AudioPlaylist) chosenOption;
             return playables;
         }
 

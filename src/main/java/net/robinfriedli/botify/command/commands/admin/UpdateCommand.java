@@ -17,7 +17,6 @@ import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.stringlist.StringList;
-import net.robinfriedli.stringlist.StringListImpl;
 
 public class UpdateCommand extends AbstractAdminCommand {
 
@@ -74,7 +73,7 @@ public class UpdateCommand extends AbstractAdminCommand {
 
     private String getInputStreamString(InputStream inputStream) throws IOException {
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-        StringList lineList = StringListImpl.create();
+        StringList lineList = StringList.create();
         String s;
         while ((s = bufferedReader.readLine()) != null) {
             lineList.add(s);

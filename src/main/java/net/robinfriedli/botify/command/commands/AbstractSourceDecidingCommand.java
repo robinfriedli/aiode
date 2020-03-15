@@ -31,6 +31,8 @@ public abstract class AbstractSourceDecidingCommand extends AbstractCommand {
             return Source.YOUTUBE;
         } else if (argumentSet("local")) {
             return Source.LOCAL;
+        } else if (argumentSet("soundcloud")) {
+            return Source.SOUNDCLOUD;
         } else {
             return getDefaultSource();
         }
@@ -62,30 +64,25 @@ public abstract class AbstractSourceDecidingCommand extends AbstractCommand {
 
     protected enum Source {
 
-        SPOTIFY(true, false, false),
-        YOUTUBE(false, true, false),
-        LOCAL(false, false, true);
-
-        private final boolean isSpotify;
-        private final boolean isYouTube;
-        private final boolean isLocal;
-
-        Source(boolean isSpotify, boolean isYouTube, boolean isLocal) {
-            this.isSpotify = isSpotify;
-            this.isYouTube = isYouTube;
-            this.isLocal = isLocal;
-        }
+        SPOTIFY,
+        YOUTUBE,
+        LOCAL,
+        SOUNDCLOUD;
 
         public boolean isSpotify() {
-            return isSpotify;
+            return this == SPOTIFY;
         }
 
         public boolean isYouTube() {
-            return isYouTube;
+            return this == YOUTUBE;
         }
 
         public boolean isLocal() {
-            return isLocal;
+            return this == LOCAL;
+        }
+
+        public boolean isSoundCloud() {
+            return this == SOUNDCLOUD;
         }
     }
 

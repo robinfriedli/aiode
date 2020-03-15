@@ -1,14 +1,31 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <guildProperties xmlns="guildPropertySpace">
-  <guildProperty property="botName" name="bot name" defaultValue="$botify" implementation="net.robinfriedli.botify.discord.property.properties.BotNameProperty" updateMessage="You can now call me %s. My new name may be used as command prefix."/>
-  <guildProperty property="prefix" name="prefix" defaultValue="$botify" implementation="net.robinfriedli.botify.discord.property.properties.PrefixProperty" updateMessage="Command prefix set to %s"/>
-  <guildProperty property="sendPlaybackNotification" name="playback notification" defaultValue="true" implementation="net.robinfriedli.botify.discord.property.properties.PlaybackNotificationProperty" updateMessage="Set playback notification to %s"/>
-  <guildProperty property="color" name="color" defaultValue="#1DB954" implementation="net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty" updateMessage="Changed colour to %s"/>
-  <guildProperty property="enableAutoPause" name="auto pause" defaultValue="true" implementation="net.robinfriedli.botify.discord.property.properties.AutoPauseProperty" updateMessage="Set auto pause to %s"/>
-  <guildProperty property="defaultSource" name="default source" defaultValue="SPOTIFY" implementation="net.robinfriedli.botify.discord.property.properties.DefaultSourceProperty" updateMessage="Set the default search source to %s"/>
-  <guildProperty property="defaultListSource" name="default list source" defaultValue="LOCAL" implementation="net.robinfriedli.botify.discord.property.properties.DefaultListSourceProperty" updateMessage="Set the default list search source to %s"/>
-  <guildProperty property="argumentPrefix" name="argument prefix" defaultValue="$" implementation="net.robinfriedli.botify.discord.property.properties.ArgumentPrefixProperty" updateMessage="Set the argument prefix to '%1$s'. Commands now look like this: $botify play %1$sspotify %1$salbum meteora. The default prefix &quot;$&quot; still works as a fallback. All presets containing argument prefixes have been updated."/>
-  <guildProperty property="tempMessageTimeout" name="message timeout" defaultValue="20" implementation="net.robinfriedli.botify.discord.property.properties.TempMessageTimeoutProperty" updateMessage="Set the amount of seconds after which temporary messages are deleted to %s. (0 means no timeout)"/>
-  <guildProperty property="defaultTextChannelId" name="default channel" defaultValue="" implementation="net.robinfriedli.botify.discord.property.properties.DefaultTextChannelProperty" updateMessage="Default text channel set to id %s"/>
-  <guildProperty property="enableScripting" name="enable scripting" defaultValue="true" implementation="net.robinfriedli.botify.discord.property.properties.EnableScriptingProperty" updateMessage="Set enable scripting to %s"/>
+  <guildProperty property="botName" name="bot name" defaultValue="$botify" implementation="net.robinfriedli.botify.discord.property.properties.BotNameProperty" updateMessage="You can now call me %s. My new name may be used as command prefix." description="Name of the bot that matches the nickname and may be used as command prefix."/>
+  <guildProperty property="prefix" name="prefix" defaultValue="$botify" implementation="net.robinfriedli.botify.discord.property.properties.PrefixProperty" updateMessage="Command prefix set to %s" description="The one character long command prefix to start commands with."/>
+  <guildProperty property="sendPlaybackNotification" name="playback notification" defaultValue="true" implementation="net.robinfriedli.botify.discord.property.properties.PlaybackNotificationProperty" updateMessage="Set playback notification to %s" description="Toggle sending &quot;Now playing...&quot; messages when a track starts.">
+    <acceptedValue>true</acceptedValue>
+    <acceptedValue>false</acceptedValue>
+  </guildProperty>
+  <guildProperty property="color" name="color" defaultValue="#1DB954" implementation="net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty" updateMessage="Changed colour to %s" description="Change the color for bot messages (except for success and error messages)."/>
+  <guildProperty property="enableAutoPause" name="auto pause" defaultValue="true" implementation="net.robinfriedli.botify.discord.property.properties.AutoPauseProperty" updateMessage="Set auto pause to %s" description="Toggle the bot automatically pausing playback and leaving the channel when everyone leaves. The bot will stop and leave when being alone for an hour.">
+    <acceptedValue>true</acceptedValue>
+    <acceptedValue>false</acceptedValue>
+  </guildProperty>
+  <guildProperty property="defaultSource" name="default source" defaultValue="SPOTIFY" implementation="net.robinfriedli.botify.discord.property.properties.DefaultSourceProperty" updateMessage="Set the default search source to %s" description="The default source to search for tracks when no source was explicitly specified.">
+    <acceptedValue>spotify</acceptedValue>
+    <acceptedValue>youtube</acceptedValue>
+    <acceptedValue>soundcloud</acceptedValue>
+  </guildProperty>
+  <guildProperty property="defaultListSource" name="default list source" defaultValue="LOCAL" implementation="net.robinfriedli.botify.discord.property.properties.DefaultListSourceProperty" updateMessage="Set the default list search source to %s" description="The default source to search for playlists when no source was explicitly specified.">
+    <acceptedValue>spotify</acceptedValue>
+    <acceptedValue>youtube</acceptedValue>
+    <acceptedValue>local</acceptedValue>
+  </guildProperty>
+  <guildProperty property="argumentPrefix" name="argument prefix" defaultValue="$" implementation="net.robinfriedli.botify.discord.property.properties.ArgumentPrefixProperty" updateMessage="Set the argument prefix to '%1$s'. Commands now look like this: $botify play %1$sspotify %1$salbum meteora. The default prefix &quot;$&quot; still works as a fallback. All presets containing argument prefixes have been updated." description="The one character long prefix to start arguments with."/>
+  <guildProperty property="tempMessageTimeout" name="message timeout" defaultValue="20" implementation="net.robinfriedli.botify.discord.property.properties.TempMessageTimeoutProperty" updateMessage="Set the amount of seconds after which temporary messages are deleted to %s. (0 means no timeout)" description="The amount of seconds after which temporary messages like success notifications are deleted. A timeout of 0 means there is no timeout and messages aren't deleted automatically."/>
+  <guildProperty property="defaultTextChannelId" name="default channel" defaultValue="" implementation="net.robinfriedli.botify.discord.property.properties.DefaultTextChannelProperty" description="The default channel for messages that are not triggered by commands where the specific channel cannot be determined (e.g. update notifications)." updateMessageScript="def message_fmt = &quot;Set default channel to &quot;; def text_channel = guild.getTextChannelById(value); if (text_channel != null) { return message_fmt + text_channel.getName(); } else { return message_fmt + &quot;[DELETED CHANNEL]&quot; }"/>
+  <guildProperty property="enableScripting" name="enable scripting" defaultValue="true" implementation="net.robinfriedli.botify.discord.property.properties.EnableScriptingProperty" updateMessage="Set enable scripting to %s" description="Enable the commands in the scripting category and scripted interceptors / finalizers.">
+    <acceptedValue>true</acceptedValue>
+    <acceptedValue>false</acceptedValue>
+  </guildProperty>
 </guildProperties>

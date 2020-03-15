@@ -11,7 +11,7 @@ import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
-import net.robinfriedli.stringlist.StringListImpl;
+import net.robinfriedli.stringlist.StringList;
 import org.hibernate.Interceptor;
 
 public class AlertPlaylistModificationInterceptor extends CollectingInterceptor {
@@ -34,12 +34,12 @@ public class AlertPlaylistModificationInterceptor extends CollectingInterceptor 
 
         if (!createdPlaylists.isEmpty()) {
             String s = createdPlaylists.size() > 1 ? "Created playlists: " : "Created playlist: ";
-            messageService.sendSuccess(s + StringListImpl.create(createdPlaylists, Playlist::getName).toSeparatedString(", "), channel);
+            messageService.sendSuccess(s + StringList.create(createdPlaylists, Playlist::getName).toSeparatedString(", "), channel);
         }
 
         if (!deletedPlaylists.isEmpty()) {
             String s = deletedPlaylists.size() > 1 ? "Deleted playlists: " : "Deleted playlist: ";
-            messageService.sendSuccess(s + StringListImpl.create(deletedPlaylists, Playlist::getName).toSeparatedString(", "), channel);
+            messageService.sendSuccess(s + StringList.create(deletedPlaylists, Playlist::getName).toSeparatedString(", "), channel);
         }
 
         if (!addedItems.isEmpty()) {

@@ -350,6 +350,10 @@
     <argument identifier="set" requiresValue="true" description="Set a property to the specified value. E.g. property default source %2$sset youtube.">
       <excludes argument="toggle"/>
     </argument>
+    <argument identifier="describe" requiresInput="true" description="Describe what a property does.">
+      <excludes argument="toggle"/>
+      <excludes argument="set"/>
+    </argument>
     <example title="list all properties">%1$sproperty</example>
     <example title="set the color of botify messages to blue">%1$sproperty color %2$sset blue</example>
     <example title="set the color to Spotify green">%1$sproperty color %2$sset #1DB954</example>
@@ -360,6 +364,7 @@
     <example title="set the amount of seconds after which success and error messages disappear to 20">%1$sproperty message timeout %2$sset 20</example>
     <example title="disable the automatic removal of success and error messages">%1$sproperty message timeout %2$sset 0</example>
     <example title="set the default text channel to 'bot'">%1$sproperty default channel %2$sset bot</example>
+    <example title="describe property 'color'">%1$sproperty %2$sdescribe color</example>
   </command>
   <command identifier="charts"
            implementation="net.robinfriedli.botify.command.commands.general.ChartsCommand"
@@ -633,9 +638,11 @@ command.run('play')"
     <argument identifier="list" requiresInput="true" description="Search for a youtube, spotify or botify playlist. Note that this argument is only required when searching, not when entering a URL."/>
     <argument identifier="spotify" requiresInput="true" description="Search for a Spotify track, list or album. This supports Spotify query syntax (i.e. the filters &quot;artist:&quot;, &quot;album:&quot;, etc.). Note that this argument is only required when searching, not when entering a URL.">
       <excludes argument="youtube"/>
+      <excludes argument="soundcloud"/>
     </argument>
-    <argument identifier="youtube" requiresInput="true" description="Play a YouTube video or playlist. Note that this argument is only required when searching, not when entering a URL.">
+    <argument identifier="youtube" requiresInput="true" description="Search a YouTube video or playlist. Note that this argument is only required when searching, not when entering a URL.">
       <excludes argument="spotify"/>
+      <excludes argument="soundcloud"/>
     </argument>
     <argument identifier="own" requiresInput="true" description="Limit search to Spotify tracks, lists or albums that are in the current user's library. This requires a Spotify login.">
       <rule errorMessage="Argument 'own' may only be used with Spotify.">command.getSource().isSpotify()</rule>
@@ -660,6 +667,11 @@ command.run('play')"
 
         source.isYouTube() || source.isSpotify()
       </rule>
+    </argument>
+    <argument identifier="soundcloud" requiresInput="true" description="Search a track on soundcloud. Note that this argument is only required when searching, not when entering a URL.">
+      <excludes argument="spotify"/>
+      <excludes argument="youtube"/>
+      <excludes argument="list"/>
     </argument>
   </abstractCommand>
   <abstractCommand class="net.robinfriedli.botify.command.commands.AbstractQueueLoadingCommand">

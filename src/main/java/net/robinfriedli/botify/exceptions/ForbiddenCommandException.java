@@ -4,7 +4,7 @@ import java.util.List;
 
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
-import net.robinfriedli.stringlist.StringListImpl;
+import net.robinfriedli.stringlist.StringList;
 
 
 /**
@@ -18,7 +18,7 @@ public class ForbiddenCommandException extends UserException {
             commandIdentifier,
             roles.isEmpty()
                 ? "Only available to guild owner and administrator roles"
-                : "Requires any of these roles: " + StringListImpl.create(roles, Role::getName).toSeparatedString(", ")));
+                : "Requires any of these roles: " + StringList.create(roles, Role::getName).toSeparatedString(", ")));
     }
 
     public ForbiddenCommandException(User user, String commandIdentifier, String availableTo) {

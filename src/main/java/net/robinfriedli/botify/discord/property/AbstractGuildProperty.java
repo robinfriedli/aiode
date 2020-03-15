@@ -6,8 +6,13 @@ import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.xml.GuildPropertyContribution;
+import net.robinfriedli.botify.exceptions.InvalidPropertyValueException;
 import net.robinfriedli.botify.function.HibernateInvoker;
 import net.robinfriedli.botify.persist.StaticSessionProvider;
+import net.robinfriedli.jxp.api.XmlElement;
+import net.robinfriedli.stringlist.StringList;
+
+import static net.robinfriedli.jxp.queries.Conditions.*;
 
 /**
  * Represents a property persisted as column on the {@link GuildSpecification class}. Offers default values and validation
@@ -21,7 +26,7 @@ public abstract class AbstractGuildProperty {
         this.contribution = contribution;
     }
 
-    public abstract void validate(Object state);
+    public abstract void doValidate(Object state);
 
     public abstract Object process(String input);
 
@@ -92,6 +97,20 @@ public abstract class AbstractGuildProperty {
         } else {
             return type.cast(process(getDefaultValue()));
         }
+    }
+
+    public void validate(Object value) {
+        StringList acceptedValues = contribution.query(tagName("acceptedValue")).getResultStream().map(XmlElement::getTextContent).collect(StringList.collector());
+        if (!acceptedValues.isEmpty()) {
+            String sVal = String.valueOf(value);
+            boolean valueAccepted = acceptedValues.contains(sVal, true);
+            if (!valueAccepted) {
+                String acceptedValuesString = contribution.getAcceptedValuesString(acceptedValues);
+                throw new InvalidPropertyValueException(String.format("Unacceptable value '%s'.\nAcceptable values: %s", sVal, acceptedValuesString));
+            }
+        }
+
+        doValidate(value);
     }
 
     /**

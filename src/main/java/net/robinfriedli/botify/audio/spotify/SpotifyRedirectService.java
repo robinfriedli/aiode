@@ -24,7 +24,7 @@ import net.robinfriedli.botify.entities.SpotifyRedirectIndexModificationLock;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.botify.function.HibernateInvoker;
 import net.robinfriedli.botify.persist.StaticSessionProvider;
-import net.robinfriedli.stringlist.StringListImpl;
+import net.robinfriedli.stringlist.StringList;
 import org.hibernate.Session;
 
 import static net.robinfriedli.botify.entities.SpotifyRedirectIndex.*;
@@ -80,7 +80,7 @@ public class SpotifyRedirectService {
                     throw new RuntimeException(e);
                 }
                 String name = spotifyTrack.getName();
-                String artistString = StringListImpl.create(spotifyTrack.getArtists(), ArtistSimplified::getName).toSeparatedString(", ");
+                String artistString = StringList.create(spotifyTrack.getArtists(), ArtistSimplified::getName).toSeparatedString(", ");
                 String title = String.format("%s by %s", name, artistString);
                 youTubeVideo.setTitle(title);
 

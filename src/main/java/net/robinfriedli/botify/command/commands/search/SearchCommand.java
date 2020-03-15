@@ -32,7 +32,7 @@ import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.botify.util.SearchEngine;
 import net.robinfriedli.botify.util.Table2;
 import net.robinfriedli.botify.util.Util;
-import net.robinfriedli.stringlist.StringListImpl;
+import net.robinfriedli.stringlist.StringList;
 import org.hibernate.Session;
 
 public class SearchCommand extends AbstractSourceDecidingCommand {
@@ -83,7 +83,7 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
                 embedBuilder,
                 found,
                 track -> track.getName() + " - " + track.getAlbum().getName() + " - " +
-                    StringListImpl.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", "),
+                    StringList.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", "),
                 "Track - Album - Artist"
             );
 
@@ -260,13 +260,13 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
                 tracks,
                 album.getName(),
                 null,
-                StringListImpl.create(album.getArtists(), ArtistSimplified::getName).toSeparatedString(", "),
+                StringList.create(album.getArtists(), ArtistSimplified::getName).toSeparatedString(", "),
                 "album/" + album.getId()
             );
         } else if (albums.isEmpty()) {
             throw new NoSpotifyResultsFoundException(String.format("No album found for '%s'", getCommandInput()));
         } else {
-            askQuestion(albums, AlbumSimplified::getName, album -> StringListImpl.create(album.getArtists(), ArtistSimplified::getName).toSeparatedString(", "));
+            askQuestion(albums, AlbumSimplified::getName, album -> StringList.create(album.getArtists(), ArtistSimplified::getName).toSeparatedString(", "));
         }
     }
 
@@ -299,7 +299,7 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
                 embedBuilder,
                 tracks.size() > 5 ? tracks.subList(0, 5) : tracks,
                 track -> track.getName() + " - " +
-                    StringListImpl.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", ") + " - " +
+                    StringList.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", ") + " - " +
                     Util.normalizeMillis(track.getDurationMs() != null ? track.getDurationMs() : 0),
                 "Track - Artist - Duration"
             );
@@ -332,7 +332,7 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
             listTracks(tracks,
                 album.getName(),
                 null,
-                StringListImpl.create(album.getArtists(), ArtistSimplified::getName).toSeparatedString(", "),
+                StringList.create(album.getArtists(), ArtistSimplified::getName).toSeparatedString(", "),
                 "album/" + album.getId());
         }
     }

@@ -13,8 +13,11 @@ import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
+import net.robinfriedli.botify.entities.xml.GuildPropertyContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.util.Table2;
+
+import static net.robinfriedli.jxp.queries.Conditions.*;
 
 public class PropertyCommand extends AbstractCommand {
 
@@ -30,6 +33,8 @@ public class PropertyCommand extends AbstractCommand {
         } else {
             if (argumentSet("toggle")) {
                 toggleProperty();
+            } else if (argumentSet("describe")) {
+                describeProperty();
             } else {
                 setProperty();
             }
@@ -72,6 +77,26 @@ public class PropertyCommand extends AbstractCommand {
         table.addColumn("Set Value", properties, property -> property.display(specification));
         table.build();
         sendMessage(embedBuilder);
+    }
+
+    private void describeProperty() {
+        GuildPropertyManager guildPropertyManager = Botify.get().getGuildPropertyManager();
+        AbstractGuildProperty property = guildPropertyManager.getPropertyByName(getCommandInput());
+
+        if (property != null) {
+            GuildPropertyContribution contribution = property.getContribution();
+
+            EmbedBuilder embedBuilder = new EmbedBuilder();
+            embedBuilder.setTitle("Property " + contribution.getName());
+            embedBuilder.setDescription(contribution.getDescription());
+
+            long acceptedValuesCount = contribution.query(tagName("acceptedValue")).count();
+            if (acceptedValuesCount > 0) {
+                embedBuilder.addField("Accepted values", contribution.getAcceptedValuesString(), false);
+            }
+
+            sendMessage(embedBuilder);
+        }
     }
 
     @Override

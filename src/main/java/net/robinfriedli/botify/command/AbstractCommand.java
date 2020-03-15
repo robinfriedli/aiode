@@ -44,7 +44,6 @@ import net.robinfriedli.botify.persist.StaticSessionProvider;
 import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
 import net.robinfriedli.botify.util.Util;
 import net.robinfriedli.stringlist.StringList;
-import net.robinfriedli.stringlist.StringListImpl;
 import org.hibernate.Session;
 
 /**
@@ -382,7 +381,7 @@ public abstract class AbstractCommand implements Command {
 
     @Deprecated
     protected Pair<String, String> splitInlineArgument(String part, String argument) {
-        StringList words = StringListImpl.createWithRegex(part, " ");
+        StringList words = StringList.createWithRegex(part, " ");
 
         List<Integer> positions = words.findPositionsOf("$" + argument, true);
         if (positions.isEmpty()) {
@@ -482,7 +481,7 @@ public abstract class AbstractCommand implements Command {
      */
     @Deprecated
     private void processCommand(String commandString) {
-        StringList words = StringListImpl.separateString(commandString, " ");
+        StringList words = StringList.separateString(commandString, " ");
 
         int commandBodyIndex = 0;
         for (String word : words) {

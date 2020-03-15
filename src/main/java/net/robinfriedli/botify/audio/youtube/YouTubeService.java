@@ -55,7 +55,6 @@ import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.botify.persist.StaticSessionProvider;
 import net.robinfriedli.stringlist.StringList;
-import net.robinfriedli.stringlist.StringListImpl;
 import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.DependsOn;
@@ -126,7 +125,7 @@ public class YouTubeService extends AbstractShutdownable {
             throw new IllegalArgumentException(youTubeVideo.toString() + " is not a placeholder for a redirected Spotify Track");
         }
 
-        StringList artists = StringListImpl.create(spotifyTrack.getArtists(), ArtistSimplified::getName);
+        StringList artists = StringList.create(spotifyTrack.getArtists(), ArtistSimplified::getName);
         String searchTerm = spotifyTrack.getName() + " " + artists.toSeparatedString(" ");
         List<String> videoIds;
 
@@ -241,7 +240,7 @@ public class YouTubeService extends AbstractShutdownable {
         String videoTitle = video.getSnippet().getTitle().toLowerCase();
         ArtistSimplified[] artists = track.getArtists();
         String firstArtist = artists.length > 0 ? artists[0].getName().toLowerCase() : "";
-        StringList artistNames = StringListImpl.create(artists, ArtistSimplified::getName);
+        StringList artistNames = StringList.create(artists, ArtistSimplified::getName);
         String artistString = artistNames
             .toSeparatedString(", ")
             .toLowerCase();

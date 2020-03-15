@@ -39,7 +39,6 @@ import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 import net.robinfriedli.botify.function.SpotifyInvoker;
 import net.robinfriedli.stringlist.StringList;
-import net.robinfriedli.stringlist.StringListImpl;
 
 /**
  * Factory class for {@link Playable}. Instantiates the matching Playable implementation for given Object or URL
@@ -74,8 +73,10 @@ public class PlayableFactory {
 
         if (playables.isEmpty()) {
             return null;
-        } else {
+        } else if (playables.size() == 1) {
             return playables.get(0);
+        } else {
+            throw new IllegalStateException(String.format("Expected 1 but found %s playables", playables.size()));
         }
     }
 
@@ -123,6 +124,11 @@ public class PlayableFactory {
                     for (Track track : t) {
                         handleTrack(track, redirectSpotify, tracksToRedirect, playables);
                     }
+                } else if (item instanceof AudioTrack) {
+                    playables.add(new UrlPlayable((AudioTrack) item));
+                } else if (item instanceof AudioPlaylist) {
+                    List<Playable> convertedPlayables = ((AudioPlaylist) item).getTracks().stream().map(UrlPlayable::new).collect(Collectors.toList());
+                    playables.addAll(convertedPlayables);
                 } else if (item != null) {
                     throw new UnsupportedOperationException("Unsupported playable " + item.getClass());
                 }
@@ -188,7 +194,7 @@ public class PlayableFactory {
             String[] parts = uri.getPath().split("/");
             return youTubeService.requireVideoForId(parts[parts.length - 1]);
         } else if (uri.getHost().equals("open.spotify.com")) {
-            StringList pathFragments = StringListImpl.createWithRegex(uri.getPath(), "/");
+            StringList pathFragments = StringList.createWithRegex(uri.getPath(), "/");
             if (pathFragments.contains("track")) {
                 String trackId = pathFragments.tryGet(pathFragments.indexOf("track") + 1);
                 if (trackId == null) {
@@ -286,7 +292,7 @@ public class PlayableFactory {
     }
 
     private List<Playable> createPlayablesFromSpotifyUrl(URI uri, SpotifyApi spotifyApi, boolean redirectSpotify) {
-        StringList pathFragments = StringListImpl.createWithRegex(uri.getPath(), "/");
+        StringList pathFragments = StringList.createWithRegex(uri.getPath(), "/");
         SpotifyService spotifyService = new SpotifyService(spotifyApi);
         if (pathFragments.contains("playlist")) {
             String playlistId = pathFragments.tryGet(pathFragments.indexOf("playlist") + 1);

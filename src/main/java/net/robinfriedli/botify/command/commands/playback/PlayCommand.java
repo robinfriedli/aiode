@@ -86,7 +86,7 @@ public class PlayCommand extends AbstractQueueLoadingCommand {
         AudioPlayback playback = audioManager.getPlaybackForGuild(guild);
         AudioQueue queue = playback.getAudioQueue();
 
-        List<Playable> playables = playableFactory.createPlayables(!argumentSet("preview"), option);
+        List<Playable> playables = playableFactory.createPlayables(shouldRedirectSpotify(), option);
         AudioPlayer audioPlayer = playback.getAudioPlayer();
         if (audioPlayer.getPlayingTrack() != null) {
             audioPlayer.stopTrack();

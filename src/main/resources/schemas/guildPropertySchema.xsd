@@ -8,11 +8,16 @@
     </xs:sequence>
   </xs:complexType>
   <xs:complexType name="guildProperty">
-    <xs:attribute name="property" type="xs:string"/>
-    <xs:attribute name="name" type="xs:string"/>
-    <xs:attribute name="defaultValue" type="xs:string"/>
-    <xs:attribute name="implementation" type="xs:string"/>
+    <xs:sequence>
+      <xs:element name="acceptedValue"/>
+    </xs:sequence>
+    <xs:attribute name="property" type="xs:string" use="required"/>
+    <xs:attribute name="name" type="xs:string" use="required"/>
+    <xs:attribute name="defaultValue" type="xs:string" use="required"/>
+    <xs:attribute name="implementation" type="xs:string" use="required"/>
     <xs:attribute name="updateMessage" type="xs:string"/>
+    <xs:attribute name="description" type="xs:string" use="required"/>
+    <xs:attribute name="updateMessageScript" type="xs:string"/>
   </xs:complexType>
 
 </xs:schema>

@@ -23,7 +23,7 @@ import net.robinfriedli.botify.entities.xml.ArgumentContribution;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.jxp.api.XmlElement;
-import net.robinfriedli.stringlist.StringListImpl;
+import net.robinfriedli.stringlist.StringList;
 
 import static net.robinfriedli.jxp.queries.Conditions.*;
 
@@ -69,7 +69,7 @@ public class HelpCommand extends AbstractCommand {
                 String text;
                 List<Role> roles = accessConfiguration.getRoles(guild);
                 if (!roles.isEmpty()) {
-                    text = StringListImpl.create(roles, Role::getName).toSeparatedString(", ");
+                    text = StringList.create(roles, Role::getName).toSeparatedString(", ");
                 } else {
                     text = "Guild owner only";
                 }

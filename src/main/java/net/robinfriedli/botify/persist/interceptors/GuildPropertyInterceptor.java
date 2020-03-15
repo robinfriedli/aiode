@@ -106,10 +106,9 @@ public class GuildPropertyInterceptor extends ChainableInterceptor {
             if (!changedProperties.isEmpty()) {
                 StringBuilder successMessageBuilder = new StringBuilder();
                 for (AbstractGuildProperty property : changedProperties.keySet()) {
-                    String updateMessage = property.getContribution().getUpdateMessage();
                     Pair<Object, Object> previousWithNewValue = changedProperties.get(property);
-                    successMessageBuilder.append(String.format(updateMessage, previousWithNewValue.getRight()))
-                        .append(System.lineSeparator());
+                    String updateMessage = property.getContribution().getUpdateMessage(previousWithNewValue.getRight());
+                    successMessageBuilder.append(updateMessage).append(System.lineSeparator());
                 }
 
                 messageService.sendSuccess(successMessageBuilder.toString(), commandContext.getChannel());
