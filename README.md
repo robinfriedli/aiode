@@ -25,7 +25,7 @@ Milestones:
 - [x] adapt to changes in behaviour of JPA hibernate now that it’s bootstrapped by spring boot via JPA
 - [ ] additional commands to alter existing playlist, incl. renaming and adding a thumbnail
 - [ ] support for PLS files to export / import playlists (maybe, evaluation pending)
-- [ ] enable search for soundcloud tracks using lavaplayer scsearch
+- [x] enable search for soundcloud tracks using lavaplayer scsearch
 - [x] fully configure command arguments in XML and use groovy scripts for rules
 - [ ] advanced queue management that allows removing items from the queue and reflects changes to queued playlists
 - [ ] store discord snowflake ids as long instead of string
