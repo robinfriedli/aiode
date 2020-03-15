@@ -19,6 +19,8 @@ public class CommandExceptionHandler implements Thread.UncaughtExceptionHandler 
         Command command = ThreadContext.Current.get(Command.class);
         if (command != null) {
             ExceptionUtils.handleCommandException(e, command, logger);
+        } else {
+            logger.error("Exception in command handler thread", e);
         }
     }
 

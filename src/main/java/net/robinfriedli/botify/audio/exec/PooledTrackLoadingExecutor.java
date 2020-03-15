@@ -16,6 +16,7 @@ import net.robinfriedli.botify.concurrent.QueuedTask;
 import net.robinfriedli.botify.concurrent.ThreadContext;
 import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
 import net.robinfriedli.botify.discord.GuildContext;
+import net.robinfriedli.botify.exceptions.ExceptionUtils;
 import net.robinfriedli.botify.exceptions.handlers.TrackLoadingExceptionHandler;
 import org.jetbrains.annotations.NotNull;
 
@@ -67,15 +68,21 @@ public class PooledTrackLoadingExecutor implements TrackLoadingExecutor {
         }
         ExecutionContext finalExecutionContext = executionContext != null ? executionContext.threadSafe() : null;
         QueuedTask thread = new QueuedTask(queue, () -> {
-            if (finalExecutionContext != null) {
-                ExecutionContext.Current.set(finalExecutionContext);
-            }
+            try {
+                if (finalExecutionContext != null) {
+                    ExecutionContext.Current.set(finalExecutionContext);
+                }
 
-            if (channel != null) {
-                ThreadContext.Current.install(channel);
-            }
+                if (channel != null) {
+                    ThreadContext.Current.install(channel);
+                }
 
-            trackLoadingRunnable.run();
+                trackLoadingRunnable.run();
+            } catch (Throwable e) {
+                ExceptionUtils.handleTrackLoadingException(e, LoggerFactory.getLogger(ReplaceableTrackLoadingExecutor.class), finalExecutionContext, channel);
+            } finally {
+                ThreadContext.Current.clear();
+            }
         });
         queue.add(thread);
     }

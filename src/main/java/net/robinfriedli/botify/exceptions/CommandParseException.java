@@ -17,7 +17,7 @@ public class CommandParseException extends UserException {
     public CommandParseException(String errorMessage, String commandString, UserException cause, int index) {
         super(errorMessage);
         this.errorMessage = errorMessage;
-        this.commandString = commandString;
+        this.commandString = commandString.replace('\n', ' ');
         this.cause = cause;
         this.index = index;
     }

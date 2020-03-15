@@ -62,7 +62,6 @@ public class ReplaceableTrackLoadingExecutor implements TrackLoadingExecutor {
                 trackLoadingRunnable.run();
             } catch (Throwable e) {
                 ExceptionUtils.handleTrackLoadingException(e, LoggerFactory.getLogger(ReplaceableTrackLoadingExecutor.class), finalExecutionContext, channel);
-                throw e;
             } finally {
                 ThreadContext.Current.clear();
                 if (expectedThreadNumber == threadNumber.get()) {

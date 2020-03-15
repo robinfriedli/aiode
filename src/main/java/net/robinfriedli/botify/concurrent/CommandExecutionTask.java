@@ -1,8 +1,11 @@
 package net.robinfriedli.botify.concurrent;
 
+import org.slf4j.LoggerFactory;
+
 import net.robinfriedli.botify.command.Command;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
+import net.robinfriedli.botify.exceptions.ExceptionUtils;
 
 /**
  * Type of thread used to run commands that sets up the current {@link CommandContext} before running and extends
@@ -24,6 +27,8 @@ public class CommandExecutionTask extends QueuedTask {
         command.setTask(this);
         try {
             super.run();
+        } catch (Throwable e) {
+            ExceptionUtils.handleCommandException(e, command, LoggerFactory.getLogger(getClass()));
         } finally {
             ThreadContext.Current.clear();
         }
