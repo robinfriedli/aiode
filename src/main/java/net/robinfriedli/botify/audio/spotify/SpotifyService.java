@@ -51,23 +51,36 @@ public class SpotifyService {
     }
 
     public List<Track> searchTrack(String searchTerm, boolean limitToLibrary, int limit) throws IOException, SpotifyWebApiException {
-        Track[] tracks = spotifyApi.searchTracks(searchTerm).limit(limit).build().execute().getItems();
-
-        if (tracks.length == 0) {
-            return Lists.newArrayList();
-        }
-
         List<Track> trackList = Lists.newArrayList();
         if (limitToLibrary) {
-            String[] ids = Arrays.stream(tracks).filter(t -> t != null && t.getId() != null).map(Track::getId).toArray(String[]::new);
-            Boolean[] trackIsInLibraryArray = spotifyApi.checkUsersSavedTracks(ids).build().execute();
-            for (int i = 0; i < tracks.length; i++) {
-                boolean trackIsInLibrary = trackIsInLibraryArray[i];
-                if (trackIsInLibrary) {
-                    trackList.add(tracks[i]);
+            String next;
+            int i = 0;
+            do {
+                Paging<Track> paging = spotifyApi.searchTracks(searchTerm).limit(50).offset(i * 50).build().execute();
+                next = paging.getNext();
+                Track[] tracks = paging.getItems();
+
+                if (tracks.length == 0) {
+                    break;
                 }
-            }
+
+                String[] ids = Arrays.stream(tracks).filter(t -> t != null && t.getId() != null).map(Track::getId).toArray(String[]::new);
+                Boolean[] trackIsInLibraryArray = spotifyApi.checkUsersSavedTracks(ids).build().execute();
+                for (int j = 0; j < tracks.length; j++) {
+                    boolean trackIsInLibrary = trackIsInLibraryArray[j];
+                    if (trackIsInLibrary) {
+                        if (trackList.size() < limit) {
+                            trackList.add(tracks[j]);
+                        } else {
+                            return trackList;
+                        }
+                    }
+                }
+
+                i++;
+            } while (next != null && trackList.size() < limit && i < 10);
         } else {
+            Track[] tracks = spotifyApi.searchTracks(searchTerm).limit(limit).build().execute().getItems();
             trackList.addAll(Arrays.asList(tracks));
         }
 
@@ -121,18 +134,32 @@ public class SpotifyService {
     }
 
     public List<AlbumSimplified> searchAlbum(String searchTerm, boolean limitToLibrary) throws IOException, SpotifyWebApiException {
-        AlbumSimplified[] albums = spotifyApi.searchAlbums(searchTerm).build().execute().getItems();
         List<AlbumSimplified> albumList = Lists.newArrayList();
         if (limitToLibrary) {
-            String[] ids = Arrays.stream(albums).map(AlbumSimplified::getId).toArray(String[]::new);
-            Boolean[] albumIsInLibraryArray = spotifyApi.checkUsersSavedAlbums(ids).build().execute();
-            for (int i = 0; i < albums.length; i++) {
-                boolean trackIsInLibrary = albumIsInLibraryArray[i];
-                if (trackIsInLibrary) {
-                    albumList.add(albums[i]);
+            String next;
+            int i = 0;
+            do {
+                Paging<AlbumSimplified> paging = spotifyApi.searchAlbums(searchTerm).limit(50).offset(i * 50).build().execute();
+                next = paging.getNext();
+                AlbumSimplified[] albums = paging.getItems();
+
+                if (albums.length == 0) {
+                    break;
                 }
-            }
+
+                String[] ids = Arrays.stream(albums).map(AlbumSimplified::getId).toArray(String[]::new);
+                Boolean[] albumIsInLibraryArray = spotifyApi.checkUsersSavedAlbums(ids).build().execute();
+                for (int j = 0; j < albums.length; j++) {
+                    boolean trackIsInLibrary = albumIsInLibraryArray[j];
+                    if (trackIsInLibrary) {
+                        albumList.add(albums[j]);
+                    }
+                }
+
+                i++;
+            } while (next != null && i < 10);
         } else {
+            AlbumSimplified[] albums = spotifyApi.searchAlbums(searchTerm).build().execute().getItems();
             albumList.addAll(Arrays.asList(albums));
         }
 
