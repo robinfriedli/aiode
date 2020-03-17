@@ -1,0 +1,19 @@
+
+${AnsiColor.GREEN}              .~mw,.
+${AnsiColor.GREEN}           . 7NNNNNNNNm      gNNNNNm,               ${AnsiColor.WHITE}                                                      ..          ,,,,
+${AnsiColor.GREEN}           NNNm,"""7NNNNb   NNNNNNNN".w             ${AnsiColor.WHITE}#NNN                                      .,,,       NNNN      .NNNNNNE
+${AnsiColor.GREEN}           NNNNNb   /NNNNb  ANNNb   NNNN            ${AnsiColor.WHITE}#NNN                                      (NNN       "NM"      NNNE
+${AnsiColor.GREEN}            7NNNNNNNNNNNNE   7NNNNN#NNNN            ${AnsiColor.WHITE}#NNN   .,,,.              .,,,,.          #NNN                jNNNC
+${AnsiColor.GREEN}              7NNNNNNNNN"  (N  "NNNNNNNE            ${AnsiColor.WHITE}#NNN,#NNNNNNNNm       .#NNNNNNNNNNm    (NNNNNNNNNL   NNNN   NNNNNNNNNN   NNNb       (NNN
+${AnsiColor.GREEN}                          dNNNNw                    ${AnsiColor.WHITE}#NNNN"`   '7NNNN,    #NNNM"    "NNNNb     (NNN       NNNN     jNNNC      NNNb       (NNN
+${AnsiColor.GREEN}                        `"NNNNNNM" .,,.             ${AnsiColor.WHITE}#NNN         NNNN   #NNNC        (NNNb    (NNN       NNNN     jNNNC      NNNb       (NNN
+${AnsiColor.GREEN}               .#NNNNNNNNm  "NN  #NNNNNNNW,         ${AnsiColor.WHITE}#NNN         (NNN   NNNN          NNNN    (NNN       NNNN     jNNNC      NNNb       (NNN
+${AnsiColor.GREEN}              #NNNNNNNNNNNNN  7 #NNNNNNNNNNN        ${AnsiColor.WHITE}#NNN         #NNN   #NNN         .NNNE    (NNN       NNNN     jNNNC      NNNb       (NNN
+${AnsiColor.GREEN}             #NNNNNN" "NNNNNN   #NNNN-   NNNN       ${AnsiColor.WHITE}#NNNw       #NNNE    #NNN,      ,NNNN     (NNN       NNNN     jNNNC      NNNN,    .gNNNN
+${AnsiColor.GREEN}             #NNNNN,    NNNNNb   NNNNNw.. 7NNL      ${AnsiColor.WHITE}#NNNNNNNNNNNNNN'      7NNNNNNNNNNNNC      `NNNNNNN   NNNN     jNNNC      ?NNNNNNNNNM7NNN
+${AnsiColor.GREEN}              NNNNE ,mm#NNNNNL    7NNNNNNNNw``      ${AnsiColor.WHITE}*===  "7MNNM"`           "7MNRM="           7MNNM"   ====      ===         '7""""   (NNN
+${AnsiColor.GREEN}               NM .#NNNNNNNNN       "NNNNNNN"       ${AnsiColor.WHITE}                                                                          w        .NNNN
+${AnsiColor.GREEN}                 ^NNNNNNNNM"                        ${AnsiColor.WHITE}                                                                         NNNNN###NNNNN"
+${AnsiColor.GREEN}                                                    ${AnsiColor.WHITE}                                                                           "*MNNMM=7
+
+${AnsiColor.YELLOW}:: Spring Boot ::   v${spring-boot.version}
