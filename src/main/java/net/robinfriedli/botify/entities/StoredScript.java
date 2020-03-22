@@ -101,7 +101,7 @@ public class StoredScript implements Serializable, SanitizedEntity {
                                     .build(session)
                             )
                         )),
-                    String.format("Maximum interceptor / finalizer count of %s reached", maxEntityCount),
+                    String.format("Maximum interceptor / finalizer count of %d reached", maxEntityCount),
                     maxEntityCount
                 );
 

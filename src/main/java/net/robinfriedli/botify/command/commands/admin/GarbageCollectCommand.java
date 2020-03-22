@@ -31,6 +31,6 @@ public class GarbageCollectCommand extends AbstractAdminCommand {
 
     @Override
     public void onSuccess() {
-        sendSuccess(String.format("Executed garbage collection. Usage went from %s MB to %s MB.", memoryBefore, memoryAfter));
+        sendSuccess(String.format("Executed garbage collection. Usage went from %f MB to %f MB.", memoryBefore, memoryAfter));
     }
 }

@@ -4,7 +4,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -28,20 +27,16 @@ public class Util {
      * return the given amount of milliseconds as a human readable string with minutes and seconds: 03:14
      */
     public static String normalizeMillis(long millis) {
-        // get amount of full hours
-        long hours = TimeUnit.MILLISECONDS.toHours(millis);
-        // get amount of full minutes and subtract the full hours
-        long minutes = TimeUnit.MILLISECONDS.toMinutes(millis) - TimeUnit.HOURS.toMinutes(hours);
-        // get amount of full seconds and subtract the full minutes and hours
-        long seconds = TimeUnit.MILLISECONDS.toSeconds(millis) - TimeUnit.HOURS.toSeconds(hours) - TimeUnit.MINUTES.toSeconds(minutes);
-
-        String minuteString = minutes < 10 ? "0" + minutes : String.valueOf(minutes);
-        String secondString = seconds < 10 ? "0" + seconds : String.valueOf(seconds);
+        long totalSeconds = millis / 1000;
+        long seconds = totalSeconds % 60;
+        long totalMinutes = totalSeconds / 60;
+        long minutes = totalMinutes % 60;
+        long hours = totalMinutes / 60;
 
         if (hours > 0) {
-            return String.format("%s:%s:%s", hours, minuteString, secondString);
+            return String.format("%d:%02d:%02d", hours, minutes, seconds);
         } else {
-            return String.format("%s:%s", minuteString, secondString);
+            return String.format("%02d:%02d", minutes, seconds);
         }
     }
 

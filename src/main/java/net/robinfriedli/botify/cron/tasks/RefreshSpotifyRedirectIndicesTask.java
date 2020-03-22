@@ -110,7 +110,7 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
                 spotifyTrackBulkLoadingService.perform();
 
                 stopwatch.stop();
-                logger.info(String.format("Regenerated %s spotify redirect indices in %s seconds", updateCount, stopwatch.elapsed(TimeUnit.SECONDS)));
+                logger.info(String.format("Regenerated %d spotify redirect indices in %d seconds", updateCount, stopwatch.elapsed(TimeUnit.SECONDS)));
             });
         } finally {
             Transaction transaction = null;
@@ -180,7 +180,7 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
                 String message = e.getDetails().getMessage();
                 logger.error(String.format("GoogleJsonResponse exception while refreshing index for track id %s: %s", track.getId(), message));
             } catch (Throwable e) {
-                logger.error("Exception while updating SpotifyRedirectIndex for track id " + track.getId(), e);
+                logger.error(String.format("Exception while updating SpotifyRedirectIndex for track id %s", track != null ? track.getId() : null), e);
             }
         }
     }

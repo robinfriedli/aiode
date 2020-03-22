@@ -67,7 +67,7 @@ public class AnalyticsCommand extends AbstractCommand {
         embedBuilder.addField("Saved playlists", String.valueOf(playlistCount), true);
         embedBuilder.addField("Saved tracks", String.valueOf(trackCount), true);
         embedBuilder.addField("Total tracks played", String.valueOf(playedCount), true);
-        embedBuilder.addField("Thread count", String.format("%s (%s daemons)", threadCount, daemonThreadCount), true);
+        embedBuilder.addField("Thread count", String.format("%d (%d daemons)", threadCount, daemonThreadCount), true);
         embedBuilder.addField("Memory (in MB)",
             "Total: " + maxMemory + System.lineSeparator() +
                 "Allocated: " + allocatedMemory + System.lineSeparator() +

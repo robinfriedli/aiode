@@ -125,7 +125,7 @@ public class MoveCommand extends AbstractCommand {
                         item.setIndex(item.getIndex() - range);
                     }
                 }
-                String message = String.format("Moved items %s through %s behind item '%s'",
+                String message = String.format("Moved items %d through %d behind item '%s'",
                     start + 1, end + 1, itemsSorted.get(targetIndex).display());
                 successMessageBuilder.append(message);
             } else {
@@ -148,7 +148,7 @@ public class MoveCommand extends AbstractCommand {
                         item.setIndex(item.getIndex() + range);
                     }
                 }
-                String message = String.format("Moved items %s through %s ahead of item '%s'",
+                String message = String.format("Moved items %d through %d ahead of item '%s'",
                     start + 1, end + 1, itemsSorted.get(targetIndex).display());
                 successMessageBuilder.append(message);
             }
@@ -165,7 +165,7 @@ public class MoveCommand extends AbstractCommand {
 
     private void checkIndex(int index, Playlist playlist) {
         if (!(index > 0 && index <= playlist.getSize())) {
-            throw new InvalidCommandException(String.format("Invalid index: %s. Expected value between 1 - %s", index, playlist.getSize()));
+            throw new InvalidCommandException(String.format("Invalid index: %d. Expected value between 1 - %d", index, playlist.getSize()));
         }
     }
 

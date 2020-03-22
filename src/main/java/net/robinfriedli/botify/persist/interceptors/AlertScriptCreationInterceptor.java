@@ -33,7 +33,7 @@ public class AlertScriptCreationInterceptor extends CollectingInterceptor {
                 StoredScript script = createdEntities.get(0);
                 messageService.sendSuccess(String.format("Created script '%s'", script.getIdentifier()), commandContext.getChannel());
             } else {
-                messageService.sendSuccess(String.format("Created %s scripts", createdEntities.size()), commandContext.getChannel());
+                messageService.sendSuccess(String.format("Created %d scripts", createdEntities.size()), commandContext.getChannel());
             }
         }
 
@@ -42,7 +42,7 @@ public class AlertScriptCreationInterceptor extends CollectingInterceptor {
                 StoredScript script = deletedEntities.get(0);
                 messageService.sendSuccess(String.format("Deleted script '%s'", script.getIdentifier()), commandContext.getChannel());
             } else {
-                messageService.sendSuccess(String.format("Deleted %s scripts", deletedEntities.size()), commandContext.getChannel());
+                messageService.sendSuccess(String.format("Deleted %d scripts", deletedEntities.size()), commandContext.getChannel());
             }
         }
     }

@@ -81,7 +81,7 @@ public class RemoveCommand extends AbstractCommand {
 
     private void checkIndex(int index, Playlist playlist) {
         if (!(index > 0 && index <= playlist.getSize())) {
-            throw new InvalidCommandException(format("Invalid index '%s'. Needs to in range 1 - %s", index, playlist.getSize()));
+            throw new InvalidCommandException(format("Invalid index '%d'. Needs to in range 1 - %d", index, playlist.getSize()));
         }
     }
 

@@ -60,7 +60,7 @@ public class PlaybackCleanupTask extends AbstractCronTask {
         }
 
         if (clearedAlone > 0 || playbacksCleared > 0) {
-            logger.info(String.format("Cleared %s stale playbacks and stopped %s lone playbacks", playbacksCleared, clearedAlone));
+            logger.info(String.format("Cleared %d stale playbacks and stopped %d lone playbacks", playbacksCleared, clearedAlone));
         }
     }
 

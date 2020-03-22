@@ -131,7 +131,7 @@ public class CommandExecutionInterceptor extends AbstractChainableCommandInterce
             unexpectedException = true;
             throw new CommandFailure(e);
         } catch (ErrorResponseException e) {
-            messageService.sendException(String.format("Discord returned error (code: %s): %s", e.getErrorCode(), e.getMeaning()), command.getContext().getChannel());
+            messageService.sendException(String.format("Discord returned error (code: %d): %s", e.getErrorCode(), e.getMeaning()), command.getContext().getChannel());
             logger.error("Blocking Discord request returned error", e);
             throw new CommandFailure(e);
         } catch (CommandRuntimeException e) {

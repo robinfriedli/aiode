@@ -77,7 +77,7 @@ public class CommandMonitoringInterceptor extends AbstractChainableCommandInterc
                         );
                         warningMessage = messageService.send(warningEmbed.build(), context.getChannel());
 
-                        logger.warn(String.format("Command [%s] on guild %s has exceeded the warn limit for execution duration of %s millis.",
+                        logger.warn(String.format("Command [%s] on guild %s has exceeded the warn limit for execution duration of %d millis.",
                             command.display(), context.getGuild(), MESSAGE_AFTER_THRESHOLD + LOGGER_WARNING_AFTER_THRESHOLD));
                     }
 

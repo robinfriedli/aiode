@@ -112,9 +112,10 @@ public abstract class ScriptCommandInterceptor extends AbstractChainableCommandI
             }
         } catch (TimeoutException e) {
             StoredScript currentScript = currentScriptReference.get();
-            messageService.sendError(String.format("Execution of script command %ss stopped because script%s has run into a timeout",
-                usageId,
-                currentScript.getIdentifier() != null ? String.format(" '%s'", currentScript.getIdentifier()) : ""),
+            messageService.sendError(
+                String.format("Execution of script command %ss stopped because script%s has run into a timeout",
+                    usageId,
+                    currentScript != null ? String.format(" '%s'", currentScript.getIdentifier()) : ""),
                 context.getChannel()
             );
         }

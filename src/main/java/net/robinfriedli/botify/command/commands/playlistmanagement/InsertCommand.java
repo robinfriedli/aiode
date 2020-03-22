@@ -30,7 +30,7 @@ public class InsertCommand extends AddCommand {
     protected void addToList(Playlist playlist, List<PlaylistItem> items) {
         if (!playlist.isEmpty()) {
             if (!(targetIndex > 0 && targetIndex <= playlist.getSize())) {
-                throw new InvalidCommandException(String.format("Invalid index: %s. Expected value between 1 - %s", targetIndex, playlist.getSize()));
+                throw new InvalidCommandException(String.format("Invalid index: %d. Expected value between 1 - %d", targetIndex, playlist.getSize()));
             }
 
             int actualIndex = targetIndex - 1;

@@ -63,7 +63,7 @@ public class UpdateCommand extends AbstractAdminCommand {
         }
 
         if (inputStreamString.length() < 1024) {
-            embedBuilder.addField(title, String.format("%s%s%s", "```" + System.lineSeparator(), inputStreamString, System.lineSeparator() + "```"), false);
+            embedBuilder.addField(title, "```\n" + inputStreamString + "\n```", false);
         } else {
             ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(inputStreamString.getBytes());
             embedBuilder.addField(title, "Output too long, sending as attachment", false);

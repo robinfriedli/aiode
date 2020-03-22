@@ -72,7 +72,7 @@ public class ConnectCommand extends AbstractCommand {
                     if (attemptNumber >= RETRY_COUNT) {
                         messageService.sendError(message + "Maximum retry count reached.", user);
                     } else {
-                        messageService.sendError(message + String.format("Attempt %s / %s", attemptNumber, RETRY_COUNT), user);
+                        messageService.sendError(message + String.format("Attempt %d / %d", attemptNumber, RETRY_COUNT), user);
                         awaitPrivateMessage(clientSession, userId, guild, user, attemptNumber + 1);
                     }
                     return;
@@ -90,7 +90,7 @@ public class ConnectCommand extends AbstractCommand {
                         if (attemptNumber >= RETRY_COUNT) {
                             messageService.sendError(message + "Maximum retry count reached.", user);
                         } else {
-                            messageService.sendError(message + String.format("Attempt %s / %s", attemptNumber, RETRY_COUNT), user);
+                            messageService.sendError(message + String.format("Attempt %d / %d", attemptNumber, RETRY_COUNT), user);
                             awaitPrivateMessage(clientSession, userId, guild, user, attemptNumber + 1);
                         }
                         return;
