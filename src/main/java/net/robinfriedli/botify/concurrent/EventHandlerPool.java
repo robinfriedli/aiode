@@ -10,10 +10,7 @@ public class EventHandlerPool {
     public static final ThreadPoolExecutor POOL = new EagerlyScalingThreadPoolExecutor("event-handler-pool", 3, 50, 5L, TimeUnit.MINUTES);
 
     static {
-        Botify.SHUTDOWNABLES.add(delayMs -> {
-            POOL.shutdown();
-            ((EagerlyScalingThreadPoolExecutor.SecondaryQueueRejectionHandler) POOL.getRejectedExecutionHandler()).shutdown();
-        });
+        Botify.SHUTDOWNABLES.add(delayMs -> POOL.shutdown());
     }
 
     private EventHandlerPool() {
