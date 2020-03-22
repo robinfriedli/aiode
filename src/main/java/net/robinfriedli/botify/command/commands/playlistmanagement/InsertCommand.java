@@ -28,25 +28,23 @@ public class InsertCommand extends AddCommand {
 
     @Override
     protected void addToList(Playlist playlist, List<PlaylistItem> items) {
-        if (!playlist.isEmpty()) {
-            if (!(targetIndex > 0 && targetIndex <= playlist.getSize())) {
-                throw new InvalidCommandException(String.format("Invalid index: %d. Expected value between 1 - %d", targetIndex, playlist.getSize()));
-            }
-
-            int actualIndex = targetIndex - 1;
-            // move back all items that are at or after the target index
-            List<PlaylistItem> itemsSorted = playlist.getItemsSorted(true);
-            for (int i = actualIndex; i < itemsSorted.size(); i++) {
-                PlaylistItem item = itemsSorted.get(i);
-                item.setIndex(item.getIndex() + items.size());
-            }
-            // assign target indices
-            for (int i = 0; i < items.size(); i++) {
-                PlaylistItem item = items.get(i);
-                item.setIndex(actualIndex + i);
-            }
-
+        if (!(targetIndex > 0 && targetIndex <= playlist.getSize())) {
+            throw new InvalidCommandException(String.format("Invalid index: %d. Index is not within playlist of size %d. Use the add command to add items at the end of the list instead.", targetIndex, playlist.getSize()));
         }
+
+        int actualIndex = targetIndex - 1;
+        // move back all items that are at or after the target index
+        List<PlaylistItem> itemsSorted = playlist.getItemsSorted(true);
+        for (int i = actualIndex; i < itemsSorted.size(); i++) {
+            PlaylistItem item = itemsSorted.get(i);
+            item.setIndex(item.getIndex() + items.size());
+        }
+        // assign target indices
+        for (int i = 0; i < items.size(); i++) {
+            PlaylistItem item = items.get(i);
+            item.setIndex(actualIndex + i);
+        }
+
         super.addToList(playlist, items);
     }
 

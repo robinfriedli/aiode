@@ -335,7 +335,7 @@
            implementation="net.robinfriedli.botify.command.commands.playlistmanagement.InsertCommand"
            requiresInput="true"
            category="PLAYLIST_MANAGEMENT"
-           description="Add a track to a botify playlist. This command is an extension to the add command that inserts the tracks at a specific index rather than adding them to the end of the list.">
+           description="Add a track to a botify playlist. This command is an extension to the add command that inserts the tracks at a specific index within the playlist rather than adding them to the end of the list. This moves all items at and below the specified index down and inserts the new tracks starting at the provided index.">
     <argument identifier="at" requiresValue="true" description="Mandatory argument to define the index at which to insert the tracks."/>
     <example title="Add tracks to the start of a playlist">%1$sinsert %2$sspotify %2$sown %2$slist goat %2$sto my list %2$sat 1</example>
     <example title="Insert tracks at index 10">%1$sinsert %2$syoutube %2$slist favs %2$sto my list %2$sat 10</example>
