@@ -30,7 +30,7 @@ import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
 import net.robinfriedli.botify.servers.HttpServerManager;
 import net.robinfriedli.jxp.api.JxpBackend;
 import org.hibernate.SessionFactory;
-import org.springframework.context.ApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.stereotype.Component;
 
 /**
@@ -48,10 +48,10 @@ public class Botify {
 
     private static Botify instance;
 
-    private final ApplicationContext springBootContext;
     private final AudioManager audioManager;
     private final CommandExecutionQueueManager executionQueueManager;
     private final CommandManager commandManager;
+    private final ConfigurableApplicationContext springBootContext;
     private final CronJobService cronJobService;
     private final GroovySandboxComponent groovySandboxComponent;
     private final GuildManager guildManager;
@@ -69,10 +69,10 @@ public class Botify {
     private final SpringPropertiesConfig springPropertiesConfig;
     private final VersionManager versionManager;
 
-    public Botify(ApplicationContext springBootContext,
-                  AudioManager audioManager,
+    public Botify(AudioManager audioManager,
                   CommandExecutionQueueManager executionQueueManager,
                   CommandManager commandManager,
+                  ConfigurableApplicationContext springBootContext,
                   CronJobService cronJobService,
                   GroovySandboxComponent groovySandboxComponent,
                   GuildManager guildManager,
@@ -89,10 +89,10 @@ public class Botify {
                   SpringPropertiesConfig springPropertiesConfig,
                   VersionManager versionManager,
                   ListenerAdapter... listeners) {
-        this.springBootContext = springBootContext;
         this.audioManager = audioManager;
         this.executionQueueManager = executionQueueManager;
         this.commandManager = commandManager;
+        this.springBootContext = springBootContext;
         this.cronJobService = cronJobService;
         this.groovySandboxComponent = groovySandboxComponent;
         this.guildManager = guildManager;
@@ -194,14 +194,12 @@ public class Botify {
         shardManager.shutdown();
         LOGGER.info("Shutting down hibernate SessionFactory");
         botify.getSessionFactory().close();
+        LOGGER.info("Close spring ApplicationContext");
+        botify.getSpringBootContext().close();
     }
 
     public static boolean isShuttingDown() {
         return shuttingDown;
-    }
-
-    public ApplicationContext getSpringBootContext() {
-        return springBootContext;
     }
 
     public AudioManager getAudioManager() {
@@ -214,6 +212,10 @@ public class Botify {
 
     public CommandManager getCommandManager() {
         return commandManager;
+    }
+
+    public ConfigurableApplicationContext getSpringBootContext() {
+        return springBootContext;
     }
 
     public CronJobService getCronJobService() {
