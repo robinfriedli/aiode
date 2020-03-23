@@ -265,6 +265,11 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
         } else if (audioItem instanceof AudioPlaylist) {
             int limit = getArgumentValue("select", Integer.class, 20);
             List<AudioTrack> tracks = ((AudioPlaylist) audioItem).getTracks();
+
+            if (tracks.isEmpty()) {
+                throw new NoResultsFoundException(String.format("No soundcloud track found for '%s'", commandInput));
+            }
+
             if (tracks.size() > limit) {
                 tracks = tracks.subList(0, limit);
             }
