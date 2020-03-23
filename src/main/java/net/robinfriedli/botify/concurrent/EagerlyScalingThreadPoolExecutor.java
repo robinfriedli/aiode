@@ -84,20 +84,18 @@ public class EagerlyScalingThreadPoolExecutor extends ThreadPoolExecutor {
                             while (queuedExecution != null) {
                                 ThreadPoolExecutor poolExecutor = queuedExecution.getExecutor();
 
-                                if (poolExecutor.isShutdown()) {
-                                    continue;
-                                }
+                                if (!poolExecutor.isShutdown()) {
+                                    Runnable task = queuedExecution.getTask();
 
-                                Runnable task = queuedExecution.getTask();
+                                    BlockingQueue<Runnable> mainQueue = poolExecutor.getQueue();
+                                    boolean offer = mainQueue.offer(task, 10, TimeUnit.MINUTES);
+                                    int i = 1;
 
-                                BlockingQueue<Runnable> mainQueue = poolExecutor.getQueue();
-                                boolean offer = mainQueue.offer(task, 10, TimeUnit.MINUTES);
-                                int i = 1;
-
-                                while (!offer) {
-                                    logger.warn(String.format("possible stale task or overloaded pool, failing to submit task from secondary queue after trying for %s minutes, target pool: %s %s", i * 10, mainPoolName, poolExecutor.toString()));
-                                    i++;
-                                    offer = mainQueue.offer(task, 10, TimeUnit.MINUTES);
+                                    while (!offer) {
+                                        logger.warn(String.format("possible stale task or overloaded pool, failing to submit task from secondary queue after trying for %s minutes, target pool: %s %s", i * 10, mainPoolName, poolExecutor.toString()));
+                                        i++;
+                                        offer = mainQueue.offer(task, 10, TimeUnit.MINUTES);
+                                    }
                                 }
 
                                 queuedExecution = secondaryQueue.poll(10, TimeUnit.SECONDS);
