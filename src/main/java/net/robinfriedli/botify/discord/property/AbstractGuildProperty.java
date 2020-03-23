@@ -26,7 +26,7 @@ public abstract class AbstractGuildProperty {
         this.contribution = contribution;
     }
 
-    public abstract void doValidate(Object state);
+    public abstract void validate(Object state);
 
     public abstract Object process(String input);
 
@@ -58,6 +58,7 @@ public abstract class AbstractGuildProperty {
     }
 
     public void set(String value, GuildContext guildContext) {
+        validateInput(value);
         StaticSessionProvider.consumeSession(session -> {
             HibernateInvoker.create(session).invoke(() -> {
                 GuildSpecification guildSpecification = guildContext.getSpecification(session);
@@ -99,20 +100,6 @@ public abstract class AbstractGuildProperty {
         }
     }
 
-    public void validate(Object value) {
-        StringList acceptedValues = contribution.query(tagName("acceptedValue")).getResultStream().map(XmlElement::getTextContent).collect(StringList.collector());
-        if (!acceptedValues.isEmpty()) {
-            String sVal = String.valueOf(value);
-            boolean valueAccepted = acceptedValues.contains(sVal, true);
-            if (!valueAccepted) {
-                String acceptedValuesString = contribution.getAcceptedValuesString(acceptedValues);
-                throw new InvalidPropertyValueException(String.format("Unacceptable value '%s'.\nAcceptable values: %s", sVal, acceptedValuesString));
-            }
-        }
-
-        doValidate(value);
-    }
-
     /**
      * Get the set value for the current context.
      */
@@ -144,6 +131,19 @@ public abstract class AbstractGuildProperty {
         } else {
             return "Not Set";
         }
+    }
+
+    void validateInput(String value) {
+        StringList acceptedValues = contribution.query(tagName("acceptedValue")).getResultStream().map(XmlElement::getTextContent).collect(StringList.collector());
+        if (!acceptedValues.isEmpty()) {
+            boolean valueAccepted = acceptedValues.contains(value, true);
+            if (!valueAccepted) {
+                String acceptedValuesString = contribution.getAcceptedValuesString(acceptedValues);
+                throw new InvalidPropertyValueException(String.format("Unacceptable value '%s'.\nAcceptable values: %s", value, acceptedValuesString));
+            }
+        }
+
+        this.validate(value);
     }
 
 }

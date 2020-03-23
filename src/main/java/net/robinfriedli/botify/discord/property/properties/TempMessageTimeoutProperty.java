@@ -17,7 +17,7 @@ public class TempMessageTimeoutProperty extends AbstractGuildProperty {
     }
 
     @Override
-    public void doValidate(Object state) {
+    public void validate(Object state) {
         int timeoutSeconds = (int) state;
 
         if (timeoutSeconds < 0 || timeoutSeconds > 300) {

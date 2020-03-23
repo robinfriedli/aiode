@@ -34,7 +34,7 @@ public class PrefixProperty extends AbstractGuildProperty {
     }
 
     @Override
-    public void doValidate(Object state) {
+    public void validate(Object state) {
         String input = (String) state;
         if (input.length() < 1 || input.length() > 5) {
             throw new InvalidCommandException("Length should be 1 - 5 characters");

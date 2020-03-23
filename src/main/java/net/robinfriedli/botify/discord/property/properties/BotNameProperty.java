@@ -22,7 +22,7 @@ public class BotNameProperty extends AbstractGuildProperty {
     }
 
     @Override
-    public void doValidate(Object state) {
+    public void validate(Object state) {
         String input = (String) state;
         if (input.length() < 1 || input.length() > 32) {
             throw new InvalidPropertyValueException("Length should be 1 - 32 characters");

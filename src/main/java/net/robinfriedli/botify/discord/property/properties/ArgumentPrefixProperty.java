@@ -38,7 +38,7 @@ public class ArgumentPrefixProperty extends AbstractGuildProperty {
     }
 
     @Override
-    public void doValidate(Object state) {
+    public void validate(Object state) {
     }
 
     @Override

@@ -23,7 +23,7 @@ public class DefaultTextChannelProperty extends AbstractGuildProperty {
     }
 
     @Override
-    public void doValidate(Object state) {
+    public void validate(Object state) {
     }
 
     @Override
