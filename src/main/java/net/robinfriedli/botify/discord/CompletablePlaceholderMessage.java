@@ -346,6 +346,18 @@ public class CompletablePlaceholderMessage implements Message {
 
     @Nonnull
     @Override
+    public RestAction<Void> clearReactions(@Nonnull String s) {
+        return unwrap().clearReactions(s);
+    }
+
+    @Nonnull
+    @Override
+    public RestAction<Void> clearReactions(@Nonnull Emote emote) {
+        return unwrap().clearReactions(emote);
+    }
+
+    @Nonnull
+    @Override
     public RestAction<Void> removeReaction(@Nonnull Emote emote) {
         return unwrap().removeReaction(emote);
     }

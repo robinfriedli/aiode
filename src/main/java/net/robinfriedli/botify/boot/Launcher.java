@@ -1,6 +1,7 @@
 package net.robinfriedli.botify.boot;
 
 import java.io.File;
+import java.util.EnumSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,9 +16,12 @@ import com.wrapper.spotify.SpotifyHttpManager;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
+import net.dv8tion.jda.api.utils.MemberCachePolicy;
+import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
@@ -54,6 +58,8 @@ import org.hibernate.SessionFactory;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+
+import static net.dv8tion.jda.api.requests.GatewayIntent.*;
 
 public class Launcher {
 
@@ -113,8 +119,10 @@ public class Launcher {
             YouTubeService youTubeService = new YouTubeService(youTube, youTubeCredentials, youtubeApiDailyQuota);
 
             // setup JDA
-            ShardManager shardManager = new DefaultShardManagerBuilder()
-                .setToken(discordToken)
+            EnumSet<GatewayIntent> gatewayIntents = EnumSet.of(GUILD_MESSAGES, GUILD_MESSAGE_REACTIONS, GUILD_VOICE_STATES);
+            ShardManager shardManager = DefaultShardManagerBuilder.create(discordToken, gatewayIntents)
+                .setDisabledCacheFlags(EnumSet.of(CacheFlag.ACTIVITY, CacheFlag.EMOTE, CacheFlag.CLIENT_STATUS))
+                .setMemberCachePolicy(MemberCachePolicy.DEFAULT)
                 .setStatus(OnlineStatus.IDLE)
                 .setChunkingFilter(ChunkingFilter.NONE)
                 .build();
