@@ -2,8 +2,6 @@ package net.robinfriedli.botify.boot.tasks;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,8 +42,8 @@ public class SetRedirectedSpotifyTrackNameTask implements StartupTask {
         ClientCredentials clientCredentials = spotifyApi.clientCredentials().build().execute();
         spotifyApi.setAccessToken(clientCredentials.getAccessToken());
         List<File> files = Lists.newArrayList();
-        String defaultPlaylistsFile = getClass().getResource("/playlists.xml").getFile();
-        files.add(new File(URLDecoder.decode(defaultPlaylistsFile, StandardCharsets.UTF_8)));
+        File defaultPlaylistsFile = new File("src/main/resources/playlists.xml");
+        files.add(defaultPlaylistsFile);
         for (Guild guild : shardManager.getGuilds()) {
             String guildPlaylistsPath = String.format("./resources/%splaylists.xml", guild.getId());
             files.add(new File(guildPlaylistsPath));

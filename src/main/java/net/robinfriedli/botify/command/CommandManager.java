@@ -68,8 +68,8 @@ public class CommandManager {
                           QueryBuilderFactory queryBuilderFactory) {
         this.isScriptingEnabled = isScriptingEnabled;
         try {
-            this.commandContributionContext = jxpBackend.getContext(commandResource.getFile());
-            this.commandInterceptorContext = jxpBackend.getContext(commandInterceptorResource.getFile());
+            this.commandContributionContext = jxpBackend.createContext(commandResource.getInputStream());
+            this.commandInterceptorContext = jxpBackend.createContext(commandInterceptorResource.getInputStream());
         } catch (IOException e) {
             throw new RuntimeException("Could not instantiate " + getClass().getSimpleName(), e);
         }

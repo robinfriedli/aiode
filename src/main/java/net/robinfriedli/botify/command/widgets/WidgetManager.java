@@ -1,7 +1,6 @@
 package net.robinfriedli.botify.command.widgets;
 
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,8 +33,8 @@ public class WidgetManager {
     public WidgetManager() {
         Botify botify = Botify.get();
         JxpBackend jxpBackend = botify.getJxpBackend();
-        String widgetsFile = getClass().getResource("/xml-contributions/widgets.xml").getFile();
-        widgetConfigurationContext = jxpBackend.getContext(URLDecoder.decode(widgetsFile, StandardCharsets.UTF_8));
+        InputStream widgetsResource = getClass().getResourceAsStream("/xml-contributions/widgets.xml");
+        widgetConfigurationContext = jxpBackend.createContext(widgetsResource);
     }
 
     public WidgetContribution getContributionForWidget(Class<? extends AbstractWidget> type) {

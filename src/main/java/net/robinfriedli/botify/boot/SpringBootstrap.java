@@ -1,7 +1,6 @@
 package net.robinfriedli.botify.boot;
 
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
+import java.io.InputStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,8 +67,8 @@ public class SpringBootstrap implements CommandLineRunner {
             });
 
             // run startup tasks
-            String startupTasksFile = getClass().getResource("/xml-contributions/startupTasks.xml").getFile();
-            Context context = jxpBackend.getContext(URLDecoder.decode(startupTasksFile, StandardCharsets.UTF_8));
+            InputStream startupTasksFile = getClass().getResourceAsStream("/xml-contributions/startupTasks.xml");
+            Context context = jxpBackend.createContext(startupTasksFile);
             for (StartupTaskContribution element : context.getInstancesOf(StartupTaskContribution.class)) {
                 element.instantiate().perform();
             }

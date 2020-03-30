@@ -3,6 +3,9 @@ name = "webapp"
 version = "0.1.0"
 authors = ["robinfriedli <robinfriedli@icloud.com>"]
 edition = "2018"
+license = "Apache-2.0"
+description = "Web client for the botify REST API"
+repository = "https://github.com/robinfriedli/botify"
 
 [lib]
 crate-type = ["cdylib"]

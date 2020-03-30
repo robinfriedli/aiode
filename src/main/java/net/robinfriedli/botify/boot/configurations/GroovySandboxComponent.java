@@ -24,7 +24,7 @@ public class GroovySandboxComponent {
 
     public GroovySandboxComponent(@Value("classpath:xml-contributions/groovyWhitelist.xml") Resource whitelistResource, JxpBackend jxpBackend) {
         try {
-            this.whitelistConfiguration = jxpBackend.getContext(whitelistResource.getFile());
+            this.whitelistConfiguration = jxpBackend.createContext(whitelistResource.getInputStream());
         } catch (IOException e) {
             throw new RuntimeException("Could not instantiate " + getClass().getSimpleName(), e);
         }

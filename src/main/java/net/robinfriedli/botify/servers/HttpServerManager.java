@@ -27,7 +27,7 @@ public class HttpServerManager extends AbstractShutdownable {
 
     public HttpServerManager(@Value("classpath:xml-contributions/httpHandlers.xml") Resource commandResource, JxpBackend jxpBackend) {
         try {
-            this.httpHandlersContext = jxpBackend.getContext(commandResource.getFile());
+            this.httpHandlersContext = jxpBackend.createContext(commandResource.getInputStream());
         } catch (IOException e) {
             throw new RuntimeException("Could not instantiate " + getClass().getSimpleName(), e);
         }

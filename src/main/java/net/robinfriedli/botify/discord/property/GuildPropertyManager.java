@@ -28,7 +28,7 @@ public class GuildPropertyManager {
 
     public GuildPropertyManager(@Value("classpath:xml-contributions/guildProperties.xml") Resource commandResource, JxpBackend jxpBackend) {
         try {
-            this.propertyContext = jxpBackend.getContext(commandResource.getFile());
+            this.propertyContext = jxpBackend.createContext(commandResource.getInputStream());
         } catch (IOException e) {
             throw new RuntimeException("Could not instantiate " + getClass().getSimpleName(), e);
         }

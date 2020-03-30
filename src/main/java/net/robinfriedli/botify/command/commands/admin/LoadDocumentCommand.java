@@ -1,7 +1,6 @@
 package net.robinfriedli.botify.command.commands.admin;
 
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
+import java.io.InputStream;
 import java.util.List;
 
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -28,8 +27,8 @@ public class LoadDocumentCommand extends AbstractAdminCommand {
     public void runAdmin() {
         JxpBackend jxpBackend = Botify.get().getJxpBackend();
         EmbedBuilder embedBuilder;
-        String embedDocumentFile = getClass().getResource("/xml-contributions/embedDocuments.xml").getFile();
-        try (Context context = jxpBackend.createLazyContext(URLDecoder.decode(embedDocumentFile, StandardCharsets.UTF_8))) {
+        InputStream embedDocumentResource = getClass().getResourceAsStream("/xml-contributions/embedDocuments.xml");
+        try (Context context = jxpBackend.createLazyContext(embedDocumentResource)) {
             if (getCommandInput().isBlank()) {
                 List<EmbedDocumentContribution> documents = context.getInstancesOf(EmbedDocumentContribution.class);
                 embedBuilder = new EmbedBuilder();

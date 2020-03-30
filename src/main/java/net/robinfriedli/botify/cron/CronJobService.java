@@ -33,7 +33,7 @@ public class CronJobService extends AbstractShutdownable {
 
     public CronJobService(@Value("classpath:xml-contributions/cronJobs.xml") Resource commandResource, JxpBackend jxpBackend) throws SchedulerException {
         try {
-            this.contributionContext = jxpBackend.getContext(commandResource.getFile());
+            this.contributionContext = jxpBackend.createContext(commandResource.getInputStream());
         } catch (IOException e) {
             throw new RuntimeException("Could not instantiate " + getClass().getSimpleName(), e);
         }

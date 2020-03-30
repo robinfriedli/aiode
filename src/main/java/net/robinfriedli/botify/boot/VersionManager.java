@@ -1,6 +1,7 @@
 package net.robinfriedli.botify.boot;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -13,8 +14,6 @@ import net.robinfriedli.botify.entities.xml.Version;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 import static net.robinfriedli.jxp.queries.Conditions.*;
@@ -27,12 +26,14 @@ public class VersionManager {
 
     private final Context context;
 
-    public VersionManager(@Value("classpath:versions.xml") Resource commandResource, JxpBackend jxpBackend) {
-        try {
-            this.context = jxpBackend.getContext(commandResource.getFile());
-        } catch (IOException e) {
-            throw new RuntimeException("Could not instantiate " + getClass().getSimpleName(), e);
+    public VersionManager(JxpBackend jxpBackend) {
+        File versionsFile = new File("./versions.xml");
+
+        if (!versionsFile.exists()) {
+            throw new IllegalStateException("Could not find versions.xml in current directory. Botify has either been started in the wrong working directory or the file was deleted.");
         }
+
+        this.context = jxpBackend.getContext(versionsFile);
     }
 
     /**

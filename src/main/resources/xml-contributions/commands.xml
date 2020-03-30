@@ -600,11 +600,6 @@ command.run('play')"
       <valueCheck errorMessage="Value needs to be 0 or greater" check="value &gt;= 0"/>
     </argument>
   </command>
-  <command identifier="reload context"
-           implementation="net.robinfriedli.botify.command.commands.admin.ReloadContextCommand"
-           requiresInput="true"
-           category="ADMIN"
-           description="Reload a cached XML context when you made changes to an xml contribution file."/>
   <command identifier="update"
            implementation="net.robinfriedli.botify.command.commands.admin.UpdateCommand"
            requiresInput="false"

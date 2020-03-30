@@ -1,6 +1,5 @@
 package net.robinfriedli.botify.discord;
 
-import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -69,8 +68,9 @@ import static net.robinfriedli.jxp.queries.Conditions.*;
 public class GuildManager {
 
     private final CommandManager commandManager;
-    private final File embedDocumentFile;
-    private final File defaultPlaylistFile;
+    private final Context embedDocumentContext;
+    @Nullable
+    private final Context defaultPlaylistContext;
     private final HibernateComponent hibernateComponent;
     private final SnowflakeMap<GuildContext> guildContexts = new SnowflakeMap<>();
     private final JxpBackend jxpBackend;
@@ -89,8 +89,12 @@ public class GuildManager {
                         QueryBuilderFactory queryBuilderFactory) {
         this.commandManager = commandManager;
         try {
-            embedDocumentFile = embedDocumentsResource.getFile();
-            defaultPlaylistFile = playlistsResource.getFile();
+            embedDocumentContext = jxpBackend.createLazyContext(embedDocumentsResource.getInputStream());
+            if (playlistsResource.exists()) {
+                defaultPlaylistContext = jxpBackend.createLazyContext(playlistsResource.getInputStream());
+            } else {
+                defaultPlaylistContext = null;
+            }
         } catch (IOException e) {
             throw new RuntimeException("Could not instantiate " + getClass().getSimpleName(), e);
         }
@@ -306,8 +310,8 @@ public class GuildManager {
     private void handleNewGuild(Guild guild) {
         Botify botify = Botify.get();
         MessageService messageService = botify.getMessageService();
-        try (Context context = jxpBackend.createLazyContext(embedDocumentFile)) {
-            EmbedDocumentContribution embedDocumentContribution = context
+        try {
+            EmbedDocumentContribution embedDocumentContribution = embedDocumentContext
                 .query(attribute("name").is("getting-started"), EmbedDocumentContribution.class)
                 .requireOnlyResult();
             EmbedBuilder embedBuilder = embedDocumentContribution.buildEmbed();
@@ -318,30 +322,28 @@ public class GuildManager {
 
         SessionFactory sessionFactory = hibernateComponent.getSessionFactory();
         SpotifyApi.Builder spotifyApiBuilder = botify.getSpotifyApiBuilder();
-        try (Session session = sessionFactory.withOptions().interceptor(InterceptorChain.of(
-            PlaylistItemTimestampInterceptor.class, VerifyPlaylistInterceptor.class)).openSession()) {
-            if (defaultPlaylistFile.exists()) {
-                try (Context context = jxpBackend.createLazyContext(defaultPlaylistFile)) {
-                    HibernatePlaylistMigrator hibernatePlaylistMigrator = new HibernatePlaylistMigrator(context, guild, spotifyApiBuilder.build(), session);
-                    Map<Playlist, List<PlaylistItem>> playlistMap = hibernatePlaylistMigrator.perform();
+        if (defaultPlaylistContext != null) {
+            try (Session session = sessionFactory.withOptions().interceptor(InterceptorChain.of(
+                PlaylistItemTimestampInterceptor.class, VerifyPlaylistInterceptor.class)).openSession()) {
+                HibernatePlaylistMigrator hibernatePlaylistMigrator = new HibernatePlaylistMigrator(defaultPlaylistContext, guild, spotifyApiBuilder.build(), session);
+                Map<Playlist, List<PlaylistItem>> playlistMap = hibernatePlaylistMigrator.perform();
 
-                    Mode mode = getMode();
-                    HibernateInvoker.create(session).invoke(currentSession -> {
-                        for (Playlist playlist : playlistMap.keySet()) {
-                            Playlist existingList = SearchEngine.searchLocalList(currentSession, playlist.getName(), mode == GuildManager.Mode.PARTITIONED, guild.getId());
-                            if (existingList == null) {
-                                playlistMap.get(playlist).forEach(item -> {
-                                    item.add();
-                                    currentSession.persist(item);
-                                });
-                                currentSession.persist(playlist);
-                            }
+                Mode mode = getMode();
+                HibernateInvoker.create(session).invoke(currentSession -> {
+                    for (Playlist playlist : playlistMap.keySet()) {
+                        Playlist existingList = SearchEngine.searchLocalList(currentSession, playlist.getName(), mode == GuildManager.Mode.PARTITIONED, guild.getId());
+                        if (existingList == null) {
+                            playlistMap.get(playlist).forEach(item -> {
+                                item.add();
+                                currentSession.persist(item);
+                            });
+                            currentSession.persist(playlist);
                         }
-                    });
-                }
+                    }
+                });
+            } catch (Throwable e) {
+                logger.error("Exception while setting up default playlists", e);
             }
-        } catch (Throwable e) {
-            logger.error("Exception while setting up default playlists", e);
         }
     }
 
