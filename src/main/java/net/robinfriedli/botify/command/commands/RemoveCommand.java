@@ -14,7 +14,6 @@ import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 import net.robinfriedli.botify.util.SearchEngine;
 import net.robinfriedli.stringlist.StringList;
-import net.robinfriedli.stringlist.StringListImpl;
 import org.hibernate.Session;
 
 import static java.lang.String.*;
@@ -39,7 +38,7 @@ public class RemoveCommand extends AbstractCommand {
         }
 
         if (argumentSet("index")) {
-            StringList indices = StringListImpl.create(getCommandInput(), "-");
+            StringList indices = StringList.createWithRegex(getCommandInput(), "-");
             if (indices.size() == 1 || indices.size() == 2) {
                 indices.applyForEach(String::trim);
                 if (indices.size() == 1) {

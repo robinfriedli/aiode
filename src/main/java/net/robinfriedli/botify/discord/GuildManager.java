@@ -196,7 +196,7 @@ public class GuildManager {
 
     private GuildContext initializeGuild(Guild guild) {
         synchronized (guild) {
-            return StaticSessionProvider.invokeWithSession(session -> {
+            return StaticSessionProvider.invokeWithoutInterceptors(session -> {
                 AudioPlayer player = audioManager.getPlayerManager().createPlayer();
 
                 Optional<Long> existingSpecification = session.createQuery("select pk from " + GuildSpecification.class.getName()
@@ -241,6 +241,7 @@ public class GuildManager {
 
         SessionFactory sessionFactory = StaticSessionProvider.getSessionFactory();
         SpotifyApi.Builder spotifyApiBuilder = botify.getSpotifyApiBuilder();
+        InterceptorChain.INTERCEPTORS_MUTED.set(false);
         try (Session session = sessionFactory.withOptions().interceptor(InterceptorChain.of(
             PlaylistItemTimestampListener.class, VerifyPlaylistListener.class)).openSession()) {
             String playlistsPath = PropertiesLoadingService.requireProperty("PLAYLISTS_PATH");
@@ -271,6 +272,8 @@ public class GuildManager {
                 }
                 session.getTransaction().commit();
             }
+        } finally {
+            InterceptorChain.INTERCEPTORS_MUTED.set(true);
         }
     }
 

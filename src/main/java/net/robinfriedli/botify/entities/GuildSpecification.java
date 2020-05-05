@@ -26,6 +26,8 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class GuildSpecification implements Serializable {
 
+    @OneToMany(mappedBy = "guildSpecification")
+    private final Set<AccessConfiguration> accessConfigurations = Sets.newHashSet();
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "pk")
@@ -54,8 +56,6 @@ public class GuildSpecification implements Serializable {
     private Integer tempMessageTimeout;
     @Column(name = "default_text_channel_id")
     private String defaultTextChannelId;
-    @OneToMany(mappedBy = "guildSpecification")
-    private Set<AccessConfiguration> accessConfigurations = Sets.newHashSet();
 
     public GuildSpecification() {
     }

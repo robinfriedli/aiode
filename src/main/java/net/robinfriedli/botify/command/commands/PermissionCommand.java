@@ -20,7 +20,7 @@ import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.util.Table2;
-import net.robinfriedli.stringlist.StringListImpl;
+import net.robinfriedli.stringlist.StringList;
 import org.hibernate.Session;
 
 public class PermissionCommand extends AbstractCommand {
@@ -65,7 +65,7 @@ public class PermissionCommand extends AbstractCommand {
                 if (roles.isEmpty()) {
                     return "Guild owner and administrator roles only";
                 } else {
-                    return StringListImpl.create(roles, Role::getName).toSeparatedString(", ");
+                    return StringList.create(roles, Role::getName).toSeparatedString(", ");
                 }
             } else {
                 return "Available to everyone";

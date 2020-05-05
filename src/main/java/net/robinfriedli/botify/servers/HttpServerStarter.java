@@ -34,7 +34,7 @@ public class HttpServerStarter {
         HttpServer httpServer = HttpServer.create(new InetSocketAddress(port), 0);
 
         ExecutorService executorService = new ThreadPoolExecutor(1, 5, 30, TimeUnit.SECONDS, new SynchronousQueue<>(), new ThreadFactory() {
-            AtomicLong threadId = new AtomicLong(1);
+            final AtomicLong threadId = new AtomicLong(1);
 
             @Override
             public Thread newThread(@NotNull Runnable r) {

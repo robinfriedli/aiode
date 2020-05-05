@@ -31,7 +31,7 @@ import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 import net.robinfriedli.botify.exceptions.NoSpotifyResultsFoundException;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.botify.util.SearchEngine;
-import net.robinfriedli.stringlist.StringListImpl;
+import net.robinfriedli.stringlist.StringList;
 
 public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecidingCommand {
 
@@ -204,7 +204,7 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
         } else if (albums.isEmpty()) {
             throw new NoSpotifyResultsFoundException(String.format("No albums found for '%s'", getCommandInput()));
         } else {
-            askQuestion(albums, AlbumSimplified::getName, album -> StringListImpl.create(album.getArtists(), ArtistSimplified::getName).toSeparatedString(", "));
+            askQuestion(albums, AlbumSimplified::getName, album -> StringList.create(album.getArtists(), ArtistSimplified::getName).toSeparatedString(", "));
         }
     }
 
@@ -225,7 +225,7 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
         } else {
             if (argumentSet("select")) {
                 askQuestion(found, track -> {
-                    String artistString = StringListImpl.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", ");
+                    String artistString = StringList.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", ");
                     return String.format("%s by %s", track.getName(), artistString);
                 }, track -> track.getAlbum().getName());
             } else {

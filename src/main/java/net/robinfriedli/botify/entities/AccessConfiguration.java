@@ -34,15 +34,15 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class AccessConfiguration implements Serializable {
 
+    @OneToMany(mappedBy = "accessConfiguration", fetch = FetchType.EAGER)
+    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+    private final Set<GrantedRole> roles = Sets.newHashSet();
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "pk")
     private long pk;
     @Column(name = "command_identifier", nullable = false)
     private String commandIdentifier;
-    @OneToMany(mappedBy = "accessConfiguration", fetch = FetchType.EAGER)
-    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-    private Set<GrantedRole> roles = Sets.newHashSet();
     @ManyToOne
     @JoinColumn(name = "guild_specification_pk", referencedColumnName = "pk", foreignKey = @ForeignKey(name = "fk_guild_specification"))
     private GuildSpecification guildSpecification;

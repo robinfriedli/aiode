@@ -16,7 +16,7 @@ import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
 import net.robinfriedli.botify.entities.Song;
-import net.robinfriedli.stringlist.StringListImpl;
+import net.robinfriedli.stringlist.StringList;
 import org.hibernate.Session;
 
 /**
@@ -45,7 +45,7 @@ public class TrackWrapper extends AbstractSoftCachedPlayable implements Playable
     @Override
     public String getDisplay() {
         String name = track.getName();
-        String artistString = StringListImpl.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", ");
+        String artistString = StringList.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", ");
         return String.format("%s by %s", name, artistString);
     }
 

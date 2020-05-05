@@ -4,6 +4,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import net.robinfriedli.botify.command.CommandContext;
+import net.robinfriedli.botify.interceptors.InterceptorChain;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
@@ -40,14 +41,21 @@ public class StaticSessionProvider {
         });
     }
 
+    public static <E> E invokeWithoutInterceptors(Function<Session, E> function) {
+        InterceptorChain.INTERCEPTORS_MUTED.set(true);
+        try {
+            return invokeWithSession(function);
+        } finally {
+            InterceptorChain.INTERCEPTORS_MUTED.set(false);
+        }
+    }
+
     public static <E> E invokeWithSession(Function<Session, E> function) {
         Session session = provide();
         boolean commitRequired = false;
-        if (!CommandContext.Current.isSet()) {
-            if (session.getTransaction() == null || !session.getTransaction().isActive()) {
-                session.beginTransaction();
-                commitRequired = true;
-            }
+        if (session.getTransaction() == null || !session.getTransaction().isActive()) {
+            session.beginTransaction();
+            commitRequired = true;
         }
         try {
             return function.apply(session);

@@ -146,7 +146,7 @@ public class Table {
     public class Row {
 
         private final List<Cell> cells;
-        private boolean isOverflow;
+        private final boolean isOverflow;
         private int lines = 1;
 
         Row(List<Cell> cells) {
@@ -246,9 +246,9 @@ public class Table {
     public class Cell {
 
         private final String content;
+        private final List<String> lines;
         private Integer width;
         private boolean overflow;
-        private List<String> lines;
 
         Cell(String content) {
             this.content = content;

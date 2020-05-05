@@ -40,7 +40,6 @@ import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.StaticSessionProvider;
 import net.robinfriedli.stringlist.StringList;
-import net.robinfriedli.stringlist.StringListImpl;
 import org.hibernate.Session;
 
 public class MessageService {
@@ -338,7 +337,7 @@ public class MessageService {
 
     private List<String> separateMessage(String message) {
         List<String> outputParts = Lists.newArrayList();
-        StringList paragraphs = StringListImpl.separateString(message, "\n");
+        StringList paragraphs = StringList.separateString(message, "\n");
 
         for (int i = 0; i < paragraphs.size(); i++) {
             String paragraph = paragraphs.get(i);
@@ -350,19 +349,19 @@ public class MessageService {
                 }
             } else {
                 // if the paragraph is too long separate into sentences
-                StringList sentences = StringListImpl.separateString(paragraph, "\\. ");
+                StringList sentences = StringList.separateString(paragraph, "\\. ");
                 for (String sentence : sentences) {
                     if (sentence.length() < limit) {
                         fillPart(outputParts, sentence);
                     } else {
                         // if the sentence is too long split into words
-                        StringList words = StringListImpl.separateString(sentence, " ");
+                        StringList words = StringList.separateString(sentence, " ");
 
                         for (String word : words) {
                             if (word.length() < limit) {
                                 fillPart(outputParts, word);
                             } else {
-                                StringList chars = StringListImpl.charsToList(word);
+                                StringList chars = StringList.splitChars(word);
                                 for (String charString : chars) {
                                     fillPart(outputParts, charString);
                                 }

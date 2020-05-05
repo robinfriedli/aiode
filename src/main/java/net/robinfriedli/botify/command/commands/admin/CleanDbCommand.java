@@ -28,6 +28,7 @@ import net.robinfriedli.botify.entities.Song;
 import net.robinfriedli.botify.entities.UrlTrack;
 import net.robinfriedli.botify.entities.Video;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
+import net.robinfriedli.botify.util.StaticSessionProvider;
 import org.hibernate.Session;
 
 public class CleanDbCommand extends AbstractAdminCommand {
@@ -50,7 +51,7 @@ public class CleanDbCommand extends AbstractAdminCommand {
             CommandExecutionQueueManager executionQueueManager = Botify.get().getExecutionQueueManager();
             CommandContext context = getContext();
             Thread cleanupThread = new Thread(() -> {
-                CommandContext.Current.set(context);
+                CommandContext.Current.set(context.threadSafe());
                 try {
                     Thread joiningThread = new Thread(() -> {
                         try {
@@ -65,7 +66,7 @@ public class CleanDbCommand extends AbstractAdminCommand {
                     } catch (InterruptedException ignored) {
                     }
 
-                    doClean();
+                    StaticSessionProvider.invokeWithSession(this::doClean);
                 } finally {
                     context.closeSession();
                     Botify.registerListeners();
@@ -83,9 +84,8 @@ public class CleanDbCommand extends AbstractAdminCommand {
         }
     }
 
-    private void doClean() {
+    private void doClean(Session session) {
         ShardManager shardManager = Botify.get().getShardManager();
-        Session session = getContext().getSession();
 
         Set<String> activeGuildIds = shardManager.getGuilds().stream().map(ISnowflake::getId).collect(Collectors.toSet());
         GuildManager guildManager = Botify.get().getGuildManager();

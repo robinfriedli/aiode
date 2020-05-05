@@ -27,12 +27,11 @@ public class ClientQuestionEvent {
 
     private final AbstractCommand sourceCommand;
     private final Timer destructionTimer;
-    private CompletableFuture<Message> questionMessage;
-
     /**
      * the available answers for the user mapped to the option they represent
      */
-    private Map<String, Option> options = new LinkedHashMap<>();
+    private final Map<String, Option> options = new LinkedHashMap<>();
+    private CompletableFuture<Message> questionMessage;
 
     public ClientQuestionEvent(AbstractCommand sourceCommand) {
         this.sourceCommand = sourceCommand;
