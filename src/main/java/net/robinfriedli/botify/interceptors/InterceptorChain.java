@@ -19,6 +19,7 @@ import org.hibernate.type.Type;
  */
 public class InterceptorChain extends EmptyInterceptor {
 
+    public static ThreadLocal<Boolean> INTERCEPTORS_MUTED = ThreadLocal.withInitial(() -> false);
     private final Interceptor first;
 
     public InterceptorChain(Interceptor first) {
@@ -73,92 +74,165 @@ public class InterceptorChain extends EmptyInterceptor {
 
     @Override
     public void onDelete(Object entity, Serializable id, Object[] state, String[] propertyNames, Type[] types) {
-        first.onDelete(entity, id, state, propertyNames, types);
+        if (!INTERCEPTORS_MUTED.get()) {
+            first.onDelete(entity, id, state, propertyNames, types);
+        } else {
+            super.onDelete(entity, id, state, propertyNames, types);
+        }
     }
 
     @Override
     public boolean onFlushDirty(Object entity, Serializable id, Object[] currentState, Object[] previousState, String[] propertyNames, Type[] types) {
-        return first.onFlushDirty(entity, id, currentState, previousState, propertyNames, types);
+        if (!INTERCEPTORS_MUTED.get()) {
+            return first.onFlushDirty(entity, id, currentState, previousState, propertyNames, types);
+        } else {
+            return super.onFlushDirty(entity, id, currentState, previousState, propertyNames, types);
+        }
     }
 
     @Override
     public boolean onLoad(Object entity, Serializable id, Object[] state, String[] propertyNames, Type[] types) {
-        return first.onLoad(entity, id, state, propertyNames, types);
+        if (!INTERCEPTORS_MUTED.get()) {
+            return first.onLoad(entity, id, state, propertyNames, types);
+        } else {
+            return super.onLoad(entity, id, state, propertyNames, types);
+        }
     }
 
     @Override
     public boolean onSave(Object entity, Serializable id, Object[] state, String[] propertyNames, Type[] types) {
-        return first.onSave(entity, id, state, propertyNames, types);
+        if (!INTERCEPTORS_MUTED.get()) {
+            return first.onSave(entity, id, state, propertyNames, types);
+        } else {
+            return super.onSave(entity, id, state, propertyNames, types);
+        }
     }
 
     @Override
     public void postFlush(Iterator entities) {
-        first.postFlush(entities);
+        if (!INTERCEPTORS_MUTED.get()) {
+            first.postFlush(entities);
+        } else {
+            super.postFlush(entities);
+        }
     }
 
     @Override
     public void preFlush(Iterator entities) {
-        first.preFlush(entities);
+        if (!INTERCEPTORS_MUTED.get()) {
+            first.preFlush(entities);
+        } else {
+            super.preFlush(entities);
+        }
     }
 
     @Override
     public Boolean isTransient(Object entity) {
-        return first.isTransient(entity);
+        if (!INTERCEPTORS_MUTED.get()) {
+            return first.isTransient(entity);
+        } else {
+            return super.isTransient(entity);
+        }
     }
 
     @Override
     public Object instantiate(String entityName, EntityMode entityMode, Serializable id) {
-        return first.instantiate(entityName, entityMode, id);
+        if (!INTERCEPTORS_MUTED.get()) {
+            return first.instantiate(entityName, entityMode, id);
+        } else {
+            return super.instantiate(entityName, entityMode, id);
+        }
     }
 
     @Override
     public int[] findDirty(Object entity, Serializable id, Object[] currentState, Object[] previousState, String[] propertyNames, Type[] types) {
-        return first.findDirty(entity, id, currentState, previousState, propertyNames, types);
+        if (!INTERCEPTORS_MUTED.get()) {
+            return first.findDirty(entity, id, currentState, previousState, propertyNames, types);
+        } else {
+            return super.findDirty(entity, id, currentState, previousState, propertyNames, types);
+        }
     }
 
     @Override
     public String getEntityName(Object object) {
-        return first.getEntityName(object);
+        if (!INTERCEPTORS_MUTED.get()) {
+            return first.getEntityName(object);
+        } else {
+            return super.getEntityName(object);
+        }
     }
 
     @Override
     public Object getEntity(String entityName, Serializable id) {
-        return first.getEntity(entityName, id);
+        if (!INTERCEPTORS_MUTED.get()) {
+            return first.getEntity(entityName, id);
+        } else {
+            return super.getEntity(entityName, id);
+        }
     }
 
     @Override
     public void afterTransactionBegin(Transaction tx) {
-        first.afterTransactionBegin(tx);
+        if (!INTERCEPTORS_MUTED.get()) {
+            first.afterTransactionBegin(tx);
+        } else {
+            super.afterTransactionBegin(tx);
+        }
     }
 
     @Override
     public void afterTransactionCompletion(Transaction tx) {
-        first.afterTransactionCompletion(tx);
+        if (!INTERCEPTORS_MUTED.get()) {
+            first.afterTransactionCompletion(tx);
+        } else {
+            super.afterTransactionCompletion(tx);
+        }
     }
 
     @Override
     public void beforeTransactionCompletion(Transaction tx) {
-        first.beforeTransactionCompletion(tx);
+        if (!INTERCEPTORS_MUTED.get()) {
+            first.beforeTransactionCompletion(tx);
+        } else {
+            super.beforeTransactionCompletion(tx);
+        }
     }
 
+    @Deprecated
     @Override
     public String onPrepareStatement(String sql) {
-        return first.onPrepareStatement(sql);
+        if (!INTERCEPTORS_MUTED.get()) {
+            return first.onPrepareStatement(sql);
+        } else {
+            return super.onPrepareStatement(sql);
+        }
     }
 
     @Override
     public void onCollectionRemove(Object collection, Serializable key) throws CallbackException {
-        first.onCollectionRemove(collection, key);
+        if (!INTERCEPTORS_MUTED.get()) {
+            first.onCollectionRemove(collection, key);
+        } else {
+            super.onCollectionRemove(collection, key);
+        }
     }
 
     @Override
     public void onCollectionRecreate(Object collection, Serializable key) throws CallbackException {
-        first.onCollectionRecreate(collection, key);
+        if (!INTERCEPTORS_MUTED.get()) {
+            first.onCollectionRecreate(collection, key);
+        } else {
+            super.onCollectionRecreate(collection, key);
+        }
     }
 
     @Override
     public void onCollectionUpdate(Object collection, Serializable key) throws CallbackException {
-        first.onCollectionUpdate(collection, key);
+        if (!INTERCEPTORS_MUTED.get()) {
+            first.onCollectionUpdate(collection, key);
+        } else {
+            super.onCollectionUpdate(collection, key);
+        }
     }
 
 }

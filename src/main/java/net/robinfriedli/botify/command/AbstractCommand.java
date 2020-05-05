@@ -37,7 +37,6 @@ import net.robinfriedli.botify.login.Login;
 import net.robinfriedli.botify.util.Util;
 import net.robinfriedli.jxp.exec.modes.SynchronisationMode;
 import net.robinfriedli.stringlist.StringList;
-import net.robinfriedli.stringlist.StringListImpl;
 
 /**
  * Abstract class to extend for any text based command implementation. Implementations need to be added and configured in the
@@ -57,7 +56,7 @@ public abstract class AbstractCommand implements Command {
     private final String identifier;
     private final String description;
     private final Category category;
-    private boolean requiresInput;
+    private final boolean requiresInput;
     private String commandInput;
     // used to prevent onSuccess being called when no exception has been thrown but the command failed anyway
     private boolean isFailed;
@@ -345,7 +344,7 @@ public abstract class AbstractCommand implements Command {
 
     @Deprecated
     protected Pair<String, String> splitInlineArgument(String part, String argument) {
-        StringList words = StringListImpl.create(part, " ");
+        StringList words = StringList.createWithRegex(part, " ");
 
         List<Integer> positions = words.findPositionsOf("$" + argument, true);
         if (positions.isEmpty()) {
@@ -437,7 +436,7 @@ public abstract class AbstractCommand implements Command {
      */
     @Deprecated
     private void processCommand(String commandString) {
-        StringList words = StringListImpl.separateString(commandString, " ");
+        StringList words = StringList.separateString(commandString, " ");
 
         int commandBodyIndex = 0;
         for (String word : words) {

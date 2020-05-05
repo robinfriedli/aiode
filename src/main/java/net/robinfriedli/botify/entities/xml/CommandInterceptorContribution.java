@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import net.robinfriedli.botify.command.interceptor.AbstractChainableCommandInterceptor;
 import net.robinfriedli.jxp.api.AbstractXmlElement;
 import net.robinfriedli.jxp.api.XmlElement;
+import net.robinfriedli.jxp.collections.NodeList;
 import net.robinfriedli.jxp.persist.Context;
 import org.w3c.dom.Element;
 
@@ -25,14 +26,8 @@ public class CommandInterceptorContribution extends AbstractXmlElement {
 
     // invoked by JXP
     @SuppressWarnings("unused")
-    public CommandInterceptorContribution(Element element, Context context) {
-        super(element, context);
-    }
-
-    // invoked by JXP
-    @SuppressWarnings("unused")
-    public CommandInterceptorContribution(Element element, List<XmlElement> subElements, Context context) {
-        super(element, subElements, context);
+    public CommandInterceptorContribution(Element element, NodeList childNodes, Context context) {
+        super(element, childNodes, context);
     }
 
     @Nullable

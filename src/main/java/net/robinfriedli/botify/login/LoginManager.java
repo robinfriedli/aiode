@@ -13,8 +13,8 @@ import net.robinfriedli.botify.util.ISnowflakeMap;
  */
 public class LoginManager {
 
-    private ISnowflakeMap<Login> logins = new ISnowflakeMap<>();
-    private ISnowflakeMap<CompletableFuture<Login>> expectedLogins = new ISnowflakeMap<>();
+    private final ISnowflakeMap<Login> logins = new ISnowflakeMap<>();
+    private final ISnowflakeMap<CompletableFuture<Login>> expectedLogins = new ISnowflakeMap<>();
 
     public void addLogin(Login login) {
         logins.put(login.getUser(), login);

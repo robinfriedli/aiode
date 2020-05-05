@@ -38,20 +38,21 @@ import org.hibernate.SessionFactory;
  */
 public class CommandContext {
 
-    private final Guild guild;
-    private final GuildContext guildContext;
-    private final JDA jda;
-    private final Member member;
-    private final Message message;
-    private final SessionFactory sessionFactory;
-    private final SpotifyApi spotifyApi;
-    private final String commandBody;
-    private final String id;
-    private final User user;
-    private Session session;
-    private CommandHistory commandHistory;
-    private Thread monitoringThread;
-    private SpotifyService spotifyService;
+    protected final Guild guild;
+    protected final GuildContext guildContext;
+    protected final JDA jda;
+    protected final Member member;
+    protected final Message message;
+    protected final SessionFactory sessionFactory;
+    protected final SpotifyApi spotifyApi;
+    protected final String commandBody;
+    protected final String id;
+    protected final User user;
+    protected Session session;
+    protected CommandHistory commandHistory;
+    protected Thread monitoringThread;
+    protected Thread registeredOnThread;
+    protected SpotifyService spotifyService;
 
     public CommandContext(GuildMessageReceivedEvent event,
                           GuildContext guildContext,
@@ -79,6 +80,19 @@ public class CommandContext {
                           SpotifyApi spotifyApi,
                           String commandBody,
                           User user) {
+        this(guild, guildContext, jda, member, message, sessionFactory, spotifyApi, UUID.randomUUID().toString(), commandBody, user);
+    }
+
+    public CommandContext(Guild guild,
+                          GuildContext guildContext,
+                          JDA jda,
+                          Member member,
+                          Message message,
+                          SessionFactory sessionFactory,
+                          SpotifyApi spotifyApi,
+                          String id,
+                          String commandBody,
+                          User user) {
         this.guild = guild;
         this.guildContext = guildContext;
         this.jda = jda;
@@ -86,9 +100,9 @@ public class CommandContext {
         this.message = message;
         this.sessionFactory = sessionFactory;
         this.spotifyApi = spotifyApi;
+        this.id = id;
         this.commandBody = commandBody;
         this.user = user;
-        id = UUID.randomUUID().toString();
     }
 
     public Message getMessage() {
@@ -147,6 +161,12 @@ public class CommandContext {
     }
 
     public Session getSession() {
+        if (registeredOnThread != Thread.currentThread()) {
+            throw new IllegalStateException("Invoking CommandContext#getSession from a thread that is not associated with this CommandContext. " +
+                "It is not safe to pass Sessions between threads, as such this method can only be called by the thread " +
+                "where this CommandContext is installed as current CommandContext. You may use CommandContext#threadSafe to create a thread safe copy.");
+        }
+
         if (session != null && session.isOpen()) {
             return session;
         } else {
@@ -205,6 +225,21 @@ public class CommandContext {
         return spotifyService;
     }
 
+    public ThreadSafeCommandContext threadSafe() {
+        return new ThreadSafeCommandContext(guild, guildContext, jda, member, message, sessionFactory, spotifyApi, id, commandBody, user);
+    }
+
+    public void setRegisteredOnThread(Thread registeredOnThread) {
+        if (this.registeredOnThread != null && this.registeredOnThread != registeredOnThread) {
+            throw new IllegalStateException(String.format("Cannot install CommandContext for thread %s. " +
+                    "Already installed on thread %s. Use CommandContext#threadSafe to create a thread safe copy.",
+                registeredOnThread,
+                this.registeredOnThread));
+        }
+
+        this.registeredOnThread = registeredOnThread;
+    }
+
     /**
      * Static access to the current CommandContext, if the current thread is a CommandExecutionThread
      */
@@ -214,6 +249,7 @@ public class CommandContext {
 
         public static void set(CommandContext commandContext) {
             Current.COMMAND_CONTEXT.set(commandContext);
+            commandContext.setRegisteredOnThread(Thread.currentThread());
         }
 
         @Nullable
@@ -235,6 +271,31 @@ public class CommandContext {
             return get() != null;
         }
 
+    }
+
+    public static class ThreadSafeCommandContext extends CommandContext {
+
+        public ThreadSafeCommandContext(Guild guild,
+                                        GuildContext guildContext,
+                                        JDA jda,
+                                        Member member,
+                                        Message message,
+                                        SessionFactory sessionFactory,
+                                        SpotifyApi spotifyApi,
+                                        String id,
+                                        String commandBody,
+                                        User user) {
+            super(guild, guildContext, jda, member, message, sessionFactory, spotifyApi, id, commandBody, user);
+        }
+
+        @Override
+        public Session getSession() {
+            return sessionFactory.getCurrentSession();
+        }
+
+        @Override
+        public void closeSession() {
+        }
     }
 
 }

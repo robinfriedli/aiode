@@ -51,7 +51,6 @@ import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
 import net.robinfriedli.botify.util.StaticSessionProvider;
 import net.robinfriedli.stringlist.StringList;
-import net.robinfriedli.stringlist.StringListImpl;
 import org.hibernate.Session;
 
 /**
@@ -116,7 +115,7 @@ public class YouTubeService {
             throw new IllegalArgumentException(youTubeVideo.toString() + " is not a placeholder for a redirected Spotify Track");
         }
 
-        StringList artists = StringListImpl.create(spotifyTrack.getArtists(), ArtistSimplified::getName);
+        StringList artists = StringList.create(spotifyTrack.getArtists(), ArtistSimplified::getName);
         String searchTerm = spotifyTrack.getName() + " " + artists.toSeparatedString(" ");
         List<String> videoIds;
 
@@ -228,7 +227,7 @@ public class YouTubeService {
         String videoTitle = video.getSnippet().getTitle().toLowerCase();
         ArtistSimplified[] artists = track.getArtists();
         String firstArtist = artists.length > 0 ? artists[0].getName().toLowerCase() : "";
-        StringList artistNames = StringListImpl.create(artists, ArtistSimplified::getName);
+        StringList artistNames = StringList.create(artists, ArtistSimplified::getName);
         String artistString = artistNames
             .toSeparatedString(", ")
             .toLowerCase();
