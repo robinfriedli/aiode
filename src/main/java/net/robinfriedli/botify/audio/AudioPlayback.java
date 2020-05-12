@@ -210,7 +210,7 @@ public class AudioPlayback {
     public void setCurrentQueueIterator(QueueIterator queueIterator) {
         if (currentQueueIterator != null) {
             audioPlayer.removeListener(currentQueueIterator);
-            currentQueueIterator.setReplaced(true);
+            currentQueueIterator.setReplaced();
         }
 
         currentQueueIterator = queueIterator;

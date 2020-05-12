@@ -37,11 +37,15 @@ public class QueueIterator extends AudioEventAdapter {
     private final MessageService messageService;
     private final AudioTrackLoader audioTrackLoader;
     private Playable currentlyPlaying;
-    private boolean isReplaced;
-    // incremented when a track fails to load and is automatically skipped. This exists to define a maximum number of
-    // tracks that can be auto skipped to avoid the queue hanging for too long and only send a message on the first
-    // attempt to avoid spam
-    private int retryCount;
+
+    private volatile boolean isReplaced;
+    // Incremented when attempting to play the next track and reset when a track ends successfully.
+    //
+    // For the perspective of QueueIterator instances tracks are either finished completely or fail
+    // due to an error. If the user skips a track a new QueueIterator instance is created.
+    //
+    // Value is not atomic because it is not expected to be updated concurrently but only by the audio connection thread.
+    private int attemptCount;
 
     QueueIterator(AudioPlayback playback, AudioManager audioManager) {
         this.playback = playback;
@@ -73,7 +77,10 @@ public class QueueIterator extends AudioEventAdapter {
                 // only reset the retryCount once a track has ended successfully, as tracks can fail after they started
                 // and tracks that fail immediately after they start, e.g. a soundcloud track throwing a 401, would still
                 // spam the chat
-                resetRetryCount();
+                //
+                // hint: for the perspective of QueueIterator instances tracks are either finished completely or fail
+                // due to an error. If the user skips a track a new QueueIterator instance is created
+                resetAttemptCount();
                 iterateQueue(playback, queue);
             }
         }
@@ -86,11 +93,10 @@ public class QueueIterator extends AudioEventAdapter {
             e = e.getCause();
         }
         sendError(queue.getCurrent(), e);
-        ++retryCount;
     }
 
-    void setReplaced(boolean replaced) {
-        isReplaced = replaced;
+    void setReplaced() {
+        isReplaced = true;
     }
 
     void playNext() {
@@ -99,13 +105,15 @@ public class QueueIterator extends AudioEventAdapter {
         }
 
         // don't skip over more than 10 items to avoid a frozen queue
-        if (retryCount == 10) {
+        if (++attemptCount > 10) {
             EmbedBuilder embedBuilder = new EmbedBuilder();
             embedBuilder.setColor(Color.RED);
             embedBuilder.setDescription("Queue contains too many unplayable tracks subsequently for automatic skipping. You can skip to the next valid track manually.");
             messageService.sendTemporary(embedBuilder.build(), playback.getCommunicationChannel());
             playback.stop();
-            resetRetryCount();
+            // reset just in case, even though the same QueueIterator instance will currently never be used again as the
+            // user now either has to skip manually or start a new playback, creating a new iterator
+            resetAttemptCount();
             return;
         }
 
@@ -130,7 +138,6 @@ public class QueueIterator extends AudioEventAdapter {
             } catch (FriendlyException e) {
                 sendError(track, e);
 
-                ++retryCount;
                 iterateQueue(playback, queue, true);
                 return;
             }
@@ -177,7 +184,7 @@ public class QueueIterator extends AudioEventAdapter {
     }
 
     private void sendError(Playable track, Throwable e) {
-        if (retryCount == 0) {
+        if (attemptCount == 1) {
             EmbedBuilder embedBuilder = new EmbedBuilder();
             embedBuilder.setTitle("Could not load track " + track.display());
 
@@ -248,8 +255,8 @@ public class QueueIterator extends AudioEventAdapter {
         }
     }
 
-    private void resetRetryCount() {
-        retryCount = 0;
+    private void resetAttemptCount() {
+        attemptCount = 0;
     }
 
     public Playable getCurrentlyPlaying() {
