@@ -11,8 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Strings;
-import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
-import com.wrapper.spotify.model_objects.specification.Track;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.youtube.HollowYouTubeVideo;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
@@ -24,7 +22,6 @@ import net.robinfriedli.botify.entities.SpotifyRedirectIndexModificationLock;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.botify.function.HibernateInvoker;
 import net.robinfriedli.botify.persist.StaticSessionProvider;
-import net.robinfriedli.stringlist.StringList;
 import org.hibernate.Session;
 
 import static net.robinfriedli.botify.entities.SpotifyRedirectIndex.*;
@@ -54,7 +51,7 @@ public class SpotifyRedirectService {
     }
 
     public void redirectTrack(HollowYouTubeVideo youTubeVideo) throws IOException {
-        Track spotifyTrack = youTubeVideo.getRedirectedSpotifyTrack();
+        SpotifyTrack spotifyTrack = youTubeVideo.getRedirectedSpotifyTrack();
 
         if (spotifyTrack == null) {
             throw new IllegalArgumentException(youTubeVideo.toString() + " is not a placeholder for a redirected Spotify Track");
@@ -79,10 +76,8 @@ public class SpotifyRedirectService {
                     // never happens for YouTubeVideoImpl instances
                     throw new RuntimeException(e);
                 }
-                String name = spotifyTrack.getName();
-                String artistString = StringList.create(spotifyTrack.getArtists(), ArtistSimplified::getName).toSeparatedString(", ");
-                String title = String.format("%s by %s", name, artistString);
-                youTubeVideo.setTitle(title);
+
+                youTubeVideo.setTitle(spotifyTrack.getDisplay());
 
                 runUpdateTask(otherThreadSession -> {
                     spotifyRedirectIndex.setLastUsed(LocalDate.now());
@@ -102,7 +97,7 @@ public class SpotifyRedirectService {
             SINGE_THREAD_EXECUTOR_SERVICE.execute(() -> StaticSessionProvider.consumeSession(otherThreadSession -> {
                 try {
                     String videoId = youTubeVideo.getVideoId();
-                    SpotifyRedirectIndex spotifyRedirectIndex = new SpotifyRedirectIndex(spotifyTrack.getId(), videoId);
+                    SpotifyRedirectIndex spotifyRedirectIndex = new SpotifyRedirectIndex(spotifyTrack.getId(), videoId, spotifyTrack.getKind(), otherThreadSession);
                     // check again if the index was not created by other thread
                     if (queryExistingIndex(otherThreadSession, spotifyTrack.getId()).isEmpty()) {
                         invoker.invoke(() -> otherThreadSession.persist(spotifyRedirectIndex));

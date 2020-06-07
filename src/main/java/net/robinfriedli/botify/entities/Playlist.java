@@ -24,13 +24,17 @@ import com.google.api.client.util.Sets;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.wrapper.spotify.SpotifyApi;
-import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.audio.PlayableFactory;
+import net.robinfriedli.botify.audio.spotify.SpotifyTrack;
 import net.robinfriedli.botify.audio.spotify.SpotifyTrackBulkLoadingService;
+import net.robinfriedli.botify.audio.spotify.SpotifyTrackKind;
 import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
 import net.robinfriedli.botify.boot.SpringPropertiesConfig;
+
+import static net.robinfriedli.botify.audio.spotify.SpotifyTrackBulkLoadingService.*;
+import static net.robinfriedli.botify.audio.spotify.SpotifyTrackKind.*;
 
 @Entity
 @Table(name = "playlist")
@@ -57,6 +61,8 @@ public class Playlist implements Serializable, SanitizedEntity {
     private Set<Video> videos = Sets.newHashSet();
     @OneToMany(mappedBy = "playlist")
     private Set<UrlTrack> urlTracks = Sets.newHashSet();
+    @OneToMany(mappedBy = "playlist")
+    private Set<Episode> episodes = Sets.newHashSet();
 
     public Playlist() {
     }
@@ -90,7 +96,7 @@ public class Playlist implements Serializable, SanitizedEntity {
     }
 
     public int getSize() {
-        return songs.size() + videos.size() + urlTracks.size();
+        return songs.size() + videos.size() + urlTracks.size() + episodes.size();
     }
 
     public String getCreatedUser() {
@@ -126,7 +132,7 @@ public class Playlist implements Serializable, SanitizedEntity {
     }
 
     public List<PlaylistItem> getItems() {
-        return Stream.of(getSongs(), getVideos(), getUrlTracks())
+        return Stream.of(getSongs(), getVideos(), getUrlTracks(), getEpisodes())
             .flatMap(Collection::stream)
             .collect(Collectors.toList());
     }
@@ -136,7 +142,7 @@ public class Playlist implements Serializable, SanitizedEntity {
     }
 
     public List<PlaylistItem> getItemsSorted(boolean ignoreNullIndex) {
-        return Stream.of(getSongs(), getVideos(), getUrlTracks())
+        return Stream.of(getSongs(), getVideos(), getUrlTracks(), getEpisodes())
             .flatMap(Collection::stream)
             .filter(item -> {
                 if (ignoreNullIndex) {
@@ -150,7 +156,7 @@ public class Playlist implements Serializable, SanitizedEntity {
     }
 
     public Stream<PlaylistItem> stream() {
-        return Stream.of(getSongs(), getVideos(), getUrlTracks()).flatMap(Collection::stream);
+        return Stream.of(getSongs(), getVideos(), getUrlTracks(), getEpisodes()).flatMap(Collection::stream);
     }
 
     /**
@@ -167,13 +173,20 @@ public class Playlist implements Serializable, SanitizedEntity {
             if (item instanceof Song) {
                 String id = ((Song) item).getId();
                 int finalI = i;
-                service.add(id, track -> itemsWithIndex.put(track, finalI));
+                service.add(createItem(id, TRACK), track -> itemsWithIndex.put(track, finalI));
+            } else if (item instanceof Episode) {
+                String id = ((Episode) item).getId();
+                int finalI = i;
+                service.add(createItem(id, EPISODE), track -> itemsWithIndex.put(track, finalI));
             } else if (item instanceof Video) {
                 Video video = (Video) item;
                 YouTubeVideo youtubeVideo = video.asYouTubeVideo();
                 itemsWithIndex.put(youtubeVideo, i);
-                if (!Strings.isNullOrEmpty(video.getRedirectedSpotifyId())) {
-                    service.add(video.getRedirectedSpotifyId(), youtubeVideo::setRedirectedSpotifyTrack);
+                String spotifyId = video.getRedirectedSpotifyId();
+                if (!Strings.isNullOrEmpty(spotifyId)) {
+                    SpotifyItemKind kindEntity = video.getRedirectedSpotifyKind();
+                    SpotifyTrackKind kind = kindEntity != null ? kindEntity.asEnum() : TRACK;
+                    service.add(createItem(spotifyId, kind), youtubeVideo::setRedirectedSpotifyTrack);
                 }
             } else if (item instanceof UrlTrack) {
                 itemsWithIndex.put(item, i);
@@ -188,15 +201,22 @@ public class Playlist implements Serializable, SanitizedEntity {
      * returns all Songs as Spotify tracks including all videos that are redirected Spotify tracks i.e. the attribute
      * redirectedSpotifyId is set. Mind that this method has to be invoked with client credentials
      */
-    public List<Track> asTrackList(SpotifyApi spotifyApi) {
+    public List<SpotifyTrack> asTrackList(SpotifyApi spotifyApi) {
         SpotifyTrackBulkLoadingService service = new SpotifyTrackBulkLoadingService(spotifyApi);
-        List<Track> tracks = Lists.newArrayList();
+        List<SpotifyTrack> tracks = Lists.newArrayList();
         for (PlaylistItem item : getItemsSorted()) {
             if (item instanceof Song) {
-                service.add(((Song) item).getId(), tracks::add);
+                String id = ((Song) item).getId();
+                service.add(createItem(id, TRACK), tracks::add);
+            } else if (item instanceof Episode) {
+                String id = ((Episode) item).getId();
+                service.add(createItem(id, EPISODE), tracks::add);
             } else if (item instanceof Video && ((Video) item).getRedirectedSpotifyId() != null) {
-                String redirectedSpotifyId = ((Video) item).getRedirectedSpotifyId();
-                service.add(redirectedSpotifyId, tracks::add);
+                Video video = (Video) item;
+                String redirectedSpotifyId = video.getRedirectedSpotifyId();
+                SpotifyItemKind kindEntity = video.getRedirectedSpotifyKind();
+                SpotifyTrackKind kind = kindEntity != null ? kindEntity.asEnum() : TRACK;
+                service.add(createItem(redirectedSpotifyId, kind), tracks::add);
             }
         }
 
@@ -228,8 +248,16 @@ public class Playlist implements Serializable, SanitizedEntity {
         this.urlTracks = urlTracks;
     }
 
+    public Set<Episode> getEpisodes() {
+        return episodes;
+    }
+
+    public void setEpisodes(Set<Episode> episodes) {
+        this.episodes = episodes;
+    }
+
     public boolean isEmpty() {
-        return songs.isEmpty() && videos.isEmpty() && urlTracks.isEmpty();
+        return songs.isEmpty() && videos.isEmpty() && urlTracks.isEmpty() && episodes.isEmpty();
     }
 
     @Override
@@ -252,5 +280,4 @@ public class Playlist implements Serializable, SanitizedEntity {
     public void setSanitizedIdentifier(String sanitizedIdentifier) {
         setName(sanitizedIdentifier);
     }
-
 }

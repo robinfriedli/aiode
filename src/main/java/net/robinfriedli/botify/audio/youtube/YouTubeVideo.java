@@ -5,11 +5,10 @@ import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nullable;
 
-import com.wrapper.spotify.model_objects.specification.AlbumSimplified;
-import com.wrapper.spotify.model_objects.specification.Image;
-import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.audio.Playable;
+import net.robinfriedli.botify.audio.spotify.SpotifyTrack;
+import net.robinfriedli.botify.entities.Episode;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
 import net.robinfriedli.botify.entities.Song;
@@ -84,13 +83,7 @@ public interface YouTubeVideo extends Playable {
     @Override
     default String getAlbumCoverUrl() {
         if (getRedirectedSpotifyTrack() != null) {
-            AlbumSimplified album = getRedirectedSpotifyTrack().getAlbum();
-            if (album != null) {
-                Image[] images = album.getImages();
-                if (images.length > 0) {
-                    return images[0].getUrl();
-                }
-            }
+            getRedirectedSpotifyTrack().getAlbumCoverUrl();
         }
 
         return null;
@@ -99,9 +92,12 @@ public interface YouTubeVideo extends Playable {
     @Override
     default PlaylistItem export(Playlist playlist, User user, Session session) {
         if (getRedirectedSpotifyTrack() != null) {
-            return new Song(getRedirectedSpotifyTrack(), user, playlist, session);
+            return getRedirectedSpotifyTrack().exhaustiveMatch(
+                track -> new Song(track, user, playlist, session),
+                episode -> new Episode(episode, user, playlist)
+            );
         }
-        return new Video(this, user, playlist);
+        return new Video(this, user, playlist, session);
     }
 
     @Override
@@ -114,7 +110,7 @@ public interface YouTubeVideo extends Playable {
      * else return null. For more about Spotify track redirection, see {@link YouTubeService#redirectSpotify(HollowYouTubeVideo)}
      */
     @Nullable
-    Track getRedirectedSpotifyTrack();
+    SpotifyTrack getRedirectedSpotifyTrack();
 
-    void setRedirectedSpotifyTrack(@Nullable Track track);
+    void setRedirectedSpotifyTrack(@Nullable SpotifyTrack track);
 }

@@ -18,8 +18,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class AccessConfigurationPartitionInterceptor implements QueryInterceptor {
 
-    private Session session;
-    private String guildId;
+    private final Session session;
+    private final String guildId;
 
     @Autowired
     public AccessConfigurationPartitionInterceptor() {

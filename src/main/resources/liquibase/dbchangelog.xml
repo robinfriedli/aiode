@@ -597,4 +597,124 @@ See application.properties -> spring.liquibase.contexts
       <column name="enable_scripting" type="boolean"/>
     </addColumn>
   </changeSet>
+
+  <!-- botify v2 - spotify schema migration -->
+  <changeSet author="robin (generated)" id="1591375305578-1">
+    <createTable tableName="episode">
+      <column autoIncrement="true" name="pk" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="episodePK"/>
+      </column>
+      <column name="added_user" type="VARCHAR(255)"/>
+      <column name="added_user_id" type="VARCHAR(255)"/>
+      <column name="created_timestamp" type="TIMESTAMP WITHOUT TIME ZONE"/>
+      <column name="duration" type="BIGINT"/>
+      <column name="item_index" type="INTEGER"/>
+      <column name="id" type="VARCHAR(255)"/>
+      <column name="name" type="VARCHAR(255)"/>
+      <column name="show_id" type="VARCHAR(255)"/>
+      <column name="show_name" type="VARCHAR(255)"/>
+      <column name="playlist_pk" type="BIGINT"/>
+    </createTable>
+  </changeSet>
+  <changeSet author="robin (generated)" id="1591375305578-2">
+    <createTable tableName="playback_history_source">
+      <column autoIncrement="true" name="pk" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="playback_history_sourcePK"/>
+      </column>
+      <column name="unique_id" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+  </changeSet>
+  <changeSet id="insert_playback_history_source_values-dE32F3/v2.0" author="robinfriedli" runAlways="true">
+    <customChange class="net.robinfriedli.botify.persist.customchange.PlaybackHistorySourceInitialValues"/>
+  </changeSet>
+  <changeSet author="robin (generated)" id="1591375305578-3">
+    <createTable tableName="spotify_item_kind">
+      <column autoIncrement="true" name="pk" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="spotify_item_kindPK"/>
+      </column>
+      <column name="unique_id" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+  </changeSet>
+  <changeSet id="insert_spotify_item_kind_values-9De8d/v2.0" author="robinfriedli" runAlways="true">
+    <customChange class="net.robinfriedli.botify.persist.customchange.SpotifyItemKindInitialValues"/>
+  </changeSet>
+  <changeSet author="robin (generated)" id="1591375305578-4">
+    <addColumn tableName="video">
+      <column name="fk_redirected_spotify_kind" type="int8"/>
+    </addColumn>
+  </changeSet>
+  <changeSet id="set_redirected_spotify_kind-Sd2v1/v2.0" author="robinfriedli">
+    <preConditions onFail="MARK_RAN">
+      <columnExists tableName="video" columnName="fk_redirected_spotify_kind"/>
+      <not>
+        <sqlCheck expectedResult="0">SELECT count(*) FROM video where redirected_spotify_id IS NOT NULL AND fk_redirected_spotify_kind IS NULL</sqlCheck>
+      </not>
+    </preConditions>
+    <update tableName="video">
+      <column name="fk_redirected_spotify_kind" valueComputed="(SELECT pk FROM spotify_item_kind WHERE unique_id = 'TRACK')"/>
+      <where>redirected_spotify_id IS NOT NULL AND fk_redirected_spotify_kind IS NULL</where>
+    </update>
+  </changeSet>
+  <changeSet author="robin (generated)" id="1591375305578-5">
+    <addColumn tableName="playback_history">
+      <column name="fk_source" type="int8"/>
+    </addColumn>
+  </changeSet>
+  <changeSet author="robin (generated)" id="1591375305578-6">
+    <addColumn tableName="playback_history">
+      <column name="fk_spotify_item_kind" type="int8"/>
+    </addColumn>
+  </changeSet>
+  <changeSet author="robin (generated)" id="1591375305578-7">
+    <addColumn tableName="spotify_redirect_index">
+      <column name="fk_spotify_item_kind" type="int8"/>
+    </addColumn>
+  </changeSet>
+  <changeSet id="set_spotify_item_kind_for_existing_spotify_redirect_indices-D3FD5/v2.0" author="robinfriedli">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <sqlCheck expectedResult="0">SELECT count(*) from spotify_redirect_index</sqlCheck>
+      </not>
+    </preConditions>
+    <update tableName="spotify_redirect_index">
+      <column name="fk_spotify_item_kind" valueComputed="(select pk from spotify_item_kind where unique_id = 'TRACK')"/>
+    </update>
+  </changeSet>
+  <changeSet id="add_not_null_constraint_for_spotify_redirect_index_fk_spotify_item_kind" author="robinfriedli">
+    <preConditions>
+      <columnExists tableName="spotify_redirect_index" columnName="fk_spotify_item_kind"/>
+    </preConditions>
+    <addNotNullConstraint tableName="spotify_redirect_index" columnName="fk_spotify_item_kind"/>
+  </changeSet>
+  <changeSet author="robin (generated)" id="1591375305578-8">
+    <addUniqueConstraint columnNames="unique_id" constraintName="UC_PLAYBACK_HISTORY_SOURCEUNIQUE_ID_COL" tableName="playback_history_source"/>
+  </changeSet>
+  <changeSet author="robin (generated)" id="1591375305578-9">
+    <addUniqueConstraint columnNames="unique_id" constraintName="UC_SPOTIFY_ITEM_KINDUNIQUE_ID_COL" tableName="spotify_item_kind"/>
+  </changeSet>
+  <changeSet author="robin (generated)" id="1591375305578-10">
+    <addForeignKeyConstraint baseColumnNames="playlist_pk" baseTableName="episode" constraintName="FKijn2bb72bgaiyg0e5vc221g1h" deferrable="false" initiallyDeferred="false" referencedColumnNames="pk" referencedTableName="playlist" validate="true"/>
+  </changeSet>
+  <changeSet author="robin (generated)" id="1591375305578-11">
+    <addForeignKeyConstraint baseColumnNames="fk_source" baseTableName="playback_history" constraintName="playback_history_fk_source_fkey" deferrable="false" initiallyDeferred="false" referencedColumnNames="pk" referencedTableName="playback_history_source" validate="true"/>
+  </changeSet>
+  <changeSet author="robin (generated)" id="1591375305578-12">
+    <addForeignKeyConstraint baseColumnNames="fk_spotify_item_kind" baseTableName="playback_history" constraintName="playback_history_fk_spotify_item_kind_fkey" deferrable="false" initiallyDeferred="false" referencedColumnNames="pk" referencedTableName="spotify_item_kind" validate="true"/>
+  </changeSet>
+  <changeSet author="robin (generated)" id="1591375305578-13">
+    <addForeignKeyConstraint baseColumnNames="fk_spotify_item_kind" baseTableName="spotify_redirect_index" constraintName="spotify_redirect_index_fk_spotify_item_kind_fkey" deferrable="false" initiallyDeferred="false" referencedColumnNames="pk" referencedTableName="spotify_item_kind" validate="true"/>
+  </changeSet>
+  <changeSet author="robin (generated)" id="1591375305578-14">
+    <addForeignKeyConstraint baseColumnNames="fk_redirected_spotify_kind" baseTableName="video" constraintName="video_fk_redirected_spotify_kind_fkey" deferrable="false" initiallyDeferred="false" referencedColumnNames="pk" referencedTableName="spotify_item_kind" validate="true"/>
+  </changeSet>
+  <changeSet id="migrate_playback_history_sources-7D3x3/v2.0" author="robinfriedli">
+    <customChange class="net.robinfriedli.botify.persist.customchange.MigratePlaybackHistorySource"/>
+  </changeSet>
+  <changeSet author="robin (generated)" id="1591375305578-15">
+    <dropColumn columnName="source" tableName="playback_history"/>
+  </changeSet>
 </databaseChangeLog>

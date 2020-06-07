@@ -5,7 +5,6 @@ import java.math.BigInteger;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,10 +38,11 @@ import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
-import com.wrapper.spotify.model_objects.specification.Track;
+import com.wrapper.spotify.model_objects.specification.ShowSimplified;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioTrackLoader;
 import net.robinfriedli.botify.audio.PlayableFactory;
+import net.robinfriedli.botify.audio.spotify.SpotifyTrack;
 import net.robinfriedli.botify.boot.AbstractShutdownable;
 import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.command.commands.playback.PlayCommand;
@@ -151,23 +151,33 @@ public class YouTubeService extends AbstractShutdownable {
      * @param youTubeVideo the hollow youtube that has already been added to the queue and awaits to receive values
      */
     public void redirectSpotify(HollowYouTubeVideo youTubeVideo) throws IOException {
-        Track spotifyTrack = youTubeVideo.getRedirectedSpotifyTrack();
+        SpotifyTrack spotifyTrack = youTubeVideo.getRedirectedSpotifyTrack();
 
         if (spotifyTrack == null) {
             throw new IllegalArgumentException(youTubeVideo.toString() + " is not a placeholder for a redirected Spotify Track");
         }
 
-        StringList artists = StringList.create(spotifyTrack.getArtists(), ArtistSimplified::getName);
+        StringList artists = spotifyTrack.exhaustiveMatch(
+            track -> StringList.create(track.getArtists(), ArtistSimplified::getName),
+            episode -> {
+                ShowSimplified show = episode.getShow();
+                if (show != null) {
+                    return StringList.of(show.getName());
+                }
+
+                return StringList.create();
+            }
+        );
         String searchTerm = spotifyTrack.getName() + " " + artists.toSeparatedString(" ");
         List<String> videoIds;
 
         if (currentQuota.get() < quotaThreshold) {
-            YouTube.Search.List search = youTube.search().list("id,snippet");
+            YouTube.Search.List search = youTube.search().list(List.of("id", "snippet"));
             search.setKey(apiKey);
             search.setQ(searchTerm);
             // set topic to filter results to music video
             search.setTopicId("/m/04rlf");
-            search.setType("video");
+            search.setType(List.of("video"));
             search.setFields("items(snippet/title,id/videoId)");
             search.setMaxResults((long) REDIRECT_SEARCH_AMOUNT);
 
@@ -237,9 +247,9 @@ public class YouTubeService extends AbstractShutdownable {
             List<SearchResult> items = searchVideos(1, searchTerm);
             SearchResult searchResult = items.get(0);
             String videoId = searchResult.getId().getVideoId();
-            VideoListResponse videoListResponse = doWithQuota(QUOTA_COST_2_FIELDS, () -> youTube.videos().list("snippet,contentDetails")
+            VideoListResponse videoListResponse = doWithQuota(QUOTA_COST_2_FIELDS, () -> youTube.videos().list(List.of("snippet", "contentDetails"))
                 .setKey(apiKey)
-                .setId(videoId)
+                .setId(List.of(videoId))
                 .setFields("items(snippet/title,contentDetails/duration)")
                 .setMaxResults(1L)
                 .execute());
@@ -305,9 +315,9 @@ public class YouTubeService extends AbstractShutdownable {
 
         int itemCount = doWithQuota(QUOTA_COST_1_FIELD, () -> youTube
             .playlists()
-            .list("contentDetails")
+            .list(List.of("contentDetails"))
             .setKey(apiKey)
-            .setId(playlistId)
+            .setId(List.of(playlistId))
             .setFields("items(contentDetails/itemCount)")
             .setMaxResults(1L)
             .execute()
@@ -374,7 +384,7 @@ public class YouTubeService extends AbstractShutdownable {
      */
     public void populateList(YouTubePlaylist playlist) throws IOException {
         if (currentQuota.get() < quotaThreshold) {
-            YouTube.PlaylistItems.List itemSearch = youTube.playlistItems().list("snippet");
+            YouTube.PlaylistItems.List itemSearch = youTube.playlistItems().list(List.of("snippet"));
             itemSearch.setKey(apiKey);
             itemSearch.setMaxResults(50L);
             itemSearch.setFields("items(snippet/title,snippet/resourceId),nextPageToken");
@@ -455,7 +465,7 @@ public class YouTubeService extends AbstractShutdownable {
         try {
             String pageToken = null;
             if (page > 0) {
-                YouTube.PlaylistItems.List tokenSearch = youTube.playlistItems().list("id");
+                YouTube.PlaylistItems.List tokenSearch = youTube.playlistItems().list(List.of("id"));
                 tokenSearch.setMaxResults(50L);
                 tokenSearch.setFields("nextPageToken");
                 tokenSearch.setPlaylistId(playlist.getId());
@@ -473,7 +483,7 @@ public class YouTubeService extends AbstractShutdownable {
                 }
             }
 
-            YouTube.PlaylistItems.List itemSearch = youTube.playlistItems().list("snippet");
+            YouTube.PlaylistItems.List itemSearch = youTube.playlistItems().list(List.of("snippet"));
             itemSearch.setMaxResults(50L);
             itemSearch.setFields("items(snippet/title,snippet/resourceId)");
             itemSearch.setPlaylistId(playlist.getId());
@@ -530,8 +540,8 @@ public class YouTubeService extends AbstractShutdownable {
     @Nullable
     public YouTubeVideo getVideoForId(String id) throws IOException {
         if (currentQuota.get() < quotaThreshold) {
-            YouTube.Videos.List videoRequest = youTube.videos().list("snippet");
-            videoRequest.setId(id);
+            YouTube.Videos.List videoRequest = youTube.videos().list(List.of("snippet"));
+            videoRequest.setId(List.of(id));
             videoRequest.setFields("items(contentDetails/duration,snippet/title)");
             videoRequest.setKey(apiKey);
             videoRequest.setMaxResults(1L);
@@ -575,8 +585,8 @@ public class YouTubeService extends AbstractShutdownable {
      * @throws IOException             if the YouTube API request fails
      */
     public YouTubePlaylist playlistForId(String id) throws IOException {
-        YouTube.Playlists.List playlistRequest = youTube.playlists().list("snippet,contentDetails");
-        playlistRequest.setId(id);
+        YouTube.Playlists.List playlistRequest = youTube.playlists().list(List.of("snippet", "contentDetails"));
+        playlistRequest.setId(List.of(id));
         playlistRequest.setFields("items(contentDetails/itemCount,snippet/title,snippet/channelTitle)");
         playlistRequest.setKey(apiKey);
         List<Playlist> items = doWithQuota(QUOTA_COST_2_FIELDS, () -> playlistRequest.execute().getItems());
@@ -595,7 +605,7 @@ public class YouTubeService extends AbstractShutdownable {
         return new YouTubePlaylist(playlist.getSnippet().getTitle(), id, playlist.getSnippet().getChannelTitle(), videoPlaceholders);
     }
 
-    private Video getBestMatch(List<Video> videos, Track spotifyTrack, StringList artists) {
+    private Video getBestMatch(List<Video> videos, SpotifyTrack spotifyTrack, StringList artists) {
         Video video;
         int size = videos.size();
         if (size == 1) {
@@ -644,24 +654,41 @@ public class YouTubeService extends AbstractShutdownable {
         return video;
     }
 
-    private int getBestEditDistance(Track track, Video video) {
+    private int getBestEditDistance(SpotifyTrack spotifyTrack, Video video) {
         LevenshteinDistance levenshteinDistance = LevenshteinDistance.getDefaultInstance();
-        String trackName = track.getName().toLowerCase();
+        String trackName = spotifyTrack.getName().toLowerCase();
         String videoTitle = video.getSnippet().getTitle().toLowerCase();
-        ArtistSimplified[] artists = track.getArtists();
-        String firstArtist = artists.length > 0 ? artists[0].getName().toLowerCase() : "";
-        StringList artistNames = StringList.create(artists, ArtistSimplified::getName);
-        String artistString = artistNames
-            .toSeparatedString(", ")
-            .toLowerCase();
-        String featuringArtistString = artistNames.size() > 1
-            ? artistNames.subList(1).toSeparatedString(", ").toLowerCase()
-            : "";
+        return spotifyTrack.exhaustiveMatch(
+            track -> {
+                ArtistSimplified[] artists = track.getArtists();
+                String firstArtist = artists.length > 0 ? artists[0].getName().toLowerCase() : "";
+                StringList artistNames = StringList.create(artists, ArtistSimplified::getName);
+                String artistString = artistNames
+                    .toSeparatedString(", ")
+                    .toLowerCase();
+                String featuringArtistString = artistNames.size() > 1
+                    ? artistNames.subList(1).toSeparatedString(", ").toLowerCase()
+                    : "";
 
-        int parenthesesNotEscaped = bestEditDistanceForParams(levenshteinDistance, trackName, videoTitle, artists, artistString, firstArtist, featuringArtistString);
-        String videoTitleWithParenthesesRemoved = videoTitle.replaceAll("\\(.*\\)", "");
-        int parenthesesEscaped = bestEditDistanceForParams(levenshteinDistance, trackName, videoTitleWithParenthesesRemoved, artists, artistString, firstArtist, featuringArtistString);
-        return Math.min(parenthesesEscaped, parenthesesNotEscaped);
+                int parenthesesNotEscaped = bestEditDistanceForParams(levenshteinDistance, trackName, videoTitle, artists, artistString, firstArtist, featuringArtistString);
+                String videoTitleWithParenthesesRemoved = videoTitle.replaceAll("\\(.*\\)", "");
+                int parenthesesEscaped = bestEditDistanceForParams(levenshteinDistance, trackName, videoTitleWithParenthesesRemoved, artists, artistString, firstArtist, featuringArtistString);
+                return Math.min(parenthesesEscaped, parenthesesNotEscaped);
+            },
+            episode -> {
+                String episodeName = episode.getName().toLowerCase();
+                Integer distanceName = levenshteinDistance.apply(episodeName, videoTitle);
+                ShowSimplified show = episode.getShow();
+                if (show == null) {
+                    return distanceName;
+                }
+                String showName = show.getName().toLowerCase();
+                Integer distanceShowName = levenshteinDistance.apply(showName + " " + episodeName, videoTitle);
+                Integer distanceNameShow = levenshteinDistance.apply(episodeName + " " + showName, videoTitle);
+
+                return IntStream.of(distanceName, distanceShowName, distanceNameShow).min().getAsInt();
+            }
+        );
     }
 
     private int bestEditDistanceForParams(LevenshteinDistance levenshteinDistance, String trackName, String videoTitle, ArtistSimplified[] artists, String artistString, String firstArtist, String featuringArtistString) {
@@ -719,9 +746,9 @@ public class YouTubeService extends AbstractShutdownable {
     }
 
     private List<SearchResult> searchVideos(long limit, String searchTerm) throws IOException {
-        YouTube.Search.List search = youTube.search().list("id,snippet");
+        YouTube.Search.List search = youTube.search().list(List.of("id", "snippet"));
         search.setQ(searchTerm);
-        search.setType("video");
+        search.setType(List.of("video"));
         search.setFields("items(snippet/title,id/videoId)");
         search.setMaxResults(limit);
         search.setKey(apiKey);
@@ -736,9 +763,9 @@ public class YouTubeService extends AbstractShutdownable {
 
     private List<Video> getAllVideos(List<String> videoIds) throws IOException {
         List<Video> videos = Lists.newArrayList();
-        YouTube.Videos.List query = youTube.videos().list("snippet,contentDetails,statistics")
+        YouTube.Videos.List query = youTube.videos().list(List.of("snippet", "contentDetails", "statistics"))
             .setKey(apiKey)
-            .setId(String.join(",", videoIds))
+            .setId(videoIds)
             .setFields("items(snippet/title,snippet/channelTitle,id,contentDetails/duration,statistics/viewCount)")
             .setMaxResults(50L);
 
@@ -764,10 +791,10 @@ public class YouTubeService extends AbstractShutdownable {
     }
 
     private List<SearchResult> searchPlaylists(long limit, String searchTerm) throws IOException {
-        YouTube.Search.List playlistSearch = youTube.search().list("id,snippet");
+        YouTube.Search.List playlistSearch = youTube.search().list(List.of("id", "snippet"));
         playlistSearch.setKey(apiKey);
         playlistSearch.setQ(searchTerm);
-        playlistSearch.setType("playlist");
+        playlistSearch.setType(List.of("playlist"));
         playlistSearch.setFields("items(id/playlistId,snippet/title,snippet/channelTitle)");
         playlistSearch.setMaxResults(limit);
 
@@ -785,9 +812,9 @@ public class YouTubeService extends AbstractShutdownable {
         for (List<String> sequence : sequences) {
             List<Playlist> playlists = doWithQuota(QUOTA_COST_1_FIELD, () -> youTube
                 .playlists()
-                .list("contentDetails")
+                .list(List.of("contentDetails"))
                 .setKey(apiKey)
-                .setId(String.join(",", sequence))
+                .setId(sequence)
                 .execute()
                 .getItems());
             for (Playlist playlist : playlists) {
@@ -836,9 +863,9 @@ public class YouTubeService extends AbstractShutdownable {
      * @return the video's duration in milliseconds
      */
     private long getDurationMillis(String videoId) throws IOException {
-        YouTube.Videos.List videosRequest = youTube.videos().list("contentDetails");
+        YouTube.Videos.List videosRequest = youTube.videos().list(List.of("contentDetails"));
         videosRequest.setKey(apiKey);
-        videosRequest.setId(videoId);
+        videosRequest.setId(List.of(videoId));
         videosRequest.setFields("items(contentDetails/duration)");
         VideoListResponse videoListResponse = doWithQuota(QUOTA_COST_1_FIELD, videosRequest::execute);
         List<Video> items = videoListResponse.getItems();
@@ -850,14 +877,14 @@ public class YouTubeService extends AbstractShutdownable {
         return 0;
     }
 
-    private Map<String, Long> getDurationMillis(Collection<String> videoIds) throws IOException {
+    private Map<String, Long> getDurationMillis(List<String> videoIds) throws IOException {
         if (videoIds.size() > 50) {
             throw new IllegalArgumentException("Cannot request more than 50 ids at once");
         }
 
-        YouTube.Videos.List videosRequest = youTube.videos().list("contentDetails");
+        YouTube.Videos.List videosRequest = youTube.videos().list(List.of("contentDetails"));
         videosRequest.setKey(apiKey);
-        videosRequest.setId(String.join(",", videoIds));
+        videosRequest.setId(videoIds);
         videosRequest.setFields("items(contentDetails/duration,id)");
         List<Video> videos = doWithQuota(QUOTA_COST_1_FIELD, () -> videosRequest.execute().getItems());
 

@@ -154,20 +154,38 @@
       <rule errorMessage="Argument 'own' may only be used with Spotify.">command.getSource().isSpotify()</rule>
     </argument>
     <argument identifier="select" valueType="java.lang.Integer" description="Show a selection of YouTube playlists / videos or Spotify tracks to chose from. May be assigned a value from 1 to 20: %2$sselect=5">
-      <excludes argument="album"/>
       <valueCheck errorMessage="Limit must be between 1 and 20" check="value &gt; 0 &amp;&amp; value &lt;= 20"/>
-      <rule errorMessage="Argument 'select' may only be used with YouTube videos / playlists or Spotify tracks.">
+      <rule errorMessage="Argument 'select' may only be used with YouTube or Spotify.">
         def source = command.getSource();
-        if (command.argumentSet("list")) {
-        source.isYouTube()
-        }
-
         source.isYouTube() || source.isSpotify()
       </rule>
     </argument>
     <argument identifier="album" requiresInput="true" description="Search for a Spotify album.">
       <excludes argument="list"/>
       <rule errorMessage="Argument 'album' may only be used with Spotify.">command.getSource().isSpotify()</rule>
+    </argument>
+    <argument identifier="episode" requiresInput="true" description="Search an episode of a podcast on Spotify. Note that this argument is only required when searching, not when entering a URL.">
+      <excludes argument="album"/>
+      <excludes argument="list"/>
+      <excludes argument="podcast"/>
+      <rule errorMessage="Argument 'episode' may only be used with Spotify.">command.getSource().isSpotify()</rule>
+    </argument>
+    <argument identifier="podcast" requiresInput="true" description="Search a podcast show on Spotify. Note that this argument is only required when searching, not when entering a URL.">
+      <excludes argument="album"/>
+      <excludes argument="list"/>
+      <excludes argument="episode"/>
+      <rule errorMessage="Argument 'podcast' may only be used with Spotify.">command.getSource().isSpotify()</rule>
+    </argument>
+    <argument identifier="market" requiresValue="true" description="Specify the ISO 3166-1 country code of the target spotify market. Used to search a Spotify item in a specific country different from the default of this Botify instance.">
+      <rule errorMessage="Argument 'market' may only be used with Spotify.">command.getSource().isSpotify()</rule>
+      <rule errorMessage="'%3$s' is not a valid ISO 3166-1 country code">
+        try {
+          com.neovisionaries.i18n.CountryCode.valueOf(value);
+        } catch (IllegalArgumentException e) {
+          return false;
+        }
+        return true;
+      </rule>
     </argument>
     <example title="List all local playlists">%1$ssearch %2$slist</example>
     <example title="Search for a specific local list">%1$ssearch %2$slist my list</example>
@@ -649,17 +667,14 @@ command.run('play')"
     </argument>
     <argument identifier="album" requiresInput="true" description="Search for a Spotify album. Note that this argument is only required when searching, not when entering a URL.">
       <excludes argument="list"/>
+      <excludes argument="episode"/>
+      <excludes argument="podcast"/>
       <rule errorMessage="Argument 'album' may only be used with Spotify.">command.getSource().isSpotify()</rule>
     </argument>
     <argument identifier="select" valueType="java.lang.Integer" requiresInput="true" description="Show a selection of YouTube playlists / videos or Spotify tracks to chose from. May be assigned a value from 1 to 20: %2$sselect=5">
-      <excludes argument="album"/>
       <valueCheck errorMessage="Limit must be between 1 and 20" check="value &gt; 0 &amp;&amp; value &lt;= 20"/>
-      <rule errorMessage="Argument 'select' may only be used with YouTube videos / playlists or Spotify tracks.">
+      <rule errorMessage="Argument 'select' may only be used with YouTube or Spotify.">
         def source = command.getSource();
-        if (command.argumentSet("list")) {
-          source.isYouTube()
-        }
-
         source.isYouTube() || source.isSpotify()
       </rule>
     </argument>
@@ -667,6 +682,29 @@ command.run('play')"
       <excludes argument="spotify"/>
       <excludes argument="youtube"/>
       <excludes argument="list"/>
+    </argument>
+    <argument identifier="episode" requiresInput="true" description="Search an episode of a podcast on Spotify. Note that this argument is only required when searching, not when entering a URL.">
+      <excludes argument="album"/>
+      <excludes argument="list"/>
+      <excludes argument="podcast"/>
+      <rule errorMessage="Argument 'episode' may only be used with Spotify.">command.getSource().isSpotify()</rule>
+    </argument>
+    <argument identifier="podcast" requiresInput="true" description="Search a podcast on Spotify. Note that this argument is only required when searching, not when entering a URL.">
+      <excludes argument="album"/>
+      <excludes argument="list"/>
+      <excludes argument="episode"/>
+      <rule errorMessage="Argument 'podcast' may only be used with Spotify.">command.getSource().isSpotify()</rule>
+    </argument>
+    <argument identifier="market" requiresValue="true" description="Specify the ISO 3166-1 country code of the target spotify market. Used to search a Spotify item in a specific country different from the default of this Botify instance.">
+      <rule errorMessage="Argument 'market' may only be used with Spotify.">command.getSource().isSpotify()</rule>
+      <rule errorMessage="'%3$s' must be a valid ISO 3166-1 country code">
+        try {
+        com.neovisionaries.i18n.CountryCode.valueOf(value);
+        } catch (IllegalArgumentException e) {
+        return false;
+        }
+        return true;
+      </rule>
     </argument>
   </abstractCommand>
   <abstractCommand class="net.robinfriedli.botify.command.commands.AbstractQueueLoadingCommand">

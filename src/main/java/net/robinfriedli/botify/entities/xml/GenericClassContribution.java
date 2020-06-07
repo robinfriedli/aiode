@@ -2,26 +2,18 @@ package net.robinfriedli.botify.entities.xml;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.List;
 
 import net.robinfriedli.botify.util.InjectorService;
 import net.robinfriedli.jxp.api.AbstractXmlElement;
-import net.robinfriedli.jxp.api.XmlElement;
+import net.robinfriedli.jxp.collections.NodeList;
 import net.robinfriedli.jxp.persist.Context;
 import org.w3c.dom.Element;
 
 public abstract class GenericClassContribution<E> extends AbstractXmlElement {
 
-
     // invoked by JXP
     @SuppressWarnings("unused")
-    public GenericClassContribution(Element element, Context context) {
-        super(element, context);
-    }
-
-    // invoked by JXP
-    @SuppressWarnings("unused")
-    public GenericClassContribution(Element element, List<XmlElement> subElements, Context context) {
+    public GenericClassContribution(Element element, NodeList subElements, Context context) {
         super(element, subElements, context);
     }
 

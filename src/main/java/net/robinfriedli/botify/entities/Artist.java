@@ -20,7 +20,7 @@ import org.hibernate.Session;
 @Table(name = "artist")
 public class Artist implements Serializable {
 
-    private static final XSync<String> artistSync = new XSync<>();
+    private static final XSync<String> ARTIST_SYNC = new XSync<>();
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -48,7 +48,7 @@ public class Artist implements Serializable {
      */
     public static Artist getOrCreateArtist(ArtistSimplified artist, Session session) {
         QueryBuilderFactory queryBuilderFactory = Botify.get().getQueryBuilderFactory();
-        return artistSync.evaluate(artist.getId(), () -> {
+        return ARTIST_SYNC.evaluate(artist.getId(), () -> {
             Optional<Artist> existingArtist = queryBuilderFactory.find(Artist.class)
                 .where((cb, root) -> cb.equal(root.get("id"), artist.getId()))
                 .build(session)

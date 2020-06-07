@@ -9,7 +9,9 @@ import com.google.common.base.Strings;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.wrapper.spotify.model_objects.specification.AlbumSimplified;
+import com.wrapper.spotify.model_objects.specification.Episode;
 import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
+import com.wrapper.spotify.model_objects.specification.ShowSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
@@ -19,6 +21,7 @@ import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.audio.AudioQueue;
 import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.audio.PlayableFactory;
+import net.robinfriedli.botify.audio.spotify.SpotifyTrack;
 import net.robinfriedli.botify.audio.youtube.YouTubePlaylist;
 import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
 import net.robinfriedli.botify.command.CommandContext;
@@ -105,6 +108,10 @@ public class QueueCommand extends AbstractQueueLoadingCommand {
                 sendSuccess(String.format("Queued %d item%s", size, size == 1 ? "" : "s"));
             }
         }
+        if (loadedShow != null) {
+            String name = loadedShow.getName();
+            sendSuccess("Queued podcast " + name);
+        }
     }
 
     @Override
@@ -125,13 +132,13 @@ public class QueueCommand extends AbstractQueueLoadingCommand {
     }
 
     private List<Playable> getPlayablesForOption(Object chosenOption, PlayableFactory playableFactory) throws Exception {
-        if (chosenOption instanceof Track || chosenOption instanceof YouTubeVideo) {
+        if (chosenOption instanceof Track || chosenOption instanceof YouTubeVideo || chosenOption instanceof Episode) {
             Playable track = playableFactory.createPlayable(shouldRedirectSpotify(), chosenOption);
             loadedTrack = track;
             return Collections.singletonList(track);
         } else if (chosenOption instanceof PlaylistSimplified) {
             PlaylistSimplified playlist = (PlaylistSimplified) chosenOption;
-            List<Track> tracks = runWithCredentials(() -> getSpotifyService().getPlaylistTracks(playlist));
+            List<SpotifyTrack> tracks = runWithCredentials(() -> getSpotifyService().getPlaylistTracks(playlist));
             List<Playable> playables = playableFactory.createPlayables(shouldRedirectSpotify(), tracks);
             loadedSpotifyPlaylist = playlist;
             return playables;
@@ -153,6 +160,12 @@ public class QueueCommand extends AbstractQueueLoadingCommand {
         } else if (chosenOption instanceof AudioPlaylist) {
             List<Playable> playables = playableFactory.createPlayables(shouldRedirectSpotify(), chosenOption);
             loadedAudioPlaylist = (AudioPlaylist) chosenOption;
+            return playables;
+        } else if (chosenOption instanceof ShowSimplified) {
+            ShowSimplified show = (ShowSimplified) chosenOption;
+            List<Episode> episodes = runWithCredentials(() -> getSpotifyService().getShowEpisodes(show.getId()));
+            List<Playable> playables = playableFactory.createPlayables(shouldRedirectSpotify(), episodes);
+            loadedShow = show;
             return playables;
         }
 

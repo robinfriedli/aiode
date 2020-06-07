@@ -1,16 +1,16 @@
 package net.robinfriedli.botify.audio.spotify;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.google.common.collect.Lists;
 import com.wrapper.spotify.SpotifyApi;
-import com.wrapper.spotify.exceptions.SpotifyWebApiException;
 import com.wrapper.spotify.model_objects.credentials.ClientCredentials;
-import com.wrapper.spotify.model_objects.specification.Track;
 import net.robinfriedli.botify.function.CheckedFunction;
 import net.robinfriedli.botify.function.modes.SpotifyAuthorizationMode;
 import net.robinfriedli.botify.util.BulkOperationService;
@@ -20,7 +20,7 @@ import net.robinfriedli.botify.util.BulkOperationService;
  * track. Note that {@link BulkOperationService#perform()} must be called with Spotify Credentials in this case, see
  * {@link SpotifyAuthorizationMode}.
  */
-public class SpotifyTrackBulkLoadingService extends BulkOperationService<String, Track> {
+public class SpotifyTrackBulkLoadingService extends BulkOperationService<SpotifyTrackBulkLoadingService.SpotifyItem, SpotifyTrack> {
 
     public SpotifyTrackBulkLoadingService(SpotifyApi spotifyApi) {
         this(spotifyApi, false);
@@ -31,10 +31,11 @@ public class SpotifyTrackBulkLoadingService extends BulkOperationService<String,
 
             // time of first request, spotify credentials expire after and hour so if the task takes too long the credentials have to be refreshed
             private final LocalDateTime conceptionTime = LocalDateTime.now();
+            private final SpotifyService spotifyService = new SpotifyService(spotifyApi);
             private LocalDateTime timeToRefreshCredentials = conceptionTime.plusMinutes(50);
 
             @Override
-            public List<Pair<String, Track>> doApply(List<String> ids) throws IOException, SpotifyWebApiException {
+            public List<Pair<SpotifyItem, SpotifyTrack>> doApply(List<SpotifyItem> ids) throws Exception {
                 LocalDateTime now = LocalDateTime.now();
                 if (now.compareTo(timeToRefreshCredentials) > 0) {
                     ClientCredentials credentials = spotifyApi.clientCredentials().build().execute();
@@ -42,17 +43,21 @@ public class SpotifyTrackBulkLoadingService extends BulkOperationService<String,
                     timeToRefreshCredentials = now.plusMinutes(50);
                 }
 
-                String[] idArray = ids.toArray(new String[0]);
-                Track[] loadedTracks = spotifyApi.getSeveralTracks(idArray).build().execute();
+                Map<SpotifyTrackKind, List<SpotifyItem>> kindIdMap = ids.stream().collect(Collectors.groupingBy(SpotifyItem::getKind));
+                List<Pair<SpotifyItem, SpotifyTrack>> keyValuePairs = Lists.newArrayList();
 
-                List<Pair<String, Track>> keyValuePairs = Lists.newArrayList();
-                for (int i = 0; i < loadedTracks.length; i++) {
-                    Track loadedTrack = loadedTracks[i];
+                for (SpotifyTrackKind spotifyTrackKind : kindIdMap.keySet()) {
+                    List<SpotifyItem> spotifyItems = kindIdMap.get(spotifyTrackKind);
+                    String[] currentKindIds = spotifyItems.stream().map(SpotifyItem::getId).toArray(String[]::new);
 
-                    if (loadedTrack != null) {
-                        keyValuePairs.add(Pair.of(loadedTrack.getId(), loadedTrack));
-                    } else if (acceptNullValues) {
-                        keyValuePairs.add(Pair.of(idArray[i], loadedTrack));
+                    List<SpotifyTrack> spotifyTracks = spotifyTrackKind.loadSeveralItems(spotifyService, currentKindIds);
+                    for (int i = 0; i < spotifyTracks.size(); i++) {
+                        SpotifyTrack spotifyTrack = spotifyTracks.get(i);
+
+                        if (acceptNullValues || spotifyTrack != null) {
+                            SpotifyItem sourceItem = spotifyItems.get(i);
+                            keyValuePairs.add(Pair.of(sourceItem, spotifyTrack));
+                        }
                     }
                 }
 
@@ -60,4 +65,42 @@ public class SpotifyTrackBulkLoadingService extends BulkOperationService<String,
             }
         });
     }
+
+    public static SpotifyItem createItem(String id, SpotifyTrackKind kind) {
+        return new SpotifyItem(id, kind);
+    }
+
+    public static class SpotifyItem {
+
+        private final String id;
+        private final SpotifyTrackKind kind;
+
+        public SpotifyItem(String id, SpotifyTrackKind kind) {
+            this.id = id;
+            this.kind = kind;
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public SpotifyTrackKind getKind() {
+            return kind;
+        }
+
+        @Override
+        public int hashCode() {
+            return id.hashCode() + kind.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof SpotifyItem) {
+                SpotifyItem other = (SpotifyItem) obj;
+                return Objects.equals(id, other.id) && Objects.equals(kind, other.kind);
+            }
+            return false;
+        }
+    }
+
 }

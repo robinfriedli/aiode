@@ -12,6 +12,8 @@ import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.spotify.SpotifyTrackBulkLoadingService;
+import net.robinfriedli.botify.audio.spotify.SpotifyTrackKind;
+import net.robinfriedli.botify.entities.Episode;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
 import net.robinfriedli.botify.entities.Song;
@@ -22,6 +24,8 @@ import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
 import org.hibernate.Session;
 
+import static net.robinfriedli.botify.audio.spotify.SpotifyTrackBulkLoadingService.*;
+import static net.robinfriedli.botify.audio.spotify.SpotifyTrackKind.*;
 import static net.robinfriedli.jxp.queries.Conditions.*;
 
 /**
@@ -61,18 +65,10 @@ public class HibernatePlaylistMigrator implements PersistTask<Map<Playlist, List
                 XmlElement item = items.get(i);
                 switch (item.getTagName()) {
                     case "song":
-                        String id = item.getAttribute("id").getValue();
-                        int finalI = i;
-                        spotifyBulkLoadingService.add(id, track -> {
-                            String addedUserId = item.getAttribute("addedUserId").getValue();
-                            User userById = shardManager.getUserById(addedUserId);
-                            Song song = new Song(track, userById, newPlaylist, session);
-                            if (userById == null) {
-                                song.setAddedUser(item.getAttribute("addedUser").getValue());
-                                song.setAddedUserId(item.getAttribute("addedUserId").getValue());
-                            }
-                            itemsWithIndex.put(song, finalI);
-                        });
+                        loadSpotifyItem(item, i, spotifyBulkLoadingService, shardManager, newPlaylist, itemsWithIndex, TRACK);
+                        break;
+                    case "episode":
+                        loadSpotifyItem(item, i, spotifyBulkLoadingService, shardManager, newPlaylist, itemsWithIndex, EPISODE);
                         break;
                     case "video":
                         Video video = new Video();
@@ -116,4 +112,28 @@ public class HibernatePlaylistMigrator implements PersistTask<Map<Playlist, List
 
         return playlistMap;
     }
+
+    private void loadSpotifyItem(XmlElement item,
+                                 int index,
+                                 SpotifyTrackBulkLoadingService spotifyBulkLoadingService,
+                                 ShardManager shardManager,
+                                 Playlist newPlaylist,
+                                 Map<PlaylistItem, Integer> itemsWithIndex,
+                                 SpotifyTrackKind kind) {
+        String id = item.getAttribute("id").getValue();
+        spotifyBulkLoadingService.add(createItem(id, kind), spotifyTrack -> {
+            String addedUserId = item.getAttribute("addedUserId").getValue();
+            User userById = "system".equals(addedUserId) ? null : shardManager.getUserById(addedUserId);
+            PlaylistItem playlistItem = spotifyTrack.exhaustiveMatch(
+                track -> new Song(track, userById, newPlaylist, session),
+                episode -> new Episode(episode, userById, newPlaylist)
+            );
+            if (userById == null) {
+                playlistItem.setAddedUser(item.getAttribute("addedUser").getValue());
+                playlistItem.setAddedUserId(item.getAttribute("addedUserId").getValue());
+            }
+            itemsWithIndex.put(playlistItem, index);
+        });
+    }
+
 }

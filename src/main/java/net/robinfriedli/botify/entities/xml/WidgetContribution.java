@@ -2,7 +2,6 @@ package net.robinfriedli.botify.entities.xml;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.List;
 
 import javax.annotation.Nullable;
 
@@ -10,7 +9,7 @@ import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEve
 import net.robinfriedli.botify.command.AbstractWidget;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.widgets.AbstractWidgetAction;
-import net.robinfriedli.jxp.api.XmlElement;
+import net.robinfriedli.jxp.collections.NodeList;
 import net.robinfriedli.jxp.persist.Context;
 import org.w3c.dom.Element;
 
@@ -18,13 +17,7 @@ public class WidgetContribution extends GenericClassContribution<AbstractWidget>
 
     // invoked by JXP
     @SuppressWarnings("unused")
-    public WidgetContribution(Element element, Context context) {
-        super(element, context);
-    }
-
-    // invoked by JXP
-    @SuppressWarnings("unused")
-    public WidgetContribution(Element element, List<XmlElement> subElements, Context context) {
+    public WidgetContribution(Element element, NodeList subElements, Context context) {
         super(element, subElements, context);
     }
 
@@ -38,13 +31,7 @@ public class WidgetContribution extends GenericClassContribution<AbstractWidget>
 
         // invoked by JXP
         @SuppressWarnings("unused")
-        public WidgetActionContribution(Element element, Context context) {
-            super(element, context);
-        }
-
-        // invoked by JXP
-        @SuppressWarnings("unused")
-        public WidgetActionContribution(Element element, List<XmlElement> subElements, Context context) {
+        public WidgetActionContribution(Element element, NodeList subElements, Context context) {
             super(element, subElements, context);
         }
 

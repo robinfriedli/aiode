@@ -6,15 +6,19 @@ import java.util.Optional;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.ForeignKey;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 
 import com.google.common.base.Strings;
+import net.robinfriedli.botify.audio.spotify.SpotifyTrackKind;
 import org.hibernate.Session;
 
 /**
@@ -38,15 +42,19 @@ public class SpotifyRedirectIndex implements Serializable {
     private LocalDate lastUpdated;
     @Column(name = "last_used")
     private LocalDate lastUsed;
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "fk_spotify_item_kind", referencedColumnName = "pk", foreignKey = @ForeignKey(name = "spotify_redirect_index_fk_spotify_item_kind_fkey"))
+    private SpotifyItemKind spotifyItemKind;
 
     public SpotifyRedirectIndex() {
     }
 
-    public SpotifyRedirectIndex(String spotifyId, String youTubeId) {
+    public SpotifyRedirectIndex(String spotifyId, String youTubeId, SpotifyTrackKind kind, Session session) {
         this.spotifyId = spotifyId;
         this.youTubeId = youTubeId;
         lastUpdated = LocalDate.now();
         lastUsed = LocalDate.now();
+        spotifyItemKind = LookupEntity.require(session, SpotifyItemKind.class, kind.name());
     }
 
     public static Optional<SpotifyRedirectIndex> queryExistingIndex(Session session, String spotifyTrackId) {
@@ -98,5 +106,13 @@ public class SpotifyRedirectIndex implements Serializable {
 
     public void setLastUsed(LocalDate lastUsed) {
         this.lastUsed = lastUsed;
+    }
+
+    public SpotifyItemKind getSpotifyItemKind() {
+        return spotifyItemKind;
+    }
+
+    public void setSpotifyItemKind(SpotifyItemKind spotifyItemKind) {
+        this.spotifyItemKind = spotifyItemKind;
     }
 }

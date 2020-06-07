@@ -24,8 +24,8 @@ public class ArgumentBuildingMode implements CommandParser.Mode {
     private final boolean isInline;
     private final int conceptionIndex;
 
-    private StringBuilder argumentBuilder;
-    private StringBuilder argumentValueBuilder;
+    private final StringBuilder argumentBuilder;
+    private final StringBuilder argumentValueBuilder;
 
     private boolean isRecodingValue;
 

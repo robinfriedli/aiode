@@ -9,6 +9,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -66,7 +67,7 @@ public abstract class AbstractCommand implements Command {
     private final String identifier;
     private final String description;
     private final Category category;
-    private boolean requiresInput;
+    private final boolean requiresInput;
     private String commandInput;
     // used to prevent onSuccess being called when no exception has been thrown but the command failed anyway
     private boolean isFailed;
@@ -225,15 +226,17 @@ public abstract class AbstractCommand implements Command {
      * @param callable the code to run
      */
     protected <E> E runWithLogin(Callable<E> callable) throws Exception {
+        String market = getArgumentValueOrCompute("market", String.class, () -> Botify.get().getSpotifyComponent().getDefaultMarket());
         Login login = Botify.get().getLoginManager().requireLoginForUser(getContext().getUser());
-        return SpotifyInvoker.create(getContext().getSpotifyApi(), login).invoke(callable);
+        return SpotifyInvoker.create(getContext().getSpotifyApi(), login, market).invoke(callable);
     }
 
     /**
      * Run a callable with the default spotify credentials. Used for spotify api queries in commands.
      */
     protected <E> E runWithCredentials(Callable<E> callable) throws Exception {
-        return SpotifyInvoker.create(getContext().getSpotifyApi()).invoke(callable);
+        String market = getArgumentValueOrCompute("market", String.class, () -> Botify.get().getSpotifyComponent().getDefaultMarket());
+        return SpotifyInvoker.create(getContext().getSpotifyApi(), market).invoke(callable);
     }
 
     protected boolean argumentSet(String argument) {
@@ -249,17 +252,21 @@ public abstract class AbstractCommand implements Command {
     }
 
     protected <E> E getArgumentValue(String argument, Class<E> type, E alternativeValue) {
+        return getArgumentValueOrCompute(argument, type, () -> alternativeValue);
+    }
+
+    protected <E> E getArgumentValueOrCompute(String argument, Class<E> type, Supplier<E> alternativeValueSupplier) {
         ArgumentController.ArgumentUsage usedArgument = argumentController.getUsedArgument(argument);
         if (usedArgument == null) {
-            if (alternativeValue != null) {
-                return alternativeValue;
+            if (alternativeValueSupplier != null) {
+                return alternativeValueSupplier.get();
             }
             throw new InvalidCommandException("Expected argument: " + argument);
         }
 
         if (!usedArgument.hasValue()) {
-            if (alternativeValue != null) {
-                return alternativeValue;
+            if (alternativeValueSupplier != null) {
+                return alternativeValueSupplier.get();
             } else {
                 throw new InvalidCommandException("Argument '" + argument + "' requires an assigned value!");
             }

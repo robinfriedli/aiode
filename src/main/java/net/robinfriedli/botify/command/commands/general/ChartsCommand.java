@@ -12,21 +12,24 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
-import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.audio.PlayableFactory;
 import net.robinfriedli.botify.audio.exec.BlockingTrackLoadingExecutor;
+import net.robinfriedli.botify.audio.spotify.PlayableTrackWrapper;
 import net.robinfriedli.botify.audio.spotify.SpotifyService;
-import net.robinfriedli.botify.audio.spotify.TrackWrapper;
+import net.robinfriedli.botify.audio.spotify.SpotifyTrack;
+import net.robinfriedli.botify.audio.spotify.SpotifyTrackKind;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.Artist;
 import net.robinfriedli.botify.entities.PlaybackHistory;
+import net.robinfriedli.botify.entities.PlaybackHistorySource;
+import net.robinfriedli.botify.entities.SpotifyItemKind;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
 import net.robinfriedli.botify.persist.qb.builders.SelectQueryBuilder;
@@ -44,7 +47,7 @@ public class ChartsCommand extends AbstractCommand {
     }
 
     @Override
-    public void doRun() throws Exception {
+    public void doRun() {
         Session session = getContext().getSession();
         Guild guild = getContext().getGuild();
         QueryBuilderFactory queryBuilderFactory = getQueryBuilderFactory();
@@ -53,11 +56,12 @@ public class ChartsCommand extends AbstractCommand {
         Date dateAtStartOfMonth = Date.valueOf(startOfMonth.toLocalDate());
         SelectQueryBuilder<PlaybackHistory> trackChartsQuery = queryBuilderFactory
             .select(PlaybackHistory.class,
-                (from, cb) -> from.get("source"),
+                (from, cb) -> from.get("fkSource"),
                 (from, cb) -> from.get("trackId"),
-                (from, cb) -> cb.count(from.get("pk")))
+                (from, cb) -> cb.count(from.get("pk")),
+                (from, cb) -> from.get("fkSpotifyItemKind"))
             .where((cb, root) -> cb.isNotNull(root.get("trackId")))
-            .groupBySeveral((from, cb) -> Lists.newArrayList(from.get("trackId"), from.get("source")))
+            .groupBySeveral((from, cb) -> Lists.newArrayList(from.get("trackId"), from.get("fkSource"), from.get("fkSpotifyItemKind")))
             .orderBy((from, cb) -> cb.desc(cb.count(from.get("pk"))));
         SelectQueryBuilder<PlaybackHistory> trackChartsQueryGuild = trackChartsQuery.fork().where((cb, root) -> cb.equal(root.get("guildId"), guild.getId()));
         SelectQueryBuilder<PlaybackHistory> trackChartsQueryMonthly = trackChartsQuery.fork().where((cb, root) -> cb.greaterThan(root.get("timestamp"), startOfMonth));
@@ -105,28 +109,28 @@ public class ChartsCommand extends AbstractCommand {
 
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.addField("Global", "Shows the charts across all guilds", false);
-        addTrackCharts(globalResults, embedBuilder, "All time");
+        addTrackCharts(globalResults, embedBuilder, "All time", session);
         addArtists(globalArtists, embedBuilder, "All time");
         embedBuilder.addBlankField(true);
-        addTrackCharts(globalMonthlyResults, embedBuilder, "Monthly");
+        addTrackCharts(globalMonthlyResults, embedBuilder, "Monthly", session);
         addArtists(globalArtistsMonthly, embedBuilder, "Monthly");
         embedBuilder.addBlankField(false);
         embedBuilder.addField("Guild", "Shows the charts for this guild", false);
-        addTrackCharts(guildResults, embedBuilder, "All time");
+        addTrackCharts(guildResults, embedBuilder, "All time", session);
         addArtists(guildArtists, embedBuilder, "All time");
         embedBuilder.addBlankField(true);
-        addTrackCharts(guildMonthlyResults, embedBuilder, "Monthly");
+        addTrackCharts(guildMonthlyResults, embedBuilder, "Monthly", session);
         addArtists(guildArtistMonthly, embedBuilder, "Monthly");
         sendMessage(embedBuilder);
     }
 
-    private void addTrackCharts(List<Object[]> queryResults, EmbedBuilder embedBuilder, String period) throws Exception {
+    private void addTrackCharts(List<Object[]> queryResults, EmbedBuilder embedBuilder, String period, Session session) {
         Map<Playable, Long> tracksWithPlayedAmount = new HashMap<>();
         List<Playable> tracks = Lists.newArrayList();
         for (Object[] record : queryResults) {
             long playedAmount = (Long) record[2];
             try {
-                Playable track = getTrackForRecord(record);
+                Playable track = getTrackForRecord(record, session);
                 if (track != null) {
                     tracksWithPlayedAmount.put(track, playedAmount);
                     tracks.add(track);
@@ -178,28 +182,42 @@ public class ChartsCommand extends AbstractCommand {
         }
     }
 
-    private Playable getTrackForRecord(Object[] record) throws Exception {
-        String source = (String) record[0];
+    private Playable getTrackForRecord(Object[] record, Session session) throws Exception {
+        long sourceEntityPk = (Long) record[0];
+        PlaybackHistorySource sourceEntity = session.load(PlaybackHistorySource.class, sourceEntityPk);
+        Playable.Source source = sourceEntity.asEnum();
         String id = (String) record[1];
+        Long spotifyItemKindPk = (Long) record[3];
+        SpotifyItemKind spotifyItemKind = session.load(SpotifyItemKind.class, spotifyItemKindPk);
         switch (source) {
-            case "Spotify":
+            case SPOTIFY:
                 return runWithCredentials(() -> {
+                    if (spotifyItemKind == null) {
+                        throw new IllegalStateException("spotifyItemKind cannot be null for PlaybackHistory entries of source SPOTIFY");
+                    }
+
+                    SpotifyTrackKind kind = spotifyItemKind.asEnum();
                     SpotifyService spotifyService = getSpotifyService();
-                    Track track = spotifyService.getTrack(id);
-                    return new TrackWrapper(track);
+                    SpotifyTrack track = kind.loadSingleItem(spotifyService, id);
+
+                    if (track == null) {
+                        return null;
+                    }
+
+                    return new PlayableTrackWrapper(track);
                 });
-            case "YouTube":
+            case YOUTUBE:
                 YouTubeService youTubeService = Botify.get().getAudioManager().getYouTubeService();
                 try {
                     return youTubeService.getVideoForId(id);
                 } catch (FriendlyException e) {
                     return null;
                 }
-            case "Url":
+            case URL:
                 return playableFactory.createPlayable(id, getContext().getSpotifyApi(), false);
         }
 
-        throw new UnsupportedOperationException("Unsupported source " + source);
+        throw new UnsupportedOperationException("Unsupported source " + sourceEntity);
     }
 
     @Override

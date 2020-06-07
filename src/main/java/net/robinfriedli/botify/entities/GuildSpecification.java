@@ -124,6 +124,10 @@ public class GuildSpecification implements Serializable {
         return accessConfigurations;
     }
 
+    public void setAccessConfigurations(Set<AccessConfiguration> accessConfigurations) {
+        this.accessConfigurations = accessConfigurations;
+    }
+
     public Optional<AccessConfiguration> getAccessConfiguration(String commandIdentifier) {
         return accessConfigurations
             .stream()

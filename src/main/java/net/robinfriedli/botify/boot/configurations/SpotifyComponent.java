@@ -16,6 +16,8 @@ public class SpotifyComponent {
     private String spotifyClientSecret;
     @Value("${botify.server.spotify_login_callback}")
     private String redirectUri;
+    @Value("${botify.preferences.spotify_market}")
+    private String defaultMarket;
 
     @Bean
     public SpotifyApi.Builder spotifyApiBuilder() {
@@ -31,4 +33,7 @@ public class SpotifyComponent {
         return builder.build();
     }
 
+    public String getDefaultMarket() {
+        return defaultMarket;
+    }
 }

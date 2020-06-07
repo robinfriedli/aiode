@@ -2,16 +2,21 @@ package net.robinfriedli.botify.entities;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.ForeignKey;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
-import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.api.entities.User;
+import net.robinfriedli.botify.audio.spotify.SpotifyTrack;
+import net.robinfriedli.botify.audio.spotify.SpotifyTrackKind;
 import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
 import net.robinfriedli.botify.audio.youtube.YouTubeVideoImpl;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
+import org.hibernate.Session;
 
 @Entity
 @Table(name = "video")
@@ -29,21 +34,28 @@ public class Video extends PlaylistItem {
     private String redirectedSpotifyId;
     @Column(name = "spotify_track_name")
     private String spotifyTrackName;
+    @ManyToOne
+    @JoinColumn(name = "fk_redirected_spotify_kind", referencedColumnName = "pk", foreignKey = @ForeignKey(name = "video_fk_redirected_spotify_kind_fkey"))
+    private SpotifyItemKind redirectedSpotifyKind;
 
     public Video() {
     }
 
-    public Video(YouTubeVideo video, User user, Playlist playlist) {
+    public Video(YouTubeVideo video, User user, Playlist playlist, Session session) {
         super(user, playlist);
         try {
             id = video.getVideoId();
             title = video.getDisplay();
             duration = video.getDuration();
 
-            Track redirectedSpotifyTrack = video.getRedirectedSpotifyTrack();
+            SpotifyTrack redirectedSpotifyTrack = video.getRedirectedSpotifyTrack();
             if (redirectedSpotifyTrack != null) {
                 redirectedSpotifyId = redirectedSpotifyTrack.getId();
                 spotifyTrackName = redirectedSpotifyTrack.getName();
+                redirectedSpotifyKind = redirectedSpotifyTrack.exhaustiveMatch(
+                    track -> LookupEntity.require(session, SpotifyItemKind.class, SpotifyTrackKind.TRACK.name()),
+                    episode -> LookupEntity.require(session, SpotifyItemKind.class, SpotifyTrackKind.EPISODE.name())
+                );
             }
         } catch (UnavailableResourceException e) {
             throw new RuntimeException("Cannot create video element for cancelled YouTube video " + video.toString(), e);
@@ -123,4 +135,11 @@ public class Video extends PlaylistItem {
         this.spotifyTrackName = spotifyTrackName;
     }
 
+    public SpotifyItemKind getRedirectedSpotifyKind() {
+        return redirectedSpotifyKind;
+    }
+
+    public void setRedirectedSpotifyKind(SpotifyItemKind redirectedSpotifyKind) {
+        this.redirectedSpotifyKind = redirectedSpotifyKind;
+    }
 }

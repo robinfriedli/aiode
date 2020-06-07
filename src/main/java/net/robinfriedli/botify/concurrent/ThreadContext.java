@@ -2,6 +2,7 @@ package net.robinfriedli.botify.concurrent;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import javax.annotation.Nullable;
 
@@ -29,8 +30,24 @@ public class ThreadContext {
         return optional(contextType).orElseThrow();
     }
 
+    public <T> T getOrCompute(Class<T> contextType, Supplier<T> supplier) {
+        return optional(contextType).orElseGet(() -> {
+            T t = supplier.get();
+            installDirectly(t);
+            return t;
+        });
+    }
+
     public void install(Object o) {
         drop(o.getClass());
+        installedContexts.add(o);
+    }
+
+    /**
+     * Add a context without first removing potential contexts of the same type, unlike {@link #install(Object)}.
+     * Used when it is already known that this context type is not installed yet.
+     */
+    public void installDirectly(Object o) {
         installedContexts.add(o);
     }
 

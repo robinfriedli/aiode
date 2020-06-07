@@ -12,7 +12,7 @@ public class CommandInputBuildingMode implements CommandParser.Mode {
     private final AbstractCommand command;
     private final CommandParser commandParser;
     private final char argumentPrefix;
-    private StringBuilder commandInputBuilder;
+    private final StringBuilder commandInputBuilder;
     private char lastChar;
 
     public CommandInputBuildingMode(AbstractCommand command, CommandParser commandParser, char argumentPrefix) {

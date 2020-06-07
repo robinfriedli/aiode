@@ -1,13 +1,12 @@
 package net.robinfriedli.botify.entities.xml;
 
 import java.time.ZoneId;
-import java.util.List;
 import java.util.TimeZone;
 
 import javax.annotation.Nonnull;
 
 import net.robinfriedli.botify.cron.AbstractCronTask;
-import net.robinfriedli.jxp.api.XmlElement;
+import net.robinfriedli.jxp.collections.NodeList;
 import net.robinfriedli.jxp.persist.Context;
 import org.w3c.dom.Element;
 
@@ -15,13 +14,7 @@ public class CronJobContribution extends GenericClassContribution<AbstractCronTa
 
     // invoked by JXP
     @SuppressWarnings("unused")
-    public CronJobContribution(Element element, Context context) {
-        super(element, context);
-    }
-
-    // invoked by JXP
-    @SuppressWarnings("unused")
-    public CronJobContribution(Element element, List<XmlElement> subElements, Context context) {
+    public CronJobContribution(Element element, NodeList subElements, Context context) {
         super(element, subElements, context);
     }
 

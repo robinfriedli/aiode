@@ -9,10 +9,10 @@ import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nullable;
 
-import com.wrapper.spotify.model_objects.specification.Track;
 import net.robinfriedli.botify.audio.AbstractSoftCachedPlayable;
 import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.audio.spotify.SpotifyRedirectService;
+import net.robinfriedli.botify.audio.spotify.SpotifyTrack;
 import net.robinfriedli.botify.concurrent.EagerFetchQueue;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.botify.function.CheckedConsumer;
@@ -30,7 +30,7 @@ public class HollowYouTubeVideo extends AbstractSoftCachedPlayable implements Yo
     private final CompletableFuture<Long> duration;
     private final YouTubeService youTubeService;
     @Nullable
-    private Track redirectedSpotifyTrack;
+    private SpotifyTrack redirectedSpotifyTrack;
     private boolean canceled = false;
     private volatile boolean isHollow = true;
 
@@ -38,7 +38,7 @@ public class HollowYouTubeVideo extends AbstractSoftCachedPlayable implements Yo
         this(youTubeService, null);
     }
 
-    public HollowYouTubeVideo(YouTubeService youTubeService, @Nullable Track redirectedSpotifyTrack) {
+    public HollowYouTubeVideo(YouTubeService youTubeService, @Nullable SpotifyTrack redirectedSpotifyTrack) {
         this.title = new CompletableFuture<>();
         this.id = new CompletableFuture<>();
         this.duration = new CompletableFuture<>();
@@ -98,12 +98,12 @@ public class HollowYouTubeVideo extends AbstractSoftCachedPlayable implements Yo
 
     @Nullable
     @Override
-    public Track getRedirectedSpotifyTrack() {
+    public SpotifyTrack getRedirectedSpotifyTrack() {
         return redirectedSpotifyTrack;
     }
 
     @Override
-    public void setRedirectedSpotifyTrack(@Nullable Track track) {
+    public void setRedirectedSpotifyTrack(@Nullable SpotifyTrack track) {
         redirectedSpotifyTrack = track;
     }
 

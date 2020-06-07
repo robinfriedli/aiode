@@ -12,7 +12,9 @@ import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.wrapper.spotify.model_objects.specification.AlbumSimplified;
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
+import com.wrapper.spotify.model_objects.specification.Episode;
 import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
+import com.wrapper.spotify.model_objects.specification.ShowSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
@@ -23,6 +25,7 @@ import net.robinfriedli.botify.audio.PlayableFactory;
 import net.robinfriedli.botify.audio.UrlPlayable;
 import net.robinfriedli.botify.audio.exec.TrackLoadingExecutor;
 import net.robinfriedli.botify.audio.spotify.SpotifyService;
+import net.robinfriedli.botify.audio.spotify.SpotifyTrack;
 import net.robinfriedli.botify.audio.spotify.SpotifyTrackResultHandler;
 import net.robinfriedli.botify.audio.spotify.SpotifyUri;
 import net.robinfriedli.botify.audio.youtube.YouTubePlaylist;
@@ -51,6 +54,7 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
     protected AlbumSimplified loadedAlbum;
     protected AudioTrack loadedAudioTrack;
     protected AudioPlaylist loadedAudioPlaylist;
+    protected ShowSimplified loadedShow;
 
     public AbstractPlayableLoadingCommand(CommandContribution commandContribution,
                                           CommandContext context,
@@ -85,6 +89,10 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
             } else {
                 loadLocalList(audioManager);
             }
+        } else if (argumentSet("episode")) {
+            loadSpotifyEpisode(audioManager);
+        } else if (argumentSet("podcast")) {
+            loadSpotifyShow(audioManager);
         } else {
             Source source = getSource();
             if (source.isYouTube()) {
@@ -173,15 +181,16 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
     private void loadSpotifyList(AudioManager audioManager) throws Exception {
         Callable<Void> callable = () -> {
             List<PlaylistSimplified> found;
+            int limit = getArgumentValue("select", Integer.class, 20);
             if (argumentSet("own")) {
-                found = getSpotifyService().searchOwnPlaylist(getCommandInput());
+                found = getSpotifyService().searchOwnPlaylist(getCommandInput(), limit);
             } else {
-                found = getSpotifyService().searchPlaylist(getCommandInput());
+                found = getSpotifyService().searchPlaylist(getCommandInput(), limit);
             }
 
             if (found.size() == 1) {
                 PlaylistSimplified playlist = found.get(0);
-                List<Track> playlistTracks = getSpotifyService().getPlaylistTracks(playlist);
+                List<SpotifyTrack> playlistTracks = getSpotifyService().getPlaylistTracks(playlist);
                 PlayableFactory playableFactory = audioManager.createPlayableFactory(getSpotifyService(), trackLoadingExecutor);
                 List<Playable> playables = playableFactory.createPlayables(shouldRedirectSpotify(), playlistTracks);
                 handleResults(playables);
@@ -203,7 +212,8 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
     }
 
     private void loadSpotifyAlbum(AudioManager audioManager) throws Exception {
-        Callable<List<AlbumSimplified>> albumLoadCallable = () -> getSpotifyService().searchAlbum(getCommandInput(), argumentSet("own"));
+        int limit = getArgumentValue("select", Integer.class, 20);
+        Callable<List<AlbumSimplified>> albumLoadCallable = () -> getSpotifyService().searchAlbum(getCommandInput(), argumentSet("own"), limit);
         List<AlbumSimplified> albums;
         if (argumentSet("own")) {
             albums = runWithLogin(albumLoadCallable);
@@ -278,9 +288,59 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
         }
     }
 
+    private void loadSpotifyEpisode(AudioManager audioManager) throws Exception {
+        int limit = getArgumentValue("select", Integer.class, 20);
+        Callable<List<Episode>> loadTrackCallable = () -> getSpotifyService().searchEpisode(getCommandInput(), argumentSet("own"), limit);
+        List<Episode> found;
+        if (argumentSet("own")) {
+            found = runWithLogin(loadTrackCallable);
+        } else {
+            found = runWithCredentials(loadTrackCallable);
+        }
+
+        if (found.size() == 1) {
+            createPlayableForEpisode(found.get(0), audioManager);
+        } else if (found.isEmpty()) {
+            throw new NoSpotifyResultsFoundException(String.format("No Spotify episode found for '%s'", getCommandInput()));
+        } else {
+            askQuestion(found, episode -> String.format("%s by %s", episode.getName(), episode.getShow().getName()));
+        }
+    }
+
+    private void loadSpotifyShow(AudioManager audioManager) throws Exception {
+        int limit = getArgumentValue("select", Integer.class, 20);
+        Callable<List<ShowSimplified>> albumLoadCallable = () -> getSpotifyService().searchShow(getCommandInput(), argumentSet("own"), limit);
+        List<ShowSimplified> shows;
+        if (argumentSet("own")) {
+            shows = runWithLogin(albumLoadCallable);
+        } else {
+            shows = runWithCredentials(albumLoadCallable);
+        }
+
+        if (shows.size() == 1) {
+            ShowSimplified show = shows.get(0);
+            List<Episode> episodes = runWithCredentials(() -> getSpotifyService().getShowEpisodes(show.getId()));
+            PlayableFactory playableFactory = audioManager.createPlayableFactory(getSpotifyService(), trackLoadingExecutor);
+            List<Playable> playables = playableFactory.createPlayables(shouldRedirectSpotify(), episodes);
+            handleResults(playables);
+            loadedShow = show;
+        } else if (shows.isEmpty()) {
+            throw new NoSpotifyResultsFoundException(String.format("No shows found for '%s'", getCommandInput()));
+        } else {
+            askQuestion(shows, ShowSimplified::getName, ShowSimplified::getPublisher);
+        }
+    }
+
     private void createPlayableForTrack(Track track, AudioManager audioManager) {
         PlayableFactory playableFactory = audioManager.createPlayableFactory(getSpotifyService(), trackLoadingExecutor);
         Playable playable = playableFactory.createPlayable(shouldRedirectSpotify(), track);
+        handleResults(Lists.newArrayList(playable));
+        loadedTrack = playable;
+    }
+
+    private void createPlayableForEpisode(Episode episode, AudioManager audioManager) {
+        PlayableFactory playableFactory = audioManager.createPlayableFactory(getSpotifyService(), trackLoadingExecutor);
+        Playable playable = playableFactory.createPlayable(shouldRedirectSpotify(), episode);
         handleResults(Lists.newArrayList(playable));
         loadedTrack = playable;
     }

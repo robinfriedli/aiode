@@ -19,9 +19,10 @@ import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.wrapper.spotify.SpotifyApi;
-import com.wrapper.spotify.model_objects.specification.Track;
 import net.robinfriedli.botify.Botify;
+import net.robinfriedli.botify.audio.spotify.SpotifyTrack;
 import net.robinfriedli.botify.audio.spotify.SpotifyTrackBulkLoadingService;
+import net.robinfriedli.botify.audio.spotify.SpotifyTrackKind;
 import net.robinfriedli.botify.audio.youtube.HollowYouTubeVideo;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.cron.AbstractCronTask;
@@ -39,6 +40,8 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.quartz.JobExecutionContext;
+
+import static net.robinfriedli.botify.audio.spotify.SpotifyTrackBulkLoadingService.*;
 
 /**
  * Task that refreshes SpotifyRedirectIndices that have not been updated in the last 2 weeks
@@ -93,10 +96,11 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
 
                 int updateCount = 0;
                 for (SpotifyRedirectIndex index : indices) {
+                    SpotifyTrackKind kind = index.getSpotifyItemKind().asEnum();
                     RefreshTrackIndexTask task = new RefreshTrackIndexTask(session, index, youTubeService);
                     String spotifyId = index.getSpotifyId();
                     if (!Strings.isNullOrEmpty(spotifyId)) {
-                        spotifyTrackBulkLoadingService.add(spotifyId, task);
+                        spotifyTrackBulkLoadingService.add(createItem(spotifyId, kind), task);
                     } else {
                         session.delete(index);
                     }
@@ -136,7 +140,7 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
         return Invoker.Mode.create().with(new HibernateTransactionMode()).with(new SpotifyAuthorizationMode(spotifyApi));
     }
 
-    private class RefreshTrackIndexTask implements Consumer<Track> {
+    private class RefreshTrackIndexTask implements Consumer<SpotifyTrack> {
 
         private final Session session;
         private final SpotifyRedirectIndex index;
@@ -149,7 +153,7 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
         }
 
         @Override
-        public void accept(Track track) {
+        public void accept(SpotifyTrack track) {
             try {
                 if (track == null) {
                     session.delete(index);

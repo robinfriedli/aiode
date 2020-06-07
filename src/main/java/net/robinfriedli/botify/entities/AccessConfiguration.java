@@ -102,6 +102,10 @@ public class AccessConfiguration implements Serializable {
         return Sets.newHashSet(roles);
     }
 
+    public void setRoles(Set<GrantedRole> roles) {
+        this.roles = roles;
+    }
+
     public List<Role> getRoles(Guild guild) {
         return getRoles().stream().map(role -> role.getRole(guild)).filter(Objects::nonNull).collect(Collectors.toList());
     }

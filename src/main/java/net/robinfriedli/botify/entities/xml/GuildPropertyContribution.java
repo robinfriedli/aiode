@@ -1,13 +1,12 @@
 package net.robinfriedli.botify.entities.xml;
 
-import java.util.List;
-
 import javax.annotation.Nullable;
 
 import groovy.lang.GroovyShell;
 import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.jxp.api.XmlElement;
+import net.robinfriedli.jxp.collections.NodeList;
 import net.robinfriedli.jxp.persist.Context;
 import net.robinfriedli.stringlist.StringList;
 import org.w3c.dom.Element;
@@ -18,13 +17,7 @@ public class GuildPropertyContribution extends GenericClassContribution<Abstract
 
     // invoked by JXP
     @SuppressWarnings("unused")
-    public GuildPropertyContribution(Element element, Context context) {
-        super(element, context);
-    }
-
-    // invoked by JXP
-    @SuppressWarnings("unused")
-    public GuildPropertyContribution(Element element, List<XmlElement> subElements, Context context) {
+    public GuildPropertyContribution(Element element, NodeList subElements, Context context) {
         super(element, subElements, context);
     }
 

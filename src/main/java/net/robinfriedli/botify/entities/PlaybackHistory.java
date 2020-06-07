@@ -6,21 +6,24 @@ import java.util.Set;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.ForeignKey;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import com.google.api.client.util.Sets;
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
-import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.botify.audio.Playable;
-import net.robinfriedli.botify.audio.spotify.TrackWrapper;
+import net.robinfriedli.botify.audio.spotify.PlayableTrackWrapper;
+import net.robinfriedli.botify.audio.spotify.SpotifyTrack;
+import net.robinfriedli.botify.audio.spotify.SpotifyTrackKind;
 import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import org.hibernate.Session;
@@ -37,8 +40,6 @@ public class PlaybackHistory implements Serializable {
     private LocalDateTime timestamp;
     @Column(name = "title")
     private String title;
-    @Column(name = "source")
-    private String source;
     @Column(name = "track_id")
     private String trackId;
     @Column(name = "guild")
@@ -50,6 +51,23 @@ public class PlaybackHistory implements Serializable {
     private Set<Artist> artists = Sets.newHashSet();
     @OneToMany(mappedBy = "playbackHistory")
     private Set<UserPlaybackHistory> userPlaybackHistories = Sets.newHashSet();
+    @ManyToOne
+    @JoinColumn(name = "fk_source", referencedColumnName = "pk", foreignKey = @ForeignKey(name = "playback_history_fk_source_fkey"))
+    private PlaybackHistorySource source;
+    @ManyToOne
+    @JoinColumn(name = "fk_spotify_item_kind", referencedColumnName = "pk", foreignKey = @ForeignKey(name = "playback_history_fk_spotify_item_kind_fkey"))
+    private SpotifyItemKind spotifyItemKind;
+
+    // explicit declaration of fk columns, required in order to simply read fk column without joining relation
+    //
+    // this enables using from.get("fkSource") instead of root.join("source").get("pk") if you simply want to read the fk
+    // and avoid an unnecessary joins that would require the pk of the relation and cause issues e.g. for GROUP BY queries
+    @SuppressWarnings("unused")
+    @Column(name = "fk_source", insertable = false, updatable = false)
+    private long fkSource;
+    @SuppressWarnings("unused")
+    @Column(name = "fk_spotify_item_kind", insertable = false, updatable = false)
+    private long fkSpotifyItemKind;
 
     public PlaybackHistory() {
     }
@@ -57,23 +75,30 @@ public class PlaybackHistory implements Serializable {
     public PlaybackHistory(LocalDateTime timestamp, Playable playable, Guild guild, Session session) {
         try {
             this.timestamp = timestamp;
-            Track track = null;
-            if (playable instanceof TrackWrapper) {
-                track = ((TrackWrapper) playable).getTrack();
+            SpotifyTrack spotifyTrack = null;
+            if (playable instanceof PlayableTrackWrapper) {
+                spotifyTrack = ((PlayableTrackWrapper) playable).getTrack();
             }
             if (playable instanceof YouTubeVideo) {
-                track = ((YouTubeVideo) playable).getRedirectedSpotifyTrack();
+                spotifyTrack = ((YouTubeVideo) playable).getRedirectedSpotifyTrack();
             }
-            if (track != null) {
-                title = track.getName();
-                for (ArtistSimplified artist : track.getArtists()) {
-                    Artist artistEntity = Artist.getOrCreateArtist(artist, session);
-                    artists.add(artistEntity);
-                }
+            if (spotifyTrack != null) {
+                title = spotifyTrack.getName();
+                spotifyItemKind = spotifyTrack.exhaustiveMatch(
+                    track -> {
+                        for (ArtistSimplified artist : track.getArtists()) {
+                            Artist artistEntity = Artist.getOrCreateArtist(artist, session);
+                            artists.add(artistEntity);
+                        }
+
+                        return LookupEntity.require(session, SpotifyItemKind.class, SpotifyTrackKind.TRACK.name());
+                    },
+                    episode -> LookupEntity.require(session, SpotifyItemKind.class, SpotifyTrackKind.EPISODE.name())
+                );
             } else {
                 title = playable.getDisplay();
             }
-            this.source = playable.getSource().getName();
+            this.source = LookupEntity.require(session, PlaybackHistorySource.class, playable.getSource().name());
             this.trackId = playable.getId();
             this.guild = guild.getName();
             this.guildId = guild.getId();
@@ -105,14 +130,6 @@ public class PlaybackHistory implements Serializable {
 
     public void setTitle(String title) {
         this.title = title;
-    }
-
-    public String getSource() {
-        return source;
-    }
-
-    public void setSource(String source) {
-        this.source = source;
     }
 
     public String getTrackId() {
@@ -159,4 +176,19 @@ public class PlaybackHistory implements Serializable {
         userPlaybackHistories.add(userPlaybackHistory);
     }
 
+    public PlaybackHistorySource getSource() {
+        return source;
+    }
+
+    public void setSource(PlaybackHistorySource source) {
+        this.source = source;
+    }
+
+    public SpotifyItemKind getSpotifyItemKind() {
+        return spotifyItemKind;
+    }
+
+    public void setSpotifyItemKind(SpotifyItemKind spotifyItemKind) {
+        this.spotifyItemKind = spotifyItemKind;
+    }
 }

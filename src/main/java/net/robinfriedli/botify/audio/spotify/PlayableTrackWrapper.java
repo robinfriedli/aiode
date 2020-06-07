@@ -4,19 +4,15 @@ import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
-import com.wrapper.spotify.model_objects.specification.AlbumSimplified;
-import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
-import com.wrapper.spotify.model_objects.specification.Image;
-import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.audio.AbstractSoftCachedPlayable;
 import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.audio.youtube.HollowYouTubeVideo;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
+import net.robinfriedli.botify.entities.Episode;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
 import net.robinfriedli.botify.entities.Song;
-import net.robinfriedli.stringlist.StringList;
 import org.hibernate.Session;
 
 /**
@@ -24,27 +20,27 @@ import org.hibernate.Session;
  * mp3 provided by Spotify using the $preview argument. Normally Spotify tracks are wrapped by {@link HollowYouTubeVideo}
  * and, usually asynchronously, redirected to YouTube, see {@link YouTubeService#redirectSpotify(HollowYouTubeVideo)}
  */
-public class TrackWrapper extends AbstractSoftCachedPlayable implements Playable {
+public class PlayableTrackWrapper extends AbstractSoftCachedPlayable implements Playable {
 
-    private final Track track;
+    private final SpotifyTrack trackWrapper;
 
-    public TrackWrapper(Track track) {
-        this.track = track;
+    public PlayableTrackWrapper(SpotifyTrack track) {
+        this.trackWrapper = track;
     }
 
     @Override
     public String getPlaybackUrl() {
-        return track.getPreviewUrl();
+        return trackWrapper.getPreviewUrl();
     }
 
     @Override
     public String getId() {
-        return track.getId();
+        return trackWrapper.getId();
     }
 
     @Override
     public String getTitle() {
-        return track.getName();
+        return trackWrapper.getName();
     }
 
     @Override
@@ -59,9 +55,7 @@ public class TrackWrapper extends AbstractSoftCachedPlayable implements Playable
 
     @Override
     public String getDisplay() {
-        String name = track.getName();
-        String artistString = StringList.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", ");
-        return String.format("%s by %s", name, artistString);
+        return trackWrapper.getDisplay();
     }
 
     @Override
@@ -76,7 +70,7 @@ public class TrackWrapper extends AbstractSoftCachedPlayable implements Playable
 
     @Override
     public long getDurationMs() {
-        return track.getDurationMs();
+        return trackWrapper.getDurationMs();
     }
 
     @Override
@@ -92,20 +86,15 @@ public class TrackWrapper extends AbstractSoftCachedPlayable implements Playable
     @Nullable
     @Override
     public String getAlbumCoverUrl() {
-        AlbumSimplified album = track.getAlbum();
-        if (album != null) {
-            Image[] images = album.getImages();
-            if (images.length > 0) {
-                return images[0].getUrl();
-            }
-        }
-
-        return null;
+        return trackWrapper.getAlbumCoverUrl();
     }
 
     @Override
     public PlaylistItem export(Playlist playlist, User user, Session session) {
-        return new Song(track, user, playlist, session);
+        return trackWrapper.exhaustiveMatch(
+            track -> new Song(track, user, playlist, session),
+            episode -> new Episode(episode, user, playlist)
+        );
     }
 
     @Override
@@ -113,7 +102,12 @@ public class TrackWrapper extends AbstractSoftCachedPlayable implements Playable
         return Source.SPOTIFY;
     }
 
-    public Track getTrack() {
-        return track;
+    public SpotifyTrack getTrack() {
+        return trackWrapper;
     }
+
+    public SpotifyTrackKind getKind() {
+        return trackWrapper.getKind();
+    }
+
 }

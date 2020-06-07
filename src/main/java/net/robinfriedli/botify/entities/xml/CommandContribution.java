@@ -2,7 +2,6 @@ package net.robinfriedli.botify.entities.xml;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.List;
 
 import javax.annotation.Nullable;
 
@@ -10,7 +9,7 @@ import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
-import net.robinfriedli.jxp.api.XmlElement;
+import net.robinfriedli.jxp.collections.NodeList;
 import net.robinfriedli.jxp.persist.Context;
 import org.w3c.dom.Element;
 
@@ -18,13 +17,7 @@ public class CommandContribution extends CommandHierarchyNode {
 
     // invoked by JXP
     @SuppressWarnings("unused")
-    public CommandContribution(Element element, Context context) {
-        super(element, context);
-    }
-
-    // invoked by JXP
-    @SuppressWarnings("unused")
-    public CommandContribution(Element element, List<XmlElement> subElements, Context context) {
+    public CommandContribution(Element element, NodeList subElements, Context context) {
         super(element, subElements, context);
     }
 
@@ -72,12 +65,7 @@ public class CommandContribution extends CommandHierarchyNode {
     public static class AbstractCommandContribution extends CommandHierarchyNode {
 
         @SuppressWarnings("unused")
-        public AbstractCommandContribution(Element element, Context context) {
-            super(element, context);
-        }
-
-        @SuppressWarnings("unused")
-        public AbstractCommandContribution(Element element, List<XmlElement> subElements, Context context) {
+        public AbstractCommandContribution(Element element, NodeList subElements, Context context) {
             super(element, subElements, context);
         }
 

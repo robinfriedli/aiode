@@ -18,6 +18,7 @@ import net.robinfriedli.botify.boot.SpringPropertiesConfig;
 import net.robinfriedli.botify.boot.VersionManager;
 import net.robinfriedli.botify.boot.configurations.GroovySandboxComponent;
 import net.robinfriedli.botify.boot.configurations.HibernateComponent;
+import net.robinfriedli.botify.boot.configurations.SpotifyComponent;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.command.SecurityManager;
 import net.robinfriedli.botify.concurrent.CommandExecutionQueueManager;
@@ -66,6 +67,7 @@ public class Botify {
     private final SecurityManager securityManager;
     private final ShardManager shardManager;
     private final SpotifyApi.Builder spotifyApiBuilder;
+    private final SpotifyComponent spotifyComponent;
     private final SpringPropertiesConfig springPropertiesConfig;
     private final VersionManager versionManager;
 
@@ -86,6 +88,7 @@ public class Botify {
                   SecurityManager securityManager,
                   ShardManager shardManager,
                   SpotifyApi.Builder spotifyApiBuilder,
+                  SpotifyComponent spotifyComponent,
                   SpringPropertiesConfig springPropertiesConfig,
                   VersionManager versionManager,
                   ListenerAdapter... listeners) {
@@ -106,6 +109,7 @@ public class Botify {
         this.securityManager = securityManager;
         this.shardManager = shardManager;
         this.spotifyApiBuilder = spotifyApiBuilder;
+        this.spotifyComponent = spotifyComponent;
         this.springPropertiesConfig = springPropertiesConfig;
         this.versionManager = versionManager;
         this.registeredListeners = listeners;
@@ -278,6 +282,10 @@ public class Botify {
         return spotifyApiBuilder;
     }
 
+    public SpotifyComponent getSpotifyComponent() {
+        return spotifyComponent;
+    }
+
     public SpringPropertiesConfig getSpringPropertiesConfig() {
         return springPropertiesConfig;
     }
@@ -285,5 +293,4 @@ public class Botify {
     public VersionManager getVersionManager() {
         return versionManager;
     }
-
 }

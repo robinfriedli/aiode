@@ -15,8 +15,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class LoginManager {
 
-    private SnowflakeMap<Login> logins = new SnowflakeMap<>();
-    private SnowflakeMap<CompletableFuture<Login>> expectedLogins = new SnowflakeMap<>();
+    private final SnowflakeMap<Login> logins = new SnowflakeMap<>();
+    private final SnowflakeMap<CompletableFuture<Login>> expectedLogins = new SnowflakeMap<>();
 
     public void addLogin(Login login) {
         logins.put(login.getUser(), login);

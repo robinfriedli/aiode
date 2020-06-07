@@ -14,6 +14,8 @@ import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.Table;
 
+import org.apache.hc.core5.http.ParseException;
+
 import com.google.common.collect.Sets;
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
@@ -81,7 +83,7 @@ public class Song extends PlaylistItem {
         getPlaylist().getSongs().add(this);
     }
 
-    public Track asTrack(SpotifyApi spotifyApi) throws IOException, SpotifyWebApiException {
+    public Track asTrack(SpotifyApi spotifyApi) throws IOException, SpotifyWebApiException, ParseException {
         return spotifyApi.getTrack(getId()).build().execute();
     }
 

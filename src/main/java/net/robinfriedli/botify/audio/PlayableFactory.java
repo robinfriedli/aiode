@@ -11,25 +11,29 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import org.apache.hc.core5.http.ParseException;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.sedmelluq.discord.lavaplayer.track.AudioItem;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
-import com.wrapper.spotify.exceptions.detailed.BadRequestException;
 import com.wrapper.spotify.exceptions.detailed.NotFoundException;
 import com.wrapper.spotify.model_objects.specification.AlbumSimplified;
+import com.wrapper.spotify.model_objects.specification.Episode;
 import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.robinfriedli.botify.audio.exec.SpotifyTrackRedirectionRunnable;
 import net.robinfriedli.botify.audio.exec.TrackLoadingExecutor;
 import net.robinfriedli.botify.audio.exec.YouTubePlaylistPopulationRunnable;
+import net.robinfriedli.botify.audio.spotify.PlayableTrackWrapper;
 import net.robinfriedli.botify.audio.spotify.SpotifyService;
-import net.robinfriedli.botify.audio.spotify.TrackWrapper;
+import net.robinfriedli.botify.audio.spotify.SpotifyTrack;
+import net.robinfriedli.botify.audio.spotify.SpotifyTrackKind;
 import net.robinfriedli.botify.audio.youtube.HollowYouTubeVideo;
 import net.robinfriedli.botify.audio.youtube.YouTubePlaylist;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
@@ -37,6 +41,7 @@ import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
 import net.robinfriedli.botify.entities.UrlTrack;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
+import net.robinfriedli.botify.function.CheckedFunction;
 import net.robinfriedli.botify.function.SpotifyInvoker;
 import net.robinfriedli.stringlist.StringList;
 
@@ -65,7 +70,7 @@ public class PlayableFactory {
      * necessary.
      *
      * @param redirectSpotify if true the matching YouTube video is loaded to play the full track using
-     *                        {@link YouTubeService#redirectSpotify(HollowYouTubeVideo)}, else a {@link TrackWrapper} is created to play the
+     *                        {@link YouTubeService#redirectSpotify(HollowYouTubeVideo)}, else a {@link PlayableTrackWrapper} is created to play the
      *                        preview mp3 provided by Spotify
      */
     public Playable createPlayable(boolean redirectSpotify, Object track) {
@@ -92,7 +97,7 @@ public class PlayableFactory {
      * Creates Playables for a Collection of Objects; YouTube videos or Spotify Tracks.
      *
      * @param redirectSpotify if true the matching YouTube video is loaded to play the full track using
-     *                        {@link YouTubeService#redirectSpotify(HollowYouTubeVideo)}, else a {@link TrackWrapper} is created to play the
+     *                        {@link YouTubeService#redirectSpotify(HollowYouTubeVideo)}, else a {@link PlayableTrackWrapper} is created to play the
      *                        preview mp3 provided by Spotify
      * @param items           the objects to create a Playable for
      * @return the created Playables
@@ -107,7 +112,11 @@ public class PlayableFactory {
                 if (item instanceof Playable) {
                     playables.add((Playable) item);
                 } else if (item instanceof Track) {
-                    handleTrack((Track) item, redirectSpotify, tracksToRedirect, playables);
+                    handleTrack(SpotifyTrack.wrap((Track) item), redirectSpotify, tracksToRedirect, playables);
+                } else if (item instanceof Episode) {
+                    handleTrack(SpotifyTrack.wrap((Episode) item), redirectSpotify, tracksToRedirect, playables);
+                } else if (item instanceof SpotifyTrack) {
+                    handleTrack((SpotifyTrack) item, redirectSpotify, tracksToRedirect, playables);
                 } else if (item instanceof UrlTrack) {
                     playables.add(((UrlTrack) item).asPlayable());
                 } else if (item instanceof YouTubePlaylist) {
@@ -115,14 +124,14 @@ public class PlayableFactory {
                     playables.addAll(youTubePlaylist.getVideos());
                     youTubePlaylistsToLoad.add(youTubePlaylist);
                 } else if (item instanceof PlaylistSimplified) {
-                    List<Track> t = SpotifyInvoker.create(spotifyService.getSpotifyApi()).invoke(() -> spotifyService.getPlaylistTracks((PlaylistSimplified) item));
-                    for (Track track : t) {
+                    List<SpotifyTrack> t = SpotifyInvoker.create(spotifyService.getSpotifyApi()).invoke(() -> spotifyService.getPlaylistTracks((PlaylistSimplified) item));
+                    for (SpotifyTrack track : t) {
                         handleTrack(track, redirectSpotify, tracksToRedirect, playables);
                     }
                 } else if (item instanceof AlbumSimplified) {
                     List<Track> t = invoker.invoke(() -> spotifyService.getAlbumTracks((AlbumSimplified) item));
                     for (Track track : t) {
-                        handleTrack(track, redirectSpotify, tracksToRedirect, playables);
+                        handleTrack(SpotifyTrack.wrapIfNotNull(track), redirectSpotify, tracksToRedirect, playables);
                     }
                 } else if (item instanceof AudioTrack) {
                     playables.add(new UrlPlayable((AudioTrack) item));
@@ -145,13 +154,17 @@ public class PlayableFactory {
         return playables;
     }
 
-    private void handleTrack(Track track, boolean redirectSpotify, List<HollowYouTubeVideo> tracksToRedirect, List<Playable> playables) {
+    private void handleTrack(SpotifyTrack track, boolean redirectSpotify, List<HollowYouTubeVideo> tracksToRedirect, List<Playable> playables) {
+        if (track == null) {
+            return;
+        }
+
         if (redirectSpotify) {
             HollowYouTubeVideo youTubeVideo = new HollowYouTubeVideo(youTubeService, track);
             tracksToRedirect.add(youTubeVideo);
             playables.add(youTubeVideo);
         } else {
-            playables.add(new TrackWrapper(track));
+            playables.add(new PlayableTrackWrapper(track));
         }
     }
 
@@ -195,24 +208,38 @@ public class PlayableFactory {
             return youTubeService.requireVideoForId(parts[parts.length - 1]);
         } else if (uri.getHost().equals("open.spotify.com")) {
             StringList pathFragments = StringList.createWithRegex(uri.getPath(), "/");
+            SpotifyTrackKind kind;
+            String trackId;
             if (pathFragments.contains("track")) {
-                String trackId = pathFragments.tryGet(pathFragments.indexOf("track") + 1);
-                if (trackId == null) {
-                    throw new InvalidCommandException("No track id provided");
-                }
-
-                try {
-                    String accessToken = spotifyApi.clientCredentials().build().execute().getAccessToken();
-                    spotifyApi.setAccessToken(accessToken);
-                    Track track = spotifyApi.getTrack(trackId).build().execute();
-                    return createPlayable(redirectSpotify, track);
-                } catch (IOException | SpotifyWebApiException e) {
-                    throw new RuntimeException("Exception during Spotify request", e);
-                } finally {
-                    spotifyApi.setAccessToken(null);
-                }
+                trackId = pathFragments.tryGet(pathFragments.indexOf("track") + 1);
+                kind = SpotifyTrackKind.TRACK;
+            } else if (pathFragments.contains("episode")) {
+                trackId = pathFragments.tryGet(pathFragments.indexOf("episode") + 1);
+                kind = SpotifyTrackKind.EPISODE;
             } else {
                 throw new IllegalArgumentException("Detected Spotify URL but no track id provided");
+            }
+            if (trackId == null) {
+                throw new InvalidCommandException("No track id provided");
+            }
+
+            try {
+                String accessToken = spotifyApi.clientCredentials().build().execute().getAccessToken();
+                spotifyApi.setAccessToken(accessToken);
+                if (kind == SpotifyTrackKind.TRACK) {
+                    Track track = spotifyService.getTrack(trackId);
+                    return createPlayable(redirectSpotify, track);
+                } else //noinspection ConstantConditions
+                    if (kind == SpotifyTrackKind.EPISODE) {
+                        Episode episode = spotifyService.getEpisode(trackId);
+                        return createPlayable(redirectSpotify, episode);
+                    } else {
+                        throw new UnsupportedOperationException("unsupported open.spotify URL kind: " + kind);
+                    }
+            } catch (IOException | SpotifyWebApiException | ParseException e) {
+                throw new RuntimeException("Exception during Spotify request", e);
+            } finally {
+                spotifyApi.setAccessToken(null);
             }
         } else {
             AudioItem audioItem = audioTrackLoader.loadByIdentifier(uri.toString());
@@ -295,61 +322,51 @@ public class PlayableFactory {
         StringList pathFragments = StringList.createWithRegex(uri.getPath(), "/");
         SpotifyService spotifyService = new SpotifyService(spotifyApi);
         if (pathFragments.contains("playlist")) {
-            String playlistId = pathFragments.tryGet(pathFragments.indexOf("playlist") + 1);
-            if (playlistId == null) {
-                throw new InvalidCommandException("No playlist id provided");
-            }
-
-            try {
-                String accessToken = spotifyApi.clientCredentials().build().execute().getAccessToken();
-                spotifyApi.setAccessToken(accessToken);
-                List<Track> playlistTracks = spotifyService.getPlaylistTracks(playlistId);
+            return createPlayableForSpotifyUrlType(pathFragments, "playlist", playlistId -> {
+                List<SpotifyTrack> playlistTracks = spotifyService.getPlaylistTracks(playlistId);
                 return createPlayables(redirectSpotify, playlistTracks);
-            } catch (NotFoundException e) {
-                throw new NoResultsFoundException(String.format("No Spotify playlist found for id '%s'", playlistId));
-            } catch (IOException | SpotifyWebApiException e) {
-                throw new RuntimeException("Exception during Spotify request", e);
-            } finally {
-                spotifyApi.setAccessToken(null);
-            }
+            }, spotifyApi);
         } else if (pathFragments.contains("track")) {
-            String trackId = pathFragments.tryGet(pathFragments.indexOf("track") + 1);
-            if (trackId == null) {
-                throw new InvalidCommandException("No track id provided");
-            }
-
-            try {
-                String accessToken = spotifyApi.clientCredentials().build().execute().getAccessToken();
-                spotifyApi.setAccessToken(accessToken);
+            return createPlayableForSpotifyUrlType(pathFragments, "track", trackId -> {
                 Track track = spotifyApi.getTrack(trackId).build().execute();
                 return Lists.newArrayList(createPlayable(redirectSpotify, track));
-            } catch (NotFoundException e) {
-                throw new NoResultsFoundException(String.format("No Spotify track found for id '%s'", trackId));
-            } catch (IOException | SpotifyWebApiException e) {
-                throw new RuntimeException("Exception during Spotify request", e);
-            } finally {
-                spotifyApi.setAccessToken(null);
-            }
+            }, spotifyApi);
+        } else if (pathFragments.contains("episode")) {
+            return createPlayableForSpotifyUrlType(pathFragments, "episode", episodeId -> {
+                Episode episode = spotifyApi.getEpisode(episodeId).build().execute();
+                return Lists.newArrayList(createPlayable(redirectSpotify, episode));
+            }, spotifyApi);
         } else if (pathFragments.contains("album")) {
-            String albumId = pathFragments.tryGet(pathFragments.indexOf("album") + 1);
-            if (albumId == null) {
-                throw new InvalidCommandException("No album id provided");
-            }
-
-            try {
-                String accessToken = spotifyApi.clientCredentials().build().execute().getAccessToken();
-                spotifyApi.setAccessToken(accessToken);
+            return createPlayableForSpotifyUrlType(pathFragments, "album", albumId -> {
                 List<Track> albumTracks = spotifyService.getAlbumTracks(albumId);
                 return createPlayables(redirectSpotify, albumTracks);
-            } catch (BadRequestException e) {
-                throw new NoResultsFoundException(String.format("No album found for id '%s'", albumId));
-            } catch (IOException | SpotifyWebApiException e) {
-                throw new RuntimeException("Exception during Spotify request", e);
-            } finally {
-                spotifyApi.setAccessToken(null);
-            }
+            }, spotifyApi);
+        } else if (pathFragments.contains("show")) {
+            return createPlayableForSpotifyUrlType(pathFragments, "show", showId -> {
+                List<Episode> showEpisodes = spotifyService.getShowEpisodes(showId);
+                return createPlayables(redirectSpotify, showEpisodes);
+            }, spotifyApi);
         } else {
             throw new InvalidCommandException("Detected Spotify URL but no track, playlist or album id provided.");
+        }
+    }
+
+    private List<Playable> createPlayableForSpotifyUrlType(StringList pathFragments, String type, CheckedFunction<String, List<Playable>> loadFunc, SpotifyApi spotifyApi) {
+        String id = pathFragments.tryGet(pathFragments.indexOf(type) + 1);
+        if (Strings.isNullOrEmpty(id)) {
+            throw new InvalidCommandException(String.format("No %s id provided", type));
+        }
+
+        try {
+            String accessToken = spotifyApi.clientCredentials().build().execute().getAccessToken();
+            spotifyApi.setAccessToken(accessToken);
+            return loadFunc.apply(id);
+        } catch (NotFoundException e) {
+            throw new NoResultsFoundException(String.format("No Spotify track found for id '%s'", id));
+        } catch (IOException | SpotifyWebApiException | ParseException e) {
+            throw new RuntimeException("Exception during Spotify request", e);
+        } finally {
+            spotifyApi.setAccessToken(null);
         }
     }
 

@@ -5,16 +5,21 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 
 import com.wrapper.spotify.model_objects.specification.AlbumSimplified;
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
+import com.wrapper.spotify.model_objects.specification.Episode;
 import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
+import com.wrapper.spotify.model_objects.specification.ShowSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.Botify;
+import net.robinfriedli.botify.audio.spotify.SpotifyTrack;
 import net.robinfriedli.botify.audio.youtube.YouTubePlaylist;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
@@ -54,6 +59,10 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
             }
         } else if (argumentSet("album")) {
             listSpotifyAlbum();
+        } else if (argumentSet("episode")) {
+            searchSpotifyEpisode();
+        } else if (argumentSet("podcast")) {
+            listSpotifyShow();
         } else {
             if (source.isYouTube()) {
                 searchYouTubeVideo();
@@ -90,6 +99,35 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
             sendMessage(embedBuilder);
         } else {
             throw new NoSpotifyResultsFoundException(String.format("No Spotify track found for '%s'", getCommandInput()));
+        }
+    }
+
+    private void searchSpotifyEpisode() throws Exception {
+        if (getCommandInput().isBlank()) {
+            throw new InvalidCommandException("No search term entered");
+        }
+
+        int limit = getArgumentValue("select", Integer.class, 20);
+        Callable<List<Episode>> loadTrackCallable = () -> getSpotifyService().searchEpisode(getCommandInput(), argumentSet("own"), limit);
+        List<Episode> found;
+        if (argumentSet("own")) {
+            found = runWithLogin(loadTrackCallable);
+        } else {
+            found = runWithCredentials(loadTrackCallable);
+        }
+        if (!found.isEmpty()) {
+            EmbedBuilder embedBuilder = new EmbedBuilder();
+
+            Util.appendEmbedList(
+                embedBuilder,
+                found,
+                episode -> episode.getName() + " - " + episode.getShow().getName() + " - " + episode.getShow().getPublisher(),
+                "Episode - Show - Publisher"
+            );
+
+            sendMessage(embedBuilder);
+        } else {
+            throw new NoSpotifyResultsFoundException(String.format("No podcast episode found for '%s'", getCommandInput()));
         }
     }
 
@@ -228,14 +266,15 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
         }
 
         List<PlaylistSimplified> playlists;
+        int limit = getArgumentValue("select", Integer.class, 20);
         if (argumentSet("own")) {
-            playlists = runWithLogin(() -> getSpotifyService().searchOwnPlaylist(getCommandInput()));
+            playlists = runWithLogin(() -> getSpotifyService().searchOwnPlaylist(getCommandInput(), limit));
         } else {
-            playlists = runWithCredentials(() -> getSpotifyService().searchPlaylist(getCommandInput()));
+            playlists = runWithCredentials(() -> getSpotifyService().searchPlaylist(getCommandInput(), limit));
         }
         if (playlists.size() == 1) {
             PlaylistSimplified playlist = playlists.get(0);
-            List<Track> tracks = runWithCredentials(() -> getSpotifyService().getPlaylistTracks(playlist));
+            List<SpotifyTrack> tracks = runWithCredentials(() -> getSpotifyService().getPlaylistTracks(playlist));
             listTracks(tracks, playlist.getName(), playlist.getOwner().getDisplayName(), null, "playlist/" + playlist.getId());
         } else if (playlists.isEmpty()) {
             throw new NoSpotifyResultsFoundException(String.format("No Spotify playlist found for '%s'", getCommandInput()));
@@ -245,7 +284,8 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
     }
 
     private void listSpotifyAlbum() throws Exception {
-        Callable<List<AlbumSimplified>> loadAlbumsCallable = () -> getSpotifyService().searchAlbum(getCommandInput(), argumentSet("own"));
+        Integer limit = getArgumentValue("select", Integer.class, 20);
+        Callable<List<AlbumSimplified>> loadAlbumsCallable = () -> getSpotifyService().searchAlbum(getCommandInput(), argumentSet("own"), limit);
         List<AlbumSimplified> albums;
         if (argumentSet("own")) {
             albums = runWithLogin(loadAlbumsCallable);
@@ -255,7 +295,11 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
 
         if (albums.size() == 1) {
             AlbumSimplified album = albums.get(0);
-            List<Track> tracks = runWithCredentials(() -> getSpotifyService().getAlbumTracks(album.getId()));
+            List<SpotifyTrack> tracks = runWithCredentials(() -> getSpotifyService().getAlbumTracks(album.getId()))
+                .stream()
+                .filter(Objects::nonNull)
+                .map(SpotifyTrack::wrap)
+                .collect(Collectors.toList());
             listTracks(
                 tracks,
                 album.getName(),
@@ -270,19 +314,40 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
         }
     }
 
-    private void listTracks(List<Track> tracks, String name, String owner, String artist, String path) {
+    private void listSpotifyShow() throws Exception {
+        int limit = getArgumentValue("select", Integer.class, 20);
+        Callable<List<ShowSimplified>> loadShowsCallable = () -> getSpotifyService().searchShow(getCommandInput(), argumentSet("own"), limit);
+        List<ShowSimplified> shows;
+        if (argumentSet("own")) {
+            shows = runWithLogin(loadShowsCallable);
+        } else {
+            shows = runWithCredentials(loadShowsCallable);
+        }
+
+        if (shows.size() == 1) {
+            ShowSimplified show = shows.get(0);
+            List<SpotifyTrack> tracks = runWithCredentials(() -> getSpotifyService().getShowEpisodes(show.getId()))
+                .stream()
+                .filter(Objects::nonNull)
+                .map(SpotifyTrack::wrap)
+                .collect(Collectors.toList());
+            listTracks(tracks, show.getName(), show.getPublisher(), null, "show/" + show.getId());
+        } else if (shows.isEmpty()) {
+            throw new NoSpotifyResultsFoundException(String.format("No Spotify playlist found for '%s'", getCommandInput()));
+        } else {
+            askQuestion(shows, ShowSimplified::getName, ShowSimplified::getPublisher);
+        }
+    }
+
+    private void listTracks(List<SpotifyTrack> spotifyTracks, String name, String owner, String artist, String path) {
         EmbedBuilder embedBuilder = new EmbedBuilder();
-        long totalDuration = tracks.stream().mapToInt(track -> {
+        long totalDuration = spotifyTracks.stream().mapToInt(track -> {
             Integer durationMs = track.getDurationMs();
-            if (durationMs != null) {
-                return durationMs;
-            } else {
-                return 0;
-            }
+            return Objects.requireNonNullElse(durationMs, 0);
         }).sum();
 
         embedBuilder.addField("Name", name, true);
-        embedBuilder.addField("Song count", String.valueOf(tracks.size()), true);
+        embedBuilder.addField("Song count", String.valueOf(spotifyTracks.size()), true);
         embedBuilder.addField("Duration", Util.normalizeMillis(totalDuration), true);
         if (owner != null) {
             embedBuilder.addField("Owner", owner, true);
@@ -291,16 +356,25 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
             embedBuilder.addField("Artist", artist, true);
         }
 
-        if (!tracks.isEmpty()) {
+        if (!spotifyTracks.isEmpty()) {
             String url = "https://open.spotify.com/" + path;
             embedBuilder.addField("First tracks:", "[Full list](" + url + ")", false);
 
             Util.appendEmbedList(
                 embedBuilder,
-                tracks.size() > 5 ? tracks.subList(0, 5) : tracks,
-                track -> track.getName() + " - " +
-                    StringList.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", ") + " - " +
-                    Util.normalizeMillis(track.getDurationMs() != null ? track.getDurationMs() : 0),
+                spotifyTracks.size() > 5 ? spotifyTracks.subList(0, 5) : spotifyTracks,
+                spotifyTrack -> spotifyTrack.exhaustiveMatch(
+                    track -> String.format("%s - %s - %s",
+                        track.getName(),
+                        StringList.create(track.getArtists(), ArtistSimplified::getName).toSeparatedString(", "),
+                        Util.normalizeMillis(track.getDurationMs() != null ? track.getDurationMs() : 0)
+                    ),
+                    episode -> String.format("%s - %s - %s",
+                        episode.getName(),
+                        episode.getShow() != null ? episode.getShow().getName() : "",
+                        Util.normalizeMillis(episode.getDurationMs() != null ? episode.getDurationMs() : 0)
+                    )
+                ),
                 "Track - Artist - Duration"
             );
         }
@@ -320,7 +394,7 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
 
         if (chosenOption instanceof PlaylistSimplified) {
             PlaylistSimplified playlist = (PlaylistSimplified) chosenOption;
-            List<Track> tracks = runWithCredentials(() -> getSpotifyService().getPlaylistTracks(playlist));
+            List<SpotifyTrack> tracks = runWithCredentials(() -> getSpotifyService().getPlaylistTracks(playlist));
             listTracks(tracks, playlist.getName(), playlist.getOwner().getDisplayName(), null, "playlist/" + playlist.getId());
         } else if (chosenOption instanceof YouTubePlaylist) {
             listYouTubePlaylist((YouTubePlaylist) chosenOption);
@@ -328,12 +402,24 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
             listYouTubeVideo((YouTubeVideo) chosenOption);
         } else if (chosenOption instanceof AlbumSimplified) {
             AlbumSimplified album = (AlbumSimplified) chosenOption;
-            List<Track> tracks = runWithCredentials(() -> getSpotifyService().getAlbumTracks(album.getId()));
+            List<SpotifyTrack> tracks = runWithCredentials(() -> getSpotifyService().getAlbumTracks(album.getId()))
+                .stream()
+                .filter(Objects::nonNull)
+                .map(SpotifyTrack::wrap)
+                .collect(Collectors.toList());
             listTracks(tracks,
                 album.getName(),
                 null,
                 StringList.create(album.getArtists(), ArtistSimplified::getName).toSeparatedString(", "),
                 "album/" + album.getId());
+        } else if (chosenOption instanceof ShowSimplified) {
+            ShowSimplified show = (ShowSimplified) chosenOption;
+            List<SpotifyTrack> tracks = runWithCredentials(() -> getSpotifyService().getShowEpisodes(show.getId()))
+                .stream()
+                .filter(Objects::nonNull)
+                .map(SpotifyTrack::wrap)
+                .collect(Collectors.toList());
+            listTracks(tracks, show.getName(), show.getPublisher(), null, "show/" + show.getId());
         }
     }
 

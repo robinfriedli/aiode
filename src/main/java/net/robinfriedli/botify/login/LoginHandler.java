@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.LoggerFactory;
+import org.apache.hc.core5.http.ParseException;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -73,7 +74,7 @@ public class LoginHandler implements HttpHandler {
         }
     }
 
-    private void createLogin(String accessCode, User user, CompletableFuture<Login> pendingLogin) throws SpotifyWebApiException, IOException {
+    private void createLogin(String accessCode, User user, CompletableFuture<Login> pendingLogin) throws SpotifyWebApiException, IOException, ParseException {
         AuthorizationCodeCredentials credentials = spotifyApi.authorizationCode(accessCode).build().execute();
         String accessToken = credentials.getAccessToken();
         String refreshToken = credentials.getRefreshToken();

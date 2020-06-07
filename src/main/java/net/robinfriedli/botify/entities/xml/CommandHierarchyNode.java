@@ -1,12 +1,11 @@
 package net.robinfriedli.botify.entities.xml;
 
-import java.util.List;
 import java.util.Set;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import net.robinfriedli.botify.command.AbstractCommand;
-import net.robinfriedli.jxp.api.XmlElement;
+import net.robinfriedli.jxp.collections.NodeList;
 import net.robinfriedli.jxp.persist.Context;
 import net.robinfriedli.jxp.queries.Query;
 import org.w3c.dom.Element;
@@ -17,11 +16,7 @@ public abstract class CommandHierarchyNode extends GenericClassContribution<Abst
 
     private Set<ArgumentContribution> argumentContributions;
 
-    public CommandHierarchyNode(Element element, Context context) {
-        super(element, context);
-    }
-
-    public CommandHierarchyNode(Element element, List<XmlElement> subElements, Context context) {
+    public CommandHierarchyNode(Element element, NodeList subElements, Context context) {
         super(element, subElements, context);
     }
 

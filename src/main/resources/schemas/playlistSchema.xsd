@@ -13,6 +13,7 @@
             <xs:element name="song" type="song"/>
             <xs:element name="video" type="video"/>
             <xs:element name="urlTrack" type="urlTrack"/>
+            <xs:element name="episode" type="episode"/>
         </xs:sequence>
         <xs:attribute name="name" type="xs:string"/>
         <xs:attribute name="duration" type="xs:long"/>
@@ -26,6 +27,16 @@
         <xs:attribute name="name" type="xs:string"/>
         <xs:attribute name="artists" type="xs:string"/>
         <xs:attribute name="artistIds" type="xs:string"/>
+        <xs:attribute name="duration" type="xs:long"/>
+        <xs:attribute name="addedUser" type="xs:string"/>
+        <xs:attribute name="addedUserId" type="xs:string"/>
+    </xs:complexType>
+
+    <xs:complexType name="episode">
+        <xs:attribute name="id" type="xs:string"/>
+        <xs:attribute name="name" type="xs:string"/>
+        <xs:attribute name="show" type="xs:string"/>
+        <xs:attribute name="showId" type="xs:string"/>
         <xs:attribute name="duration" type="xs:long"/>
         <xs:attribute name="addedUser" type="xs:string"/>
         <xs:attribute name="addedUserId" type="xs:string"/>

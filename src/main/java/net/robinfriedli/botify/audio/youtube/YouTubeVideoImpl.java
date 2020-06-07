@@ -4,8 +4,8 @@ import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
-import com.wrapper.spotify.model_objects.specification.Track;
 import net.robinfriedli.botify.audio.AbstractSoftCachedPlayable;
+import net.robinfriedli.botify.audio.spotify.SpotifyTrack;
 
 /**
  * Represents a fully loaded YouTube video
@@ -15,7 +15,7 @@ public class YouTubeVideoImpl extends AbstractSoftCachedPlayable implements YouT
     private final String title;
     private final String id;
     private final long duration;
-    private Track redirectedSpotifyTrack;
+    private SpotifyTrack redirectedSpotifyTrack;
 
     public YouTubeVideoImpl(String title, String id, long duration) {
         this.title = title;
@@ -55,12 +55,12 @@ public class YouTubeVideoImpl extends AbstractSoftCachedPlayable implements YouT
 
     @Override
     @Nullable
-    public Track getRedirectedSpotifyTrack() {
+    public SpotifyTrack getRedirectedSpotifyTrack() {
         return redirectedSpotifyTrack;
     }
 
     @Override
-    public void setRedirectedSpotifyTrack(@Nullable Track track) {
+    public void setRedirectedSpotifyTrack(@Nullable SpotifyTrack track) {
         redirectedSpotifyTrack = track;
     }
 }

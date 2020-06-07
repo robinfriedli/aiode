@@ -220,7 +220,7 @@ public class ArgumentController {
                 if (!evaluateScript(condition)) {
                     String prefix = PrefixProperty.getEffectiveCommandStartForCurrentContext();
                     char argumentPrefix = ArgumentPrefixProperty.getForCurrentContext();
-                    throw new InvalidCommandException(String.format(rule.getAttribute("errorMessage").getValue(), prefix, argumentPrefix));
+                    throw new InvalidCommandException(String.format(rule.getAttribute("errorMessage").getValue(), prefix, argumentPrefix, value));
                 }
             }
 

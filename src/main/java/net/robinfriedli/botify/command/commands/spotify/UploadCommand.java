@@ -5,7 +5,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
 import com.wrapper.spotify.SpotifyApi;
-import com.wrapper.spotify.model_objects.specification.Track;
+import net.robinfriedli.botify.audio.spotify.SpotifyTrack;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
@@ -32,7 +32,7 @@ public class UploadCommand extends AbstractCommand {
         }
 
         runWithLogin(() -> {
-            List<Track> tracks = playlist.asTrackList(spotifyApi);
+            List<SpotifyTrack> tracks = playlist.asTrackList(spotifyApi);
             String name = playlist.getName();
 
             if (tracks.isEmpty()) {
@@ -43,10 +43,10 @@ public class UploadCommand extends AbstractCommand {
             com.wrapper.spotify.model_objects.specification.Playlist spotifyPlaylist = spotifyApi.createPlaylist(userId, name).build().execute();
             uploadedPlaylistName = spotifyPlaylist.getName();
             String playlistId = spotifyPlaylist.getId();
-            List<String> trackUris = tracks.stream().map(Track::getUri).collect(Collectors.toList());
+            List<String> trackUris = tracks.stream().map(SpotifyTrack::getUri).collect(Collectors.toList());
             List<List<String>> sequences = Lists.partition(trackUris, 90);
             for (List<String> sequence : sequences) {
-                spotifyApi.addTracksToPlaylist(playlistId, sequence.toArray(new String[0])).build().execute();
+                spotifyApi.addItemsToPlaylist(playlistId, sequence.toArray(new String[0])).build().execute();
             }
 
             return null;

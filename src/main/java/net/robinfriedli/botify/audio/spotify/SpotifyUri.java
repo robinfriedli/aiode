@@ -5,6 +5,7 @@ import java.util.regex.Pattern;
 
 import com.google.common.collect.Lists;
 import com.wrapper.spotify.exceptions.detailed.NotFoundException;
+import com.wrapper.spotify.model_objects.specification.Episode;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.audio.PlayableFactory;
@@ -17,7 +18,7 @@ import net.robinfriedli.botify.function.SpotifyInvoker;
  */
 public class SpotifyUri {
 
-    private static final Pattern URI_REGEX = Pattern.compile("spotify:(track|album|playlist):([a-zA-Z0-9])([a-zA-Z0-9])*");
+    private static final Pattern URI_REGEX = Pattern.compile("spotify:(track|album|playlist|episode|show):([a-zA-Z0-9])([a-zA-Z0-9])*");
 
     private final String id;
     private final Type type;
@@ -29,8 +30,12 @@ public class SpotifyUri {
             type = Type.ALBUM;
         } else if (Type.PLAYLIST.getPattern().matcher(uri).matches()) {
             type = Type.PLAYLIST;
+        } else if (Type.EPISODE.getPattern().matcher(uri).matches()) {
+            type = Type.EPISODE;
+        } else if (Type.SHOW.getPattern().matcher(uri).matches()) {
+            type = Type.SHOW;
         } else {
-            throw new InvalidCommandException("Unsupported URI! Supported: spotify:track, spotify:album, spotify:playlist");
+            throw new InvalidCommandException("Unsupported URI! Supported: spotify:track, spotify:album, spotify:playlist, spotify:episode, spotify:show");
         }
         id = parseId(uri);
     }
@@ -107,13 +112,47 @@ public class SpotifyUri {
                                                 boolean redirect,
                                                 boolean mayInterrupt) throws Exception {
                 SpotifyInvoker invoker = SpotifyInvoker.create(spotifyService.getSpotifyApi());
-                List<Track> tracks;
+                List<SpotifyTrack> tracks;
                 try {
                     tracks = invoker.invoke(() -> spotifyService.getPlaylistTracks(uri.getId()));
                 } catch (NotFoundException e) {
                     throw new InvalidCommandException("Invalid id " + uri.getId());
                 }
                 return playableFactory.createPlayables(redirect, tracks);
+            }
+        },
+        EPISODE(Pattern.compile("spotify:episode:([a-zA-Z0-9])([a-zA-Z0-9])*")) {
+            @Override
+            public List<Playable> loadPlayables(PlayableFactory playableFactory,
+                                                SpotifyService spotifyService,
+                                                SpotifyUri uri,
+                                                boolean redirect,
+                                                boolean mayInterrupt) throws Exception {
+                SpotifyInvoker invoker = SpotifyInvoker.create(spotifyService.getSpotifyApi());
+                Episode episode;
+                try {
+                    episode = invoker.invoke(() -> spotifyService.getEpisode(uri.getId()));
+                } catch (NotFoundException e) {
+                    throw new InvalidCommandException("Invalid id " + uri.getId());
+                }
+                return Lists.newArrayList(playableFactory.createPlayable(redirect, episode));
+            }
+        },
+        SHOW(Pattern.compile("spotify:show:([a-zA-Z0-9])([a-zA-Z0-9])*")) {
+            @Override
+            public List<Playable> loadPlayables(PlayableFactory playableFactory,
+                                                SpotifyService spotifyService,
+                                                SpotifyUri uri,
+                                                boolean redirect,
+                                                boolean mayInterrupt) throws Exception {
+                SpotifyInvoker invoker = SpotifyInvoker.create(spotifyService.getSpotifyApi());
+                List<Episode> episodes;
+                try {
+                    episodes = invoker.invoke(() -> spotifyService.getShowEpisodes(uri.getId()));
+                } catch (NotFoundException e) {
+                    throw new InvalidCommandException("Invalid id " + uri.getId());
+                }
+                return playableFactory.createPlayables(redirect, episodes);
             }
         };
 
