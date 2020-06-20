@@ -136,17 +136,12 @@ public class SpotifyService {
         String nextPage;
         do {
             Paging<PlaylistSimplified> paging = spotifyApi.getListOfCurrentUsersPlaylists().offset(offset).limit(limit).build().execute();
-            for (PlaylistSimplified item : paging.getItems()) {
-                if (playlists.size() < absoluteLimit) {
-                    playlists.add(item);
-                } else {
-                    return playlists;
-                }
-            }
+            playlists.addAll(Arrays.asList(paging.getItems()));
             offset = offset + limit;
             nextPage = paging.getNext();
         } while (nextPage != null);
-        return getBestLevenshteinMatches(playlists, searchTerm, PlaylistSimplified::getName);
+        List<PlaylistSimplified> bestMatches = getBestLevenshteinMatches(playlists, searchTerm, PlaylistSimplified::getName);
+        return bestMatches.size() <= absoluteLimit ? bestMatches : bestMatches.subList(0, absoluteLimit);
     }
 
     public List<SpotifyTrack> getPlaylistTracks(String playlistId) throws IOException, SpotifyWebApiException, ParseException {

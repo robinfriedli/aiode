@@ -173,7 +173,7 @@ public class SpotifyTrack {
             }
         );
 
-        if (Strings.isNullOrEmpty(artistString)) {
+        if (!Strings.isNullOrEmpty(artistString)) {
             return String.format("%s by %s", name, artistString);
         } else {
             return name;
