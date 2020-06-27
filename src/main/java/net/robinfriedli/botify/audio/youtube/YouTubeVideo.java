@@ -83,7 +83,7 @@ public interface YouTubeVideo extends Playable {
     @Override
     default String getAlbumCoverUrl() {
         if (getRedirectedSpotifyTrack() != null) {
-            getRedirectedSpotifyTrack().getAlbumCoverUrl();
+            return getRedirectedSpotifyTrack().getAlbumCoverUrl();
         }
 
         return null;
