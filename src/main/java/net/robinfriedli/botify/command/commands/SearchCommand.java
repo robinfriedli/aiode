@@ -13,6 +13,8 @@ import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
 import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
+import net.dv8tion.jda.api.requests.ErrorResponse;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.youtube.YouTubePlaylist;
@@ -163,10 +165,18 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
                 createdUser = playlist.getCreatedUser();
             } else {
                 ShardManager shardManager = Botify.get().getShardManager();
-                User userById = shardManager.getUserById(createdUserId);
+                User userById;
+                try {
+                    userById = shardManager.retrieveUserById(createdUserId).complete();
+                } catch (ErrorResponseException e) {
+                    if (e.getErrorResponse() == ErrorResponse.UNKNOWN_USER) {
+                        userById = null;
+                    } else {
+                        throw e;
+                    }
+                }
                 createdUser = userById != null ? userById.getName() : playlist.getCreatedUser();
             }
-
 
             String baseUri = PropertiesLoadingService.requireProperty("BASE_URI");
             EmbedBuilder embedBuilder = new EmbedBuilder();

@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
+import net.dv8tion.jda.api.requests.ErrorResponse;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.discord.GuildManager;
@@ -54,7 +56,16 @@ public class PlaylistViewHandler implements HttpHandler {
                     if (createdUserId.equals("system")) {
                         createdUser = playlist.getCreatedUser();
                     } else {
-                        User userById = shardManager.getUserById(createdUserId);
+                        User userById;
+                        try {
+                            userById = shardManager.retrieveUserById(createdUserId).complete();
+                        } catch (ErrorResponseException e) {
+                            if (e.getErrorResponse() == ErrorResponse.UNKNOWN_USER) {
+                                userById = null;
+                            } else {
+                                throw e;
+                            }
+                        }
                         createdUser = userById != null ? userById.getName() : playlist.getCreatedUser();
                     }
                     String htmlString = String.format(html,
