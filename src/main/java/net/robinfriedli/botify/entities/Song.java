@@ -46,20 +46,16 @@ public class Song extends PlaylistItem {
         super(user, playlist);
         id = track.getId();
         name = track.getName();
-        for (ArtistSimplified artist : track.getArtists()) {
-            Query<Artist> query = session
-                .createQuery(" from " + Artist.class.getName() + " where id = '" + artist.getId() + "'", Artist.class);
-            query.setFlushMode(FlushModeType.AUTO);
-            Optional<Artist> optionalArtist = query.uniqueResultOptional();
-            if (optionalArtist.isPresent()) {
-                artists.add(optionalArtist.get());
-            } else {
-                Artist newArtist = new Artist(artist.getId(), artist.getName());
-                session.persist(newArtist);
-                artists.add(newArtist);
-            }
-        }
-        this.duration = track.getDurationMs();
+        duration = track.getDurationMs();
+        initArtists(track, session);
+    }
+
+    public Song(Track track, String addedUser, String addedUserId, Playlist playlist, Session session) {
+        super(addedUser, addedUserId, playlist);
+        id = track.getId();
+        name = track.getName();
+        duration = track.getDurationMs();
+        initArtists(track, session);
     }
 
     @Override
@@ -125,6 +121,22 @@ public class Song extends PlaylistItem {
 
     public void setArtists(Set<Artist> artists) {
         this.artists = artists;
+    }
+
+    private void initArtists(Track track, Session session) {
+        for (ArtistSimplified artist : track.getArtists()) {
+            Query<Artist> query = session
+                .createQuery(" from " + Artist.class.getName() + " where id = '" + artist.getId() + "'", Artist.class);
+            query.setFlushMode(FlushModeType.AUTO);
+            Optional<Artist> optionalArtist = query.uniqueResultOptional();
+            if (optionalArtist.isPresent()) {
+                artists.add(optionalArtist.get());
+            } else {
+                Artist newArtist = new Artist(artist.getId(), artist.getName());
+                session.persist(newArtist);
+                artists.add(newArtist);
+            }
+        }
     }
 
 }

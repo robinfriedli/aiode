@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 
 import com.wrapper.spotify.SpotifyApi;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.spotify.SpotifyTrackBulkLoadingService;
@@ -64,13 +63,11 @@ public class HibernatePlaylistMigrator implements PersistTask<Map<Playlist, List
                         String id = item.getAttribute("id").getValue();
                         int finalI = i;
                         spotifyBulkLoadingService.add(id, track -> {
+                            String addedUser = item.getAttribute("addedUser").getValue();
                             String addedUserId = item.getAttribute("addedUserId").getValue();
-                            User userById = shardManager.getUserById(addedUserId);
-                            Song song = new Song(track, userById, newPlaylist, session);
-                            if (userById == null) {
-                                song.setAddedUser(item.getAttribute("addedUser").getValue());
-                                song.setAddedUserId(item.getAttribute("addedUserId").getValue());
-                            }
+                            Song song = new Song(track, addedUser, addedUserId, newPlaylist, session);
+                            song.setAddedUser(addedUser);
+                            song.setAddedUserId(addedUserId);
                             itemsWithIndex.put(song, finalI);
                         });
                         break;
