@@ -86,7 +86,11 @@ public interface YouTubeVideo extends Playable {
             return getRedirectedSpotifyTrack().getAlbumCoverUrl();
         }
 
-        return null;
+        try {
+            return String.format("https://img.youtube.com/vi/%s/maxresdefault.jpg", getVideoId());
+        } catch (UnavailableResourceException e) {
+            return null;
+        }
     }
 
     @Override
