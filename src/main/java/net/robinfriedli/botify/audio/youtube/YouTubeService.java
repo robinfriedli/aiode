@@ -74,9 +74,7 @@ public class YouTubeService extends AbstractShutdownable {
     private static final int INDEX_SCORE_MULTIPLIER = 3;
 
     private static final int QUOTA_COST_SEARCH = 100;
-    private static final int QUOTA_COST_1_FIELD = 3;
-    private static final int QUOTA_COST_2_FIELDS = 5;
-    private static final int QUOTA_COST_3_FIELDS = 7;
+    private static final int QUOTA_COST_LIST = 1;
     private static final ExecutorService UPDATE_QUOTA_SERVICE = Executors.newSingleThreadExecutor(new LoggingThreadFactory("update-youtube-quota-pool"));
 
     private final AtomicInteger currentQuota = new AtomicInteger(getPersistentQuota());
@@ -144,7 +142,7 @@ public class YouTubeService extends AbstractShutdownable {
      * youtube response to determine the best match.
      * <p>
      * If the current YouTube API quota usage is beneath the threshold then this action
-     * will use the YouTube API, costing {@link #QUOTA_COST_SEARCH} + {@link #QUOTA_COST_3_FIELDS} (this also applies
+     * will use the YouTube API, costing {@link #QUOTA_COST_SEARCH} + {@link #QUOTA_COST_LIST} (this also applies
      * when searching with lavaplayer) quota. Else this uses lavaplayer to load the video metadata by scraping the HTML
      * page returned by YouTube.
      *
@@ -234,7 +232,7 @@ public class YouTubeService extends AbstractShutdownable {
 
     /**
      * Search a single YouTube video. If the current YouTube API quota usage is beneath the threshold then this action
-     * will use the YouTube API, costing {@link #QUOTA_COST_SEARCH} + {@link #QUOTA_COST_2_FIELDS} quota. Else this uses
+     * will use the YouTube API, costing {@link #QUOTA_COST_SEARCH} + {@link #QUOTA_COST_LIST} quota. Else this uses
      * lavaplayer to load the video metadata by scraping the HTML page returned by YouTube.
      *
      * @param searchTerm the video title to search for
@@ -247,7 +245,7 @@ public class YouTubeService extends AbstractShutdownable {
             List<SearchResult> items = searchVideos(1, searchTerm);
             SearchResult searchResult = items.get(0);
             String videoId = searchResult.getId().getVideoId();
-            VideoListResponse videoListResponse = doWithQuota(QUOTA_COST_2_FIELDS, () -> youTube.videos().list(List.of("snippet", "contentDetails"))
+            VideoListResponse videoListResponse = doWithQuota(QUOTA_COST_LIST, () -> youTube.videos().list(List.of("snippet", "contentDetails"))
                 .setKey(apiKey)
                 .setId(List.of(videoId))
                 .setFields("items(snippet/title,contentDetails/duration)")
@@ -264,7 +262,7 @@ public class YouTubeService extends AbstractShutdownable {
 
     /**
      * Search several YouTube videos. If the current YouTube API quota usage is beneath the threshold then this action
-     * will use the YouTube API, costing {@link #QUOTA_COST_SEARCH} + {@link #QUOTA_COST_3_FIELDS} (only once since this
+     * will use the YouTube API, costing {@link #QUOTA_COST_SEARCH} + {@link #QUOTA_COST_LIST} (only once since this
      * action cannot load more than 50 items, which would result in more requests) quota. Else this uses lavaplayer to
      * load the video metadata by scraping the HTML page returned by YouTube.
      *
@@ -297,7 +295,7 @@ public class YouTubeService extends AbstractShutdownable {
 
     /**
      * Search a YouTube playlist. This action always uses the YouTube API, costing {@link #QUOTA_COST_SEARCH} +
-     * {@link #QUOTA_COST_1_FIELD} quota. This method will not load the videos in the playlist, instead it requests the
+     * {@link #QUOTA_COST_LIST} quota. This method will not load the videos in the playlist, instead it requests the
      * item count of the playlist and fills the playlist with hollow {@link HollowYouTubeVideo}s to that amount. To
      * fetch the videos in the playlist see {@link #populateList(YouTubePlaylist)}, this is typically done asynchronously.
      *
@@ -313,7 +311,7 @@ public class YouTubeService extends AbstractShutdownable {
         String title = searchResult.getSnippet().getTitle();
         String channelTitle = searchResult.getSnippet().getChannelTitle();
 
-        int itemCount = doWithQuota(QUOTA_COST_1_FIELD, () -> youTube
+        int itemCount = doWithQuota(QUOTA_COST_LIST, () -> youTube
             .playlists()
             .list(List.of("contentDetails"))
             .setKey(apiKey)
@@ -338,7 +336,7 @@ public class YouTubeService extends AbstractShutdownable {
 
     /**
      * Search a YouTube playlist. This action always uses the YouTube API, costing {@link #QUOTA_COST_SEARCH} +
-     * {@link #QUOTA_COST_1_FIELD} (only once since this action cannot load more than 50 items, which would result in
+     * {@link #QUOTA_COST_LIST} (only once since this action cannot load more than 50 items, which would result in
      * more requests) quota. This method will not load the videos in the playlist, instead it requests the
      * item count of the playlist and fills the playlist with hollow {@link HollowYouTubeVideo}s to that amount. To
      * fetch the videos in the playlist see {@link #populateList(YouTubePlaylist)}, this is typically done asynchronously.
@@ -377,7 +375,7 @@ public class YouTubeService extends AbstractShutdownable {
      * returned by {@link #searchPlaylist(String)} or {@link #searchSeveralPlaylists(long, String)}. This action is
      * typically performed asynchronously.
      * If the current YouTube API quota usage is beneath the threshold then this action will use the YouTube API, costing
-     * ({@link #QUOTA_COST_1_FIELD} (item search) + {@link #QUOTA_COST_1_FIELD} (durations)) * (playlistSize / 50) quota.
+     * ({@link #QUOTA_COST_LIST} (item search) + {@link #QUOTA_COST_LIST} (durations)) * (playlistSize / 50) quota.
      * Else this uses lavaplayer to load the video metadata by scraping the HTML page returned by YouTube.
      *
      * @param playlist the playlist for which to load the data of the individual videos
@@ -394,7 +392,7 @@ public class YouTubeService extends AbstractShutdownable {
             List<HollowYouTubeVideo> hollowVideos = playlist.getVideos();
             int index = 0;
             do {
-                PlaylistItemListResponse response = doWithQuota(QUOTA_COST_1_FIELD, itemSearch::execute);
+                PlaylistItemListResponse response = doWithQuota(QUOTA_COST_LIST, itemSearch::execute);
                 nextPageToken = response.getNextPageToken();
                 List<PlaylistItem> items = response.getItems();
 
@@ -510,7 +508,7 @@ public class YouTubeService extends AbstractShutdownable {
 
     /**
      * Load a YouTube video via its id throwing an exception if none is found. If the current YouTube API quota usage is
-     * beneath the threshold then this action will use the YouTube API, costing {@link #QUOTA_COST_1_FIELD} quota. Else
+     * beneath the threshold then this action will use the YouTube API, costing {@link #QUOTA_COST_LIST} quota. Else
      * this uses lavaplayer to load the video metadata by scraping the HTML page returned by YouTube.
      *
      * @param id the video id
@@ -530,7 +528,7 @@ public class YouTubeService extends AbstractShutdownable {
 
     /**
      * Load a YouTube video via its id or return null if none is found. If the current YouTube API quota usage is
-     * beneath the threshold then this action will use the YouTube API, costing {@link #QUOTA_COST_1_FIELD} quota. Else
+     * beneath the threshold then this action will use the YouTube API, costing {@link #QUOTA_COST_LIST} quota. Else
      * this uses lavaplayer to load the video metadata by scraping the HTML page returned by YouTube.
      *
      * @param id the video id
@@ -545,7 +543,7 @@ public class YouTubeService extends AbstractShutdownable {
             videoRequest.setFields("items(contentDetails/duration,snippet/title)");
             videoRequest.setKey(apiKey);
             videoRequest.setMaxResults(1L);
-            List<Video> items = doWithQuota(QUOTA_COST_1_FIELD, () -> videoRequest.execute().getItems());
+            List<Video> items = doWithQuota(QUOTA_COST_LIST, () -> videoRequest.execute().getItems());
 
             if (items.isEmpty()) {
                 return null;
@@ -576,7 +574,7 @@ public class YouTubeService extends AbstractShutdownable {
 
     /**
      * Load a YouTube playlist via its id throwing an exception if none is found. If the current YouTube API quota usage is
-     * beneath the threshold then this action will use the YouTube API, costing {@link #QUOTA_COST_1_FIELD} quota. Else
+     * beneath the threshold then this action will use the YouTube API, costing {@link #QUOTA_COST_LIST} quota. Else
      * this uses lavaplayer to load the video metadata by scraping the HTML page returned by YouTube.
      *
      * @param id the id of the playlist
@@ -589,7 +587,7 @@ public class YouTubeService extends AbstractShutdownable {
         playlistRequest.setId(List.of(id));
         playlistRequest.setFields("items(contentDetails/itemCount,snippet/title,snippet/channelTitle)");
         playlistRequest.setKey(apiKey);
-        List<Playlist> items = doWithQuota(QUOTA_COST_2_FIELDS, () -> playlistRequest.execute().getItems());
+        List<Playlist> items = doWithQuota(QUOTA_COST_LIST, () -> playlistRequest.execute().getItems());
 
         if (items.isEmpty()) {
             throw new NoResultsFoundException(String.format("No YouTube playlist found for id '%s'", id));
@@ -771,7 +769,7 @@ public class YouTubeService extends AbstractShutdownable {
 
         String nextPageToken;
         do {
-            VideoListResponse response = doWithQuota(QUOTA_COST_3_FIELDS, query::execute);
+            VideoListResponse response = doWithQuota(QUOTA_COST_LIST, query::execute);
             videos.addAll(response.getItems());
             nextPageToken = response.getNextPageToken();
             query.setPageToken(nextPageToken);
@@ -810,7 +808,7 @@ public class YouTubeService extends AbstractShutdownable {
         Map<String, Long> itemCounts = new HashMap<>();
         List<List<String>> sequences = Lists.partition(playlistIds, 50);
         for (List<String> sequence : sequences) {
-            List<Playlist> playlists = doWithQuota(QUOTA_COST_1_FIELD, () -> youTube
+            List<Playlist> playlists = doWithQuota(QUOTA_COST_LIST, () -> youTube
                 .playlists()
                 .list(List.of("contentDetails"))
                 .setKey(apiKey)
@@ -867,7 +865,7 @@ public class YouTubeService extends AbstractShutdownable {
         videosRequest.setKey(apiKey);
         videosRequest.setId(List.of(videoId));
         videosRequest.setFields("items(contentDetails/duration)");
-        VideoListResponse videoListResponse = doWithQuota(QUOTA_COST_1_FIELD, videosRequest::execute);
+        VideoListResponse videoListResponse = doWithQuota(QUOTA_COST_LIST, videosRequest::execute);
         List<Video> items = videoListResponse.getItems();
         if (items.size() == 1) {
             return parseDuration(items.get(0));
@@ -886,7 +884,7 @@ public class YouTubeService extends AbstractShutdownable {
         videosRequest.setKey(apiKey);
         videosRequest.setId(videoIds);
         videosRequest.setFields("items(contentDetails/duration,id)");
-        List<Video> videos = doWithQuota(QUOTA_COST_1_FIELD, () -> videosRequest.execute().getItems());
+        List<Video> videos = doWithQuota(QUOTA_COST_LIST, () -> videosRequest.execute().getItems());
 
         Map<String, Long> durationMap = new HashMap<>();
         for (Video video : videos) {
