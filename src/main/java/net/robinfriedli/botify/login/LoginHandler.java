@@ -29,12 +29,12 @@ import net.robinfriedli.botify.util.PropertiesLoadingService;
 public class LoginHandler implements HttpHandler {
 
     private final ShardManager shardManager;
-    private final SpotifyApi spotifyApi;
+    private final SpotifyApi.Builder spotifyApiBuilder;
     private final LoginManager loginManager;
 
-    public LoginHandler(ShardManager shardManager, SpotifyApi spotifyApi, LoginManager loginManager) {
+    public LoginHandler(ShardManager shardManager, SpotifyApi.Builder spotifyApiBuilder, LoginManager loginManager) {
         this.shardManager = shardManager;
-        this.spotifyApi = spotifyApi;
+        this.spotifyApiBuilder = spotifyApiBuilder;
         this.loginManager = loginManager;
     }
 
@@ -89,6 +89,7 @@ public class LoginHandler implements HttpHandler {
     }
 
     private void createLogin(String accessCode, User user, CompletableFuture<Login> pendingLogin) throws SpotifyWebApiException, IOException, ParseException {
+        SpotifyApi spotifyApi = spotifyApiBuilder.build();
         AuthorizationCodeCredentials credentials = spotifyApi.authorizationCode(accessCode).build().execute();
         String accessToken = credentials.getAccessToken();
         String refreshToken = credentials.getRefreshToken();
