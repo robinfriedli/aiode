@@ -6,6 +6,7 @@ import java.util.TimerTask;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.hc.core5.http.ParseException;
 
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
@@ -80,7 +81,7 @@ public class Login {
                 setAccessToken(refreshCredentials.getAccessToken());
 
                 refreshTimer.schedule(new AutoRefreshTask(spotifyApi), refreshCredentials.getExpiresIn() * 1000);
-            } catch (IOException | SpotifyWebApiException e) {
+            } catch (IOException | SpotifyWebApiException | ParseException e) {
                 Logger logger = LoggerFactory.getLogger(getClass());
                 logger.warn("Failed to refresh login for user " + user.getName(), e);
                 expire();

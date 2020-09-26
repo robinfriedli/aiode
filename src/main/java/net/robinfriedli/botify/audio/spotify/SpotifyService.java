@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.apache.hc.core5.http.ParseException;
+
 import com.google.common.collect.Lists;
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
@@ -34,23 +36,23 @@ public class SpotifyService {
         this.spotifyApi = spotifyApi;
     }
 
-    public Track getTrack(String id) throws IOException, SpotifyWebApiException {
+    public Track getTrack(String id) throws IOException, SpotifyWebApiException, ParseException {
         return spotifyApi.getTrack(id).build().execute();
     }
 
-    public Artist getArtist(String id) throws IOException, SpotifyWebApiException {
+    public Artist getArtist(String id) throws IOException, SpotifyWebApiException, ParseException {
         return spotifyApi.getArtist(id).build().execute();
     }
 
-    public List<Track> searchTrack(String searchTerm) throws IOException, SpotifyWebApiException {
+    public List<Track> searchTrack(String searchTerm) throws IOException, SpotifyWebApiException, ParseException {
         return searchTrack(searchTerm, false);
     }
 
-    public List<Track> searchTrack(String searchTerm, boolean limitToLibrary) throws IOException, SpotifyWebApiException {
+    public List<Track> searchTrack(String searchTerm, boolean limitToLibrary) throws IOException, SpotifyWebApiException, ParseException {
         return searchTrack(searchTerm, limitToLibrary, 20);
     }
 
-    public List<Track> searchTrack(String searchTerm, boolean limitToLibrary, int limit) throws IOException, SpotifyWebApiException {
+    public List<Track> searchTrack(String searchTerm, boolean limitToLibrary, int limit) throws IOException, SpotifyWebApiException, ParseException {
         Track[] tracks = spotifyApi.searchTracks(searchTerm).limit(limit).build().execute().getItems();
 
         if (tracks.length == 0) {
@@ -74,16 +76,16 @@ public class SpotifyService {
         return trackList;
     }
 
-    public Playlist getPlaylist(String id) throws IOException, SpotifyWebApiException {
+    public Playlist getPlaylist(String id) throws IOException, SpotifyWebApiException, ParseException {
         return spotifyApi.getPlaylist(id).build().execute();
     }
 
-    public List<PlaylistSimplified> searchPlaylist(String searchTerm) throws IOException, SpotifyWebApiException {
+    public List<PlaylistSimplified> searchPlaylist(String searchTerm) throws IOException, SpotifyWebApiException, ParseException {
         PlaylistSimplified[] results = spotifyApi.searchPlaylists(searchTerm).build().execute().getItems();
         return getBestLevenshteinMatches(results, searchTerm.toLowerCase(), playlist -> playlist.getName().toLowerCase());
     }
 
-    public List<PlaylistSimplified> searchOwnPlaylist(String searchTerm) throws IOException, SpotifyWebApiException {
+    public List<PlaylistSimplified> searchOwnPlaylist(String searchTerm) throws IOException, SpotifyWebApiException, ParseException {
         List<PlaylistSimplified> playlists = Lists.newArrayList();
         int limit = 50;
         int offset = 0;
@@ -97,7 +99,7 @@ public class SpotifyService {
         return getBestLevenshteinMatches(playlists, searchTerm, PlaylistSimplified::getName);
     }
 
-    public List<Track> getPlaylistTracks(String playlistId) throws IOException, SpotifyWebApiException {
+    public List<Track> getPlaylistTracks(String playlistId) throws IOException, SpotifyWebApiException, ParseException {
         List<Track> tracks = Lists.newArrayList();
         int limit = 100;
         int offset = 0;
@@ -112,15 +114,15 @@ public class SpotifyService {
         return tracks;
     }
 
-    public List<Track> getPlaylistTracks(PlaylistSimplified playlistSimplified) throws IOException, SpotifyWebApiException {
+    public List<Track> getPlaylistTracks(PlaylistSimplified playlistSimplified) throws IOException, SpotifyWebApiException, ParseException {
         return getPlaylistTracks(playlistSimplified.getId());
     }
 
-    public List<AlbumSimplified> searchAlbum(String searchTerm) throws IOException, SpotifyWebApiException {
+    public List<AlbumSimplified> searchAlbum(String searchTerm) throws IOException, SpotifyWebApiException, ParseException {
         return searchAlbum(searchTerm, false);
     }
 
-    public List<AlbumSimplified> searchAlbum(String searchTerm, boolean limitToLibrary) throws IOException, SpotifyWebApiException {
+    public List<AlbumSimplified> searchAlbum(String searchTerm, boolean limitToLibrary) throws IOException, SpotifyWebApiException, ParseException {
         AlbumSimplified[] albums = spotifyApi.searchAlbums(searchTerm).build().execute().getItems();
         List<AlbumSimplified> albumList = Lists.newArrayList();
         if (limitToLibrary) {
@@ -139,7 +141,7 @@ public class SpotifyService {
         return albumList;
     }
 
-    public List<Track> getAlbumTracks(String albumId) throws IOException, SpotifyWebApiException {
+    public List<Track> getAlbumTracks(String albumId) throws IOException, SpotifyWebApiException, ParseException {
         List<Track> tracks = Lists.newArrayList();
         int limit = 50;
         int offset = 0;
@@ -158,7 +160,7 @@ public class SpotifyService {
         return tracks;
     }
 
-    public List<Track> getAlbumTracks(AlbumSimplified albumSimplified) throws IOException, SpotifyWebApiException {
+    public List<Track> getAlbumTracks(AlbumSimplified albumSimplified) throws IOException, SpotifyWebApiException, ParseException {
         return getAlbumTracks(albumSimplified.getId());
     }
 
