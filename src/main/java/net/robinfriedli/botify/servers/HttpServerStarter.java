@@ -33,7 +33,7 @@ public class HttpServerStarter {
         int port = PropertiesLoadingService.requireProperty(Integer.class, "SERVER_PORT");
         HttpServer httpServer = HttpServer.create(new InetSocketAddress(port), 0);
 
-        ExecutorService executorService = new ThreadPoolExecutor(1, 5, 30, TimeUnit.SECONDS, new SynchronousQueue<>(), new ThreadFactory() {
+        ExecutorService executorService = new ThreadPoolExecutor(5, 50, 30, TimeUnit.SECONDS, new SynchronousQueue<>(), new ThreadFactory() {
             final AtomicLong threadId = new AtomicLong(1);
 
             @Override

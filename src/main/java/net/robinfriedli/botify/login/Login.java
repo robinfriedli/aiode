@@ -1,34 +1,52 @@
 package net.robinfriedli.botify.login;
 
 import java.io.IOException;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.hc.core5.http.ParseException;
 
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
 import com.wrapper.spotify.model_objects.credentials.AuthorizationCodeCredentials;
 import net.dv8tion.jda.api.entities.User;
+import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Represents and automatically refreshes Spotify logins
  */
 public class Login {
 
+    private static final ScheduledExecutorService REFRESH_SERVICE = Executors.newScheduledThreadPool(3, new ThreadFactory() {
+        private final AtomicLong threadId = new AtomicLong(1);
+
+        @Override
+        public Thread newThread(@NotNull Runnable r) {
+            Thread thread = new Thread(r);
+            thread.setName("login-refresh-thread-" + threadId.getAndIncrement());
+            thread.setUncaughtExceptionHandler(new LoggingExceptionHandler());
+            return thread;
+        }
+    });
+
     private final User user;
-    private final Timer refreshTimer;
+    private ScheduledFuture<?> nextRefresh;
     private String accessToken;
     private String refreshToken;
     private boolean expired = false;
 
     public Login(User user, String accessToken, String refreshToken, int expiresIn, SpotifyApi spotifyApi) {
         this.user = user;
+        nextRefresh = REFRESH_SERVICE.schedule(new AutoRefreshTask(spotifyApi), expiresIn, TimeUnit.SECONDS);
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
-        this.refreshTimer = new Timer();
-        refreshTimer.schedule(new AutoRefreshTask(spotifyApi), expiresIn * 1000);
     }
 
     public User getUser() {
@@ -60,11 +78,11 @@ public class Login {
     }
 
     public void cancel() {
-        refreshTimer.cancel();
+        nextRefresh.cancel(false);
         expire();
     }
 
-    private class AutoRefreshTask extends TimerTask {
+    private class AutoRefreshTask implements Runnable {
 
         private final SpotifyApi spotifyApi;
 
@@ -79,8 +97,8 @@ public class Login {
                 AuthorizationCodeCredentials refreshCredentials = spotifyApi.authorizationCodeRefresh().build().execute();
                 setAccessToken(refreshCredentials.getAccessToken());
 
-                refreshTimer.schedule(new AutoRefreshTask(spotifyApi), refreshCredentials.getExpiresIn() * 1000);
-            } catch (IOException | SpotifyWebApiException e) {
+                nextRefresh = REFRESH_SERVICE.schedule(new AutoRefreshTask(spotifyApi), refreshCredentials.getExpiresIn(), TimeUnit.SECONDS);
+            } catch (IOException | SpotifyWebApiException | ParseException e) {
                 Logger logger = LoggerFactory.getLogger(getClass());
                 logger.warn("Failed to refresh login for user " + user.getName(), e);
                 expire();

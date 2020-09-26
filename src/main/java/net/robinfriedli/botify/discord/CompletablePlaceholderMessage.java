@@ -35,6 +35,7 @@ import net.dv8tion.jda.api.requests.RestAction;
 import net.dv8tion.jda.api.requests.restaction.AuditableRestAction;
 import net.dv8tion.jda.api.requests.restaction.MessageAction;
 import net.dv8tion.jda.api.requests.restaction.pagination.ReactionPaginationAction;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Mocks a discord message that has not been loaded yet.
@@ -414,6 +415,12 @@ public class CompletablePlaceholderMessage implements Message {
     @Override
     public AuditableRestAction<Void> suppressEmbeds(boolean b) {
         return unwrap().suppressEmbeds(b);
+    }
+
+    @NotNull
+    @Override
+    public RestAction<Message> crosspost() {
+        return unwrap().crosspost();
     }
 
     @Override

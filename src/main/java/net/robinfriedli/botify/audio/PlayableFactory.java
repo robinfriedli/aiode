@@ -10,6 +10,7 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import org.apache.hc.core5.http.ParseException;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 
@@ -272,7 +273,7 @@ public class PlayableFactory {
                     spotifyApi.setAccessToken(accessToken);
                     Track track = spotifyApi.getTrack(trackId).build().execute();
                     return createPlayable(redirectSpotify, track);
-                } catch (IOException | SpotifyWebApiException e) {
+                } catch (IOException | SpotifyWebApiException | ParseException e) {
                     throw new RuntimeException("Exception during Spotify request", e);
                 } finally {
                     spotifyApi.setAccessToken(null);
@@ -376,7 +377,7 @@ public class PlayableFactory {
                 return createPlayables(redirectSpotify, playlistTracks, mayInterrupt);
             } catch (NotFoundException e) {
                 throw new NoResultsFoundException(String.format("No Spotify playlist found for id '%s'", playlistId));
-            } catch (IOException | SpotifyWebApiException e) {
+            } catch (IOException | SpotifyWebApiException | ParseException e) {
                 throw new RuntimeException("Exception during Spotify request", e);
             } finally {
                 spotifyApi.setAccessToken(null);
@@ -394,7 +395,7 @@ public class PlayableFactory {
                 return Lists.newArrayList(createPlayable(redirectSpotify, track));
             } catch (NotFoundException e) {
                 throw new NoResultsFoundException(String.format("No Spotify track found for id '%s'", trackId));
-            } catch (IOException | SpotifyWebApiException e) {
+            } catch (IOException | SpotifyWebApiException | ParseException e) {
                 throw new RuntimeException("Exception during Spotify request", e);
             } finally {
                 spotifyApi.setAccessToken(null);
@@ -412,7 +413,7 @@ public class PlayableFactory {
                 return createPlayables(redirectSpotify, albumTracks, mayInterrupt);
             } catch (BadRequestException e) {
                 throw new NoResultsFoundException(String.format("No album found for id '%s'", albumId));
-            } catch (IOException | SpotifyWebApiException e) {
+            } catch (IOException | SpotifyWebApiException | ParseException e) {
                 throw new RuntimeException("Exception during Spotify request", e);
             } finally {
                 spotifyApi.setAccessToken(null);

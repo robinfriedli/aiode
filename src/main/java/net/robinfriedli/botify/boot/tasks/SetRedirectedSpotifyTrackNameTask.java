@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.hc.core5.http.ParseException;
+
 import com.google.common.collect.Lists;
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
@@ -56,7 +58,7 @@ public class SetRedirectedSpotifyTrackNameTask implements StartupTask {
                     context.invoke(() -> {
                         try {
                             migrate(context, spotifyApi);
-                        } catch (IOException | SpotifyWebApiException e) {
+                        } catch (IOException | SpotifyWebApiException | ParseException e) {
                             throw new RuntimeException(e);
                         }
                     });
@@ -66,7 +68,7 @@ public class SetRedirectedSpotifyTrackNameTask implements StartupTask {
         spotifyApi.setAccessToken(null);
     }
 
-    private void migrate(Context context, SpotifyApi spotifyApi) throws IOException, SpotifyWebApiException {
+    private void migrate(Context context, SpotifyApi spotifyApi) throws IOException, SpotifyWebApiException, ParseException {
         for (XmlElement playlist : context.query(tagName("playlist")).collect()) {
             Map<String, XmlElement> itemsToMigrate = new HashMap<>();
             for (XmlElement playlistItem : playlist.getSubElements()) {

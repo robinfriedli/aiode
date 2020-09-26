@@ -3,8 +3,10 @@ package net.robinfriedli.botify.audio.spotify;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.hc.core5.http.ParseException;
 
 import com.google.common.collect.Lists;
 import com.wrapper.spotify.SpotifyApi;
@@ -34,7 +36,7 @@ public class SpotifyTrackBulkLoadingService extends BulkOperationService<String,
             private LocalDateTime timeToRefreshCredentials = conceptionTime.plusMinutes(50);
 
             @Override
-            public List<Pair<String, Track>> doApply(List<String> ids) throws IOException, SpotifyWebApiException {
+            public List<Pair<String, Track>> doApply(List<String> ids) throws IOException, SpotifyWebApiException, ParseException {
                 LocalDateTime now = LocalDateTime.now();
                 if (now.compareTo(timeToRefreshCredentials) > 0) {
                     ClientCredentials credentials = spotifyApi.clientCredentials().build().execute();
@@ -59,5 +61,15 @@ public class SpotifyTrackBulkLoadingService extends BulkOperationService<String,
                 return keyValuePairs;
             }
         });
+    }
+
+    /**
+     * When persisting unavailable spotify tracks to a playlist their id is null, skip those tracks when loading
+     */
+    @Override
+    public void add(String key, Consumer<Track> action) {
+        if (key != null) {
+            super.add(key, action);
+        }
     }
 }
