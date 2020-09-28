@@ -22,6 +22,9 @@ import net.robinfriedli.botify.entities.SpotifyRedirectIndexModificationLock;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.botify.function.HibernateInvoker;
 import net.robinfriedli.botify.persist.StaticSessionProvider;
+import net.robinfriedli.exec.Mode;
+import net.robinfriedli.exec.MutexSync;
+import net.robinfriedli.exec.modes.MutexSyncMode;
 import org.hibernate.Session;
 
 import static net.robinfriedli.botify.entities.SpotifyRedirectIndex.*;
@@ -34,6 +37,7 @@ import static net.robinfriedli.botify.entities.SpotifyRedirectIndex.*;
 public class SpotifyRedirectService {
 
     private static final ExecutorService SINGE_THREAD_EXECUTOR_SERVICE = Executors.newSingleThreadExecutor(new LoggingThreadFactory("spotify-redirect-service-pool"));
+    private static final MutexSync<String> MUTEX_SYNC = new MutexSync<>();
 
     static {
         Botify.SHUTDOWNABLES.add(new ShutdownableExecutorService(SINGE_THREAD_EXECUTOR_SERVICE));
@@ -63,7 +67,11 @@ public class SpotifyRedirectService {
         }
 
         youTubeVideo.markLoading();
-        Optional<SpotifyRedirectIndex> persistedSpotifyRedirectIndex = queryExistingIndex(session, spotifyTrack.getId());
+        String spotifyTrackId = spotifyTrack.getId();
+        Optional<SpotifyRedirectIndex> persistedSpotifyRedirectIndex = MUTEX_SYNC.evaluate(
+            spotifyTrackId,
+            () -> queryExistingIndex(session, spotifyTrackId)
+        );
 
         if (persistedSpotifyRedirectIndex.isPresent()) {
             SpotifyRedirectIndex spotifyRedirectIndex = persistedSpotifyRedirectIndex.get();
@@ -79,13 +87,15 @@ public class SpotifyRedirectService {
 
                 youTubeVideo.setTitle(spotifyTrack.getDisplay());
 
-                runUpdateTask(otherThreadSession -> {
+                Mode mode = Mode.create().with(new MutexSyncMode<>(spotifyTrackId, MUTEX_SYNC));
+                runUpdateTask(mode, otherThreadSession -> {
                     spotifyRedirectIndex.setLastUsed(LocalDate.now());
                     otherThreadSession.update(spotifyRedirectIndex);
                 });
                 return;
             } else {
-                runUpdateTask(otherThreadSession -> {
+                Mode mode = Mode.create().with(new MutexSyncMode<>(spotifyTrackId, MUTEX_SYNC));
+                runUpdateTask(mode, otherThreadSession -> {
                     Object mergedIndex = otherThreadSession.merge(spotifyRedirectIndex);
                     otherThreadSession.delete(mergedIndex);
                 });
@@ -99,7 +109,7 @@ public class SpotifyRedirectService {
                     String videoId = youTubeVideo.getVideoId();
                     SpotifyRedirectIndex spotifyRedirectIndex = new SpotifyRedirectIndex(spotifyTrack.getId(), videoId, spotifyTrack.getKind(), otherThreadSession);
                     // check again if the index was not created by other thread
-                    if (queryExistingIndex(otherThreadSession, spotifyTrack.getId()).isEmpty()) {
+                    if (queryExistingIndex(otherThreadSession, spotifyTrackId).isEmpty()) {
                         invoker.invoke(() -> otherThreadSession.persist(spotifyRedirectIndex));
                     }
                 } catch (UnavailableResourceException e) {
@@ -111,13 +121,13 @@ public class SpotifyRedirectService {
         }
     }
 
-    private void runUpdateTask(Consumer<Session> sessionConsumer) {
+    private void runUpdateTask(Mode mode, Consumer<Session> sessionConsumer) {
         SINGE_THREAD_EXECUTOR_SERVICE.execute(() -> StaticSessionProvider.consumeSession(otherThreadSession -> {
             Long modificationLocks = otherThreadSession
                 .createQuery("select count(*) from " + SpotifyRedirectIndexModificationLock.class.getName(), Long.class)
                 .uniqueResult();
             if (modificationLocks == 0) {
-                invoker.invoke(sessionConsumer);
+                invoker.invoke(mode, () -> sessionConsumer.accept(otherThreadSession));
             }
         }));
     }
