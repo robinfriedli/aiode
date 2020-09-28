@@ -74,11 +74,13 @@ public interface Playable {
     String getDisplay() throws UnavailableResourceException;
 
     /**
-     * @return the display of the Playable, showing cancelled Playables as "[UNAVAILABLE]"
+     * @return the display of the Playable, showing cancelled Playables as "[UNAVAILABLE]" and fall back to "[NO TITLE]"
+     * if null.
      */
     default String display() {
         try {
-            return getDisplay();
+            String display = getDisplay();
+            return display != null ? display : "[NO TITLE]";
         } catch (UnavailableResourceException e) {
             return UNAVAILABLE_STRING;
         }
