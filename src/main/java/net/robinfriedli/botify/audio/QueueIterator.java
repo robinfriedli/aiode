@@ -91,7 +91,7 @@ public class QueueIterator extends AudioEventAdapter {
         while (e.getCause() != null) {
             e = e.getCause();
         }
-        sendError(queue.getCurrent(), e);
+        sendError(track.getUserData(Playable.class), e);
     }
 
     void setReplaced() {
@@ -145,6 +145,7 @@ public class QueueIterator extends AudioEventAdapter {
             if (result instanceof AudioTrack) {
                 AudioTrack audioTrack = (AudioTrack) result;
                 track.setCached(audioTrack);
+                audioTrack.setUserData(track);
                 playback.getAudioPlayer().playTrack(audioTrack);
                 currentlyPlaying = track;
             } else {
@@ -185,7 +186,11 @@ public class QueueIterator extends AudioEventAdapter {
     private void sendError(Playable track, Throwable e) {
         if (attemptCount == 1) {
             EmbedBuilder embedBuilder = new EmbedBuilder();
-            embedBuilder.setTitle("Could not load track " + track.display());
+            if (track != null) {
+                embedBuilder.setTitle("Could not load track " + track.display());
+            } else {
+                embedBuilder.setTitle("Could not load current track");
+            }
 
             if (e.getMessage() != null) {
                 embedBuilder.setDescription("Message returned by source: " + e.getMessage());
