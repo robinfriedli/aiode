@@ -8,24 +8,25 @@ import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.exceptions.CommandRuntimeException;
 import net.robinfriedli.botify.exceptions.UserException;
 import net.robinfriedli.botify.util.StaticSessionProvider;
-import net.robinfriedli.jxp.exec.AbstractDelegatingModeWrapper;
-import net.robinfriedli.jxp.exec.Invoker;
-import net.robinfriedli.jxp.exec.modes.SynchronisationMode;
+import net.robinfriedli.exec.AbstractNestedModeWrapper;
+import net.robinfriedli.exec.Mode;
+import net.robinfriedli.exec.modes.SynchronisationMode;
 import org.hibernate.SessionFactory;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Runs a task in a hibernate transaction, managing commits and rollbacks. This utilises either the session of the
  * current {@link CommandContext} or, if absent, the current thread session using {@link SessionFactory#getCurrentSession()}.
  * See {@link StaticSessionProvider}.
  */
-public class HibernateTransactionMode extends AbstractDelegatingModeWrapper {
+public class HibernateTransactionMode extends AbstractNestedModeWrapper {
 
-    public static Invoker.Mode getMode() {
+    public static Mode getMode() {
         return getMode(null);
     }
 
-    public static Invoker.Mode getMode(@Nullable Object synchronisationLock) {
-        Invoker.Mode mode = Invoker.Mode.create();
+    public static Mode getMode(@Nullable Object synchronisationLock) {
+        Mode mode = Mode.create();
         if (synchronisationLock != null) {
             mode.with(new SynchronisationMode(synchronisationLock));
         }
@@ -34,7 +35,7 @@ public class HibernateTransactionMode extends AbstractDelegatingModeWrapper {
     }
 
     @Override
-    public <E> Callable<E> wrap(Callable<E> callable) {
+    public <E> @NotNull Callable<E> wrap(@NotNull Callable<E> callable) {
         return () -> StaticSessionProvider.invokeWithSession(session -> {
             boolean isNested = false;
             if (session.getTransaction() == null || !session.getTransaction().isActive()) {

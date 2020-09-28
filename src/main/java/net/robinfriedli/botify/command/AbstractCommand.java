@@ -35,7 +35,7 @@ import net.robinfriedli.botify.function.HibernateInvoker;
 import net.robinfriedli.botify.function.SpotifyInvoker;
 import net.robinfriedli.botify.login.Login;
 import net.robinfriedli.botify.util.Util;
-import net.robinfriedli.jxp.exec.modes.SynchronisationMode;
+import net.robinfriedli.exec.modes.SynchronisationMode;
 import net.robinfriedli.stringlist.StringList;
 
 /**

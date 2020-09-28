@@ -14,7 +14,7 @@ import net.robinfriedli.botify.cron.AbstractCronTask;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.util.StaticSessionProvider;
-import net.robinfriedli.jxp.exec.Invoker;
+import net.robinfriedli.exec.Mode;
 import org.quartz.JobExecutionContext;
 
 /**
@@ -65,7 +65,7 @@ public class PlaybackCleanupTask extends AbstractCronTask {
     }
 
     @Override
-    protected Invoker.Mode getMode() {
-        return Invoker.Mode.create();
+    protected Mode getMode() {
+        return Mode.create();
     }
 }

@@ -21,6 +21,9 @@ import net.robinfriedli.botify.entities.SpotifyRedirectIndexModificationLock;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.botify.function.HibernateInvoker;
 import net.robinfriedli.botify.util.StaticSessionProvider;
+import net.robinfriedli.exec.Mode;
+import net.robinfriedli.exec.MutexSync;
+import net.robinfriedli.exec.modes.MutexSyncMode;
 import net.robinfriedli.stringlist.StringList;
 import org.hibernate.Session;
 
@@ -34,6 +37,7 @@ import static net.robinfriedli.botify.entities.SpotifyRedirectIndex.*;
 public class SpotifyRedirectService {
 
     private static final ExecutorService SINGE_THREAD_EXECUTOR_SERVICE = Executors.newSingleThreadExecutor();
+    private static final MutexSync<String> MUTEX_SYNC = new MutexSync<>();
 
     private final HibernateInvoker invoker = HibernateInvoker.create();
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -52,7 +56,11 @@ public class SpotifyRedirectService {
             throw new IllegalArgumentException(youTubeVideo.toString() + " is not a placeholder for a redirected Spotify Track");
         }
 
-        Optional<SpotifyRedirectIndex> persistedSpotifyRedirectIndex = queryExistingIndex(session, spotifyTrack.getId());
+        String spotifyTrackId = spotifyTrack.getId();
+        Optional<SpotifyRedirectIndex> persistedSpotifyRedirectIndex = MUTEX_SYNC.evaluate(
+            spotifyTrackId,
+            () -> queryExistingIndex(session, spotifyTrackId)
+        );
 
         if (persistedSpotifyRedirectIndex.isPresent()) {
             SpotifyRedirectIndex spotifyRedirectIndex = persistedSpotifyRedirectIndex.get();
@@ -70,24 +78,26 @@ public class SpotifyRedirectService {
                 String title = String.format("%s by %s", name, artistString);
                 youTubeVideo.setTitle(title);
 
-                runUpdateTask(otherThreadSession -> {
+                Mode mode = Mode.create().with(new MutexSyncMode<>(spotifyTrackId, MUTEX_SYNC));
+                runUpdateTask(mode, otherThreadSession -> {
                     spotifyRedirectIndex.setLastUsed(LocalDate.now());
                     otherThreadSession.update(spotifyRedirectIndex);
                 });
                 return;
             } else {
-                runUpdateTask(otherThreadSession -> otherThreadSession.delete(spotifyRedirectIndex));
+                Mode mode = Mode.create().with(new MutexSyncMode<>(spotifyTrackId, MUTEX_SYNC));
+                runUpdateTask(mode, otherThreadSession -> otherThreadSession.delete(spotifyRedirectIndex));
             }
         }
 
         youTubeService.redirectSpotify(youTubeVideo);
-        if (!youTubeVideo.isCanceled() && !Strings.isNullOrEmpty(spotifyTrack.getId())) {
+        if (!youTubeVideo.isCanceled() && !Strings.isNullOrEmpty(spotifyTrackId)) {
             SINGE_THREAD_EXECUTOR_SERVICE.execute(() -> StaticSessionProvider.invokeWithSession(otherThreadSession -> {
                 try {
                     String videoId = youTubeVideo.getVideoId();
-                    SpotifyRedirectIndex spotifyRedirectIndex = new SpotifyRedirectIndex(spotifyTrack.getId(), videoId);
+                    SpotifyRedirectIndex spotifyRedirectIndex = new SpotifyRedirectIndex(spotifyTrackId, videoId);
                     // check again if the index was not created by other thread
-                    if (queryExistingIndex(otherThreadSession, spotifyTrack.getId()).isEmpty()) {
+                    if (queryExistingIndex(otherThreadSession, spotifyTrackId).isEmpty()) {
                         invoker.invoke(() -> otherThreadSession.persist(spotifyRedirectIndex));
                     }
                 } catch (UnavailableResourceException e) {
@@ -99,13 +109,13 @@ public class SpotifyRedirectService {
         }
     }
 
-    private void runUpdateTask(Consumer<Session> sessionConsumer) {
+    private void runUpdateTask(Mode mode, Consumer<Session> sessionConsumer) {
         SINGE_THREAD_EXECUTOR_SERVICE.execute(() -> StaticSessionProvider.invokeWithSession(otherThreadSession -> {
             Long modificationLocks = otherThreadSession
                 .createQuery("select count(*) from " + SpotifyRedirectIndexModificationLock.class.getName(), Long.class)
                 .uniqueResult();
             if (modificationLocks == 0) {
-                invoker.invoke(() -> sessionConsumer.accept(otherThreadSession));
+                invoker.invoke(mode, () -> sessionConsumer.accept(otherThreadSession));
             }
         }));
     }

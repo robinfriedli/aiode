@@ -32,7 +32,7 @@ import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.botify.function.modes.HibernateTransactionMode;
 import net.robinfriedli.botify.function.modes.SpotifyAuthorizationMode;
 import net.robinfriedli.botify.util.StaticSessionProvider;
-import net.robinfriedli.jxp.exec.Invoker;
+import net.robinfriedli.exec.Mode;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.Session;
@@ -125,8 +125,8 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
     }
 
     @Override
-    protected Invoker.Mode getMode() {
-        return Invoker.Mode.create().with(new HibernateTransactionMode()).with(new SpotifyAuthorizationMode(spotifyApi));
+    protected Mode getMode() {
+        return Mode.create().with(new HibernateTransactionMode()).with(new SpotifyAuthorizationMode(spotifyApi));
     }
 
     private class RefreshTrackIndexTask implements Consumer<Track> {

@@ -5,8 +5,8 @@ import org.slf4j.LoggerFactory;
 
 import net.robinfriedli.botify.function.modes.HibernateTransactionMode;
 import net.robinfriedli.botify.function.modes.SpotifyAuthorizationMode;
-import net.robinfriedli.jxp.exec.BaseInvoker;
-import net.robinfriedli.jxp.exec.Invoker;
+import net.robinfriedli.exec.Invoker;
+import net.robinfriedli.exec.Mode;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 
@@ -19,7 +19,7 @@ public abstract class AbstractCronTask implements Job {
     private final Logger logger;
 
     public AbstractCronTask() {
-        invoker = new BaseInvoker();
+        invoker = Invoker.newInstance();
         logger = LoggerFactory.getLogger(getClass());
     }
 
@@ -44,12 +44,12 @@ public abstract class AbstractCronTask implements Job {
     protected abstract void run(JobExecutionContext jobExecutionContext) throws Exception;
 
     /**
-     * The {@link Invoker.Mode} to invoke the run method with. For example, use the {@link HibernateTransactionMode}
+     * The {@link Mode} to invoke the run method with. For example, use the {@link HibernateTransactionMode}
      * if the task needs to run in a hibernate transaction, or {@link SpotifyAuthorizationMode} if the task needs to run
      * with Spotify client credentials set up.
      *
      * @return the mode to use
      */
-    protected abstract Invoker.Mode getMode();
+    protected abstract Mode getMode();
 
 }

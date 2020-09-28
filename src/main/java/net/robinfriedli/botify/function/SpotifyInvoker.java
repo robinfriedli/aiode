@@ -8,7 +8,9 @@ import com.wrapper.spotify.SpotifyApi;
 import net.robinfriedli.botify.function.modes.SpotifyAuthorizationMode;
 import net.robinfriedli.botify.function.modes.SpotifyUserAuthorizationMode;
 import net.robinfriedli.botify.login.Login;
-import net.robinfriedli.jxp.exec.BaseInvoker;
+import net.robinfriedli.exec.BaseInvoker;
+import net.robinfriedli.exec.Mode;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Invoker that runs a task with the appropriate Spotify credentials -> the credentials for the provided login or, if
@@ -38,7 +40,7 @@ public class SpotifyInvoker extends BaseInvoker {
     }
 
     @Override
-    public <E> E invoke(Mode mode, Callable<E> task) throws Exception {
+    public <E> E invoke(@NotNull Mode mode, @NotNull Callable<E> task) throws Exception {
         if (login != null) {
             mode.with(new SpotifyUserAuthorizationMode(login, spotifyApi));
         } else {
