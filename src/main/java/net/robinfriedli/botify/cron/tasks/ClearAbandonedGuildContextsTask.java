@@ -10,7 +10,7 @@ import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.listeners.GuildManagementListener;
-import net.robinfriedli.jxp.exec.Invoker;
+import net.robinfriedli.exec.Mode;
 import org.quartz.JobExecutionContext;
 
 /**
@@ -42,7 +42,7 @@ public class ClearAbandonedGuildContextsTask extends AbstractCronTask {
     }
 
     @Override
-    protected Invoker.Mode getMode() {
-        return Invoker.Mode.create();
+    protected Mode getMode() {
+        return Mode.create();
     }
 }

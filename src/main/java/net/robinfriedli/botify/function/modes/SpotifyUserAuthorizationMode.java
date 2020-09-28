@@ -4,12 +4,13 @@ import java.util.concurrent.Callable;
 
 import com.wrapper.spotify.SpotifyApi;
 import net.robinfriedli.botify.login.Login;
-import net.robinfriedli.jxp.exec.AbstractDelegatingModeWrapper;
+import net.robinfriedli.exec.AbstractNestedModeWrapper;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Mode that runs the given task with Spotify credentials for the given Login applied applied
  */
-public class SpotifyUserAuthorizationMode extends AbstractDelegatingModeWrapper {
+public class SpotifyUserAuthorizationMode extends AbstractNestedModeWrapper {
 
     private final Login login;
     private final SpotifyApi spotifyApi;
@@ -20,7 +21,7 @@ public class SpotifyUserAuthorizationMode extends AbstractDelegatingModeWrapper 
     }
 
     @Override
-    public <E> Callable<E> wrap(Callable<E> callable) {
+    public <E> @NotNull Callable<E> wrap(@NotNull Callable<E> callable) {
         return () -> {
             try {
                 spotifyApi.setAccessToken(login.getAccessToken());

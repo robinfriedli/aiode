@@ -8,7 +8,7 @@ import net.robinfriedli.botify.cron.AbstractCronTask;
 import net.robinfriedli.botify.entities.CurrentYouTubeQuotaUsage;
 import net.robinfriedli.botify.function.modes.HibernateTransactionMode;
 import net.robinfriedli.botify.util.StaticSessionProvider;
-import net.robinfriedli.jxp.exec.Invoker;
+import net.robinfriedli.exec.Mode;
 import org.quartz.JobExecutionContext;
 
 /**
@@ -28,7 +28,7 @@ public class ResetCurrentYouTubeQuotaTask extends AbstractCronTask {
     }
 
     @Override
-    protected Invoker.Mode getMode() {
-        return Invoker.Mode.create().with(new HibernateTransactionMode());
+    protected Mode getMode() {
+        return Mode.create().with(new HibernateTransactionMode());
     }
 }
