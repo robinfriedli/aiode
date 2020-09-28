@@ -10,7 +10,8 @@ import net.robinfriedli.botify.function.modes.SpotifyAuthorizationMode;
 import net.robinfriedli.botify.function.modes.SpotifyMarketMode;
 import net.robinfriedli.botify.function.modes.SpotifyUserAuthorizationMode;
 import net.robinfriedli.botify.login.Login;
-import net.robinfriedli.jxp.exec.BaseInvoker;
+import net.robinfriedli.exec.BaseInvoker;
+import net.robinfriedli.exec.Mode;
 
 /**
  * Invoker that runs a task with the appropriate Spotify credentials -> the credentials for the provided login or, if

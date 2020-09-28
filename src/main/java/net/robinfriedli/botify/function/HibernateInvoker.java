@@ -8,9 +8,11 @@ import javax.annotation.Nullable;
 import net.robinfriedli.botify.exceptions.CommandRuntimeException;
 import net.robinfriedli.botify.function.modes.HibernateTransactionMode;
 import net.robinfriedli.botify.persist.StaticSessionProvider;
-import net.robinfriedli.jxp.exec.BaseInvoker;
-import net.robinfriedli.jxp.exec.modes.SynchronisationMode;
+import net.robinfriedli.exec.BaseInvoker;
+import net.robinfriedli.exec.Mode;
+import net.robinfriedli.exec.modes.SynchronisationMode;
 import org.hibernate.Session;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Invoker that runs a task in a hibernate transaction by using the {@link HibernateTransactionMode}
@@ -47,8 +49,8 @@ public class HibernateInvoker extends BaseInvoker implements FunctionInvoker<Ses
         return new HibernateInvoker(session, synchronisationLock);
     }
 
-    public <E> E invoke(Callable<E> callable) {
-        Mode mode = Mode.create();
+    @Override
+    public <E> E invoke(@NotNull Mode mode, @NotNull Callable<E> callable) {
         if (synchronisationLock != null) {
             mode.with(new SynchronisationMode(synchronisationLock));
         }
@@ -60,6 +62,10 @@ public class HibernateInvoker extends BaseInvoker implements FunctionInvoker<Ses
         } catch (Exception e) {
             throw new CommandRuntimeException(e);
         }
+    }
+
+    public <E> E invoke(@NotNull Callable<E> task) {
+        return invoke(Mode.create(), task);
     }
 
     public void invoke(Runnable runnable) {

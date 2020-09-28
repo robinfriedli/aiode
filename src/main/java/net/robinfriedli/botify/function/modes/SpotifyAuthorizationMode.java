@@ -4,13 +4,14 @@ import java.util.concurrent.Callable;
 
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.model_objects.credentials.ClientCredentials;
-import net.robinfriedli.jxp.exec.AbstractDelegatingModeWrapper;
-import net.robinfriedli.jxp.exec.Invoker;
+import net.robinfriedli.exec.AbstractNestedModeWrapper;
+import net.robinfriedli.exec.Mode;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Mode that runs the given task with default Spotify credentials applied
  */
-public class SpotifyAuthorizationMode extends AbstractDelegatingModeWrapper {
+public class SpotifyAuthorizationMode extends AbstractNestedModeWrapper {
 
     private final SpotifyApi spotifyApi;
 
@@ -19,7 +20,7 @@ public class SpotifyAuthorizationMode extends AbstractDelegatingModeWrapper {
     }
 
     @Override
-    public <E> Callable<E> wrap(Callable<E> callable) {
+    public <E> @NotNull Callable<E> wrap(@NotNull Callable<E> callable) {
         return () -> {
             try {
                 ClientCredentials credentials = spotifyApi.clientCredentials().build().execute();
@@ -32,8 +33,8 @@ public class SpotifyAuthorizationMode extends AbstractDelegatingModeWrapper {
         };
     }
 
-    public Invoker.Mode getMode(SpotifyApi spotifyApi) {
-        return Invoker.Mode.create().with(new SpotifyAuthorizationMode(spotifyApi));
+    public Mode getMode(SpotifyApi spotifyApi) {
+        return Mode.create().with(new SpotifyAuthorizationMode(spotifyApi));
     }
 
 }

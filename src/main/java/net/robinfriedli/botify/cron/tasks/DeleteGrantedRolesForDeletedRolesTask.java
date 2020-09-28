@@ -17,7 +17,7 @@ import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.function.modes.HibernateTransactionMode;
 import net.robinfriedli.botify.persist.StaticSessionProvider;
 import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
-import net.robinfriedli.jxp.exec.Invoker;
+import net.robinfriedli.exec.Mode;
 import org.quartz.JobExecutionContext;
 
 /**
@@ -65,7 +65,7 @@ public class DeleteGrantedRolesForDeletedRolesTask extends AbstractCronTask {
     }
 
     @Override
-    protected Invoker.Mode getMode() {
-        return Invoker.Mode.create().with(new HibernateTransactionMode());
+    protected Mode getMode() {
+        return Mode.create().with(new HibernateTransactionMode());
     }
 }

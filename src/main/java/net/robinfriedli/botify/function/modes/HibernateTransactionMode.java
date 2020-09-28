@@ -7,9 +7,9 @@ import javax.persistence.RollbackException;
 
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.persist.StaticSessionProvider;
-import net.robinfriedli.jxp.exec.AbstractDelegatingModeWrapper;
-import net.robinfriedli.jxp.exec.Invoker;
-import net.robinfriedli.jxp.exec.modes.SynchronisationMode;
+import net.robinfriedli.exec.AbstractNestedModeWrapper;
+import net.robinfriedli.exec.Mode;
+import net.robinfriedli.exec.modes.SynchronisationMode;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
@@ -20,7 +20,7 @@ import static net.robinfriedli.botify.persist.StaticSessionProvider.*;
  * current {@link CommandContext} or, if absent, the current thread session using {@link SessionFactory#getCurrentSession()}
  * if no session was provided explicitly. See {@link StaticSessionProvider}.
  */
-public class HibernateTransactionMode extends AbstractDelegatingModeWrapper {
+public class HibernateTransactionMode extends AbstractNestedModeWrapper {
 
     @Nullable
     private Session session;
@@ -33,20 +33,20 @@ public class HibernateTransactionMode extends AbstractDelegatingModeWrapper {
         this.session = session;
     }
 
-    public static Invoker.Mode getMode() {
+    public static Mode getMode() {
         return getMode(null);
     }
 
-    public static Invoker.Mode getMode(Session session) {
+    public static Mode getMode(Session session) {
         return getMode(session, null);
     }
 
-    public static Invoker.Mode getMode(Object synchronisationLock) {
+    public static Mode getMode(Object synchronisationLock) {
         return getMode(null, synchronisationLock);
     }
 
-    public static Invoker.Mode getMode(Session session, @Nullable Object synchronisationLock) {
-        Invoker.Mode mode = Invoker.Mode.create();
+    public static Mode getMode(Session session, @Nullable Object synchronisationLock) {
+        Mode mode = Mode.create();
         if (synchronisationLock != null) {
             mode.with(new SynchronisationMode(synchronisationLock));
         }
