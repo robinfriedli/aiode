@@ -188,7 +188,7 @@ public class ChartsCommand extends AbstractCommand {
         Playable.Source source = sourceEntity.asEnum();
         String id = (String) record[1];
         Long spotifyItemKindPk = (Long) record[3];
-        SpotifyItemKind spotifyItemKind = session.load(SpotifyItemKind.class, spotifyItemKindPk);
+        SpotifyItemKind spotifyItemKind = spotifyItemKindPk != null ? session.load(SpotifyItemKind.class, spotifyItemKindPk) : null;
         switch (source) {
             case SPOTIFY:
                 return runWithCredentials(() -> {
