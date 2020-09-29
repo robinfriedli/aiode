@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <versions xmlns="versionSpace">
-  <version launched="false" version="1.6.LTS.11">
+  <version launched="false" version="1.6.LTS.15">
+    <feature title="Improved Spotify to YouTube redirection">The algorithm to find the best YouTube video for a given Spotify track has been improved. Note that you might not notice an improvement right away as the old results are still stored and will get updated gradually over the coming month.</feature>
+    <feature title="Improved track loading error messages">Error messages shown when failing to load a track now reliably show the correct track when the queue has already skipped to the next track.</feature>
+    <feature title="Updated lavaplayer dependency">Lavaplayer has been updated to 1.3.53 including a fix for YouTube videos failing to load sporadically (and thus by extension Spotify tracks) due to "no player block found" and a fix for missing video titles when playing a YouTube playlist.</feature>
+    <feature title="Improved http server stability">Increased thread pool size for the http server to improve reliability under the now higher workloads.</feature>
+    <feature title="Fix unavailable Spotify tracks">Fix unavailable Spotify tracks causing an error when loading a botify playlist by not including them.</feature>
+    <feature title="Update YouTube API quota cost calculation">Update how the bot calculates YouTube API quota usage based on the changed quota costs.</feature>
+  </version>
+  <version launched="true" version="1.6.LTS.11">
     <feature title="YouTube IP rotation">Added support for lavaplayer IP rotation to use different IP addresses for certain requests</feature>
   </version>
   <version launched="true" version="1.6.LTS.4">
