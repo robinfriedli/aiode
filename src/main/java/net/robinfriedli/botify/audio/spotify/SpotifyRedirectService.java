@@ -57,10 +57,15 @@ public class SpotifyRedirectService {
         }
 
         String spotifyTrackId = spotifyTrack.getId();
-        Optional<SpotifyRedirectIndex> persistedSpotifyRedirectIndex = MUTEX_SYNC.evaluate(
-            spotifyTrackId,
-            () -> queryExistingIndex(session, spotifyTrackId)
-        );
+        Optional<SpotifyRedirectIndex> persistedSpotifyRedirectIndex;
+        if (spotifyTrackId != null) {
+            persistedSpotifyRedirectIndex = MUTEX_SYNC.evaluate(
+                spotifyTrackId,
+                () -> queryExistingIndex(session, spotifyTrackId)
+            );
+        } else {
+            persistedSpotifyRedirectIndex = Optional.empty();
+        }
 
         if (persistedSpotifyRedirectIndex.isPresent()) {
             SpotifyRedirectIndex spotifyRedirectIndex = persistedSpotifyRedirectIndex.get();
