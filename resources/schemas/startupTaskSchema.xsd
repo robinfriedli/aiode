@@ -8,6 +8,7 @@
     </xs:sequence>
   </xs:complexType>
   <xs:complexType name="startupTask">
+    <xs:attribute name="runForEachShard" type="xs:boolean"/>
     <xs:attribute name="implementation" type="xs:string"/>
   </xs:complexType>
 

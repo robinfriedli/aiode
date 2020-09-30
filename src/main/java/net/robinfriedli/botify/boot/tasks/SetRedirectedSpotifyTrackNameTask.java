@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import org.apache.hc.core5.http.ParseException;
 
 import com.google.common.collect.Lists;
@@ -13,9 +15,9 @@ import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.exceptions.SpotifyWebApiException;
 import com.wrapper.spotify.model_objects.credentials.ClientCredentials;
 import com.wrapper.spotify.model_objects.specification.Track;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.sharding.ShardManager;
+import net.dv8tion.jda.api.JDA;
 import net.robinfriedli.botify.boot.StartupTask;
+import net.robinfriedli.botify.entities.xml.StartupTaskContribution;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.api.XmlElement;
@@ -30,39 +32,37 @@ import static net.robinfriedli.jxp.queries.Conditions.*;
  */
 public class SetRedirectedSpotifyTrackNameTask implements StartupTask {
 
-    private final ShardManager shardManager;
     private final JxpBackend jxpBackend;
     private final SpotifyApi spotifyApi;
+    private final StartupTaskContribution contribution;
 
-    public SetRedirectedSpotifyTrackNameTask(ShardManager shardManager, JxpBackend jxpBackend, SpotifyApi spotifyApi) {
-        this.shardManager = shardManager;
+    public SetRedirectedSpotifyTrackNameTask(JxpBackend jxpBackend, SpotifyApi spotifyApi, StartupTaskContribution contribution) {
         this.jxpBackend = jxpBackend;
         this.spotifyApi = spotifyApi;
+        this.contribution = contribution;
     }
 
     @Override
-    public void perform() throws Exception {
+    public StartupTaskContribution getContribution() {
+        return contribution;
+    }
+
+    @Override
+    public void perform(@Nullable JDA shard) throws Exception {
         ClientCredentials clientCredentials = spotifyApi.clientCredentials().build().execute();
         spotifyApi.setAccessToken(clientCredentials.getAccessToken());
         String playlistsPath = PropertiesLoadingService.requireProperty("PLAYLISTS_PATH");
-        List<File> files = Lists.newArrayList();
-        files.add(new File(playlistsPath));
-        for (Guild guild : shardManager.getGuilds()) {
-            String guildPlaylistsPath = PropertiesLoadingService.requireProperty("GUILD_PLAYLISTS_PATH", guild.getId());
-            files.add(new File(guildPlaylistsPath));
-        }
+        File file = new File(playlistsPath);
 
-        for (File file : files) {
-            if (file.exists()) {
-                try (Context context = jxpBackend.getContext(file)) {
-                    context.invoke(() -> {
-                        try {
-                            migrate(context, spotifyApi);
-                        } catch (IOException | SpotifyWebApiException | ParseException e) {
-                            throw new RuntimeException(e);
-                        }
-                    });
-                }
+        if (file.exists()) {
+            try (Context context = jxpBackend.getContext(file)) {
+                context.invoke(() -> {
+                    try {
+                        migrate(context, spotifyApi);
+                    } catch (IOException | SpotifyWebApiException | ParseException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
             }
         }
         spotifyApi.setAccessToken(null);

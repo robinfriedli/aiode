@@ -1,5 +1,7 @@
 package net.robinfriedli.botify.boot.tasks;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -9,7 +11,9 @@ import liquibase.database.DatabaseFactory;
 import liquibase.database.jvm.JdbcConnection;
 import liquibase.exception.LiquibaseException;
 import liquibase.resource.FileSystemResourceAccessor;
+import net.dv8tion.jda.api.JDA;
 import net.robinfriedli.botify.boot.StartupTask;
+import net.robinfriedli.botify.entities.xml.StartupTaskContribution;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
@@ -25,14 +29,16 @@ public class RunLiquibaseUpdateTask implements StartupTask {
 
     private final Logger logger;
     private final SessionFactory sessionFactory;
+    private final StartupTaskContribution contribution;
 
-    public RunLiquibaseUpdateTask(SessionFactory sessionFactory) {
+    public RunLiquibaseUpdateTask(SessionFactory sessionFactory, StartupTaskContribution contribution) {
+        this.contribution = contribution;
         logger = LoggerFactory.getLogger(getClass());
         this.sessionFactory = sessionFactory;
     }
 
     @Override
-    public void perform() {
+    public void perform(@Nullable JDA shard) {
         logger.info("Beginning liquibase update");
         try (Session session = sessionFactory.openSession()) {
             session.doWork(connection -> {
@@ -51,4 +57,8 @@ public class RunLiquibaseUpdateTask implements StartupTask {
         logger.info("Liquibase update done");
     }
 
+    @Override
+    public StartupTaskContribution getContribution() {
+        return contribution;
+    }
 }

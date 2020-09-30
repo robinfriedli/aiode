@@ -2,6 +2,14 @@ package net.robinfriedli.botify.boot;
 
 import java.io.File;
 import java.util.EnumSet;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +24,8 @@ import com.wrapper.spotify.SpotifyHttpManager;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.events.ReadyEvent;
+import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder;
 import net.dv8tion.jda.api.sharding.ShardManager;
@@ -41,7 +51,7 @@ import net.robinfriedli.botify.entities.xml.HttpHandlerContribution;
 import net.robinfriedli.botify.entities.xml.StartupTaskContribution;
 import net.robinfriedli.botify.entities.xml.Version;
 import net.robinfriedli.botify.entities.xml.WidgetContribution;
-import net.robinfriedli.botify.function.CheckedConsumer;
+import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
 import net.robinfriedli.botify.listeners.CommandListener;
 import net.robinfriedli.botify.listeners.GuildManagementListener;
 import net.robinfriedli.botify.listeners.VoiceChannelListener;
@@ -58,6 +68,7 @@ import org.hibernate.SessionFactory;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.jetbrains.annotations.NotNull;
 
 import static net.dv8tion.jda.api.requests.GatewayIntent.*;
 
@@ -118,6 +129,11 @@ public class Launcher {
             }).setApplicationName("botify-youtube-search").build();
             YouTubeService youTubeService = new YouTubeService(youTube, youTubeCredentials, youtubeApiDailyQuota);
 
+            // prepare startup tasks
+            Context startupTaskContext = jxpBackend.getContext(startupTasksPath);
+            List<StartupTaskContribution> startupTaskContributions = startupTaskContext.getInstancesOf(StartupTaskContribution.class);
+            StartupListener startupListener = new StartupListener(startupTaskContributions);
+
             // setup JDA
             EnumSet<GatewayIntent> gatewayIntents = EnumSet.of(GUILD_MESSAGES, GUILD_MESSAGE_REACTIONS, GUILD_VOICE_STATES);
             ShardManager shardManager = DefaultShardManagerBuilder.create(discordToken, gatewayIntents)
@@ -125,9 +141,8 @@ public class Launcher {
                 .setMemberCachePolicy(MemberCachePolicy.DEFAULT)
                 .setStatus(OnlineStatus.IDLE)
                 .setChunkingFilter(ChunkingFilter.NONE)
+                .addEventListeners(startupListener)
                 .build();
-
-            shardManager.getShards().forEach((CheckedConsumer<JDA>) JDA::awaitReady);
 
             // setup discordbots.org
             DiscordBotListAPI discordBotListAPI;
@@ -198,10 +213,12 @@ public class Launcher {
             });
 
             // run startup tasks
-            Context context = jxpBackend.getContext(startupTasksPath);
-            for (StartupTaskContribution element : context.getInstancesOf(StartupTaskContribution.class)) {
-                element.instantiate().perform();
+            for (StartupTaskContribution element : startupTaskContributions) {
+                if (!element.getAttribute("runForEachShard").getBool()) {
+                    element.instantiate().runTask(null);
+                }
             }
+            startupListener.setBotify(botify);
 
             CronJobService cronJobService = new CronJobService(jxpBackend.getContext(PropertiesLoadingService.requireProperty("CRON_JOBS_PATH")));
             cronJobService.scheduleAll();
@@ -213,6 +230,76 @@ public class Launcher {
             logger.error("Exception in starter. Application will terminate.", e);
             System.exit(1);
         }
+    }
+
+    private static class StartupListener extends ListenerAdapter {
+
+        private static final ExecutorService STARTUP_TASK_EXECUTOR = new ThreadPoolExecutor(
+            0, 1,
+            60L, TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>(),
+            r -> {
+                Thread thread = new Thread(r);
+                thread.setName("startup-task-thread");
+                thread.setUncaughtExceptionHandler(new LoggingExceptionHandler());
+                return thread;
+            }
+        );
+
+        private final CompletableFuture<Botify> futureBotify;
+        private final List<StartupTaskContribution> startupTaskContributions;
+
+        private final Logger logger = LoggerFactory.getLogger(getClass());
+
+        private StartupListener(List<StartupTaskContribution> startupTaskContributions) {
+            futureBotify = new CompletableFuture<>();
+            this.startupTaskContributions = startupTaskContributions;
+        }
+
+        @Override
+        public void onReady(@NotNull ReadyEvent event) {
+            STARTUP_TASK_EXECUTOR.execute(() -> {
+                JDA jda = event.getJDA();
+
+                Botify botify;
+                try {
+                    botify = futureBotify.get(5, TimeUnit.MINUTES);
+                } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                    throw new RuntimeException("Exception awaiting dependency for StartupListener", e);
+                }
+
+                CommandExecutionQueueManager executionQueueManager = botify.getExecutionQueueManager();
+                GuildManager guildManager = botify.getGuildManager();
+
+                StaticSessionProvider.invokeWithSession(session -> {
+                    // setup current thread session and handle all guilds within one session instead of opening a new session for each
+                    for (Guild guild : jda.getGuilds()) {
+                        executionQueueManager.addGuild(guild);
+                        guildManager.addGuild(guild);
+                    }
+                });
+
+                for (StartupTaskContribution element : startupTaskContributions) {
+                    if (element.getAttribute("runForEachShard").getBool()) {
+                        try {
+                            element.instantiate().runTask(jda);
+                        } catch (Exception e) {
+                            String msg = String.format(
+                                "Startup task %s has thrown an exception for shard %s",
+                                element.getAttribute("implementation").getValue(),
+                                jda
+                            );
+                            logger.error(msg, e);
+                        }
+                    }
+                }
+            });
+        }
+
+        public void setBotify(Botify botify) {
+            futureBotify.complete(botify);
+        }
+
     }
 
 }

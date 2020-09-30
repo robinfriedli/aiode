@@ -5,13 +5,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import com.google.common.io.Files;
 import com.wrapper.spotify.SpotifyApi;
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.boot.StartupTask;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
+import net.robinfriedli.botify.entities.xml.StartupTaskContribution;
 import net.robinfriedli.botify.interceptors.InterceptorChain;
 import net.robinfriedli.botify.interceptors.PlaylistItemTimestampListener;
 import net.robinfriedli.botify.interceptors.VerifyPlaylistListener;
@@ -27,24 +30,29 @@ import org.hibernate.SessionFactory;
  */
 public class MigratePlaylistsTask implements StartupTask {
 
-    private final ShardManager shardManager;
     private final JxpBackend jxpBackend;
     private final SessionFactory sessionFactory;
     private final SpotifyApi spotifyApi;
+    private final StartupTaskContribution contribution;
 
-    public MigratePlaylistsTask(ShardManager shardManager, JxpBackend jxpBackend, SessionFactory sessionFactory, SpotifyApi spotifyApi) {
-        this.shardManager = shardManager;
+    public MigratePlaylistsTask(JxpBackend jxpBackend, SessionFactory sessionFactory, SpotifyApi spotifyApi, StartupTaskContribution contribution) {
+        this.contribution = contribution;
         this.jxpBackend = jxpBackend;
         this.sessionFactory = sessionFactory;
         this.spotifyApi = spotifyApi;
     }
 
     @Override
-    public void perform() throws Exception {
+    public StartupTaskContribution getContribution() {
+        return contribution;
+    }
+
+    @Override
+    public void perform(@Nullable JDA shard) throws Exception {
         try (Session session = sessionFactory.withOptions().interceptor(InterceptorChain.of(
             PlaylistItemTimestampListener.class, VerifyPlaylistListener.class)).openSession()) {
             session.beginTransaction();
-            for (Guild guild : shardManager.getGuilds()) {
+            for (Guild guild : Objects.requireNonNull(shard).getGuilds()) {
                 String path = PropertiesLoadingService.requireProperty("GUILD_PLAYLISTS_PATH", guild.getId());
                 File xmlFile = new File(path);
                 if (xmlFile.exists()) {
