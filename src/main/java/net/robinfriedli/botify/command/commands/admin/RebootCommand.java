@@ -3,11 +3,14 @@ package net.robinfriedli.botify.command.commands.admin;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Message;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.AbstractAdminCommand;
 import net.robinfriedli.botify.command.ArgumentContribution;
@@ -50,6 +53,7 @@ public class RebootCommand extends AbstractAdminCommand {
         Botify.shutdownListeners();
 
         try {
+            List<CompletableFuture<Message>> messagesToAwait;
             if (!argumentSet("silent")) {
                 EmbedBuilder embedBuilder = new EmbedBuilder();
                 embedBuilder.setTitle("Scheduled restart");
@@ -57,7 +61,9 @@ public class RebootCommand extends AbstractAdminCommand {
                 if (!getCommandInput().isBlank()) {
                     embedBuilder.addField("Reason", getCommandInput(), false);
                 }
-                sendToActiveGuilds(embedBuilder.build());
+                messagesToAwait = sendToActiveGuilds(embedBuilder.build());
+            } else {
+                messagesToAwait = null;
             }
 
             Runtime runtime = Runtime.getRuntime();
@@ -74,7 +80,7 @@ public class RebootCommand extends AbstractAdminCommand {
             }));
 
             // runs in separate thread to avoid deadlock when waiting for commands to finish
-            Thread shutdownThread = new Thread(() -> Botify.shutdown(60000));
+            Thread shutdownThread = new Thread(() -> Botify.shutdown(60000, messagesToAwait));
             shutdownThread.setName("Shutdown thread");
             shutdownThread.start();
         } catch (Throwable e) {

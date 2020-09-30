@@ -324,8 +324,8 @@ public abstract class AbstractCommand implements Command {
         return messageService.sendError(message, getContext().getChannel());
     }
 
-    protected void sendToActiveGuilds(MessageEmbed message) {
-        messageService.sendToActiveGuilds(message, getContext().getSession());
+    protected List<CompletableFuture<Message>> sendToActiveGuilds(MessageEmbed message) {
+        return messageService.sendToActiveGuilds(message, getContext().getSession());
     }
 
     /**
