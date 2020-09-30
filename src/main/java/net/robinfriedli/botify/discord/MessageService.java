@@ -201,16 +201,20 @@ public class MessageService {
         }
     }
 
-    public void sendToActiveGuilds(MessageEmbed message, Session session) {
+    public List<CompletableFuture<Message>> sendToActiveGuilds(MessageEmbed message, Session session) {
         GuildManager guildManager = Botify.get().getGuildManager();
         Set<Guild> activeGuilds = guildManager.getActiveGuilds(session);
+        int numberOfActiveGuilds = activeGuilds.size();
+        List<CompletableFuture<Message>> futureMessages = Lists.newArrayListWithCapacity(numberOfActiveGuilds);
 
-        logger.info("Sending message to " + activeGuilds.size() + " active guilds.");
+        logger.info("Sending message to " + numberOfActiveGuilds + " active guilds.");
         for (Guild activeGuild : activeGuilds) {
             if (activeGuild != null) {
-                send(message, activeGuild);
+                futureMessages.add(send(message, activeGuild));
             }
         }
+
+        return futureMessages;
     }
 
     public CompletableFuture<Message> accept(MessageChannel channel, Function<MessageChannel, MessageAction> function) {
