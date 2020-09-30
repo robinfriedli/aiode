@@ -1,6 +1,11 @@
 package net.robinfriedli.botify.boot.tasks;
 
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.annotation.Nullable;
 
@@ -15,11 +20,13 @@ import net.robinfriedli.botify.boot.VersionManager;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.xml.StartupTaskContribution;
 import net.robinfriedli.botify.entities.xml.Version;
+import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
 import net.robinfriedli.botify.function.CheckedConsumer;
 import net.robinfriedli.botify.util.StaticSessionProvider;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
 import org.hibernate.Session;
+import org.jetbrains.annotations.NotNull;
 
 import static net.robinfriedli.botify.boot.VersionManager.Conditions.*;
 import static net.robinfriedli.jxp.queries.Conditions.*;
@@ -33,6 +40,21 @@ public class VersionUpdateAlertTask implements StartupTask {
     // since the task is run for each shard separately and the launched flag gets set to true the first time,
     // this flag is used to remember whether there has been an update
     private static boolean UPDATED = false;
+    private static int OFFSET = 0;
+
+    private static final Object DISPATCH_LOCK = new Object();
+    private static final int MESSAGES_PER_SECOND = 3;
+    private static final ScheduledExecutorService MESSAGE_DISPATCH = Executors.newScheduledThreadPool(0, new ThreadFactory() {
+        private final AtomicLong threadId = new AtomicLong(1);
+
+        @Override
+        public Thread newThread(@NotNull Runnable r) {
+            Thread thread = new Thread(r);
+            thread.setName("version-update-dispatch-thread-" + threadId.getAndIncrement());
+            thread.setUncaughtExceptionHandler(new LoggingExceptionHandler());
+            return thread;
+        }
+    });
 
     private final MessageService messageService;
     private final StartupTaskContribution contribution;
@@ -89,12 +111,35 @@ public class VersionUpdateAlertTask implements StartupTask {
                 }
             }
 
-            // setup current thread session and handle all guilds within one session instead of opening a new session for each
-            StaticSessionProvider.invokeWithSession((CheckedConsumer<Session>) session -> {
-                for (Guild guild : shard.getGuilds()) {
-                    messageService.sendWithLogo(embedBuilder, guild);
+            List<Guild> guilds = shard.getGuilds();
+            long delaySecs = OFFSET++ * (guilds.size() / MESSAGES_PER_SECOND);
+            if (delaySecs > 0) {
+                delaySecs += 10;
+            }
+
+            MESSAGE_DISPATCH.schedule(() -> {
+                // use a lock in case one shard has fewer guilds and thus did not calculate enough of a delay to align
+                // with the other shards
+                synchronized (DISPATCH_LOCK) {
+                    // setup current thread session and handle all guilds within one session instead of opening a new session for each
+                    StaticSessionProvider.invokeWithSession((CheckedConsumer<Session>) session -> {
+                        int counter = 0;
+                        long currentTimeMillis = System.currentTimeMillis();
+                        for (Guild guild : guilds) {
+                            messageService.sendWithLogo(embedBuilder, guild);
+
+                            if (++counter % MESSAGES_PER_SECOND == 0) {
+                                long delta = System.currentTimeMillis() - currentTimeMillis;
+                                if (delta < 1000) {
+                                    Thread.sleep(1000 - delta);
+                                }
+                                currentTimeMillis = System.currentTimeMillis();
+                            }
+                        }
+                    });
                 }
-            });
+            }, delaySecs, TimeUnit.SECONDS);
+
         }
     }
 
