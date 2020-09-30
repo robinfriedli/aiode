@@ -53,10 +53,12 @@ dependencies {
     implementation "org.hibernate:hibernate-validator:5.4.3.Final"
     implementation "org.hibernate:hibernate-validator-cdi:5.4.3.Final"
     implementation "org.kohsuke:groovy-sandbox:1.25"
-    implementation("org.liquibase:liquibase-core:4.0.0") {
+    // update to 4.0 causes issues when running as jar (FileSystemNotFoundException), see https://github.com/liquibase/liquibase/issues/1276
+    // revert back to 3.9 for now
+    implementation("org.liquibase:liquibase-core:3.9.0") {
         exclude group: "ch.qos.logback"
     }
-    liquibaseRuntime "org.liquibase.ext:liquibase-hibernate5:4.0.0"
+    liquibaseRuntime "org.liquibase.ext:liquibase-hibernate5:3.9.0"
     implementation "org.postgresql:postgresql:42.2.16"
     implementation "org.quartz-scheduler:quartz:2.3.2"
     implementation "org.springframework.boot:spring-boot-dependencies:2.3.4.RELEASE"
