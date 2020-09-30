@@ -1,8 +1,11 @@
 package net.robinfriedli.botify.command.commands.admin;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Message;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.AbstractAdminCommand;
 import net.robinfriedli.botify.command.CommandContext;
@@ -44,6 +47,7 @@ public class QuitCommand extends AbstractAdminCommand {
         Botify.shutdownListeners();
 
         try {
+            List<CompletableFuture<Message>> futureMessages;
             if (!argumentSet("silent")) {
                 EmbedBuilder embedBuilder = new EmbedBuilder();
                 embedBuilder.setTitle("Scheduled shutdown");
@@ -51,11 +55,16 @@ public class QuitCommand extends AbstractAdminCommand {
                 if (!getCommandInput().isBlank()) {
                     embedBuilder.addField("Reason", getCommandInput(), false);
                 }
-                sendToActiveGuilds(embedBuilder.build());
+                futureMessages = sendToActiveGuilds(embedBuilder.build());
+            } else {
+                futureMessages = null;
             }
 
             // runs in separate thread to avoid deadlock when waiting for commands to finish
-            Thread shutdownThread = new Thread(() -> Botify.shutdown(getArgumentValue("await", Integer.class, 60) * 1000));
+            Thread shutdownThread = new Thread(() -> Botify.shutdown(
+                getArgumentValue("await", Integer.class, 60) * 1000,
+                futureMessages
+            ));
             shutdownThread.setName("Shutdown thread");
             shutdownThread.start();
         } catch (Throwable e) {

@@ -2,7 +2,12 @@ package net.robinfriedli.botify;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import com.google.api.client.util.Sets;
 import com.wrapper.spotify.SpotifyApi;
 import net.dv8tion.jda.api.OnlineStatus;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.audio.AudioManager;
@@ -158,10 +164,11 @@ public class Botify {
      * careful to not call this method from within a CommandExecutionThread executed by a ThreadExecutionQueue, as this
      * method waits for those threads to finish, causing a deadlock.
      *
-     * @param millisToWait time to wait for pending actions to complete in milliseconds, after this time the bot will
-     *                     quit either way
+     * @param millisToWait    time to wait for pending actions to complete in milliseconds, after this time the bot will
+     *                        quit either way
+     * @param messagesToAwait list of shutdown notification messages that are being send that should first be awaited
      */
-    public static void shutdown(int millisToWait) {
+    public static void shutdown(int millisToWait, @Nullable List<CompletableFuture<Message>> messagesToAwait) {
         Botify botify = get();
         shuttingDown = true;
         LOGGER.info("Shutting down");
@@ -187,6 +194,18 @@ public class Botify {
         try {
             LOGGER.info("Waiting for commands to finish");
             executionQueueManager.joinAll(0);
+
+            if (messagesToAwait != null && !messagesToAwait.isEmpty()) {
+                for (CompletableFuture<Message> futureMessage : messagesToAwait) {
+                    try {
+                        futureMessage.get();
+                    } catch (InterruptedException e) {
+                        break;
+                    } catch (ExecutionException e) {
+                        continue;
+                    }
+                }
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             forceShutdownThread.interrupt();
