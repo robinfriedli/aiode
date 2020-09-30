@@ -2,9 +2,13 @@ package net.robinfriedli.botify.boot.tasks;
 
 import java.util.List;
 
+import javax.annotation.Nullable;
+
+import net.dv8tion.jda.api.JDA;
 import net.robinfriedli.botify.boot.StartupTask;
 import net.robinfriedli.botify.entities.AccessConfiguration;
 import net.robinfriedli.botify.entities.GuildSpecification;
+import net.robinfriedli.botify.entities.xml.StartupTaskContribution;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
@@ -14,13 +18,15 @@ import org.hibernate.SessionFactory;
 public class CreatePermissionAccessConfigurationTask implements StartupTask {
 
     private final SessionFactory sessionFactory;
+    private final StartupTaskContribution contribution;
 
-    public CreatePermissionAccessConfigurationTask(SessionFactory sessionFactory) {
+    public CreatePermissionAccessConfigurationTask(SessionFactory sessionFactory, StartupTaskContribution contribution) {
         this.sessionFactory = sessionFactory;
+        this.contribution = contribution;
     }
 
     @Override
-    public void perform() {
+    public void perform(@Nullable JDA shard) {
         try (Session session = sessionFactory.openSession()) {
             // find all guild specifications where no access configuration for the permission command exists
             List<GuildSpecification> guildSpecifications = session.createQuery("from " + GuildSpecification.class.getName()
@@ -38,5 +44,10 @@ public class CreatePermissionAccessConfigurationTask implements StartupTask {
                 session.getTransaction().commit();
             }
         }
+    }
+
+    @Override
+    public StartupTaskContribution getContribution() {
+        return contribution;
     }
 }
