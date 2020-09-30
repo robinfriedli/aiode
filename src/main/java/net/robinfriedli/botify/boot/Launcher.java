@@ -203,15 +203,6 @@ public class Launcher {
             HttpServerStarter serverStarter = new HttpServerStarter(httpHanldersContext);
             serverStarter.start();
 
-            // setup guilds
-            StaticSessionProvider.invokeWithSession(session -> {
-                // setup current thread session and handle all guilds within one session instead of opening a new session for each
-                for (Guild guild : shardManager.getGuilds()) {
-                    guildManager.addGuild(guild);
-                    executionQueueManager.addGuild(guild);
-                }
-            });
-
             // run startup tasks
             for (StartupTaskContribution element : startupTaskContributions) {
                 if (!element.getAttribute("runForEachShard").getBool()) {
