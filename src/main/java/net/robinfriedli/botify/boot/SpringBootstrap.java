@@ -5,17 +5,10 @@ import java.io.InputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.concurrent.CommandExecutionQueueManager;
 import net.robinfriedli.botify.cron.CronJobService;
-import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.entities.xml.StartupTaskContribution;
-import net.robinfriedli.botify.function.CheckedConsumer;
-import net.robinfriedli.botify.persist.StaticSessionProvider;
 import net.robinfriedli.botify.servers.HttpServerManager;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.persist.Context;
@@ -46,31 +39,19 @@ public class SpringBootstrap implements CommandLineRunner {
             Botify botify = Botify.get();
             CommandManager commandManager = botify.getCommandManager();
             HttpServerManager serverManager = botify.getHttpServerManager();
-            ShardManager shardManager = botify.getShardManager();
-            GuildManager guildManager = botify.getGuildManager();
-            CommandExecutionQueueManager executionQueueManager = botify.getExecutionQueueManager();
             JxpBackend jxpBackend = botify.getJxpBackend();
             CronJobService cronJobService = botify.getCronJobService();
 
             commandManager.initializeInterceptorChain();
             serverManager.start();
 
-            shardManager.getShards().forEach((CheckedConsumer<JDA>) JDA::awaitReady);
-
-            // setup guilds
-            StaticSessionProvider.consumeSession(session -> {
-                // setup current thread session and handle all guilds within one session instead of opening a new session for each
-                for (Guild guild : shardManager.getGuilds()) {
-                    guildManager.addGuild(guild);
-                    executionQueueManager.addGuild(guild);
-                }
-            });
-
             // run startup tasks
             InputStream startupTasksFile = getClass().getResourceAsStream("/xml-contributions/startupTasks.xml");
             Context context = jxpBackend.createContext(startupTasksFile);
             for (StartupTaskContribution element : context.getInstancesOf(StartupTaskContribution.class)) {
-                element.instantiate().perform();
+                if (!element.getAttribute("runForEachShard").getBool()) {
+                    element.instantiate().runTask(null);
+                }
             }
 
             cronJobService.scheduleAll();

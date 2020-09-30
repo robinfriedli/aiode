@@ -6,9 +6,13 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
+import javax.annotation.Nullable;
+
+import net.dv8tion.jda.api.JDA;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.boot.StartupTask;
 import net.robinfriedli.botify.entities.CurrentYouTubeQuotaUsage;
+import net.robinfriedli.botify.entities.xml.StartupTaskContribution;
 import net.robinfriedli.botify.persist.StaticSessionProvider;
 
 /**
@@ -16,14 +20,21 @@ import net.robinfriedli.botify.persist.StaticSessionProvider;
  */
 public class ResetOutdatedYouTubeQuotaTask implements StartupTask {
 
+    private final StartupTaskContribution contribution;
     private final YouTubeService youTubeService;
 
-    public ResetOutdatedYouTubeQuotaTask(YouTubeService youTubeService) {
+    public ResetOutdatedYouTubeQuotaTask(StartupTaskContribution contribution, YouTubeService youTubeService) {
+        this.contribution = contribution;
         this.youTubeService = youTubeService;
     }
 
     @Override
-    public void perform() {
+    public StartupTaskContribution getContribution() {
+        return contribution;
+    }
+
+    @Override
+    public void perform(@Nullable JDA shard) {
         StaticSessionProvider.consumeSession(session -> {
             CurrentYouTubeQuotaUsage currentQuotaUsage = YouTubeService.getCurrentQuotaUsage(session);
             LocalDateTime lastUpdatedNoZone = currentQuotaUsage.getLastUpdated();

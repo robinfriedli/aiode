@@ -2,15 +2,18 @@ package net.robinfriedli.botify.boot.tasks;
 
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.boot.StartupTask;
 import net.robinfriedli.botify.boot.VersionManager;
 import net.robinfriedli.botify.discord.MessageService;
+import net.robinfriedli.botify.entities.xml.StartupTaskContribution;
 import net.robinfriedli.botify.entities.xml.Version;
 import net.robinfriedli.botify.function.CheckedConsumer;
 import net.robinfriedli.botify.persist.StaticSessionProvider;
@@ -27,25 +30,35 @@ import static net.robinfriedli.jxp.queries.Conditions.*;
  */
 public class VersionUpdateAlertTask implements StartupTask {
 
-    private final ShardManager shardManager;
+    // since the task is run for each shard separately and the launched flag gets set to true the first time,
+    // this flag is used to remember whether there has been an update
+    private static boolean UPDATED = false;
+
     private final MessageService messageService;
+    private final StartupTaskContribution contribution;
     private final VersionManager versionManager;
 
-    public VersionUpdateAlertTask(ShardManager shardManager, MessageService messageService, VersionManager versionManager) {
-        this.shardManager = shardManager;
+    public VersionUpdateAlertTask(MessageService messageService, StartupTaskContribution contribution, VersionManager versionManager) {
         this.messageService = messageService;
+        this.contribution = contribution;
         this.versionManager = versionManager;
     }
 
     @Override
-    public void perform() {
+    public StartupTaskContribution getContribution() {
+        return contribution;
+    }
+
+    @Override
+    public void perform(@Nullable JDA shard) {
         Logger logger = LoggerFactory.getLogger(getClass());
         Version versionElem = versionManager.getCurrentVersion();
         if (versionElem != null) {
             Context context = versionManager.getContext();
-            if (!versionElem.getAttribute("launched").getBool()) {
+            if (UPDATED || !versionElem.getAttribute("launched").getBool()) {
+                UPDATED = true;
                 if (!(versionElem.hasAttribute("silent") && versionElem.getAttribute("silent").getBool())) {
-                    sendUpdateAlert(context, versionElem);
+                    sendUpdateAlert(context, versionElem, shard);
                 }
 
                 context.invoke(() -> versionElem.setAttribute("launched", true));
@@ -55,7 +68,7 @@ public class VersionUpdateAlertTask implements StartupTask {
         }
     }
 
-    private void sendUpdateAlert(Context context, Version versionElem) {
+    private void sendUpdateAlert(Context context, Version versionElem, JDA shard) {
         List<XmlElement> lowerLaunchedVersions = context.query(and(
             tagName("version"),
             attribute("launched").is(true),
@@ -78,7 +91,7 @@ public class VersionUpdateAlertTask implements StartupTask {
 
             // setup current thread session and handle all guilds within one session instead of opening a new session for each
             StaticSessionProvider.consumeSession((CheckedConsumer<Session>) session -> {
-                for (Guild guild : shardManager.getGuilds()) {
+                for (Guild guild : shard.getGuilds()) {
                     messageService.sendWithLogo(embedBuilder, guild);
                 }
             });

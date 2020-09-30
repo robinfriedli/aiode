@@ -6,15 +6,18 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Splitter;
 import com.google.common.io.Files;
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.boot.StartupTask;
 import net.robinfriedli.botify.entities.AccessConfiguration;
 import net.robinfriedli.botify.entities.GrantedRole;
 import net.robinfriedli.botify.entities.GuildSpecification;
+import net.robinfriedli.botify.entities.xml.StartupTaskContribution;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
@@ -28,35 +31,40 @@ import static net.robinfriedli.jxp.queries.Conditions.*;
  */
 public class MigrateGuildSpecificationsTask implements StartupTask {
 
-    private final ShardManager shardManager;
     private final JxpBackend jxpBackend;
     private final SessionFactory sessionFactory;
+    private final StartupTaskContribution contribution;
 
     private final Splitter splitter = Splitter.on(",").trimResults().omitEmptyStrings();
 
-    public MigrateGuildSpecificationsTask(ShardManager shardManager, JxpBackend jxpBackend, SessionFactory sessionFactory) {
-        this.shardManager = shardManager;
+    public MigrateGuildSpecificationsTask(JxpBackend jxpBackend, SessionFactory sessionFactory, StartupTaskContribution contribution) {
         this.jxpBackend = jxpBackend;
         this.sessionFactory = sessionFactory;
+        this.contribution = contribution;
     }
 
     @Override
-    public void perform() throws IOException {
+    public StartupTaskContribution getContribution() {
+        return contribution;
+    }
+
+    @Override
+    public void perform(@Nullable JDA shard) throws IOException {
         try (Session session = sessionFactory.openSession()) {
             session.beginTransaction();
             File file = new File("./resources/guildSpecifications.xml");
             if (file.exists()) {
-                migrateSpecifications(file, session);
+                migrateSpecifications(shard, file, session);
             }
             session.getTransaction().commit();
         }
     }
 
-    private void migrateSpecifications(File file, Session session) throws IOException {
+    private void migrateSpecifications(JDA shard, File file, Session session) throws IOException {
         try (Context context = jxpBackend.getContext(file)) {
             List<XmlElement> guildSpecifications = context.query(tagName("guildSpecification")).collect();
             for (XmlElement guildSpecification : guildSpecifications) {
-                migrateSpecification(guildSpecification, session);
+                migrateSpecification(shard, guildSpecification, session);
             }
         }
 
@@ -68,10 +76,10 @@ public class MigrateGuildSpecificationsTask implements StartupTask {
         Files.move(file, new File(directory.getPath() + "/" + file.getName()));
     }
 
-    private void migrateSpecification(XmlElement specification, Session session) {
+    private void migrateSpecification(JDA shard, XmlElement specification, Session session) {
         String guildId = specification.getAttribute("guildId").getValue();
 
-        Guild guild = shardManager.getGuildById(guildId);
+        Guild guild = shard.getGuildById(guildId);
 
         if (guild != null) {
             Optional<GuildSpecification> existingGuildSpecification = session.createQuery("from " + GuildSpecification.class.getName() +

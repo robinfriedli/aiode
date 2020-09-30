@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
+import net.robinfriedli.botify.discord.listeners.StartupListener;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,6 +24,12 @@ public class JdaComponent {
     @Value("${botify.tokens.discord_token}")
     private String discordToken;
 
+    private final StartupListener startupListener;
+
+    public JdaComponent(StartupListener startupListener) {
+        this.startupListener = startupListener;
+    }
+
     @Bean
     public ShardManager getShardManager() {
         // the gateway intent GUILD_MEMBERS normally required by the GuildMemberUpdateNicknameEvent (see GuildManagementListener)
@@ -35,6 +42,7 @@ public class JdaComponent {
                 .setMemberCachePolicy(MemberCachePolicy.DEFAULT)
                 .setStatus(OnlineStatus.IDLE)
                 .setChunkingFilter(ChunkingFilter.NONE)
+                .addEventListeners(startupListener)
                 .build();
         } catch (LoginException e) {
             throw new RuntimeException("Failed to log in to discord", e);
