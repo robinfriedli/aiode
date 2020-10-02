@@ -444,6 +444,27 @@
     <method name="getIdLong"/>
     <method name="getTimeCreated"/>
   </whitelistMethods>
+  <whitelistMethods class="net.dv8tion.jda.api.entities.Role">
+    <method name="getPosition"/>
+    <method name="getPositionRaw"/>
+    <method name="getName"/>
+    <method name="isManaged"/>
+    <method name="isHoisted"/>
+    <method name="isMentionable"/>
+    <method name="getPermissionsRaw"/>
+    <method name="getColor"/>
+    <method name="getColorRaw"/>
+    <method name="isPublicRole"/>
+    <method name="canInteract"/>
+    <method name="getGuild"/>
+  </whitelistMethods>
+  <whitelistMethods class="net.dv8tion.jda.api.entities.IPermissionHolder">
+    <method name="getGuild"/>
+    <method name="getPermissions"/>
+    <method name="getPermissionsExplicit"/>
+    <method name="hasPermission"/>
+    <method name="hasAccess"/>
+  </whitelistMethods>
   <whitelistMethods class="net.dv8tion.jda.api.requests.RestAction" maxMethodInvocations="5">
     <!--
     do not allow queue because of the async callbacks that method provides; these callbacks are executed in a thread
