@@ -157,7 +157,7 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
         PlayableFactory playableFactory = audioManager.createPlayableFactory(getSpotifyService(), trackLoadingExecutor);
 
         if (argumentSet("select")) {
-            int limit = getArgumentValue("select", Integer.class, 10);
+            int limit = getArgumentValueWithTypeOrElse("select", Integer.class, 10);
 
             List<YouTubePlaylist> playlists = youTubeService.searchSeveralPlaylists(limit, getCommandInput());
             if (playlists.size() == 1) {
@@ -181,7 +181,7 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
     private void loadSpotifyList(AudioManager audioManager) throws Exception {
         Callable<Void> callable = () -> {
             List<PlaylistSimplified> found;
-            int limit = getArgumentValue("select", Integer.class, 20);
+            int limit = getArgumentValueWithTypeOrElse("select", Integer.class, 20);
             if (argumentSet("own")) {
                 found = getSpotifyService().searchOwnPlaylist(getCommandInput(), limit);
             } else {
@@ -212,7 +212,7 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
     }
 
     private void loadSpotifyAlbum(AudioManager audioManager) throws Exception {
-        int limit = getArgumentValue("select", Integer.class, 20);
+        int limit = getArgumentValueWithTypeOrElse("select", Integer.class, 20);
         Callable<List<AlbumSimplified>> albumLoadCallable = () -> getSpotifyService().searchAlbum(getCommandInput(), argumentSet("own"), limit);
         List<AlbumSimplified> albums;
         if (argumentSet("own")) {
@@ -236,7 +236,7 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
     }
 
     private void loadTrack(AudioManager audioManager) throws Exception {
-        int limit = getArgumentValue("select", Integer.class, 20);
+        int limit = getArgumentValueWithTypeOrElse("select", Integer.class, 20);
         Callable<List<Track>> loadTrackCallable = () -> getSpotifyService().searchTrack(getCommandInput(), argumentSet("own"), limit);
         List<Track> found;
         if (argumentSet("own")) {
@@ -273,7 +273,7 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
         } else if (audioItem == null) {
             throw new NoResultsFoundException(String.format("No soundcloud track found for '%s'", commandInput));
         } else if (audioItem instanceof AudioPlaylist) {
-            int limit = getArgumentValue("select", Integer.class, 20);
+            int limit = getArgumentValueWithTypeOrElse("select", Integer.class, 20);
             List<AudioTrack> tracks = ((AudioPlaylist) audioItem).getTracks();
 
             if (tracks.isEmpty()) {
@@ -289,7 +289,7 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
     }
 
     private void loadSpotifyEpisode(AudioManager audioManager) throws Exception {
-        int limit = getArgumentValue("select", Integer.class, 20);
+        int limit = getArgumentValueWithTypeOrElse("select", Integer.class, 20);
         Callable<List<Episode>> loadTrackCallable = () -> getSpotifyService().searchEpisode(getCommandInput(), argumentSet("own"), limit);
         List<Episode> found;
         if (argumentSet("own")) {
@@ -308,7 +308,7 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
     }
 
     private void loadSpotifyShow(AudioManager audioManager) throws Exception {
-        int limit = getArgumentValue("select", Integer.class, 20);
+        int limit = getArgumentValueWithTypeOrElse("select", Integer.class, 20);
         Callable<List<ShowSimplified>> albumLoadCallable = () -> getSpotifyService().searchShow(getCommandInput(), argumentSet("own"), limit);
         List<ShowSimplified> shows;
         if (argumentSet("own")) {
@@ -348,7 +348,7 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
     private void loadYouTubeVideo(AudioManager audioManager) throws IOException {
         YouTubeService youTubeService = audioManager.getYouTubeService();
         if (argumentSet("select")) {
-            int limit = getArgumentValue("select", Integer.class, 10);
+            int limit = getArgumentValueWithTypeOrElse("select", Integer.class, 10);
 
             List<YouTubeVideo> youTubeVideos = youTubeService.searchSeveralVideos(limit, getCommandInput());
             if (youTubeVideos.size() == 1) {

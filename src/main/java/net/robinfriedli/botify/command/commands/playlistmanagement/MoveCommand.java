@@ -37,7 +37,7 @@ public class MoveCommand extends AbstractCommand {
         }
 
         String sourceIndex = getCommandInput();
-        int targetIndex = getArgumentValue("to", Integer.class);
+        int targetIndex = getArgumentValueWithType("to", Integer.class);
         checkIndex(targetIndex, playlist);
 
         if (sourceIndex.contains("-")) {

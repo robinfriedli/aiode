@@ -226,7 +226,7 @@ public abstract class AbstractCommand implements Command {
      * @param callable the code to run
      */
     protected <E> E runWithLogin(Callable<E> callable) throws Exception {
-        String market = getArgumentValueOrCompute("market", String.class, () -> Botify.get().getSpotifyComponent().getDefaultMarket());
+        String market = getArgumentValueWithTypeOrCompute("market", String.class, () -> Botify.get().getSpotifyComponent().getDefaultMarket());
         Login login = Botify.get().getLoginManager().requireLoginForUser(getContext().getUser());
         return SpotifyInvoker.create(getContext().getSpotifyApi(), login, market).invoke(callable);
     }
@@ -235,7 +235,7 @@ public abstract class AbstractCommand implements Command {
      * Run a callable with the default spotify credentials. Used for spotify api queries in commands.
      */
     protected <E> E runWithCredentials(Callable<E> callable) throws Exception {
-        String market = getArgumentValueOrCompute("market", String.class, () -> Botify.get().getSpotifyComponent().getDefaultMarket());
+        String market = getArgumentValueWithTypeOrCompute("market", String.class, () -> Botify.get().getSpotifyComponent().getDefaultMarket());
         return SpotifyInvoker.create(getContext().getSpotifyApi(), market).invoke(callable);
     }
 
@@ -244,18 +244,27 @@ public abstract class AbstractCommand implements Command {
     }
 
     protected String getArgumentValue(String argument) {
-        return getArgumentValue(argument, String.class);
+        return getArgumentValueWithType(argument, String.class);
     }
 
-    protected <E> E getArgumentValue(String argument, Class<E> type) {
-        return getArgumentValue(argument, type, null);
+    protected <E> E getArgumentValueWithType(String argument, Class<E> type) {
+        return getArgumentValueWithTypeOrCompute(argument, type, null);
     }
 
-    protected <E> E getArgumentValue(String argument, Class<E> type, E alternativeValue) {
-        return getArgumentValueOrCompute(argument, type, () -> alternativeValue);
+    @SuppressWarnings("unchecked")
+    protected <E> E getArgumentValueOrElse(String argument, E alternativeValue) {
+        if (alternativeValue != null) {
+            return getArgumentValueWithTypeOrCompute(argument, (Class<E>) alternativeValue.getClass(), () -> alternativeValue);
+        } else {
+            return getArgumentValueWithTypeOrCompute(argument, (Class<E>) Object.class, () -> null);
+        }
     }
 
-    protected <E> E getArgumentValueOrCompute(String argument, Class<E> type, Supplier<E> alternativeValueSupplier) {
+    protected <E> E getArgumentValueWithTypeOrElse(String argument, Class<E> type, E alternativeValue) {
+        return getArgumentValueWithTypeOrCompute(argument, type, () -> alternativeValue);
+    }
+
+    protected <E> E getArgumentValueWithTypeOrCompute(String argument, Class<E> type, Supplier<E> alternativeValueSupplier) {
         ArgumentController.ArgumentUsage usedArgument = argumentController.getUsedArgument(argument);
         if (usedArgument == null) {
             if (alternativeValueSupplier != null) {

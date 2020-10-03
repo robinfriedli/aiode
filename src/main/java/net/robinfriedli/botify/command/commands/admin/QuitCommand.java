@@ -62,7 +62,7 @@ public class QuitCommand extends AbstractAdminCommand {
 
             // runs in separate thread to avoid deadlock when waiting for commands to finish
             Thread shutdownThread = new Thread(() -> Botify.shutdown(
-                getArgumentValue("await", Integer.class, 60) * 1000,
+                getArgumentValueWithTypeOrElse("await", Integer.class, 60) * 1000,
                 futureMessages
             ));
             shutdownThread.setName("Shutdown thread");

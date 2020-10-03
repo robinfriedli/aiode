@@ -77,7 +77,7 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
             throw new InvalidCommandException("No search term entered");
         }
 
-        int limit = getArgumentValue("select", Integer.class, 20);
+        int limit = getArgumentValueWithTypeOrElse("select", Integer.class, 20);
         Callable<List<Track>> loadTrackCallable = () -> getSpotifyService().searchTrack(getCommandInput(), argumentSet("own"), limit);
         List<Track> found;
         if (argumentSet("own")) {
@@ -107,7 +107,7 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
             throw new InvalidCommandException("No search term entered");
         }
 
-        int limit = getArgumentValue("select", Integer.class, 20);
+        int limit = getArgumentValueWithTypeOrElse("select", Integer.class, 20);
         Callable<List<Episode>> loadTrackCallable = () -> getSpotifyService().searchEpisode(getCommandInput(), argumentSet("own"), limit);
         List<Episode> found;
         if (argumentSet("own")) {
@@ -134,7 +134,7 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
     private void searchYouTubeVideo() throws UnavailableResourceException, IOException {
         YouTubeService youTubeService = Botify.get().getAudioManager().getYouTubeService();
         if (argumentSet("select")) {
-            int limit = getArgumentValue("select", Integer.class, 10);
+            int limit = getArgumentValueWithTypeOrElse("select", Integer.class, 10);
 
             List<YouTubeVideo> youTubeVideos = youTubeService.searchSeveralVideos(limit, getCommandInput());
             if (youTubeVideos.size() == 1) {
@@ -229,7 +229,7 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
     private void listYouTubePlaylists() throws IOException {
         YouTubeService youTubeService = Botify.get().getAudioManager().getYouTubeService();
         if (argumentSet("select")) {
-            int limit = getArgumentValue("select", Integer.class, 10);
+            int limit = getArgumentValueWithTypeOrElse("select", Integer.class, 10);
 
             List<YouTubePlaylist> playlists = youTubeService.searchSeveralPlaylists(limit, getCommandInput());
             if (playlists.size() == 1) {
@@ -266,7 +266,7 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
         }
 
         List<PlaylistSimplified> playlists;
-        int limit = getArgumentValue("select", Integer.class, 20);
+        int limit = getArgumentValueWithTypeOrElse("select", Integer.class, 20);
         if (argumentSet("own")) {
             playlists = runWithLogin(() -> getSpotifyService().searchOwnPlaylist(getCommandInput(), limit));
         } else {
@@ -284,7 +284,7 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
     }
 
     private void listSpotifyAlbum() throws Exception {
-        Integer limit = getArgumentValue("select", Integer.class, 20);
+        Integer limit = getArgumentValueWithTypeOrElse("select", Integer.class, 20);
         Callable<List<AlbumSimplified>> loadAlbumsCallable = () -> getSpotifyService().searchAlbum(getCommandInput(), argumentSet("own"), limit);
         List<AlbumSimplified> albums;
         if (argumentSet("own")) {
@@ -315,7 +315,7 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
     }
 
     private void listSpotifyShow() throws Exception {
-        int limit = getArgumentValue("select", Integer.class, 20);
+        int limit = getArgumentValueWithTypeOrElse("select", Integer.class, 20);
         Callable<List<ShowSimplified>> loadShowsCallable = () -> getSpotifyService().searchShow(getCommandInput(), argumentSet("own"), limit);
         List<ShowSimplified> shows;
         if (argumentSet("own")) {
