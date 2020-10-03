@@ -59,12 +59,10 @@ public abstract class AbstractGuildProperty {
 
     public void set(String value, GuildContext guildContext) {
         validateInput(value);
-        StaticSessionProvider.consumeSession(session -> {
-            HibernateInvoker.create(session).invoke(() -> {
-                GuildSpecification guildSpecification = guildContext.getSpecification(session);
-                setValue(value, guildSpecification);
-            });
-        });
+        StaticSessionProvider.consumeSession(session -> HibernateInvoker.create(session).invoke(() -> {
+            GuildSpecification guildSpecification = guildContext.getSpecification(session);
+            setValue(value, guildSpecification);
+        }));
     }
 
     public abstract void setValue(String value, GuildSpecification guildSpecification);
@@ -142,8 +140,6 @@ public abstract class AbstractGuildProperty {
                 throw new InvalidPropertyValueException(String.format("Unacceptable value '%s'.\nAcceptable values: %s", value, acceptedValuesString));
             }
         }
-
-        this.validate(value);
     }
 
 }
