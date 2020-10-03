@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -64,6 +65,13 @@ public class SpotifyTrackBulkLoadingService extends BulkOperationService<Spotify
                 return keyValuePairs;
             }
         });
+    }
+
+    @Override
+    public void add(SpotifyItem key, Consumer<SpotifyTrack> action) {
+        if (key != null && key.id != null) {
+            super.add(key, action);
+        }
     }
 
     public static SpotifyItem createItem(String id, SpotifyTrackKind kind) {

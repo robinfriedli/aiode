@@ -49,7 +49,9 @@ public class Song extends PlaylistItem {
         id = track.getId();
         name = track.getName();
         for (ArtistSimplified artist : track.getArtists()) {
-            artists.add(Artist.getOrCreateArtist(artist, session));
+            if (artist.getId() != null) {
+                artists.add(Artist.getOrCreateArtist(artist, session));
+            }
         }
         this.duration = track.getDurationMs();
     }

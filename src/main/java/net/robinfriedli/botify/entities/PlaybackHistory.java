@@ -87,8 +87,9 @@ public class PlaybackHistory implements Serializable {
                 spotifyItemKind = spotifyTrack.exhaustiveMatch(
                     track -> {
                         for (ArtistSimplified artist : track.getArtists()) {
-                            Artist artistEntity = Artist.getOrCreateArtist(artist, session);
-                            artists.add(artistEntity);
+                            if (artist.getId() != null) {
+                                artists.add(Artist.getOrCreateArtist(artist, session));
+                            }
                         }
 
                         return LookupEntity.require(session, SpotifyItemKind.class, SpotifyTrackKind.TRACK.name());
