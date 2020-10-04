@@ -5,7 +5,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -100,15 +99,14 @@ public class ThreadExecutionQueue {
         if (!currentPool.isEmpty()) {
             QueuedTask[] queuedTasks = currentPool.toArray(new QueuedTask[0]);
 
-            // if millis = 0 wait indefinitely, as that is the expected behavior for a join but not how CountdownLatch#await is implemented
-            long millisLeft = millis == 0 ? Long.MAX_VALUE : millis;
+            long millisLeft = millis;
             for (QueuedTask queuedTask : queuedTasks) {
                 if (millisLeft < 0) {
                     return;
                 }
 
                 long currentMillis = System.currentTimeMillis();
-                queuedTask.getCountDownLatch().await(millisLeft, TimeUnit.MILLISECONDS);
+                queuedTask.await(millisLeft);
                 millisLeft -= (System.currentTimeMillis() - currentMillis);
             }
         }

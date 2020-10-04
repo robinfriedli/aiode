@@ -27,7 +27,7 @@ public class AbortCommand extends AbstractCommand {
         Thread abortThread = new Thread(() -> {
             if (commandExecutionTask != null) {
                 try {
-                    commandExecutionTask.getCountDownLatch().await();
+                    commandExecutionTask.await();
                 } catch (InterruptedException ignored) {
                 }
             }

@@ -2,9 +2,7 @@ package net.robinfriedli.botify.command.interceptor.interceptors;
 
 import java.awt.Color;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +46,6 @@ public class CommandMonitoringInterceptor extends AbstractChainableCommandInterc
             return;
         }
 
-        CountDownLatch countDownLatch = task.getCountDownLatch();
         Future<?> monitoring = DaemonThreadPool.submit((LoggingRunnable) () -> {
             Thread thread = Thread.currentThread();
             String oldName = thread.getName();
@@ -57,14 +54,14 @@ public class CommandMonitoringInterceptor extends AbstractChainableCommandInterc
             CompletableFuture<Message> stillLoadingMessage = null;
             CompletableFuture<Message> warningMessage = null;
             try {
-                countDownLatch.await(MESSAGE_AFTER_THRESHOLD, TimeUnit.MILLISECONDS);
+                task.await(MESSAGE_AFTER_THRESHOLD);
 
                 if (!task.isDone()) {
                     EmbedBuilder embedBuilder = new EmbedBuilder();
                     embedBuilder.setDescription("Still loading...");
                     stillLoadingMessage = messageService.send(embedBuilder, context.getChannel());
 
-                    countDownLatch.await(LOGGER_WARNING_AFTER_THRESHOLD, TimeUnit.MILLISECONDS);
+                    task.await(LOGGER_WARNING_AFTER_THRESHOLD);
                     if (!task.isDone()) {
                         EmbedBuilder warningEmbed = new EmbedBuilder();
                         warningEmbed.setColor(Color.RED);
@@ -81,7 +78,7 @@ public class CommandMonitoringInterceptor extends AbstractChainableCommandInterc
                             command.display(), context.getGuild(), MESSAGE_AFTER_THRESHOLD + LOGGER_WARNING_AFTER_THRESHOLD));
                     }
 
-                    countDownLatch.await();
+                    task.await();
                     deleteMessages(stillLoadingMessage, warningMessage);
                 }
             } catch (InterruptedException e) {

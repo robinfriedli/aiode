@@ -1,7 +1,5 @@
 package net.robinfriedli.botify.concurrent;
 
-import java.util.concurrent.CountDownLatch;
-
 import net.robinfriedli.botify.exceptions.CommandRuntimeException;
 
 /**
@@ -9,11 +7,10 @@ import net.robinfriedli.botify.exceptions.CommandRuntimeException;
  */
 public class QueuedTask implements Runnable {
 
-    private final CountDownLatch countDownLatch = new CountDownLatch(1);
     private final Runnable task;
     private final ThreadExecutionQueue queue;
-    private boolean complete;
-    private boolean terminated;
+    private volatile boolean complete;
+    private volatile boolean terminated;
     private String name;
     private Thread thread;
 
@@ -45,7 +42,11 @@ public class QueuedTask implements Runnable {
             handleException(e);
         } finally {
             complete = true;
-            countDownLatch.countDown();
+
+            synchronized (this) {
+                notifyAll();
+            }
+
             ThreadContext.Current.clear();
             queue.removeFromPool(this);
 
@@ -55,8 +56,27 @@ public class QueuedTask implements Runnable {
         }
     }
 
-    public CountDownLatch getCountDownLatch() {
-        return countDownLatch;
+    public void await() throws InterruptedException {
+        await(0);
+    }
+
+    public void await(long millis) throws InterruptedException {
+        // no locking required if task is already complete - fast return
+        if (isDone()) {
+            return;
+        }
+
+        synchronized (this) {
+            long millisToWait = millis;
+            while (!(isDone() || (millis > 0 && millisToWait <= 0))) {
+                // recheck condition after acquiring lock in case of a race condition
+                // wait in a loop to guard against spurious wakeups, keep waiting until command is done or until the
+                // specified amount of milliseconds has passed, if amount to wait is greater than 0 (0 means indefinite wait)
+                long currentTime = System.currentTimeMillis();
+                wait(millisToWait);
+                millisToWait -= (System.currentTimeMillis() - currentTime);
+            }
+        }
     }
 
     public boolean isComplete() {
@@ -67,10 +87,12 @@ public class QueuedTask implements Runnable {
      * Use separate terminated flag because a thread's interrupted status might be cleared
      */
     public void terminate() {
+        terminated = true;
         if (thread != null) {
+            // if the thread was created just after this check had failed the terminated flag is already set, so the
+            // task will return either way
             thread.interrupt();
         }
-        terminated = true;
     }
 
     public boolean isTerminated() {
