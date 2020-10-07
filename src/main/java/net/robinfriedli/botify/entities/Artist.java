@@ -10,17 +10,20 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
-import com.antkorwin.xsync.XSync;
 import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
 import net.robinfriedli.botify.Botify;
+import net.robinfriedli.botify.function.HibernateInvoker;
 import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
+import net.robinfriedli.exec.Mode;
+import net.robinfriedli.exec.MutexSync;
+import net.robinfriedli.exec.modes.MutexSyncMode;
 import org.hibernate.Session;
 
 @Entity
 @Table(name = "artist")
 public class Artist implements Serializable {
 
-    private static final XSync<String> ARTIST_SYNC = new XSync<>();
+    private static final MutexSync<String> ARTIST_SYNC = new MutexSync<>();
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -48,7 +51,8 @@ public class Artist implements Serializable {
      */
     public static Artist getOrCreateArtist(ArtistSimplified artist, Session session) {
         QueryBuilderFactory queryBuilderFactory = Botify.get().getQueryBuilderFactory();
-        return ARTIST_SYNC.evaluate(artist.getId(), () -> {
+        Mode mode = Mode.create().with(new MutexSyncMode<>(artist.getId(), ARTIST_SYNC));
+        return HibernateInvoker.create().invoke(mode, () -> {
             Optional<Artist> existingArtist = queryBuilderFactory.find(Artist.class)
                 .where((cb, root) -> cb.equal(root.get("id"), artist.getId()))
                 .build(session)
@@ -56,6 +60,7 @@ public class Artist implements Serializable {
             return existingArtist.orElseGet(() -> {
                 Artist newArtist = new Artist(artist.getId(), artist.getName());
                 session.persist(newArtist);
+                session.flush();
                 return newArtist;
             });
         });
