@@ -23,7 +23,7 @@ import static net.robinfriedli.botify.persist.StaticSessionProvider.*;
 public class HibernateTransactionMode extends AbstractNestedModeWrapper {
 
     @Nullable
-    private Session session;
+    private final Session session;
 
     public HibernateTransactionMode() {
         this(null);
@@ -56,24 +56,27 @@ public class HibernateTransactionMode extends AbstractNestedModeWrapper {
 
     @Override
     public <E> Callable<E> wrap(Callable<E> callable) {
-        if (session == null) {
-            session = provide();
-        }
         return new TransactionCallable<>(session, callable);
     }
 
     private static class TransactionCallable<E> implements Callable<E> {
 
+        @Nullable
         private final Session session;
         private final Callable<E> callableToWrap;
 
-        private TransactionCallable(Session session, Callable<E> callableToWrap) {
+        private TransactionCallable(@Nullable Session session, Callable<E> callableToWrap) {
             this.session = session;
             this.callableToWrap = callableToWrap;
         }
 
         @Override
         public E call() throws Exception {
+            Session session = this.session;
+            if (session == null) {
+                session = provide();
+            }
+
             boolean commitRequired = false;
             if (!session.getTransaction().isActive()) {
                 session.beginTransaction();
