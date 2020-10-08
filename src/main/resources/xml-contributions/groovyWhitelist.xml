@@ -147,6 +147,30 @@
   <whitelistMethods class="java.util.Set">
     <method name="of"/>
   </whitelistMethods>
+  <whitelistMethods class="java.util.Arrays">
+    <method name="rangeCheck"/>
+    <method name="sort"/>
+    <method name="parallelSort"/>
+    <method name="parallelPrefix"/>
+    <method name="binarySearch"/>
+    <method name="equals"/>
+    <method name="fill"/>
+    <method name="copyOf"/>
+    <method name="copyOfRange"/>
+    <method name="asList"/>
+    <method name="hashCode"/>
+    <method name="deepHashCode"/>
+    <method name="deepEquals"/>
+    <method name="toString"/>
+    <method name="deepToString"/>
+    <method name="setAll"/>
+    <method name="parallelSetAll"/>
+    <method name="spliterator"/>
+    <method name="stream"/>
+    <method name="compare"/>
+    <method name="compareUnsigned"/>
+    <method name="mismatch"/>
+  </whitelistMethods>
   <whitelistMethods class="java.lang.Iterable">
     <method name="iterator"/>
     <method name="forEach"/>
