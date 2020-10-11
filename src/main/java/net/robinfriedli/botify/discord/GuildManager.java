@@ -196,7 +196,7 @@ public class GuildManager {
 
     private GuildContext initializeGuild(Guild guild) {
         synchronized (guild) {
-            return StaticSessionProvider.invokeWithoutInterceptors(session -> {
+            return StaticSessionProvider.invokeSessionWithoutInterceptors(session -> {
                 AudioPlayer player = audioManager.getPlayerManager().createPlayer();
 
                 Optional<Long> existingSpecification = session.createQuery("select pk from " + GuildSpecification.class.getName()

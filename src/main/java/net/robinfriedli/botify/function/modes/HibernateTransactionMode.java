@@ -3,68 +3,114 @@ package net.robinfriedli.botify.function.modes;
 import java.util.concurrent.Callable;
 
 import javax.annotation.Nullable;
+import javax.persistence.RollbackException;
 
 import net.robinfriedli.botify.command.CommandContext;
-import net.robinfriedli.botify.exceptions.CommandRuntimeException;
-import net.robinfriedli.botify.exceptions.UserException;
 import net.robinfriedli.botify.util.StaticSessionProvider;
 import net.robinfriedli.exec.AbstractNestedModeWrapper;
 import net.robinfriedli.exec.Mode;
 import net.robinfriedli.exec.modes.SynchronisationMode;
+import org.hibernate.Session;
 import org.hibernate.SessionFactory;
-import org.jetbrains.annotations.NotNull;
+
+import static net.robinfriedli.botify.util.StaticSessionProvider.*;
 
 /**
- * Runs a task in a hibernate transaction, managing commits and rollbacks. This utilises either the session of the
- * current {@link CommandContext} or, if absent, the current thread session using {@link SessionFactory#getCurrentSession()}.
- * See {@link StaticSessionProvider}.
+ * Runs a task in a hibernate transaction, managing commits and rollbacks. This automatically utilises either the session of the
+ * current {@link CommandContext} or, if absent, the current thread session using {@link SessionFactory#getCurrentSession()}
+ * if no session was provided explicitly. See {@link StaticSessionProvider}.
  */
 public class HibernateTransactionMode extends AbstractNestedModeWrapper {
+
+    @Nullable
+    private final Session session;
+
+    public HibernateTransactionMode() {
+        this(null);
+    }
+
+    public HibernateTransactionMode(@Nullable Session session) {
+        this.session = session;
+    }
 
     public static Mode getMode() {
         return getMode(null);
     }
 
-    public static Mode getMode(@Nullable Object synchronisationLock) {
+    public static Mode getMode(Session session) {
+        return getMode(session, null);
+    }
+
+    public static Mode getMode(Object synchronisationLock) {
+        return getMode(null, synchronisationLock);
+    }
+
+    public static Mode getMode(Session session, @Nullable Object synchronisationLock) {
         Mode mode = Mode.create();
         if (synchronisationLock != null) {
             mode.with(new SynchronisationMode(synchronisationLock));
         }
 
-        return mode.with(new HibernateTransactionMode());
+        return mode.with(new HibernateTransactionMode(session));
     }
 
     @Override
-    public <E> @NotNull Callable<E> wrap(@NotNull Callable<E> callable) {
-        return () -> StaticSessionProvider.invokeWithSession(session -> {
-            boolean isNested = false;
-            if (session.getTransaction() == null || !session.getTransaction().isActive()) {
-                session.beginTransaction();
-            } else {
-                isNested = true;
+    public <E> Callable<E> wrap(Callable<E> callable) {
+        return new TransactionCallable<>(session, callable);
+    }
+
+    private static class TransactionCallable<E> implements Callable<E> {
+
+        @Nullable
+        private final Session session;
+        private final Callable<E> callableToWrap;
+
+        private TransactionCallable(@Nullable Session session, Callable<E> callableToWrap) {
+            this.session = session;
+            this.callableToWrap = callableToWrap;
+        }
+
+        @Override
+        public E call() throws Exception {
+            Session session = this.session;
+            if (session == null) {
+                session = provide();
             }
-            if (isNested) {
-                try {
-                    return callable.call();
-                } catch (RuntimeException e) {
-                    throw e;
-                } catch (Exception e) {
-                    throw new CommandRuntimeException(e);
+
+            boolean commitRequired = false;
+            if (!session.getTransaction().isActive()) {
+                session.beginTransaction();
+                commitRequired = true;
+            }
+            try {
+                return callableToWrap.call();
+            } catch (Throwable e) {
+                if (commitRequired) {
+                    session.getTransaction().markRollbackOnly();
+                    session.getTransaction().rollback();
+                    // make sure this transaction is not committed in the finally block, which would throw an exception that
+                    // overrides the current exception
+                    commitRequired = false;
+                }
+
+                throw e;
+            } finally {
+                if (commitRequired) {
+                    try {
+                        session.getTransaction().commit();
+                    } catch (RollbackException e) {
+                        // now that hibernate is bootstrapped via JPA by spring boot as of botify 2.0, hibernate now wraps
+                        // exceptions thrown during commit; with native bootstrapping hibernate simply threw the exception
+                        if (e.getCause() instanceof Exception) {
+                            // commitRequired is never true when an exception occurred, so it is safe to throw an
+                            // exception here without potentially swallowing another one
+                            //noinspection ThrowFromFinallyBlock
+                            throw (Exception) e.getCause();
+                        }
+                    }
                 }
             }
-            E retVal;
-            try {
-                retVal = callable.call();
-                session.getTransaction().commit();
-            } catch (UserException e) {
-                session.getTransaction().rollback();
-                throw e;
-            } catch (Exception e) {
-                session.getTransaction().rollback();
-                throw new RuntimeException("Exception in invoked callable. Transaction rolled back.", e);
-            }
-            return retVal;
-        });
+        }
     }
 
 }

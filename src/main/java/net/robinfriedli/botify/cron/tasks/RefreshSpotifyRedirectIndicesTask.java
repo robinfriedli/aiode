@@ -74,7 +74,7 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
             LocalDate currentDate = LocalDate.now();
             LocalDate date4WeeksAgo = currentDate.minusDays(28);
 
-            StaticSessionProvider.invokeWithSession(session -> {
+            StaticSessionProvider.consumeSession(session -> {
                 CriteriaBuilder cb = session.getCriteriaBuilder();
                 CriteriaQuery<SpotifyRedirectIndex> query = cb.createQuery(SpotifyRedirectIndex.class);
                 Root<SpotifyRedirectIndex> root = query.from(SpotifyRedirectIndex.class);

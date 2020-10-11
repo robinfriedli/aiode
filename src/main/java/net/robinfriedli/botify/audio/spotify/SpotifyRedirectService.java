@@ -97,7 +97,7 @@ public class SpotifyRedirectService {
 
         youTubeService.redirectSpotify(youTubeVideo);
         if (!youTubeVideo.isCanceled() && !Strings.isNullOrEmpty(spotifyTrackId)) {
-            SINGE_THREAD_EXECUTOR_SERVICE.execute(() -> StaticSessionProvider.invokeWithSession(otherThreadSession -> {
+            SINGE_THREAD_EXECUTOR_SERVICE.execute(() -> StaticSessionProvider.consumeSession(otherThreadSession -> {
                 try {
                     String videoId = youTubeVideo.getVideoId();
                     SpotifyRedirectIndex spotifyRedirectIndex = new SpotifyRedirectIndex(spotifyTrackId, videoId);
@@ -115,7 +115,7 @@ public class SpotifyRedirectService {
     }
 
     private void runUpdateTask(Mode mode, Consumer<Session> sessionConsumer) {
-        SINGE_THREAD_EXECUTOR_SERVICE.execute(() -> StaticSessionProvider.invokeWithSession(otherThreadSession -> {
+        SINGE_THREAD_EXECUTOR_SERVICE.execute(() -> StaticSessionProvider.consumeSession(otherThreadSession -> {
             Long modificationLocks = otherThreadSession
                 .createQuery("select count(*) from " + SpotifyRedirectIndexModificationLock.class.getName(), Long.class)
                 .uniqueResult();

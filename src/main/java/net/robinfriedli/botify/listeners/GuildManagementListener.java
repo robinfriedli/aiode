@@ -92,7 +92,7 @@ public class GuildManagementListener extends ListenerAdapter {
     public void onRoleDelete(@Nonnull RoleDeleteEvent event) {
         guildEventHandlerExecutorService.execute(() -> {
             String roleId = event.getRole().getId();
-            StaticSessionProvider.invokeWithSession(session -> {
+            StaticSessionProvider.consumeSession(session -> {
                 CriteriaBuilder cb = session.getCriteriaBuilder();
                 CriteriaDelete<GrantedRole> deleteQuery = cb.createCriteriaDelete(GrantedRole.class);
                 Root<GrantedRole> queryRoot = deleteQuery.from(GrantedRole.class);

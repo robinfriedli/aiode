@@ -163,7 +163,7 @@ public class PlayableFactory {
             trackLoadingExecutor.load(() -> {
                 try {
                     if (!tracksToRedirect.isEmpty()) {
-                        StaticSessionProvider.invokeWithSession((CheckedConsumer<Session>) session -> {
+                        StaticSessionProvider.consumeSession((CheckedConsumer<Session>) session -> {
                             SpotifyRedirectService spotifyRedirectService = new SpotifyRedirectService(session, youTubeService);
                             for (HollowYouTubeVideo youTubeVideo : tracksToRedirect) {
                                 if (Thread.currentThread().isInterrupted()) {

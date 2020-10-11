@@ -66,7 +66,7 @@ public class CleanDbCommand extends AbstractAdminCommand {
                     } catch (InterruptedException ignored) {
                     }
 
-                    StaticSessionProvider.invokeWithSession(this::doClean);
+                    StaticSessionProvider.consumeSession(this::doClean);
                 } finally {
                     context.closeSession();
                     Botify.registerListeners();

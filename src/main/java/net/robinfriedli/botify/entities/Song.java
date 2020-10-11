@@ -1,13 +1,11 @@
 package net.robinfriedli.botify.entities;
 
 import java.io.IOException;
-import java.util.Optional;
 import java.util.Set;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
-import javax.persistence.FlushModeType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -24,7 +22,6 @@ import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.stringlist.StringList;
 import org.hibernate.Session;
-import org.hibernate.query.Query;
 
 @Entity
 @Table(name = "song")
@@ -127,16 +124,8 @@ public class Song extends PlaylistItem {
 
     private void initArtists(Track track, Session session) {
         for (ArtistSimplified artist : track.getArtists()) {
-            Query<Artist> query = session
-                .createQuery(" from " + Artist.class.getName() + " where id = '" + artist.getId() + "'", Artist.class);
-            query.setFlushMode(FlushModeType.AUTO);
-            Optional<Artist> optionalArtist = query.uniqueResultOptional();
-            if (optionalArtist.isPresent()) {
-                artists.add(optionalArtist.get());
-            } else {
-                Artist newArtist = new Artist(artist.getId(), artist.getName());
-                session.persist(newArtist);
-                artists.add(newArtist);
+            if (artist.getId() != null) {
+                artists.add(Artist.getOrCreateArtist(artist, session));
             }
         }
     }
