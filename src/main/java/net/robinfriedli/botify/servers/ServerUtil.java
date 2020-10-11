@@ -21,7 +21,7 @@ public class ServerUtil {
         String errorPagePath = PropertiesLoadingService.requireProperty("ERROR_PAGE_PATH");
         String html = Files.readString(Path.of(errorPagePath));
         String response = String.format(html, e.getMessage());
-        exchange.sendResponseHeaders(200, response.getBytes().length);
+        exchange.sendResponseHeaders(500, response.getBytes().length);
         OutputStream responseBody = exchange.getResponseBody();
         responseBody.write(response.getBytes());
         responseBody.close();
