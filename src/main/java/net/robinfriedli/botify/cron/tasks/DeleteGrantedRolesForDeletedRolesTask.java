@@ -30,7 +30,7 @@ public class DeleteGrantedRolesForDeletedRolesTask extends AbstractCronTask {
     @Override
     protected void run(JobExecutionContext jobExecutionContext) {
         ShardManager shardManager = Botify.get().getShardManager();
-        StaticSessionProvider.invokeWithSession(session -> {
+        StaticSessionProvider.consumeSession(session -> {
             List<GuildSpecification> guildSpecifications = session.createQuery("from " + GuildSpecification.class.getName(), GuildSpecification.class).getResultList();
             int deletionCounter = 0;
 

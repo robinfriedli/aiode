@@ -130,7 +130,7 @@ public class HollowYouTubeVideo extends AbstractSoftCachedPlayable implements Yo
     private <E> E getCompleted(CompletableFuture<E> future) throws UnavailableResourceException {
         try {
             if (!future.isDone() && redirectedSpotifyTrack != null) {
-                StaticSessionProvider.invokeWithSession((CheckedConsumer<Session>) session -> {
+                StaticSessionProvider.consumeSession((CheckedConsumer<Session>) session -> {
                     SpotifyRedirectService spotifyRedirectService = new SpotifyRedirectService(session, youTubeService);
                     spotifyRedirectService.redirectTrack(this);
                 });

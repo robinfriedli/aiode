@@ -77,7 +77,7 @@ public class GuildContext {
     }
 
     public boolean setBotName(String name) {
-        StaticSessionProvider.invokeWithSession(session -> {
+        StaticSessionProvider.consumeSession(session -> {
             GuildSpecification guildSpecification = getSpecification(session);
 
             HibernateInvoker.create().invoke(() -> guildSpecification.setBotName(name));
@@ -105,7 +105,7 @@ public class GuildContext {
     }
 
     public void setPrefix(String prefix) {
-        StaticSessionProvider.invokeWithSession(session -> {
+        StaticSessionProvider.consumeSession(session -> {
             GuildSpecification guildSpecification = getSpecification(session);
 
             HibernateInvoker.create().invoke(() -> guildSpecification.setPrefix(prefix));

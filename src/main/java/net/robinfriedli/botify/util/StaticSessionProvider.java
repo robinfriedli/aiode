@@ -4,6 +4,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import net.robinfriedli.botify.command.CommandContext;
+import net.robinfriedli.botify.function.HibernateInvoker;
 import net.robinfriedli.botify.interceptors.InterceptorChain;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -34,43 +35,29 @@ public class StaticSessionProvider {
         return sessionFactory;
     }
 
-    public static void invokeWithSession(Consumer<Session> consumer) {
-        invokeWithSession(session -> {
-            consumer.accept(session);
-            return null;
-        });
+    public static void consumeSession(Consumer<Session> consumer) {
+        HibernateInvoker.create(provide()).invoke(consumer);
     }
 
-    public static <E> E invokeWithoutInterceptors(Function<Session, E> function) {
+    public static <E> E invokeWithSession(Function<Session, E> function) {
+        return HibernateInvoker.create(provide()).invoke(function);
+    }
+
+    public static void consumeSessionWithoutInterceptors(Consumer<Session> sessionConsumer) {
         InterceptorChain.INTERCEPTORS_MUTED.set(true);
         try {
-            return invokeWithSession(function);
+            consumeSession(sessionConsumer);
         } finally {
             InterceptorChain.INTERCEPTORS_MUTED.set(false);
         }
     }
 
-    public static <E> E invokeWithSession(Function<Session, E> function) {
-        Session session = provide();
-        boolean commitRequired = false;
-        if (session.getTransaction() == null || !session.getTransaction().isActive()) {
-            session.beginTransaction();
-            commitRequired = true;
-        }
+    public static <E> E invokeSessionWithoutInterceptors(Function<Session, E> function) {
+        InterceptorChain.INTERCEPTORS_MUTED.set(true);
         try {
-            return function.apply(session);
-        } catch (Throwable e) {
-            if (commitRequired) {
-                session.getTransaction().rollback();
-                // make sure this transaction is not committed in the finally block, which would throw an exception that
-                // overrides the current exception
-                commitRequired = false;
-            }
-            throw e;
+            return invokeWithSession(function);
         } finally {
-            if (commitRequired) {
-                session.getTransaction().commit();
-            }
+            InterceptorChain.INTERCEPTORS_MUTED.set(false);
         }
     }
 

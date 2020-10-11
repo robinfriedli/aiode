@@ -49,7 +49,7 @@ public abstract class AbstractGuildProperty {
     }
 
     public void set(String value, GuildContext guildContext) {
-        StaticSessionProvider.invokeWithSession(session -> {
+        StaticSessionProvider.consumeSession(session -> {
             HibernateInvoker.create().invoke(() -> {
                 GuildSpecification guildSpecification = guildContext.getSpecification(session);
                 setValue(value, guildSpecification);

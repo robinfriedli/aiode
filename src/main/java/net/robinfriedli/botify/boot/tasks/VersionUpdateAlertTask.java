@@ -122,7 +122,7 @@ public class VersionUpdateAlertTask implements StartupTask {
                 // with the other shards
                 synchronized (DISPATCH_LOCK) {
                     // setup current thread session and handle all guilds within one session instead of opening a new session for each
-                    StaticSessionProvider.invokeWithSession((CheckedConsumer<Session>) session -> {
+                    StaticSessionProvider.consumeSession((CheckedConsumer<Session>) session -> {
                         int counter = 0;
                         long currentTimeMillis = System.currentTimeMillis();
                         for (Guild guild : guilds) {

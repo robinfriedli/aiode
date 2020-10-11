@@ -262,7 +262,7 @@ public class Launcher {
                 CommandExecutionQueueManager executionQueueManager = botify.getExecutionQueueManager();
                 GuildManager guildManager = botify.getGuildManager();
 
-                StaticSessionProvider.invokeWithSession(session -> {
+                StaticSessionProvider.consumeSession(session -> {
                     // setup current thread session and handle all guilds within one session instead of opening a new session for each
                     for (Guild guild : jda.getGuilds()) {
                         executionQueueManager.addGuild(guild);

@@ -709,7 +709,7 @@ public class YouTubeService {
     }
 
     private void updatePersistentQuota(int newValue) {
-        StaticSessionProvider.invokeWithSession(session -> {
+        StaticSessionProvider.consumeSession(session -> {
             CurrentYouTubeQuotaUsage currentQuotaUsage = getCurrentQuotaUsage(session);
             currentQuotaUsage.setQuota(newValue);
         });
