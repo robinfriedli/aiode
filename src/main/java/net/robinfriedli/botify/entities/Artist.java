@@ -52,15 +52,15 @@ public class Artist implements Serializable {
     public static Artist getOrCreateArtist(ArtistSimplified artist, Session session) {
         QueryBuilderFactory queryBuilderFactory = Botify.get().getQueryBuilderFactory();
         Mode mode = Mode.create().with(new MutexSyncMode<>(artist.getId(), ARTIST_SYNC));
-        return HibernateInvoker.create().invoke(mode, () -> {
+        return HibernateInvoker.create(session).invoke(mode, currentSession -> {
             Optional<Artist> existingArtist = queryBuilderFactory.find(Artist.class)
                 .where((cb, root) -> cb.equal(root.get("id"), artist.getId()))
-                .build(session)
+                .build(currentSession)
                 .uniqueResultOptional();
             return existingArtist.orElseGet(() -> {
                 Artist newArtist = new Artist(artist.getId(), artist.getName());
-                session.persist(newArtist);
-                session.flush();
+                currentSession.persist(newArtist);
+                currentSession.flush();
                 return newArtist;
             });
         });
