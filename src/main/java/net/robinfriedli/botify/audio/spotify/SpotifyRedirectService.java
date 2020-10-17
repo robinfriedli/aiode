@@ -91,7 +91,17 @@ public class SpotifyRedirectService {
                 return;
             } else {
                 Mode mode = Mode.create().with(new MutexSyncMode<>(spotifyTrackId, MUTEX_SYNC));
-                runUpdateTask(mode, otherThreadSession -> otherThreadSession.delete(spotifyRedirectIndex));
+                runUpdateTask(mode, otherThreadSession -> {
+                    Long existingCount = otherThreadSession.createQuery(
+                        "select count(*) from " + SpotifyRedirectIndex.class.getName()
+                            + " where pk = " + spotifyRedirectIndex.getPk(),
+                        Long.class
+                    ).uniqueResult();
+
+                    if (existingCount != 0) {
+                        otherThreadSession.delete(otherThreadSession.merge(spotifyRedirectIndex));
+                    }
+                });
             }
         }
 
