@@ -7,6 +7,15 @@ import net.dv8tion.jda.api.EmbedBuilder;
 
 public class ExceptionUtils {
 
+    public static Throwable getRootCause(Throwable e) {
+        Throwable root = e;
+        while (root.getCause() != null) {
+            root = root.getCause();
+        }
+
+        return root;
+    }
+
     public static EmbedBuilder buildErrorEmbed(Throwable e) {
         Throwable exception = e instanceof CommandRuntimeException ? e.getCause() : e;
         EmbedBuilder embedBuilder = new EmbedBuilder();

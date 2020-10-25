@@ -26,6 +26,11 @@ public class TrackLoadingExceptionHandler implements Thread.UncaughtExceptionHan
 
     @Override
     public void uncaughtException(Thread t, Throwable e) {
+        if (e instanceof InterruptedException || ExceptionUtils.getRootCause(e) instanceof InterruptedException) {
+            logger.warn("Suppressed InterruptedException " + e + " while loading tracks.");
+            return;
+        }
+
         logger.error("Exception while loading tracks", e);
         if (channel != null) {
             EmbedBuilder embedBuilder = ExceptionUtils.buildErrorEmbed(e);
