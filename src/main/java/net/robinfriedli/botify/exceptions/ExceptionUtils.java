@@ -17,6 +17,15 @@ import net.robinfriedli.botify.discord.MessageService;
 
 public class ExceptionUtils {
 
+    public static Throwable getRootCause(Throwable e) {
+        Throwable root = e;
+        while (root.getCause() != null) {
+            root = root.getCause();
+        }
+
+        return root;
+    }
+
     public static EmbedBuilder buildErrorEmbed(Throwable e) {
         Throwable exception = e instanceof CommandRuntimeException ? e.getCause() : e;
         EmbedBuilder embedBuilder = new EmbedBuilder();
@@ -53,6 +62,11 @@ public class ExceptionUtils {
     }
 
     public static void handleTrackLoadingException(Throwable e, Logger logger, @Nullable ExecutionContext executionContext, @Nullable MessageChannel messageChannel) {
+        if (e instanceof InterruptedException || ExceptionUtils.getRootCause(e) instanceof InterruptedException) {
+            logger.warn("Suppressed InterruptedException " + e + " while loading tracks.");
+            return;
+        }
+
         String commandContextSuffix = executionContext != null ? " (started by command: " + executionContext.getId() + ")" : "";
         String msg = "Exception while loading tracks" + commandContextSuffix;
 
