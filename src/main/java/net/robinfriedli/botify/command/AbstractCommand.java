@@ -206,7 +206,7 @@ public abstract class AbstractCommand implements Command {
     }
 
     protected <E> E invokeWithSession(Function<Session, E> function) {
-        return createSynchronisedHibernateInvoker().invoke(function);
+        return createSynchronisedHibernateInvoker().invokeFunction(function);
     }
 
     /**

@@ -34,11 +34,11 @@ public class StaticSessionProvider {
     }
 
     public static void consumeSession(Consumer<Session> consumer) {
-        HibernateInvoker.create(provide()).invoke(consumer);
+        HibernateInvoker.create(provide()).invokeConsumer(consumer);
     }
 
     public static <E> E invokeWithSession(Function<Session, E> function) {
-        return HibernateInvoker.create(provide()).invoke(function);
+        return HibernateInvoker.create(provide()).invokeFunction(function);
     }
 
     public static void consumeSessionWithoutInterceptors(Consumer<Session> sessionConsumer) {

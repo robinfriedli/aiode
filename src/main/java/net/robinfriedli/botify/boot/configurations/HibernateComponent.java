@@ -40,11 +40,11 @@ public class HibernateComponent {
     }
 
     public void consumeSession(Consumer<Session> consumer) {
-        HibernateInvoker.create(getCurrentSession()).invoke(consumer);
+        HibernateInvoker.create(getCurrentSession()).invokeConsumer(consumer);
     }
 
     public <E> E invokeWithSession(Function<Session, E> function) {
-        return HibernateInvoker.create(getCurrentSession()).invoke(function);
+        return HibernateInvoker.create(getCurrentSession()).invokeFunction(function);
     }
 
     public void consumeSessionWithoutInterceptors(Consumer<Session> sessionConsumer) {

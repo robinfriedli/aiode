@@ -329,7 +329,7 @@ public class GuildManager {
                 Map<Playlist, List<PlaylistItem>> playlistMap = hibernatePlaylistMigrator.perform();
 
                 Mode mode = getMode();
-                HibernateInvoker.create(session).invoke(currentSession -> {
+                HibernateInvoker.create(session).invokeConsumer(currentSession -> {
                     for (Playlist playlist : playlistMap.keySet()) {
                         Playlist existingList = SearchEngine.searchLocalList(currentSession, playlist.getName(), mode == GuildManager.Mode.PARTITIONED, guild.getId());
                         if (existingList == null) {

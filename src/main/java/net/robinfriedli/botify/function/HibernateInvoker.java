@@ -76,12 +76,12 @@ public class HibernateInvoker extends BaseInvoker implements FunctionInvoker<Ses
     }
 
     @Override
-    public <V> V invoke(Function<Session, V> function) {
-        return invoke(Mode.create(), function);
+    public <V> V invokeFunction(Function<Session, V> function) {
+        return invokeFunction(Mode.create(), function);
     }
 
     @Override
-    public <V> V invoke(Mode mode, Function<Session, V> function) {
+    public <V> V invokeFunction(Mode mode, Function<Session, V> function) {
         return invoke(mode, () -> function.apply(session != null ? session : StaticSessionProvider.provide()));
     }
 }
