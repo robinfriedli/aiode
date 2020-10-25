@@ -15,6 +15,7 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 
 import com.google.common.base.Strings;
+import org.hibernate.FlushMode;
 import org.hibernate.Session;
 
 /**
@@ -57,7 +58,7 @@ public class SpotifyRedirectIndex implements Serializable {
         CriteriaQuery<SpotifyRedirectIndex> query = cb.createQuery(SpotifyRedirectIndex.class);
         Root<SpotifyRedirectIndex> root = query.from(SpotifyRedirectIndex.class);
         query.where(cb.equal(root.get("spotifyId"), spotifyTrackId));
-        return session.createQuery(query).uniqueResultOptional();
+        return session.createQuery(query).setHibernateFlushMode(FlushMode.MANUAL).uniqueResultOptional();
     }
 
     public long getPk() {
