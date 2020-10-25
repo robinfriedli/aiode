@@ -16,7 +16,7 @@
     <property name="hibernate.current_session_context_class">thread</property>
     <!-- C3P0 config -->
     <property name="hibernate.c3p0.min_size">5</property>
-    <property name="hibernate.c3p0.max_size">20</property>
+    <property name="hibernate.c3p0.max_size">200</property>
     <property name="hibernate.c3p0.timeout">1800</property>
     <property name="hibernate.c3p0.max_statements">50</property>
     <!-- ehcache -->
