@@ -183,7 +183,7 @@ public class PlayableFactory {
 
                         youTubeService.populateList(youTubePlaylist);
                     }
-                } catch (IOException e) {
+                } catch (Exception e) {
                     tracksToRedirect.stream().filter(HollowYouTubeVideo::isHollow).forEach(HollowYouTubeVideo::cancel);
                     youTubePlaylistsToLoad.forEach(YouTubePlaylist::cancelLoading);
                     throw e;
@@ -223,7 +223,7 @@ public class PlayableFactory {
         trackLoadingExecutor.load(() -> {
             try {
                 youTubeService.populateList(youTubePlaylist);
-            } catch (IOException e) {
+            } catch (Exception e) {
                 youTubePlaylist.cancelLoading();
                 throw e;
             }
