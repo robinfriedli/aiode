@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -286,7 +287,7 @@ public class YouTubeService {
         String nextPageToken;
         do {
             VideoListResponse response = doWithQuota(QUOTA_COST_LIST, query::execute);
-            videos.addAll(response.getItems());
+            videos.addAll(response.getItems().stream().filter(Objects::nonNull).collect(Collectors.toList()));
             nextPageToken = response.getNextPageToken();
             query.setPageToken(nextPageToken);
         } while (!Strings.isNullOrEmpty(nextPageToken));
