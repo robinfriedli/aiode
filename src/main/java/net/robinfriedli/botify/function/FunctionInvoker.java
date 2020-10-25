@@ -12,19 +12,19 @@ import net.robinfriedli.exec.Mode;
  */
 public interface FunctionInvoker<P> {
 
-    <V> V invoke(Function<P, V> function);
+    <V> V invokeFunction(Function<P, V> function);
 
-    default void invoke(Consumer<P> consumer) {
-        invoke(p -> {
+    default void invokeConsumer(Consumer<P> consumer) {
+        invokeFunction(p -> {
             consumer.accept(p);
             return null;
         });
     }
 
-    <V> V invoke(Mode mode, Function<P, V> function);
+    <V> V invokeFunction(Mode mode, Function<P, V> function);
 
-    default void invoke(Mode mode, Consumer<P> consumer) {
-        invoke(mode, p -> {
+    default void invokeConsumer(Mode mode, Consumer<P> consumer) {
+        invokeFunction(mode, p -> {
             consumer.accept(p);
             return null;
         });

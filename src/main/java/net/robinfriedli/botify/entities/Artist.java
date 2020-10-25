@@ -44,7 +44,7 @@ public class Artist implements Serializable {
 
     public static Artist getOrCreateArtist(ArtistSimplified artist, Session session) {
         Mode mode = Mode.create().with(new MutexSyncMode<>(artist.getId(), ARTIST_SYNC));
-        return HibernateInvoker.create(session).invoke(mode, currentSession -> {
+        return HibernateInvoker.create(session).invokeFunction(mode, currentSession -> {
             Query<Artist> query = currentSession
                 .createQuery(" from " + Artist.class.getName() + " where id = '" + artist.getId() + "'", Artist.class);
             query.setFlushMode(FlushModeType.AUTO);
