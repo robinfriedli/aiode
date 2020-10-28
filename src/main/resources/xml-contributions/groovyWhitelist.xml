@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <whitelistConfiguration xmlns="whitelistSpace">
   <whitelistMethods class="java.lang.Object">
+    <method name="getClass"/>
     <method name="equals"/>
     <method name="toString"/>
     <method name="hashCode"/>
