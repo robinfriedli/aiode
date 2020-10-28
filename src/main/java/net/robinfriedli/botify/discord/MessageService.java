@@ -36,12 +36,18 @@ import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.discord.property.properties.TempMessageTimeoutProperty;
 import net.robinfriedli.botify.entities.GuildSpecification;
+import net.robinfriedli.botify.function.modes.RecursionPreventionMode;
+import net.robinfriedli.exec.Invoker;
+import net.robinfriedli.exec.Mode;
 import net.robinfriedli.stringlist.StringList;
 import org.hibernate.Session;
 import org.springframework.stereotype.Component;
 
 @Component
 public class MessageService {
+
+    private static final Invoker RECURSION_PREVENTION_INVOKER = Invoker.newInstance();
+    private static final Mode RECURSION_PREVENTION_MODE = Mode.create().with(new RecursionPreventionMode());
 
     private final int limit = 1000;
     private final GuildManager guildManager;
@@ -293,9 +299,11 @@ public class MessageService {
             Permission permission = e.getPermission();
             if (permission == Permission.MESSAGE_WRITE || permission == Permission.MESSAGE_READ) {
                 if (channel instanceof TextChannel && canTalk(((TextChannel) channel).getGuild())) {
-                    Guild guild = ((TextChannel) channel).getGuild();
-                    sendTemporary("I do not have permission to send any messages to channel " + channel.getName() + " so I'll send it here instead.", guild);
-                    executeMessageAction(guild, function).thenAccept(futureMessage::complete);
+                    RECURSION_PREVENTION_INVOKER.invoke(RECURSION_PREVENTION_MODE, () -> {
+                        Guild guild = ((TextChannel) channel).getGuild();
+                        sendTemporary("I do not have permission to send any messages to channel " + channel.getName() + " so I'll send it here instead.", guild);
+                        executeMessageAction(guild, function).thenAccept(futureMessage::complete);
+                    });
                 } else if (channel instanceof TextChannel) {
                     logger.warn("Unable to send messages to guild " + ((TextChannel) channel).getGuild());
                     futureMessage.completeExceptionally(e);
