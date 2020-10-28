@@ -171,6 +171,44 @@
     <method name="compareUnsigned"/>
     <method name="mismatch"/>
   </whitelistMethods>
+  <whitelistMethods class="java.util.Map">
+    <method name="size"/>
+    <method name="isEmpty"/>
+    <method name="containsKey"/>
+    <method name="containsValue"/>
+    <method name="get"/>
+    <method name="put"/>
+    <method name="remove"/>
+    <method name="putAll"/>
+    <method name="clear"/>
+    <method name="keySet"/>
+    <method name="values"/>
+    <method name="entrySet"/>
+    <method name="equals"/>
+    <method name="hashCode"/>
+    <method name="getOrDefault"/>
+    <method name="forEach"/>
+    <method name="replaceAll"/>
+    <method name="putIfAbsent"/>
+    <method name="replace"/>
+    <method name="computeIfAbsent"/>
+    <method name="computeIfPresent"/>
+    <method name="compute"/>
+    <method name="merge"/>
+    <method name="of"/>
+    <method name="ofEntries"/>
+    <method name="entry"/>
+    <method name="copyOf"/>
+  </whitelistMethods>
+  <whitelistMethods class="java.util.Map$Entry">
+    <method name="getKey"/>
+    <method name="getValue"/>
+    <method name="setValue"/>
+    <method name="equals"/>
+    <method name="hashCode"/>
+    <method name="comparingByKey"/>
+    <method name="comparingByValue"/>
+  </whitelistMethods>
   <whitelistMethods class="java.lang.Iterable">
     <method name="iterator"/>
     <method name="forEach"/>
