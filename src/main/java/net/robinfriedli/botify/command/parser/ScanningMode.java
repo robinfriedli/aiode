@@ -21,10 +21,14 @@ public class ScanningMode implements CommandParser.Mode {
 
     @Override
     public CommandParser.Mode handle(char character) {
-        if (' ' == character) {
+        if (Character.isWhitespace(character)) {
             return this;
         } else {
             if (argumentPrefix == character || ArgumentPrefixProperty.DEFAULT == character) {
+                char nextChar = commandParser.peekNextChar();
+                if (nextChar == 0 || Character.isWhitespace(nextChar)) {
+                    return new CommandInputBuildingMode(command, commandParser, argumentPrefix).handleLiteral(character);
+                }
                 return new ArgumentBuildingMode(command, commandParser, argumentPrefix);
             } else {
                 return new CommandInputBuildingMode(command, commandParser, argumentPrefix).handle(character);

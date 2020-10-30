@@ -4,6 +4,7 @@ import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.ArgumentContribution;
 import net.robinfriedli.botify.discord.property.properties.ArgumentPrefixProperty;
 import net.robinfriedli.botify.exceptions.CommandParseException;
+import net.robinfriedli.botify.exceptions.InvalidArgumentException;
 import net.robinfriedli.botify.exceptions.UserException;
 
 /**
@@ -46,32 +47,41 @@ public class ArgumentBuildingMode implements CommandParser.Mode {
     @Override
     public CommandParser.Mode handle(char character) {
         if (character == '=') {
-            isRecodingValue = true;
+            if (isRecodingValue) {
+                argumentValueBuilder.append(character);
+            } else {
+                isRecodingValue = true;
+            }
             return this;
-        } else if (character == ' ') {
+        } else if (Character.isWhitespace(character)) {
             if (isInline) {
                 if (isRecodingValue) {
                     argumentValueBuilder.append(character);
-                    return this;
                 } else {
                     isRecodingValue = true;
-                    return this;
                 }
+                return this;
             } else {
                 terminate();
                 return new ScanningMode(command, commandParser, argumentPrefix);
             }
         } else if (character == argumentPrefix || character == ArgumentPrefixProperty.DEFAULT) {
+            if (isInline && isRecodingValue) {
+                char nextChar = commandParser.peekNextChar();
+                if (nextChar == 0 || Character.isWhitespace(nextChar)) {
+                    argumentValueBuilder.append(character);
+                    return this;
+                }
+            }
             terminate();
             return new ArgumentBuildingMode(command, commandParser, argumentPrefix, isInline);
         } else {
             if (isRecodingValue) {
                 argumentValueBuilder.append(character);
-                return this;
             } else {
                 argumentBuilder.append(character);
-                return this;
             }
+            return this;
         }
     }
 
@@ -79,16 +89,19 @@ public class ArgumentBuildingMode implements CommandParser.Mode {
     public CommandParser.Mode handleLiteral(char character) {
         if (isRecodingValue) {
             argumentValueBuilder.append(character);
-            return this;
         } else {
             argumentBuilder.append(character);
-            return this;
         }
+        return this;
     }
 
     @Override
     public void terminate() {
         try {
+            if (argumentBuilder.length() == 0) {
+                throw new InvalidArgumentException("Missing argument identifier");
+            }
+
             ArgumentContribution argumentContribution = command.getArgumentContribution();
             String argument = argumentBuilder.toString().trim();
             String argumentValue = argumentValueBuilder.toString().trim();
