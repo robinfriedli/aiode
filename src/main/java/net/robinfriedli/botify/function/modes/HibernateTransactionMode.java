@@ -78,36 +78,35 @@ public class HibernateTransactionMode extends AbstractNestedModeWrapper {
             }
 
             boolean commitRequired = false;
+            boolean committed = false;
             if (!session.getTransaction().isActive()) {
                 session.beginTransaction();
                 commitRequired = true;
             }
-            try {
-                return callableToWrap.call();
-            } catch (Throwable e) {
-                if (commitRequired) {
-                    session.getTransaction().markRollbackOnly();
-                    session.getTransaction().rollback();
-                    // make sure this transaction is not committed in the finally block, which would throw an exception that
-                    // overrides the current exception
-                    commitRequired = false;
-                }
 
-                throw e;
-            } finally {
+            try {
+                E result = callableToWrap.call();
+
                 if (commitRequired) {
                     try {
                         session.getTransaction().commit();
+                        committed = true;
                     } catch (RollbackException e) {
                         // now that hibernate is bootstrapped via JPA by spring boot as of botify 2.0, hibernate now wraps
                         // exceptions thrown during commit; with native bootstrapping hibernate simply threw the exception
                         if (e.getCause() instanceof Exception) {
-                            // commitRequired is never true when an exception occurred, so it is safe to throw an
-                            // exception here without potentially swallowing another one
-                            //noinspection ThrowFromFinallyBlock
                             throw (Exception) e.getCause();
+                        } else {
+                            throw e;
                         }
                     }
+                }
+
+                return result;
+            } finally {
+                if (commitRequired && !committed) {
+                    session.getTransaction().markRollbackOnly();
+                    session.getTransaction().rollback();
                 }
             }
         }
