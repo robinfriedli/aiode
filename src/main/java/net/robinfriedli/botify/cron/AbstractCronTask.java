@@ -30,7 +30,7 @@ public abstract class AbstractCronTask implements Job {
                 run(jobExecutionContext);
                 return null;
             });
-        } catch (Throwable e) {
+        } catch (Exception e) {
             logger.error("Error in cron job", e);
         }
     }

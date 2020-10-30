@@ -87,7 +87,7 @@ public class ClientQuestionEvent {
         questionMessage.thenAccept(message -> {
             try {
                 message.delete().queue();
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 LoggerFactory.getLogger(getClass()).error(String.format("Could not delete destroyed question event for command %s on guild %s", sourceCommand, sourceCommand.getContext().getGuild()), e);
             }
         });

@@ -91,7 +91,7 @@ public class CommandParser {
                 throw e;
             } catch (UserException e) {
                 throw new CommandParseException(e.getMessage(), command.getCommandBody(), e, i);
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 logger.error("Unexpected exception while parsing command", e);
                 throw e;
             }
@@ -129,7 +129,7 @@ public class CommandParser {
         for (CommandParseListener listener : listeners) {
             try {
                 event.accept(listener);
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 logger.error("Error in CommandParseListener", e);
             }
         }

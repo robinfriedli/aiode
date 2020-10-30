@@ -69,7 +69,7 @@ public class CommandInterceptorContribution extends AbstractXmlElement {
                 .collect(Collectors.toList());
 
             return interruptingExceptions.stream().anyMatch(clazz -> clazz.isAssignableFrom(e.getClass()));
-        } catch (Throwable e2) {
+        } catch (Exception e2) {
             logger.error("Exception while handling interceptor exception", e2);
         }
 

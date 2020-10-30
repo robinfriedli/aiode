@@ -89,7 +89,7 @@ public class GuildPropertyInterceptor extends ChainableInterceptor {
                             // previous might be null
                             updatePresets(property, (Character) previousWithNewValue.getLeft(), (char) previousWithNewValue.getRight(), session);
                         });
-                    } catch (Throwable e) {
+                    } catch (Exception e) {
                         messageService.sendException("Exception occurred while updating presets with new argument prefix. " +
                                 "Presets will have to be updated manually if necessary.",
                             commandContext.getChannel());

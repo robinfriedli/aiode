@@ -37,7 +37,7 @@ public class QueueWidget extends AbstractWidget {
         } catch (InsufficientPermissionException e) {
             setMessageDeleted(false);
             messageService.sendError("Bot is missing permission: " + e.getPermission().getName(), message.getChannel());
-        } catch (Throwable e) {
+        } catch (Exception e) {
             handleDeletionError(e, message);
         }
 

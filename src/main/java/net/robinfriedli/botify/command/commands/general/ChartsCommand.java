@@ -137,7 +137,7 @@ public class ChartsCommand extends AbstractCommand {
                 }
             } catch (UnsupportedOperationException e) {
                 throw e;
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 LoggerFactory.getLogger(getClass()).error(String.format("Error loading charts item from source %s: %s", record[0], record[1]), e);
             }
         }

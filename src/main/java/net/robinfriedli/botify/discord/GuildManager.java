@@ -316,7 +316,7 @@ public class GuildManager {
                 .requireOnlyResult();
             EmbedBuilder embedBuilder = embedDocumentContribution.buildEmbed();
             messageService.sendWithLogo(embedBuilder, guild);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             logger.error("Error sending getting started message", e);
         }
 
@@ -341,7 +341,7 @@ public class GuildManager {
                         }
                     }
                 });
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 logger.error("Exception while setting up default playlists", e);
             }
         }

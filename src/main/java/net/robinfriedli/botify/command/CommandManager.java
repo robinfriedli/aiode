@@ -89,7 +89,7 @@ public class CommandManager {
         ExecutionContext.Current.set(command.getContext());
         try {
             doRunCommand(command);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             ExceptionUtils.handleCommandException(e, command, logger);
         } finally {
             ThreadContext.Current.clear();

@@ -444,7 +444,7 @@ public class MessageService {
             int timeoutSeconds;
             try {
                 timeoutSeconds = getTimeout();
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 logger.error("Exception loading tempMessageTimeout property", e);
                 return;
             }
@@ -455,7 +455,7 @@ public class MessageService {
                     }, this::logError);
                 } catch (InsufficientPermissionException e) {
                     logger.warn(String.format("Insufficient permission to delete temp message %s on guild %s", message, message.getGuild()));
-                } catch (Throwable e) {
+                } catch (Exception e) {
                     logError(e);
                 }
             }

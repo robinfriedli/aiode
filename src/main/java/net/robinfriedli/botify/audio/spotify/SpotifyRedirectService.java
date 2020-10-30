@@ -104,7 +104,7 @@ public class SpotifyRedirectService {
                     }
                 } catch (UnavailableResourceException e) {
                     logger.warn("Tried creating a SpotifyRedirectIndex for an unavailable Track");
-                } catch (Throwable e) {
+                } catch (Exception e) {
                     logger.error("Exception while creating SpotifyRedirectIndex", e);
                 }
             }));

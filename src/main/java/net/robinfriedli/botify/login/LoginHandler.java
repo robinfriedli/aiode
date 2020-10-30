@@ -68,7 +68,7 @@ public class LoginHandler implements HttpHandler {
             os.close();
         } catch (InvalidRequestException e) {
             ServerUtil.handleError(httpExchange, e);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             ServerUtil.handleError(httpExchange, e);
             LoggerFactory.getLogger(getClass()).error("Error in HttpHandler", e);
         }

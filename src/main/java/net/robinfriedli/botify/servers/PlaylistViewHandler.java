@@ -76,7 +76,7 @@ public class PlaylistViewHandler implements HttpHandler {
             }
         } catch (InvalidRequestException e) {
             ServerUtil.handleError(exchange, e);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             ServerUtil.handleError(exchange, e);
             LoggerFactory.getLogger(getClass()).error("Error in HttpHandler", e);
         } finally {

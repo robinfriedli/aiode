@@ -9,7 +9,7 @@ public interface LoggingRunnable extends CheckedRunnable {
     default void run() {
         try {
             doRun();
-        } catch (Throwable e) {
+        } catch (Exception e) {
             Botify.LOGGER.error("Uncaught exception in thread " + Thread.currentThread(), e);
         }
     }

@@ -57,7 +57,7 @@ public class WidgetManager {
                 .filter(w -> widget.getGuildId().equals(w.getGuildId()))
                 .filter(w -> w.getClass().equals(widget.getClass()))
                 .forEach(toRemove::add);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             logger.warn("Exception while removing existing widget", e);
         }
         try {

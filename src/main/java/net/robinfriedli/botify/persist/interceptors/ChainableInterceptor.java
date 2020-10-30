@@ -44,7 +44,7 @@ public class ChainableInterceptor extends EmptyInterceptor {
     public void onDelete(Object entity, Serializable id, Object[] state, String[] propertyNames, Type[] types) {
         try {
             onDeleteChained(entity, id, state, propertyNames, types);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             logger.error("Error in onDelete of ChainableInterceptor " + getClass().getSimpleName(), e);
         }
         next.onDelete(entity, id, state, propertyNames, types);
@@ -54,7 +54,7 @@ public class ChainableInterceptor extends EmptyInterceptor {
     public boolean onFlushDirty(Object entity, Serializable id, Object[] currentState, Object[] previousState, String[] propertyNames, Type[] types) {
         try {
             onFlushDirtyChained(entity, id, currentState, previousState, propertyNames, types);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             logger.error("Error in onFlushDirty of ChainableInterceptor " + getClass().getSimpleName(), e);
         }
         return next.onFlushDirty(entity, id, currentState, previousState, propertyNames, types);
@@ -64,7 +64,7 @@ public class ChainableInterceptor extends EmptyInterceptor {
     public boolean onLoad(Object entity, Serializable id, Object[] state, String[] propertyNames, Type[] types) {
         try {
             onLoadChained(entity, id, state, propertyNames, types);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             logger.error("Error in onLoad of ChainableInterceptor " + getClass().getSimpleName(), e);
         }
         return next.onLoad(entity, id, state, propertyNames, types);
@@ -74,7 +74,7 @@ public class ChainableInterceptor extends EmptyInterceptor {
     public boolean onSave(Object entity, Serializable id, Object[] state, String[] propertyNames, Type[] types) {
         try {
             onSaveChained(entity, id, state, propertyNames, types);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             logger.error("Error in onSave of ChainableInterceptor " + getClass().getSimpleName(), e);
         }
         return next.onSave(entity, id, state, propertyNames, types);
@@ -84,7 +84,7 @@ public class ChainableInterceptor extends EmptyInterceptor {
     public void postFlush(Iterator entities) {
         try {
             postFlushChained(entities);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             logger.error("Error in postFlush of ChainableInterceptor " + getClass().getSimpleName(), e);
         }
         next.postFlush(entities);
@@ -94,7 +94,7 @@ public class ChainableInterceptor extends EmptyInterceptor {
     public void preFlush(Iterator entities) {
         try {
             preFlushChained(entities);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             logger.error("Error in preFlush of ChainableInterceptor " + getClass().getSimpleName(), e);
         }
         next.preFlush(entities);
@@ -104,7 +104,7 @@ public class ChainableInterceptor extends EmptyInterceptor {
     public Boolean isTransient(Object entity) {
         try {
             isTransientChained(entity);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             logger.error("Error in isTransient of ChainableInterceptor " + getClass().getSimpleName(), e);
         }
         return next.isTransient(entity);
@@ -114,7 +114,7 @@ public class ChainableInterceptor extends EmptyInterceptor {
     public Object instantiate(String entityName, EntityMode entityMode, Serializable id) {
         try {
             instantiateChained(entityName, entityMode, id);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             logger.error("Error in instantiate of ChainableInterceptor " + getClass().getSimpleName(), e);
         }
         return next.instantiate(entityName, entityMode, id);
@@ -124,7 +124,7 @@ public class ChainableInterceptor extends EmptyInterceptor {
     public int[] findDirty(Object entity, Serializable id, Object[] currentState, Object[] previousState, String[] propertyNames, Type[] types) {
         try {
             findDirtyChained(entity, id, currentState, previousState, propertyNames, types);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             logger.error("Error in findDirty of ChainableInterceptor " + getClass().getSimpleName(), e);
         }
         return next.findDirty(entity, id, currentState, previousState, propertyNames, types);
@@ -134,7 +134,7 @@ public class ChainableInterceptor extends EmptyInterceptor {
     public String getEntityName(Object object) {
         try {
             getEntityNameChained(object);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             logger.error("Error in getEntityName of ChainableInterceptor " + getClass().getSimpleName(), e);
         }
         return next.getEntityName(object);
@@ -144,7 +144,7 @@ public class ChainableInterceptor extends EmptyInterceptor {
     public Object getEntity(String entityName, Serializable id) {
         try {
             getEntityChained(entityName, id);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             logger.error("Error in getEntity of ChainableInterceptor " + getClass().getSimpleName(), e);
         }
         return next.getEntity(entityName, id);
@@ -154,7 +154,7 @@ public class ChainableInterceptor extends EmptyInterceptor {
     public void afterTransactionBegin(Transaction tx) {
         try {
             afterTransactionBeginChained(tx);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             logger.error("Error in afterTransactionBegin of ChainableInterceptor " + getClass().getSimpleName(), e);
         }
         next.afterTransactionBegin(tx);
@@ -164,7 +164,7 @@ public class ChainableInterceptor extends EmptyInterceptor {
     public void afterTransactionCompletion(Transaction tx) {
         try {
             afterTransactionCompletionChained(tx);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             logger.error("Error in afterTransactionCompletion of ChainableInterceptor " + getClass().getSimpleName(), e);
         }
         next.afterTransactionCompletion(tx);
@@ -174,7 +174,7 @@ public class ChainableInterceptor extends EmptyInterceptor {
     public void beforeTransactionCompletion(Transaction tx) {
         try {
             beforeTransactionCompletionChained(tx);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             logger.error("Error in beforeTransactionCompletion of ChainableInterceptor " + getClass().getSimpleName(), e);
         }
         next.beforeTransactionCompletion(tx);
@@ -185,7 +185,7 @@ public class ChainableInterceptor extends EmptyInterceptor {
     public String onPrepareStatement(String sql) {
         try {
             onPrepareStatementChained(sql);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             logger.error("Error in onPrepareStatement of ChainableInterceptor " + getClass().getSimpleName(), e);
         }
         return next.onPrepareStatement(sql);
@@ -195,7 +195,7 @@ public class ChainableInterceptor extends EmptyInterceptor {
     public void onCollectionRemove(Object collection, Serializable key) throws CallbackException {
         try {
             onCollectionRemoveChained(collection, key);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             logger.error("Error in onCollectionRemove of ChainableInterceptor " + getClass().getSimpleName(), e);
         }
         next.onCollectionRemove(collection, key);
@@ -205,7 +205,7 @@ public class ChainableInterceptor extends EmptyInterceptor {
     public void onCollectionRecreate(Object collection, Serializable key) throws CallbackException {
         try {
             onCollectionRecreateChained(collection, key);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             logger.error("Error in onCollectionRecreate of ChainableInterceptor " + getClass().getSimpleName(), e);
         }
         next.onCollectionRecreate(collection, key);
@@ -215,7 +215,7 @@ public class ChainableInterceptor extends EmptyInterceptor {
     public void onCollectionUpdate(Object collection, Serializable key) throws CallbackException {
         try {
             onCollectionUpdateChained(collection, key);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             logger.error("Error in onCollectionUpdate of ChainableInterceptor " + getClass().getSimpleName(), e);
         }
         next.onCollectionUpdate(collection, key);

@@ -193,7 +193,7 @@ public class AudioPlayback {
         if (lastPlaybackNotification != null) {
             try {
                 lastPlaybackNotification.delete().queue();
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 OffsetDateTime timeCreated = lastPlaybackNotification.getTimeCreated();
                 ZonedDateTime zonedDateTime = timeCreated.atZoneSameInstant(ZoneId.systemDefault());
                 logger.warn(String.format("Cannot delete playback notification message from %s for channel %s on guild %s",

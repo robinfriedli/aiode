@@ -55,7 +55,7 @@ public class CommandExecutionInterceptor extends AbstractChainableCommandInterce
         try {
             try {
                 command.doRun();
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 if ((command.getTask() != null && command.getTask().isTerminated()) || Thread.currentThread().isInterrupted()) {
                     logger.warn(String.format("Suppressed '%s' because command execution was interrupted.", e));
                     return;
@@ -63,7 +63,7 @@ public class CommandExecutionInterceptor extends AbstractChainableCommandInterce
 
                 try {
                     command.onFailure();
-                } catch (Throwable e1) {
+                } catch (Exception e1) {
                     logger.error("Exception thrown in onFailure of command, logging this error and throwing the exception that caused the command to fail.", e1);
                 }
                 throw e;
@@ -142,7 +142,7 @@ public class CommandExecutionInterceptor extends AbstractChainableCommandInterce
             }
             unexpectedException = true;
             throw e;
-        } catch (Throwable e) {
+        } catch (Exception e) {
             errorMessage = e.getClass().getSimpleName() + ": " + e.getMessage();
             unexpectedException = true;
             throw new CommandRuntimeException(e);

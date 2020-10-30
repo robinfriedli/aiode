@@ -14,7 +14,7 @@ public class CompletableFutures {
         return completableFuture.whenComplete((result, throwable) -> {
             try {
                 handle.accept(result, throwable);
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 errorConsumer.accept(e);
             }
         });

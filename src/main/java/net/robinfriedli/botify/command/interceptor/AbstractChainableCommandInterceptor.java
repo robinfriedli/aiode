@@ -27,7 +27,7 @@ public abstract class AbstractChainableCommandInterceptor implements CommandInte
             performChained(command);
         } catch (Abort e) {
             throw new Abort();
-        } catch (Throwable e) {
+        } catch (Exception e) {
             if (contribution.throwException(e)) {
                 throw e;
             } else {

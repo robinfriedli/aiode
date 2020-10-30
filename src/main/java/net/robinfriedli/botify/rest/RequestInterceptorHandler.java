@@ -115,7 +115,7 @@ public class RequestInterceptorHandler implements HandlerInterceptor {
                     }
                 }
             }
-        } catch (Throwable e) {
+        } catch (Exception e) {
             response.sendError(500, "Internal server error");
             threadContext.clear();
             throw e;

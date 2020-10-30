@@ -122,7 +122,7 @@ public abstract class AbstractWidget {
                     } catch (InsufficientPermissionException ignored) {
                         message.clearReactions().queue();
                     }
-                } catch (Throwable ignored) {
+                } catch (Exception ignored) {
                 }
             }
         });

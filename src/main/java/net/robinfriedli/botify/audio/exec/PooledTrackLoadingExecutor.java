@@ -78,7 +78,7 @@ public class PooledTrackLoadingExecutor implements TrackLoadingExecutor {
                 }
 
                 trackLoadingRunnable.run();
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 ExceptionUtils.handleTrackLoadingException(e, LoggerFactory.getLogger(ReplaceableTrackLoadingExecutor.class), finalExecutionContext, channel);
             } finally {
                 ThreadContext.Current.clear();

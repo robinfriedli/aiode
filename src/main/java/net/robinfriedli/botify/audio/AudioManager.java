@@ -165,7 +165,7 @@ public class AudioManager extends AbstractShutdownable {
                     }
 
                 });
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 logger.error("Exception while creating playback history entry", e);
             }
         });

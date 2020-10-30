@@ -86,7 +86,7 @@ public class WidgetListener extends ListenerAdapter {
             activeWidget.handleReaction(event, commandContext);
         } catch (UserException e) {
             messageService.sendError(e.getMessage(), channel);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             logger.error("Exception while preparing WidgetAction execution.", e);
         }
     }
