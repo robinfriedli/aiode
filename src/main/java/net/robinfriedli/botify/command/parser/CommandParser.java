@@ -27,11 +27,15 @@ import net.robinfriedli.botify.exceptions.UserException;
  */
 public class CommandParser {
 
-    private static final Set<Character> META = ImmutableSet.of(ArgumentPrefixProperty.DEFAULT_FALLBACK, '"', '\\', '=', ' ');
+    public static final Set<Character> META = ImmutableSet.of(ArgumentPrefixProperty.DEFAULT_FALLBACK, '"', '\\', '=', ' ');
+
     private final AbstractCommand command;
     private final ArgumentPrefixProperty.Config argumentPrefixConfig;
     private final CommandParseListener[] listeners;
     private final Logger logger;
+
+    private char[] chars;
+
     private int currentPosition = 0;
     private Mode currentMode;
     private boolean isEscaped;
@@ -50,15 +54,14 @@ public class CommandParser {
     }
 
     public void parse(String input) {
-        char[] chars = input.toCharArray();
-        for (int i = 0; i < chars.length; i++) {
-            currentPosition = i;
-            char character = chars[i];
+        chars = input.toCharArray();
+        for (; currentPosition < chars.length; currentPosition++) {
+            char character = chars[currentPosition];
             Mode previousMode = currentMode;
             try {
                 if (isEscaped) {
                     if (!checkLegalEscape(character)) {
-                        throw new IllegalEscapeCharacterException("Illegal escape character at " + (i - 1));
+                        throw new IllegalEscapeCharacterException("Illegal escape character at " + (currentPosition - 1));
                     }
                     currentMode = currentMode.handleLiteral(character);
                     isEscaped = false;
@@ -80,9 +83,12 @@ public class CommandParser {
                     }
                 }
 
-                if (i == chars.length - 1) {
+                if (currentPosition == chars.length - 1) {
                     if (isOpenQuotation) {
                         throw new UnclosedQuotationsException("Unclosed double quotes");
+                    }
+                    if (isEscaped) {
+                        throw new IllegalEscapeCharacterException("Illegal trailing escape character");
                     }
 
                     currentMode.terminate();
@@ -90,7 +96,7 @@ public class CommandParser {
             } catch (CommandParseException e) {
                 throw e;
             } catch (UserException e) {
-                throw new CommandParseException(e.getMessage(), command.getCommandBody(), e, i);
+                throw new CommandParseException(e.getMessage(), command.getCommandBody(), e, currentPosition);
             } catch (Exception e) {
                 logger.error("Unexpected exception while parsing command", e);
                 throw e;
@@ -98,7 +104,7 @@ public class CommandParser {
 
             // fire mode switch event even if it's a different instance of the same mode
             if (previousMode != currentMode) {
-                fireOnModeSwitch(previousMode, currentMode, i, character);
+                fireOnModeSwitch(previousMode, currentMode, currentPosition, character);
             }
         }
 
@@ -107,6 +113,28 @@ public class CommandParser {
 
     public int getCurrentPosition() {
         return currentPosition;
+    }
+
+    /**
+     * @return the next char to be parsed AND move the cursor, meaning it is skipped by the parser. Returns 0 if no such char.
+     */
+    public char getNextChar() {
+        return charAtOrNull(++currentPosition);
+    }
+
+    /**
+     * @return the next char to be parsed without moving the cursor. Returns 0 if no such char.
+     */
+    public char peekNextChar() {
+        return charAtOrNull(currentPosition + 1);
+    }
+
+    public char charAtOrNull(int pos) {
+        if (pos < chars.length) {
+            return chars[pos];
+        } else {
+            return 0;
+        }
     }
 
     void fireOnParseFinished() {

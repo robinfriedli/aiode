@@ -25,6 +25,10 @@ public class ScanningMode implements CommandParser.Mode {
             return this;
         } else {
             if (argumentPrefixConfig.getArgumentPrefix() == character || argumentPrefixConfig.getDefaultArgumentPrefix() == character) {
+                char nextChar = commandParser.peekNextChar();
+                if (nextChar == 0 || Character.isWhitespace(nextChar)) {
+                    return new CommandInputBuildingMode(command, commandParser, argumentPrefixConfig).handleLiteral(character);
+                }
                 return new ArgumentBuildingMode(command, commandParser, argumentPrefixConfig);
             } else {
                 return new CommandInputBuildingMode(command, commandParser, argumentPrefixConfig).handle(character);

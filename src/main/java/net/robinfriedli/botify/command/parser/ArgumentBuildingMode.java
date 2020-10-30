@@ -4,6 +4,7 @@ import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.ArgumentController;
 import net.robinfriedli.botify.discord.property.properties.ArgumentPrefixProperty;
 import net.robinfriedli.botify.exceptions.CommandParseException;
+import net.robinfriedli.botify.exceptions.InvalidArgumentException;
 import net.robinfriedli.botify.exceptions.UserException;
 
 /**
@@ -46,7 +47,11 @@ public class ArgumentBuildingMode implements CommandParser.Mode {
     @Override
     public CommandParser.Mode handle(char character) {
         if (character == '=') {
-            isRecodingValue = true;
+            if (isRecodingValue) {
+                argumentValueBuilder.append(character);
+            } else {
+                isRecodingValue = true;
+            }
             return this;
         } else if (Character.isWhitespace(character)) {
             if (isInline) {
@@ -61,6 +66,13 @@ public class ArgumentBuildingMode implements CommandParser.Mode {
                 return new ScanningMode(command, commandParser, argumentPrefixConfig);
             }
         } else if (character == argumentPrefixConfig.getArgumentPrefix() || character == argumentPrefixConfig.getDefaultArgumentPrefix()) {
+            if (isInline && isRecodingValue) {
+                char nextChar = commandParser.peekNextChar();
+                if (nextChar == 0 || Character.isWhitespace(nextChar)) {
+                    argumentValueBuilder.append(character);
+                    return this;
+                }
+            }
             terminate();
             return new ArgumentBuildingMode(command, commandParser, argumentPrefixConfig, isInline);
         } else {
@@ -86,6 +98,10 @@ public class ArgumentBuildingMode implements CommandParser.Mode {
     @Override
     public void terminate() {
         try {
+            if (argumentBuilder.length() == 0) {
+                throw new InvalidArgumentException("Missing argument identifier");
+            }
+
             ArgumentController argumentController = command.getArgumentController();
             String argument = argumentBuilder.toString().trim();
             String argumentValue = argumentValueBuilder.toString().trim();

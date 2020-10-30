@@ -1,6 +1,9 @@
 package net.robinfriedli.botify.discord.property.properties;
 
+import java.util.Objects;
+
 import net.robinfriedli.botify.Botify;
+import net.robinfriedli.botify.command.parser.CommandParser;
 import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.entities.GuildSpecification;
@@ -44,6 +47,10 @@ public class ArgumentPrefixProperty extends AbstractGuildProperty {
 
     @Override
     public void validate(Object state) {
+        Character input = (Character) state;
+        if (!Objects.equals(input, DEFAULT_FALLBACK) && CommandParser.META.contains(input)) {
+            throw new InvalidPropertyValueException("Cannot set argument prefix to reserved meta character " + input);
+        }
     }
 
     @Override
