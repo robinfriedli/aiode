@@ -16,7 +16,7 @@ import net.dv8tion.jda.api.entities.Message;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.boot.SpringPropertiesConfig;
 import net.robinfriedli.botify.discord.MessageService;
-import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
+import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
@@ -247,12 +247,10 @@ public class QueueIterator extends AudioEventAdapter {
         return StaticSessionProvider.invokeWithSession(session -> {
             Guild guild = playback.getGuild();
             GuildSpecification specification = Botify.get().getGuildManager().getContextForGuild(guild).getSpecification(session);
-            AbstractGuildProperty property = Botify.get().getGuildPropertyManager().getProperty("sendPlaybackNotification");
-            if (property != null) {
-                return (Boolean) property.get(specification);
-            } else {
-                return true;
-            }
+            GuildPropertyManager guildPropertyManager = Botify.get().getGuildPropertyManager();
+            return guildPropertyManager
+                .getPropertyValueOptional("sendPlaybackNotification", Boolean.class, specification)
+                .orElse(true);
         });
     }
 

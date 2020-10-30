@@ -32,7 +32,6 @@ import net.dv8tion.jda.api.requests.restaction.MessageAction;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.boot.SpringPropertiesConfig;
 import net.robinfriedli.botify.boot.configurations.HibernateComponent;
-import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.discord.property.properties.TempMessageTimeoutProperty;
@@ -467,14 +466,12 @@ public class MessageService {
                 return hibernateComponent.invokeWithSession(session -> {
                     Botify botify = Botify.get();
                     GuildPropertyManager guildPropertyManager = botify.getGuildPropertyManager();
-                    AbstractGuildProperty tempMessageTimeoutProperty = guildPropertyManager.getProperty("tempMessageTimeout");
-                    if (tempMessageTimeoutProperty != null) {
-                        Guild guild = message.getGuild();
-                        GuildSpecification specification = botify.getGuildManager().getContextForGuild(guild).getSpecification(session);
-                        return (int) tempMessageTimeoutProperty.get(specification);
-                    }
+                    Guild guild = message.getGuild();
+                    GuildSpecification specification = botify.getGuildManager().getContextForGuild(guild).getSpecification(session);
 
-                    return TempMessageTimeoutProperty.DEFAULT_FALLBACK;
+                    return guildPropertyManager
+                        .getPropertyValueOptional("tempMessageTimeout", Integer.class, specification)
+                        .orElse(TempMessageTimeoutProperty.DEFAULT_FALLBACK);
                 });
             }
 

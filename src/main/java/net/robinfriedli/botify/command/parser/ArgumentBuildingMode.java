@@ -20,7 +20,7 @@ public class ArgumentBuildingMode implements CommandParser.Mode {
 
     private final AbstractCommand command;
     private final CommandParser commandParser;
-    private final char argumentPrefix;
+    private final ArgumentPrefixProperty.Config argumentPrefixConfig;
     private final boolean isInline;
     private final int conceptionIndex;
 
@@ -29,14 +29,14 @@ public class ArgumentBuildingMode implements CommandParser.Mode {
 
     private boolean isRecodingValue;
 
-    public ArgumentBuildingMode(AbstractCommand command, CommandParser commandParser, char argumentPrefix) {
-        this(command, commandParser, argumentPrefix, false);
+    public ArgumentBuildingMode(AbstractCommand command, CommandParser commandParser, ArgumentPrefixProperty.Config argumentPrefixConfig) {
+        this(command, commandParser, argumentPrefixConfig, false);
     }
 
-    public ArgumentBuildingMode(AbstractCommand command, CommandParser commandParser, char argumentPrefix, boolean isInline) {
+    public ArgumentBuildingMode(AbstractCommand command, CommandParser commandParser, ArgumentPrefixProperty.Config argumentPrefixConfig, boolean isInline) {
         this.command = command;
         this.commandParser = commandParser;
-        this.argumentPrefix = argumentPrefix;
+        this.argumentPrefixConfig = argumentPrefixConfig;
         this.isInline = isInline;
         conceptionIndex = commandParser.getCurrentPosition();
         argumentBuilder = new StringBuilder();
@@ -58,11 +58,11 @@ public class ArgumentBuildingMode implements CommandParser.Mode {
                 return this;
             } else {
                 terminate();
-                return new ScanningMode(command, commandParser, argumentPrefix);
+                return new ScanningMode(command, commandParser, argumentPrefixConfig);
             }
-        } else if (character == argumentPrefix || character == ArgumentPrefixProperty.DEFAULT) {
+        } else if (character == argumentPrefixConfig.getArgumentPrefix() || character == argumentPrefixConfig.getDefaultArgumentPrefix()) {
             terminate();
-            return new ArgumentBuildingMode(command, commandParser, argumentPrefix, isInline);
+            return new ArgumentBuildingMode(command, commandParser, argumentPrefixConfig, isInline);
         } else {
             if (isRecodingValue) {
                 argumentValueBuilder.append(character);

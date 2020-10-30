@@ -16,7 +16,6 @@ import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.concurrent.EventHandlerPool;
 import net.robinfriedli.botify.discord.GuildManager;
-import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import org.springframework.stereotype.Component;
@@ -80,12 +79,10 @@ public class VoiceChannelListener extends ListenerAdapter {
             GuildPropertyManager guildPropertyManager = Botify.get().getGuildPropertyManager();
             GuildManager guildManager = Botify.get().getGuildManager();
             GuildSpecification specification = guildManager.getContextForGuild(guild).getSpecification(session);
-            AbstractGuildProperty enableAutoPauseProperty = guildPropertyManager.getProperty("enableAutoPause");
-            if (enableAutoPauseProperty != null) {
-                return enableAutoPauseProperty.get(Boolean.class, specification);
-            }
 
-            return true;
+            return guildPropertyManager
+                .getPropertyValueOptional("enableAutoPause", Boolean.class, specification)
+                .orElse(true);
         });
     }
 }

@@ -16,8 +16,8 @@ import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.interceptor.AbstractChainableCommandInterceptor;
 import net.robinfriedli.botify.command.interceptor.CommandInterceptor;
 import net.robinfriedli.botify.discord.MessageService;
-import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
+import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.StoredScript;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 import net.robinfriedli.botify.exceptions.Abort;
@@ -58,13 +58,14 @@ public abstract class ScriptCommandInterceptor extends AbstractChainableCommandI
 
         CommandContext context = command.getContext();
         Session session = context.getSession();
-        AbstractGuildProperty enableScriptingProperty = guildPropertyManager.getProperty("enableScripting");
-        if (enableScriptingProperty != null) {
-            boolean enableScripting = enableScriptingProperty.get(Boolean.class, context.getGuildContext().getSpecification(session));
 
-            if (!enableScripting) {
-                return;
-            }
+        GuildSpecification specification = context.getGuildContext().getSpecification(session);
+        boolean enableScripting = guildPropertyManager
+            .getPropertyValueOptional("enableScripting", Boolean.class, specification)
+            .orElse(true);
+
+        if (!enableScripting) {
+            return;
         }
 
         String usageId = getUsageId();

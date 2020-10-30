@@ -87,7 +87,7 @@ public class GuildPropertyInterceptor extends ChainableInterceptor {
                         HibernateInvoker.create(session).invoke(() -> {
                             Pair<Object, Object> previousWithNewValue = changedProperties.get(property);
                             // previous might be null
-                            updatePresets((Character) previousWithNewValue.getLeft(), (char) previousWithNewValue.getRight(), session);
+                            updatePresets(property, (Character) previousWithNewValue.getLeft(), (char) previousWithNewValue.getRight(), session);
                         });
                     } catch (Throwable e) {
                         messageService.sendException("Exception occurred while updating presets with new argument prefix. " +
@@ -117,18 +117,30 @@ public class GuildPropertyInterceptor extends ChainableInterceptor {
         changedProperties.clear();
     }
 
-    private void updatePresets(Character oldArgumentPrefix, char newArgumentPrefix, Session session) {
+    private void updatePresets(AbstractGuildProperty argumentPrefixProperty, Character oldArgumentPrefix, char newArgumentPrefix, Session session) {
         List<Preset> presets = queryBuilderFactory.find(Preset.class).build(session).getResultList();
+
+        String defaultValue = argumentPrefixProperty.getDefaultValue();
+        char[] chars = defaultValue.toCharArray();
+        char defaultArgPrefix;
+
+        if (chars.length == 1) {
+            defaultArgPrefix = chars[0];
+        } else {
+            defaultArgPrefix = ArgumentPrefixProperty.DEFAULT_FALLBACK;
+        }
+
+        char argPrefix = oldArgumentPrefix != null ? oldArgumentPrefix : defaultArgPrefix;
+        ArgumentPrefixProperty.Config argumentPrefixConfig = new ArgumentPrefixProperty.Config(argPrefix, defaultArgPrefix);
 
         for (Preset preset : presets) {
             Botify botify = Botify.get();
             AbstractCommand command = preset.instantiateCommand(botify.getCommandManager(), commandContext, preset.getName());
-            char argPrefix = oldArgumentPrefix != null ? oldArgumentPrefix : ArgumentPrefixProperty.DEFAULT;
 
             String oldPreset = preset.getPreset();
             StringBuilder newPresetBuilder = new StringBuilder(oldPreset);
             List<Integer> oldPrefixOccurrences = Lists.newArrayList();
-            CommandParser commandParser = new CommandParser(command, argPrefix, new CommandParseListener() {
+            CommandParser commandParser = new CommandParser(command, argumentPrefixConfig, new CommandParseListener() {
                 @Override
                 public void onModeSwitch(CommandParser.Mode previousMode, CommandParser.Mode newMode, int index, char character) {
                     // to be 100% certain that this only migrates the characters that are actually non-escaped argument prefixes

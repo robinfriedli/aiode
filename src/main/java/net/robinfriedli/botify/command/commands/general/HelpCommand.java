@@ -53,9 +53,9 @@ public class HelpCommand extends AbstractCommand {
             } else if (!Strings.isNullOrEmpty(botName)) {
                 prefix = botName + " ";
             } else {
-                prefix = "$botify ";
+                prefix = PrefixProperty.DEFAULT_FALLBACK + " ";
             }
-            char argumentPrefix = ArgumentPrefixProperty.getForCurrentContext();
+            char argumentPrefix = ArgumentPrefixProperty.getForCurrentContext().getArgumentPrefix();
 
             EmbedBuilder embedBuilder = new EmbedBuilder();
             embedBuilder.setTitle("Command " + command.getIdentifier() + ":");

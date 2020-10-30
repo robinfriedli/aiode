@@ -27,9 +27,9 @@ import net.robinfriedli.botify.exceptions.UserException;
  */
 public class CommandParser {
 
-    private static final Set<Character> META = ImmutableSet.of(ArgumentPrefixProperty.DEFAULT, '"', '\\', '=', ' ');
+    private static final Set<Character> META = ImmutableSet.of(ArgumentPrefixProperty.DEFAULT_FALLBACK, '"', '\\', '=', ' ');
     private final AbstractCommand command;
-    private final char argumentPrefix;
+    private final ArgumentPrefixProperty.Config argumentPrefixConfig;
     private final CommandParseListener[] listeners;
     private final Logger logger;
     private int currentPosition = 0;
@@ -37,12 +37,12 @@ public class CommandParser {
     private boolean isEscaped;
     private boolean isOpenQuotation;
 
-    public CommandParser(AbstractCommand command, char argumentPrefix, CommandParseListener... listeners) {
+    public CommandParser(AbstractCommand command, ArgumentPrefixProperty.Config argumentPrefixConfig, CommandParseListener... listeners) {
         this.command = command;
-        this.argumentPrefix = argumentPrefix;
+        this.argumentPrefixConfig = argumentPrefixConfig;
         this.listeners = listeners;
         logger = LoggerFactory.getLogger(getClass());
-        currentMode = new ScanningMode(command, this, argumentPrefix);
+        currentMode = new ScanningMode(command, this, argumentPrefixConfig);
     }
 
     public void parse() {
@@ -136,7 +136,9 @@ public class CommandParser {
     }
 
     private boolean checkLegalEscape(char character) {
-        return character == argumentPrefix || META.contains(character);
+        return character == argumentPrefixConfig.getArgumentPrefix()
+            || character == argumentPrefixConfig.getDefaultArgumentPrefix()
+            || META.contains(character);
     }
 
     /**

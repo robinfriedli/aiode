@@ -11,12 +11,12 @@ public class ScanningMode implements CommandParser.Mode {
 
     private final AbstractCommand command;
     private final CommandParser commandParser;
-    private final char argumentPrefix;
+    private final ArgumentPrefixProperty.Config argumentPrefixConfig;
 
-    public ScanningMode(AbstractCommand command, CommandParser commandParser, char argumentPrefix) {
+    public ScanningMode(AbstractCommand command, CommandParser commandParser, ArgumentPrefixProperty.Config argumentPrefixConfig) {
         this.command = command;
         this.commandParser = commandParser;
-        this.argumentPrefix = argumentPrefix;
+        this.argumentPrefixConfig = argumentPrefixConfig;
     }
 
     @Override
@@ -24,17 +24,17 @@ public class ScanningMode implements CommandParser.Mode {
         if (Character.isWhitespace(character)) {
             return this;
         } else {
-            if (argumentPrefix == character || ArgumentPrefixProperty.DEFAULT == character) {
-                return new ArgumentBuildingMode(command, commandParser, argumentPrefix);
+            if (argumentPrefixConfig.getArgumentPrefix() == character || argumentPrefixConfig.getDefaultArgumentPrefix() == character) {
+                return new ArgumentBuildingMode(command, commandParser, argumentPrefixConfig);
             } else {
-                return new CommandInputBuildingMode(command, commandParser, argumentPrefix).handle(character);
+                return new CommandInputBuildingMode(command, commandParser, argumentPrefixConfig).handle(character);
             }
         }
     }
 
     @Override
     public CommandParser.Mode handleLiteral(char character) {
-        return new CommandInputBuildingMode(command, commandParser, argumentPrefix).handleLiteral(character);
+        return new CommandInputBuildingMode(command, commandParser, argumentPrefixConfig).handleLiteral(character);
     }
 
     @Override

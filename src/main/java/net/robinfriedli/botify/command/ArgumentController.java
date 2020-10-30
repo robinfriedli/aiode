@@ -219,7 +219,7 @@ public class ArgumentController {
                 String condition = rule.getTextContent();
                 if (!evaluateScript(condition)) {
                     String prefix = PrefixProperty.getEffectiveCommandStartForCurrentContext();
-                    char argumentPrefix = ArgumentPrefixProperty.getForCurrentContext();
+                    char argumentPrefix = ArgumentPrefixProperty.getForCurrentContext().getArgumentPrefix();
                     throw new InvalidCommandException(String.format(rule.getAttribute("errorMessage").getValue(), prefix, argumentPrefix, value));
                 }
             }
@@ -229,7 +229,7 @@ public class ArgumentController {
                     String check = valueCheck.getAttribute("check").getValue();
                     if (!evaluateScript(check)) {
                         String prefix = PrefixProperty.getEffectiveCommandStartForCurrentContext();
-                        char argumentPrefix = ArgumentPrefixProperty.getForCurrentContext();
+                        char argumentPrefix = ArgumentPrefixProperty.getForCurrentContext().getArgumentPrefix();
                         throw new InvalidCommandException(String.format(valueCheck.getAttribute("errorMessage").getValue(), prefix, argumentPrefix));
                     }
                 }

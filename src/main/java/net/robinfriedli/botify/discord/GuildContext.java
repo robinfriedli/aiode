@@ -11,8 +11,9 @@ import net.robinfriedli.botify.command.ClientQuestionEvent;
 import net.robinfriedli.botify.command.ClientQuestionEventManager;
 import net.robinfriedli.botify.command.widgets.WidgetManager;
 import net.robinfriedli.botify.concurrent.ExecutionContext;
-import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
+import net.robinfriedli.botify.discord.property.properties.BotNameProperty;
+import net.robinfriedli.botify.discord.property.properties.PrefixProperty;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.persist.StaticSessionProvider;
 import org.hibernate.Session;
@@ -68,13 +69,10 @@ public class GuildContext {
         return StaticSessionProvider.invokeWithSession(session -> {
             GuildPropertyManager guildPropertyManager = Botify.get().getGuildPropertyManager();
             GuildSpecification specification = getSpecification(session);
-            AbstractGuildProperty botName = guildPropertyManager.getProperty("botName");
 
-            if (botName != null) {
-                return (String) botName.get(specification);
-            }
-
-            return specification.getBotName();
+            return guildPropertyManager
+                .getPropertyValueOptional("botName", String.class, specification)
+                .orElse(BotNameProperty.DEFAULT_FALLBACK);
         });
     }
 
@@ -90,13 +88,10 @@ public class GuildContext {
         return StaticSessionProvider.invokeWithSession(session -> {
             GuildPropertyManager guildPropertyManager = Botify.get().getGuildPropertyManager();
             GuildSpecification specification = getSpecification(session);
-            AbstractGuildProperty prefix = guildPropertyManager.getProperty("prefix");
 
-            if (prefix != null) {
-                return (String) prefix.get(specification);
-            }
-
-            return specification.getPrefix();
+            return guildPropertyManager
+                .getPropertyValueOptional("prefix", String.class, specification)
+                .orElse(PrefixProperty.DEFAULT_FALLBACK);
         });
     }
 

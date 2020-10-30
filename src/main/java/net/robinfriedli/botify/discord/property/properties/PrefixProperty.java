@@ -1,18 +1,20 @@
 package net.robinfriedli.botify.discord.property.properties;
 
-import java.util.Optional;
-
 import net.robinfriedli.botify.Botify;
+import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.xml.GuildPropertyContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
+import org.hibernate.Session;
 
 /**
  * Property that defines the custom command prefix
  */
 public class PrefixProperty extends AbstractGuildProperty {
+
+    public static final String DEFAULT_FALLBACK = "$botify";
 
     public PrefixProperty(GuildPropertyContribution contribution) {
         super(contribution);
@@ -20,17 +22,24 @@ public class PrefixProperty extends AbstractGuildProperty {
 
     /**
      * @return the prefix for a command based on the current context. Simply returns the prefix if set, else returns the
-     * bot name plus a trailing whitespace if present or else "$botify ". This is meant to be used to format example commands.
+     * bot name plus a trailing whitespace if present or else "$botify " / the default fallback. This is meant to be used to format example commands.
      */
     public static String getEffectiveCommandStartForCurrentContext() {
         GuildPropertyManager guildPropertyManager = Botify.get().getGuildPropertyManager();
-        return Optional.ofNullable(guildPropertyManager.getProperty("prefix"))
-            .flatMap((property -> property.getSetValue(String.class)))
-            .or(() ->
-                Optional.ofNullable(guildPropertyManager.getProperty("botName"))
-                    .flatMap(property -> property.getSetValue(String.class))
-                    .map(s -> s + " "))
-            .orElse("$botify ");
+        return guildPropertyManager.getPropertyOptional("prefix")
+            .flatMap(property -> property.getSetValue(String.class))
+            .or(() -> guildPropertyManager.getPropertyOptional("botName")
+                .flatMap(property -> property.getSetValue(String.class))
+                .map(s -> s + " "))
+            .orElse(DEFAULT_FALLBACK + " ");
+    }
+
+    public static String getForContext(GuildContext guildContext, Session session) {
+        GuildSpecification specification = guildContext.getSpecification(session);
+        GuildPropertyManager guildPropertyManager = Botify.get().getGuildPropertyManager();
+        return guildPropertyManager
+            .getPropertyValueOptional("prefix", String.class, specification)
+            .orElse(DEFAULT_FALLBACK);
     }
 
     @Override

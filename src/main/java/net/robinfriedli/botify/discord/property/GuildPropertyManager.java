@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.xml.GenericClassContribution;
 import net.robinfriedli.botify.entities.xml.GuildPropertyContribution;
 import net.robinfriedli.botify.util.SearchEngine;
@@ -51,6 +52,10 @@ public class GuildPropertyManager {
         return null;
     }
 
+    public Optional<AbstractGuildProperty> getPropertyOptional(String property) {
+        return Optional.ofNullable(getProperty(property));
+    }
+
     public AbstractGuildProperty requireProperty(String property) {
         return Optional.ofNullable(getProperty(property)).orElseThrow();
     }
@@ -70,6 +75,58 @@ public class GuildPropertyManager {
 
     public AbstractGuildProperty requirePropertyByName(String name) {
         return Optional.ofNullable(getPropertyByName(name)).orElseThrow();
+    }
+
+    public <T> Optional<T> getPropertyValueOptional(String property, Class<T> type, GuildSpecification specification) {
+        return getPropertyOptional(property).map(p -> p.get(type, specification));
+    }
+
+    @Nullable
+    public <T> T getPropertyValue(String property, Class<T> type, GuildSpecification specification) {
+        return getPropertyValueOptional(property, type, specification).orElse(null);
+    }
+
+    public <T> T requirePropertyValue(String property, Class<T> type, GuildSpecification specification) {
+        return getPropertyValueOptional(property, type, specification).orElseThrow();
+    }
+
+    public <T> Optional<T> getPropertyValueOptional(String property, Class<T> type) {
+        return getPropertyOptional(property).map(p -> p.get(type));
+    }
+
+    @Nullable
+    public <T> T getPropertyValue(String property, Class<T> type) {
+        return getPropertyValueOptional(property, type).orElse(null);
+    }
+
+    public <T> T requirePropertyValue(String property, Class<T> type) {
+        return getPropertyValueOptional(property, type).orElseThrow();
+    }
+
+    public Optional<Object> getPropertyValueOptional(String property, GuildSpecification specification) {
+        return getPropertyOptional(property).map(p -> p.get(specification));
+    }
+
+    @Nullable
+    public Object getPropertyValue(String property, GuildSpecification specification) {
+        return getPropertyValueOptional(property, specification).orElse(null);
+    }
+
+    public Object requirePropertyValue(String property, GuildSpecification specification) {
+        return getPropertyValueOptional(property, specification).orElseThrow();
+    }
+
+    public Optional<Object> getPropertyValueOptional(String property) {
+        return getPropertyOptional(property).map(AbstractGuildProperty::get);
+    }
+
+    @Nullable
+    public Object getPropertyValue(String property) {
+        return getPropertyValueOptional(property).orElse(null);
+    }
+
+    public Object requirePropertyValue(String property) {
+        return getPropertyValueOptional(property).orElseThrow();
     }
 
 }

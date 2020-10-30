@@ -11,22 +11,24 @@ public class CommandInputBuildingMode implements CommandParser.Mode {
 
     private final AbstractCommand command;
     private final CommandParser commandParser;
-    private final char argumentPrefix;
+    private final ArgumentPrefixProperty.Config argumentPrefixConf;
     private final StringBuilder commandInputBuilder;
     private char lastChar;
 
-    public CommandInputBuildingMode(AbstractCommand command, CommandParser commandParser, char argumentPrefix) {
+    public CommandInputBuildingMode(AbstractCommand command, CommandParser commandParser, ArgumentPrefixProperty.Config argumentPrefixConf) {
         this.command = command;
         this.commandParser = commandParser;
-        this.argumentPrefix = argumentPrefix;
+        this.argumentPrefixConf = argumentPrefixConf;
         commandInputBuilder = new StringBuilder();
     }
 
     @Override
     public CommandParser.Mode handle(char character) {
-        if ((Character.isWhitespace(lastChar) || lastChar == '"') && (character == argumentPrefix || character == ArgumentPrefixProperty.DEFAULT)) {
+        if ((Character.isWhitespace(lastChar) || lastChar == '"')
+            && (character == argumentPrefixConf.getArgumentPrefix() || character == argumentPrefixConf.getDefaultArgumentPrefix())
+        ) {
             terminate();
-            return new ArgumentBuildingMode(command, commandParser, argumentPrefix, true);
+            return new ArgumentBuildingMode(command, commandParser, argumentPrefixConf, true);
         }
         commandInputBuilder.append(character);
         lastChar = character;

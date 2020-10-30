@@ -10,9 +10,9 @@ import net.robinfriedli.botify.command.SecurityManager;
 import net.robinfriedli.botify.command.interceptor.AbstractChainableCommandInterceptor;
 import net.robinfriedli.botify.command.interceptor.CommandInterceptor;
 import net.robinfriedli.botify.discord.GuildManager;
-import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.entities.AccessConfiguration;
+import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 import net.robinfriedli.botify.exceptions.ForbiddenCommandException;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
@@ -47,15 +47,15 @@ public class SecurityInterceptor extends AbstractChainableCommandInterceptor {
                 throw new InvalidCommandException("The bot hoster disabled scripting. None of the commands in the scripting category may be used.");
             }
 
-            AbstractGuildProperty enableScriptingProperty = guildPropertyManager.getProperty("enableScripting");
-            if (enableScriptingProperty != null) {
-                Session session = context.getSession();
-                boolean enableScripting = enableScriptingProperty.get(Boolean.class, context.getGuildContext().getSpecification(session));
+            Session session = context.getSession();
+            GuildSpecification specification = context.getGuildContext().getSpecification(session);
+            boolean enableScripting = guildPropertyManager
+                .getPropertyValueOptional("enableScripting", Boolean.class, specification)
+                .orElse(true);
 
-                if (!enableScripting) {
-                    throw new InvalidCommandException("Scripting has been disabled for this guild. None of the commands in the scripting category may be used. " +
-                        "Toggle the enable scripting property using the property command to enable / disable scripting.");
-                }
+            if (!enableScripting) {
+                throw new InvalidCommandException("Scripting has been disabled for this guild. None of the commands in the scripting category may be used. " +
+                    "Toggle the enable scripting property using the property command to enable / disable scripting.");
             }
         }
 
