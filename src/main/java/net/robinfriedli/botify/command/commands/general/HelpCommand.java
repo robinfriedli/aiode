@@ -71,7 +71,7 @@ public class HelpCommand extends AbstractCommand {
                 if (!roles.isEmpty()) {
                     text = StringList.create(roles, Role::getName).toSeparatedString(", ");
                 } else {
-                    text = "Guild owner only";
+                    text = "Guild owner and administrator roles only";
                 }
 
                 embedBuilder.addField(title, text, false);
