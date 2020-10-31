@@ -272,8 +272,14 @@ public class MessageService {
                 logger.warn(errorMessage.toString());
 
                 futureMessage.completeExceptionally(e);
-                String message = "Bot is missing permission: " + permission.getName();
-                send(message, channel);
+
+                if (permission != Permission.VIEW_CHANNEL) {
+                    String message = "Bot is missing permission: " + permission.getName();
+
+                    RECURSION_PREVENTION_INVOKER.invoke(RECURSION_PREVENTION_MODE, () -> {
+                        send(message, channel);
+                    });
+                }
             }
         }
 
