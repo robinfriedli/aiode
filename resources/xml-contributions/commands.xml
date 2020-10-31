@@ -106,7 +106,7 @@
     <example title="Clear all restrictions for command shuffle">%spermission $clear shuffle</example>
     <example title="grant all commands to the manager role">%spermission $grant $all manager</example>
     <example title="grant all commands in the playback category to role playbackmanager">%spermission $grant $category playback $to playbackmanager</example>
-    <example title="make command add available to guild owner only">%spermission $lock add</example>
+    <example title="make command add available to guild owner and administrator roles only">%spermission $lock add</example>
   </command>
   <command identifier="logout" implementation="net.robinfriedli.botify.command.commands.LogoutCommand"
            description="Log out from Spotify."/>
