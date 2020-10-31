@@ -24,10 +24,16 @@ public class CommandInputBuildingMode implements CommandParser.Mode {
 
     @Override
     public CommandParser.Mode handle(char character) {
-        if ((lastChar == ' ' || lastChar == '"') && (character == argumentPrefix || character == ArgumentPrefixProperty.DEFAULT)) {
-            terminate();
-            return new ArgumentBuildingMode(command, commandParser, argumentPrefix, true);
+        if ((Character.isWhitespace(lastChar) || lastChar == '"')
+            && (character == argumentPrefix || character == ArgumentPrefixProperty.DEFAULT)
+        ) {
+            char nextChar = commandParser.peekNextChar();
+            if (!(nextChar == 0 || Character.isWhitespace(nextChar))) {
+                terminate();
+                return new ArgumentBuildingMode(command, commandParser, argumentPrefix, true);
+            }
         }
+
         commandInputBuilder.append(character);
         lastChar = character;
         return this;
@@ -42,7 +48,16 @@ public class CommandInputBuildingMode implements CommandParser.Mode {
     @Override
     public void terminate() {
         String commandInput = commandInputBuilder.toString().trim();
-        command.setCommandInput(commandInput);
+        String existingInput = command.getCommandInput();
+
+        String finalInput;
+        if (existingInput != null && !existingInput.isEmpty()) {
+            finalInput = existingInput + commandInput;
+        } else {
+            finalInput = commandInput;
+        }
+
+        command.setCommandInput(finalInput);
         commandParser.fireOnCommandInputParsed(commandInput);
     }
 }
