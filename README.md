@@ -126,17 +126,17 @@ spring.jpa.properties.hibernate.javax.cache.missing_cache_strategy=create
 
 ### 6 Compile and run botify
 Requires:
-* java jdk 11 or above
+* java jdk 11 or above (preferably 11, as it is the version used in development and thus main supported version)
 * rust and cargo-make with the `wasm32-unknown-unknown` target for the webapp
 
-#### 6.1 Compile bot
-Navigate to the project root directory and install botify by running `./gradlew build` on Linux / macOS or `gradlew build` on windows (if you have gradle installed you can just run `gradle build` on either platform).
-
-#### 6.2 Compile webapp
+#### 6.1 Compile webapp
 Install rust, preferably via rustup, then add the `wasm32-unknown-unknown` target by running `rustup target add wasm32-unknown-unknown` and install cargo-make with `cargo install --force cargo-make`. Finally, navigate to `src/main/webapp` and compile the webapp with `cargo make build`.
 
+#### 6.2 Compile bot
+Navigate to the project root directory and install botify by running `./gradlew build` (or if you have gradle installed you can just run `gradle build`).
+
 #### 6.3 Run botify
-Then you can launch botify using the main class `net.robinfriedli.botify.boot.SpringBootstrap`. You can either run the bash script `bash/launch.sh`
-or run `./gradlew bootRun` directly. Note that those commands are written for Unix-like operating systems such as macOS and
-Linux. For windows you need to make adjustments to the `bash/launch.sh` and `bash/update.sh` files and replace `./gradlew build` with `gradlew build`.
-To keep the program running when closing the terminal window use a terminal multiplexer tool like tmux (linux only).
+Then you can launch botify using the jar file or the bootRun gradle task. You can either run the
+jar file in `build/libs` by running `java -jar build/libs/botify-1.0-SNAPSHOT.jar` or run the bash script `bash/launch.sh`
+or use the gradle bootRun task by running `./gradlew bootRun`. To keep the program running when closing the terminal window use a
+terminal multiplexer tool like tmux (Unix-like operating systems (e.g. Linux or MacOS) only) to manage a terminal session.
