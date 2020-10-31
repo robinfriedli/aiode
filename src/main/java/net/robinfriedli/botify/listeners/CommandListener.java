@@ -1,11 +1,9 @@
 package net.robinfriedli.botify.listeners;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Strings;
 import com.wrapper.spotify.SpotifyApi;
@@ -38,7 +36,6 @@ public class CommandListener extends ListenerAdapter {
     private final CommandManager commandManager;
     private final ExecutorService commandConceptionPool;
     private final GuildManager guildManager;
-    private final Logger logger;
     private final MessageService messageService;
     private final SessionFactory sessionFactory;
     private final SpotifyApi.Builder spotifyApiBuilder;
@@ -60,7 +57,6 @@ public class CommandListener extends ListenerAdapter {
         this.messageService = messageService;
         this.sessionFactory = sessionFactory;
         this.spotifyApiBuilder = spotifyApiBuilder;
-        this.logger = LoggerFactory.getLogger(getClass());
     }
 
     @Override
@@ -79,8 +75,9 @@ public class CommandListener extends ListenerAdapter {
                     String lowerCaseMsg = msg.toLowerCase();
                     boolean startsWithPrefix = !Strings.isNullOrEmpty(prefix) && lowerCaseMsg.startsWith(prefix.toLowerCase());
                     boolean startsWithName = !Strings.isNullOrEmpty(botName) && lowerCaseMsg.startsWith(botName.toLowerCase());
-                    if (startsWithPrefix || startsWithName || lowerCaseMsg.startsWith("$botify")) {
-                        String usedPrefix = extractUsedPrefix(message, lowerCaseMsg, botName, prefix, startsWithName, startsWithPrefix);
+                    boolean startsWithFallback = lowerCaseMsg.startsWith("$botify");
+                    if (startsWithPrefix || startsWithName || startsWithFallback) {
+                        String usedPrefix = extractUsedPrefix(botName, prefix, startsWithName, startsWithPrefix, startsWithFallback);
                         startCommandExecution(usedPrefix, message, guild, guildContext, session, event);
                     }
                 }
@@ -88,32 +85,28 @@ public class CommandListener extends ListenerAdapter {
         }
     }
 
-    private String extractUsedPrefix(Message message, String lowerCaseMsg, String botName, String prefix, boolean startsWithName, boolean startsWithPrefix) {
-        // specify with which part of the input string the bot was referenced, this helps trimming the command later
-        String namePrefix;
-        if (lowerCaseMsg.startsWith("$botify")) {
-            namePrefix = "$botify";
-        } else {
-            if (startsWithName && startsWithPrefix) {
-                if (prefix.equals(botName) || prefix.length() > botName.length()) {
-                    namePrefix = prefix;
-                } else {
-                    namePrefix = botName;
-                }
-            } else if (startsWithName) {
-                namePrefix = botName;
-            } else {
-                namePrefix = prefix;
+    private String extractUsedPrefix(String botName, String prefix, boolean startsWithName, boolean startsWithPrefix, boolean startsWithFallback) {
+        boolean[] matches = {startsWithName, startsWithPrefix, startsWithFallback};
+        String[] strings = {botName, prefix, "$botify"};
+
+        return getLongestMatch(matches, strings);
+    }
+
+    private String getLongestMatch(boolean[] matches, String[] strings) {
+        if (matches.length != strings.length) {
+            throw new IllegalArgumentException("Size of match array does not match string array");
+        }
+
+        String match = null;
+
+        for (int i = 0; i < strings.length; i++) {
+            String s = strings[i];
+            if (matches[i] && (match == null || match.length() < s.length())) {
+                match = s;
             }
         }
 
-        if (namePrefix == null) {
-            // realistically should never happen but catch this edge case just to be sure
-            messageService.sendException("Something went wrong parsing your command, try starting with \"$botify\" instead.", message.getChannel());
-            logger.error("Name prefix null for input " + message.getContentDisplay() + ". Bot name: " + botName + "; Prefix: " + prefix);
-        }
-
-        return namePrefix;
+        return Objects.requireNonNull(match);
     }
 
     private void startCommandExecution(String namePrefix, Message message, Guild guild, GuildContext guildContext, Session session, GuildMessageReceivedEvent event) {
