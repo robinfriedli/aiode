@@ -55,7 +55,7 @@
     <dependency>
       <groupId>com.sedmelluq</groupId>
       <artifactId>lavaplayer</artifactId>
-      <version>1.3.53</version>
+      <version>1.3.55</version>
     </dependency>
     <dependency>
       <groupId>com.sedmelluq</groupId>
@@ -65,7 +65,7 @@
     <dependency>
       <groupId>net.dv8tion</groupId>
       <artifactId>JDA</artifactId>
-      <version>4.2.0_212</version>
+      <version>4.2.0_214</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
