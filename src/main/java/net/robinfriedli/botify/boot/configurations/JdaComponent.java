@@ -14,11 +14,14 @@ import net.robinfriedli.botify.discord.listeners.StartupListener;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 
 import static net.dv8tion.jda.api.requests.GatewayIntent.*;
 import static net.dv8tion.jda.api.utils.cache.CacheFlag.*;
 
 @Configuration
+// make sure JDA is set up after liquibase so schema changes are applied before the StartupListener runs
+@DependsOn("liquibase")
 public class JdaComponent {
 
     @Value("${botify.tokens.discord_token}")
