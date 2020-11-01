@@ -15,7 +15,6 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.antkorwin.xsync.XSync;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
@@ -51,6 +50,7 @@ import net.robinfriedli.botify.persist.qb.interceptor.interceptors.AccessConfigu
 import net.robinfriedli.botify.persist.tasks.HibernatePlaylistMigrator;
 import net.robinfriedli.botify.util.SearchEngine;
 import net.robinfriedli.botify.util.SnowflakeMap;
+import net.robinfriedli.exec.MutexSync;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.persist.Context;
 import org.hibernate.Session;
@@ -73,11 +73,10 @@ public class GuildManager {
     private final Context defaultPlaylistContext;
     private final HibernateComponent hibernateComponent;
     private final SnowflakeMap<GuildContext> guildContexts = new SnowflakeMap<>();
-    private final JxpBackend jxpBackend;
     private final Logger logger;
     private final Mode mode;
+    private final MutexSync<Long> guildSetupSync;
     private final QueryBuilderFactory queryBuilderFactory;
-    private final XSync<Long> guildSetupSync;
     private AudioManager audioManager;
 
     public GuildManager(CommandManager commandManager,
@@ -99,11 +98,10 @@ public class GuildManager {
             throw new RuntimeException("Could not instantiate " + getClass().getSimpleName(), e);
         }
         this.hibernateComponent = hibernateComponent;
-        this.jxpBackend = jxpBackend;
         logger = LoggerFactory.getLogger(getClass());
         this.mode = modePartitioned ? GuildManager.Mode.PARTITIONED : GuildManager.Mode.SHARED;
+        guildSetupSync = new MutexSync<>();
         this.queryBuilderFactory = queryBuilderFactory;
-        guildSetupSync = new XSync<>();
     }
 
     public void addGuild(Guild guild) {
@@ -148,15 +146,22 @@ public class GuildManager {
     }
 
     public GuildContext getContextForGuild(Guild guild) {
-        return guildSetupSync.evaluate(guild.getIdLong(), () -> {
-            GuildContext guildContext = guildContexts.get(guild);
+        GuildContext guildContext = guildContexts.get(guild);
 
-            if (guildContext == null) {
+        if (guildContext == null) {
+            return guildSetupSync.evaluate(guild.getIdLong(), () -> {
+                // if another thread is currently setting up the guild the guild context will have been created once
+                // the synchronisation lock has been acquired
+                GuildContext recheck = guildContexts.get(guild);
+                if (recheck != null) {
+                    return recheck;
+                }
+
                 return initializeGuild(guild);
-            }
+            });
+        }
 
-            return guildContext;
-        });
+        return guildContext;
     }
 
     public Set<Guild> getActiveGuilds(Session session) {
@@ -215,14 +220,110 @@ public class GuildManager {
     }
 
     public TextChannel getDefaultTextChannelForGuild(Guild guild) {
-        Botify botify = Botify.get();
         GuildContext guildContext = getContextForGuild(guild);
+        return getDefaultTextChannelForGuild(guild, guildContext);
+    }
+
+    public Set<GuildContext> getGuildContexts() {
+        return Sets.newHashSet(guildContexts.values());
+    }
+
+    public void setAudioManager(AudioManager audioManager) {
+        this.audioManager = audioManager;
+    }
+
+    public Mode getMode() {
+        return mode;
+    }
+
+    private GuildContext initializeGuild(Guild guild) {
+        GuildContext createdContext = hibernateComponent.invokeWithSession(session -> {
+            AudioPlayer player = audioManager.getPlayerManager().createPlayer();
+
+            Optional<Long> existingSpecification = queryBuilderFactory.select(GuildSpecification.class, "pk", Long.class)
+                .where((cb, root) -> cb.equal(root.get("guildId"), guild.getId()))
+                .build(session)
+                .uniqueResultOptional();
+
+            if (existingSpecification.isPresent()) {
+                return new GuildContext(guild, new AudioPlayback(player, guild), existingSpecification.get());
+            } else {
+                GuildSpecification newSpecification = new GuildSpecification(guild);
+                commandManager.getCommandContributionContext()
+                    .query(attribute("restrictedAccess").is(true))
+                    .getResultStream()
+                    .map(elem -> elem.getAttribute("identifier").getValue())
+                    .forEach(restrictedCommandIdentifier -> {
+                        AccessConfiguration permissionConfiguration = new AccessConfiguration(restrictedCommandIdentifier);
+                        session.persist(permissionConfiguration);
+                        newSpecification.addAccessConfiguration(permissionConfiguration);
+                    });
+                session.persist(newSpecification);
+                session.flush();
+
+                GuildContext guildContext = new GuildContext(guild, new AudioPlayback(player, guild), newSpecification.getPk());
+
+                handleNewGuild(guild, guildContext);
+                return guildContext;
+            }
+        });
+        guildContexts.put(guild, createdContext);
+        return createdContext;
+    }
+
+    private void handleNewGuild(Guild guild, GuildContext guildContext) {
+        Botify botify = Botify.get();
+        MessageService messageService = botify.getMessageService();
+        try {
+            EmbedDocumentContribution embedDocumentContribution = embedDocumentContext
+                .query(attribute("name").is("getting-started"), EmbedDocumentContribution.class)
+                .requireOnlyResult();
+            EmbedBuilder embedBuilder = embedDocumentContribution.buildEmbed();
+            messageService.sendWithLogo(embedBuilder, getDefaultTextChannelForGuild(guild, guildContext));
+        } catch (Exception e) {
+            logger.error("Error sending getting started message", e);
+        }
+
+        SessionFactory sessionFactory = hibernateComponent.getSessionFactory();
+        SpotifyApi.Builder spotifyApiBuilder = botify.getSpotifyApiBuilder();
+        if (defaultPlaylistContext != null) {
+            try (Session session = sessionFactory.withOptions().interceptor(InterceptorChain.of(
+                PlaylistItemTimestampInterceptor.class, VerifyPlaylistInterceptor.class)).openSession()) {
+                HibernatePlaylistMigrator hibernatePlaylistMigrator = new HibernatePlaylistMigrator(defaultPlaylistContext, guild, spotifyApiBuilder.build(), session);
+                Map<Playlist, List<PlaylistItem>> playlistMap = hibernatePlaylistMigrator.perform();
+
+                Mode mode = getMode();
+                HibernateInvoker.create(session).invokeConsumer(currentSession -> {
+                    for (Playlist playlist : playlistMap.keySet()) {
+                        Playlist existingList = SearchEngine.searchLocalList(currentSession, playlist.getName(), mode == GuildManager.Mode.PARTITIONED, guild.getId());
+                        if (existingList == null) {
+                            playlistMap.get(playlist).forEach(item -> {
+                                item.add();
+                                currentSession.persist(item);
+                            });
+                            currentSession.persist(playlist);
+                        }
+                    }
+                });
+            } catch (Exception e) {
+                logger.error("Exception while setting up default playlists", e);
+            }
+        }
+    }
+
+    private TextChannel getDefaultTextChannelForGuild(Guild guild, GuildContext guildContext) {
+        Botify botify = Botify.get();
 
         // fetch the default text channel from the customised property
         GuildPropertyManager guildPropertyManager = botify.getGuildPropertyManager();
         AbstractGuildProperty defaultTextChannelProperty = guildPropertyManager.getProperty("defaultTextChannelId");
         if (defaultTextChannelProperty != null) {
-            String defaultTextChannelId = (String) hibernateComponent.invokeWithSession(session -> defaultTextChannelProperty.get(guildContext.getSpecification(session)));
+            String defaultTextChannelId;
+            try {
+                defaultTextChannelId = (String) hibernateComponent.invokeWithSession(session -> defaultTextChannelProperty.get(guildContext.getSpecification(session)));
+            } catch (NullPointerException e) {
+                throw new RuntimeException(e);
+            }
 
             if (!Strings.isNullOrEmpty(defaultTextChannelId)) {
                 TextChannel textChannelById = guild.getTextChannelById(defaultTextChannelId);
@@ -254,96 +355,6 @@ public class GuildManager {
             return null;
         } else {
             return availableChannels.get(0);
-        }
-    }
-
-    public Set<GuildContext> getGuildContexts() {
-        return Sets.newHashSet(guildContexts.values());
-    }
-
-    public void setAudioManager(AudioManager audioManager) {
-        this.audioManager = audioManager;
-    }
-
-    public Mode getMode() {
-        return mode;
-    }
-
-    private GuildContext initializeGuild(Guild guild) {
-        return hibernateComponent.invokeWithSession(session -> {
-            AudioPlayer player = audioManager.getPlayerManager().createPlayer();
-
-            Optional<Long> existingSpecification = queryBuilderFactory.select(GuildSpecification.class, "pk", Long.class)
-                .where((cb, root) -> cb.equal(root.get("guildId"), guild.getId()))
-                .build(session)
-                .uniqueResultOptional();
-
-            if (existingSpecification.isPresent()) {
-                GuildContext guildContext = new GuildContext(guild, new AudioPlayback(player, guild), existingSpecification.get());
-                guildContexts.put(guild, guildContext);
-                return guildContext;
-            } else {
-                GuildSpecification newSpecification = HibernateInvoker.create(session).invoke(() -> {
-                    GuildSpecification specification = new GuildSpecification(guild);
-                    commandManager.getCommandContributionContext()
-                        .query(attribute("restrictedAccess").is(true))
-                        .getResultStream()
-                        .map(elem -> elem.getAttribute("identifier").getValue())
-                        .forEach(restrictedCommandIdentifier -> {
-                            AccessConfiguration permissionConfiguration = new AccessConfiguration(restrictedCommandIdentifier);
-                            session.persist(permissionConfiguration);
-                            specification.addAccessConfiguration(permissionConfiguration);
-                        });
-                    session.persist(specification);
-                    return specification;
-                });
-
-                GuildContext guildContext = new GuildContext(guild, new AudioPlayback(player, guild), newSpecification.getPk());
-                guildContexts.put(guild, guildContext);
-
-                handleNewGuild(guild);
-                return guildContext;
-            }
-        });
-    }
-
-    private void handleNewGuild(Guild guild) {
-        Botify botify = Botify.get();
-        MessageService messageService = botify.getMessageService();
-        try {
-            EmbedDocumentContribution embedDocumentContribution = embedDocumentContext
-                .query(attribute("name").is("getting-started"), EmbedDocumentContribution.class)
-                .requireOnlyResult();
-            EmbedBuilder embedBuilder = embedDocumentContribution.buildEmbed();
-            messageService.sendWithLogo(embedBuilder, guild);
-        } catch (Exception e) {
-            logger.error("Error sending getting started message", e);
-        }
-
-        SessionFactory sessionFactory = hibernateComponent.getSessionFactory();
-        SpotifyApi.Builder spotifyApiBuilder = botify.getSpotifyApiBuilder();
-        if (defaultPlaylistContext != null) {
-            try (Session session = sessionFactory.withOptions().interceptor(InterceptorChain.of(
-                PlaylistItemTimestampInterceptor.class, VerifyPlaylistInterceptor.class)).openSession()) {
-                HibernatePlaylistMigrator hibernatePlaylistMigrator = new HibernatePlaylistMigrator(defaultPlaylistContext, guild, spotifyApiBuilder.build(), session);
-                Map<Playlist, List<PlaylistItem>> playlistMap = hibernatePlaylistMigrator.perform();
-
-                Mode mode = getMode();
-                HibernateInvoker.create(session).invokeConsumer(currentSession -> {
-                    for (Playlist playlist : playlistMap.keySet()) {
-                        Playlist existingList = SearchEngine.searchLocalList(currentSession, playlist.getName(), mode == GuildManager.Mode.PARTITIONED, guild.getId());
-                        if (existingList == null) {
-                            playlistMap.get(playlist).forEach(item -> {
-                                item.add();
-                                currentSession.persist(item);
-                            });
-                            currentSession.persist(playlist);
-                        }
-                    }
-                });
-            } catch (Exception e) {
-                logger.error("Exception while setting up default playlists", e);
-            }
         }
     }
 
