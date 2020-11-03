@@ -558,6 +558,7 @@
   <whitelistClass class="java.lang.Float"/>
   <whitelistClass class="java.lang.Number"/>
   <whitelistClass class="java.lang.Character"/>
+  <whitelistClass class="java.lang.Math"/>
   <whitelistClass class="java.math.BigDecimal"/>
   <whitelistClass class="java.time.OffsetTime"/>
   <whitelistClass class="java.time.OffsetDateTime"/>
