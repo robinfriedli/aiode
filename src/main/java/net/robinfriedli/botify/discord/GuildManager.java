@@ -277,9 +277,11 @@ public class GuildManager {
         try {
             EmbedDocumentContribution embedDocumentContribution = embedDocumentContext
                 .query(attribute("name").is("getting-started"), EmbedDocumentContribution.class)
-                .requireOnlyResult();
-            EmbedBuilder embedBuilder = embedDocumentContribution.buildEmbed();
-            messageService.sendWithLogo(embedBuilder, getDefaultTextChannelForGuild(guild, guildContext));
+                .getOnlyResult();
+            if (embedDocumentContribution != null) {
+                EmbedBuilder embedBuilder = embedDocumentContribution.buildEmbed();
+                messageService.sendWithLogo(embedBuilder, getDefaultTextChannelForGuild(guild, guildContext));
+            }
         } catch (Exception e) {
             logger.error("Error sending getting started message", e);
         }
