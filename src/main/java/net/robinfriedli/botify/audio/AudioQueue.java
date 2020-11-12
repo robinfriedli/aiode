@@ -163,11 +163,10 @@ public class AudioQueue {
             StringBuilder nextBuilder = new StringBuilder();
 
             if (position > 0) {
-                List<Playable> previous;
                 if (position > 5) {
                     prevBuilder.append("...").append(System.lineSeparator());
                 }
-                previous = listPrevious(5);
+                List<Playable> previous = listPrevious(5);
                 for (Playable prev : previous) {
                     appendPlayable(prevBuilder, prev);
                 }
@@ -187,8 +186,7 @@ public class AudioQueue {
             );
 
             if (position < tracks.size() - 1) {
-                List<Playable> next;
-                next = listNext(5);
+                List<Playable> next = listNext(5);
                 for (Playable n : next) {
                     appendPlayable(nextBuilder, n);
                 }
@@ -440,6 +438,11 @@ public class AudioQueue {
         playable.fetch();
         String display = playable.display(2, TimeUnit.SECONDS);
         long durationMs = playable.durationMs(2, TimeUnit.SECONDS);
+
+        if (display.length() > 100) {
+            display = display.substring(0, 95) + "[...]";
+        }
+
         trackListBuilder.append("| ").append(display).append(" - ").append(Util.normalizeMillis(durationMs)).append(System.lineSeparator());
     }
 
