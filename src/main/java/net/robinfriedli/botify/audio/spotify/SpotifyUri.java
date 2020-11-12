@@ -17,7 +17,7 @@ import net.robinfriedli.botify.function.SpotifyInvoker;
  */
 public class SpotifyUri {
 
-    private static final Pattern URI_REGEX = Pattern.compile("spotify:(track|album|playlist):([a-zA-Z0-9])([a-zA-Z0-9])*");
+    private static final Pattern URI_REGEX = Pattern.compile("spotify:(track|album|playlist):[a-zA-Z0-9]{22}");
 
     private final String id;
     private final Type type;
@@ -65,7 +65,7 @@ public class SpotifyUri {
 
     public enum Type {
 
-        TRACK(Pattern.compile("spotify:track:([a-zA-Z0-9])([a-zA-Z0-9])*")) {
+        TRACK(Pattern.compile("spotify:track:[a-zA-Z0-9]{22}")) {
             @Override
             public List<Playable> loadPlayables(PlayableFactory playableFactory,
                                                 SpotifyService spotifyService,
@@ -77,12 +77,12 @@ public class SpotifyUri {
                 try {
                     track = invoker.invoke(() -> spotifyService.getTrack(uri.getId()));
                 } catch (NotFoundException e) {
-                    throw new InvalidCommandException("Invalid id " + uri.getId());
+                    throw new InvalidCommandException("No results found for id " + uri.getId());
                 }
                 return Lists.newArrayList(playableFactory.createPlayable(redirect, track));
             }
         },
-        ALBUM(Pattern.compile("spotify:album:([a-zA-Z0-9])([a-zA-Z0-9])*")) {
+        ALBUM(Pattern.compile("spotify:album:[a-zA-Z0-9]{22}")) {
             @Override
             public List<Playable> loadPlayables(PlayableFactory playableFactory,
                                                 SpotifyService spotifyService,
@@ -94,12 +94,12 @@ public class SpotifyUri {
                 try {
                     tracks = invoker.invoke(() -> spotifyService.getAlbumTracks(uri.getId()));
                 } catch (NotFoundException e) {
-                    throw new InvalidCommandException("Invalid id " + uri.getId());
+                    throw new InvalidCommandException("No results found for id " + uri.getId());
                 }
                 return playableFactory.createPlayables(redirect, tracks, mayInterrupt);
             }
         },
-        PLAYLIST(Pattern.compile("spotify:playlist:([a-zA-Z0-9])([a-zA-Z0-9])*")) {
+        PLAYLIST(Pattern.compile("spotify:playlist:[a-zA-Z0-9]{22}")) {
             @Override
             public List<Playable> loadPlayables(PlayableFactory playableFactory,
                                                 SpotifyService spotifyService,
@@ -111,7 +111,7 @@ public class SpotifyUri {
                 try {
                     tracks = invoker.invoke(() -> spotifyService.getPlaylistTracks(uri.getId()));
                 } catch (NotFoundException e) {
-                    throw new InvalidCommandException("Invalid id " + uri.getId());
+                    throw new InvalidCommandException("No results found for id " + uri.getId());
                 }
                 return playableFactory.createPlayables(redirect, tracks, mayInterrupt);
             }
