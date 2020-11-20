@@ -211,12 +211,12 @@
       <url>https://raw.github.com/robinfriedli/JXP/repository/</url>
     </repository>
     <repository>
-      <id>central</id>
-      <url>http://central.maven.org/maven2/</url>
-    </repository>
-    <repository>
       <id>jitpack.io</id>
       <url>https://jitpack.io</url>
+    </repository>
+    <repository>
+      <id>central</id>
+      <url>http://central.maven.org/maven2/</url>
     </repository>
   </repositories>
 
