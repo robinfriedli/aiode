@@ -551,6 +551,7 @@
     <method name="invokeMethod"/>
   </whitelistMethods>
   <!-- classes with full access, this also applies to all subclasses, including methods declared in a subclass -->
+  <whitelistClass class="java.lang.Boolean"/>
   <whitelistClass class="java.lang.Integer"/>
   <whitelistClass class="java.lang.Long"/>
   <whitelistClass class="java.lang.StringBuilder"/>
