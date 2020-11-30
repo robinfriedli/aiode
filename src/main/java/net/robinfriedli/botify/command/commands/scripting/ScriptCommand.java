@@ -31,7 +31,7 @@ public class ScriptCommand extends AbstractScriptCommand {
         Botify botify = Botify.get();
         CommandContext context = getContext();
         Session session = context.getSession();
-        if (script != null || (argumentSet("invoke") && !getCommandInput().isBlank())) {
+        if (script != null || argumentSet("invoke")) {
             executeScript(botify, context, session);
         } else {
             super.doRun();
