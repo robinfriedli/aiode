@@ -64,6 +64,12 @@ public class CompletablePlaceholderMessage implements Message {
         }
     }
 
+    @Nullable
+    @Override
+    public Message getReferencedMessage() {
+        return unwrap().getReferencedMessage();
+    }
+
     @Nonnull
     @Override
     public List<User> getMentionedUsers() {
