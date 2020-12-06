@@ -115,7 +115,10 @@ spring.datasource.url=jdbc:postgresql://localhost:5432/botify
 spring.datasource.driverClassName=org.postgresql.Driver
 spring.jpa.database-platform=org.hibernate.dialect.PostgreSQL10Dialect
 spring.jpa.properties.hibernate.current_session_context_class=thread
-spring.datasource.type=com.mchange.v2.c3p0.ComboPooledDataSource
+# pool
+spring.datasource.hikari.minimumIdle=5
+spring.datasource.hikari.maximumPoolSize=50
+# cache
 spring.jpa.properties.hibernate.cache.use_query_cache=true
 spring.jpa.properties.hibernate.cache.use_second_level_cache=true
 spring.jpa.properties.hibernate.cache.region.factory_class=org.hibernate.cache.jcache.JCacheRegionFactory
