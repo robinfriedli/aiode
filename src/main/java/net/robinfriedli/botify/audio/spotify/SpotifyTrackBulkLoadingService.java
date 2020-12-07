@@ -52,6 +52,11 @@ public class SpotifyTrackBulkLoadingService extends BulkOperationService<Spotify
                     String[] currentKindIds = spotifyItems.stream().map(SpotifyItem::getId).toArray(String[]::new);
 
                     List<SpotifyTrack> spotifyTracks = spotifyTrackKind.loadSeveralItems(spotifyService, currentKindIds);
+
+                    if (spotifyTracks.size() != spotifyItems.size()) {
+                        throw new IllegalStateException("Number of resulting spotify tracks does not match provided items.");
+                    }
+
                     for (int i = 0; i < spotifyTracks.size(); i++) {
                         SpotifyTrack spotifyTrack = spotifyTracks.get(i);
 
