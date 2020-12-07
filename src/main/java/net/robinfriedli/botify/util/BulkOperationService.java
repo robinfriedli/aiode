@@ -1,6 +1,7 @@
 package net.robinfriedli.botify.util;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -28,7 +29,7 @@ public class BulkOperationService<K, V> {
     // the keys for all items that will be loaded
     private final List<K> keys = Lists.newArrayList();
     // the map containing all keys mapped to the action that should be performed with the loaded item
-    private final Map<K, Consumer<V>> actionMap = new HashMap<>();
+    private final Map<K, ResultConsumerManager<V>> actionMap = new HashMap<>();
 
     public BulkOperationService(int size, Function<List<K>, List<Pair<K, V>>> loadFunc) {
         this.size = size;
@@ -42,7 +43,7 @@ public class BulkOperationService<K, V> {
             for (Pair<K, V> keyValuePair : loadedBatch) {
                 K key = keyValuePair.getLeft();
                 V value = keyValuePair.getRight();
-                actionMap.get(key).accept(value);
+                actionMap.get(key).next().accept(value);
             }
         }
     }
@@ -59,7 +60,43 @@ public class BulkOperationService<K, V> {
         }
 
         keys.add(key);
-        actionMap.put(key, action);
+        ResultConsumerManager<V> existingManager = actionMap.get(key);
+        if (existingManager != null) {
+            existingManager.add(action);
+        } else {
+            ResultConsumerManager<V> resultConsumerManager = new ResultConsumerManager<>();
+            resultConsumerManager.add(action);
+            actionMap.put(key, resultConsumerManager);
+        }
+    }
+
+    private static class ResultConsumerManager<T> {
+
+        private final List<Consumer<T>> resultConsumers = Lists.newArrayList();
+        private Iterator<Consumer<T>> iterator = null;
+
+        Consumer<T> next() {
+            if (iterator == null) {
+                iterator = resultConsumers.iterator();
+            }
+
+            if (!iterator.hasNext()) {
+                throw new IllegalStateException("No next result consumer. " +
+                    "Number of provided result consumers must be at least the number of times the key yields a result, " +
+                    "i.e. the key was submitted.");
+            }
+
+            return iterator.next();
+        }
+
+        void add(Consumer<T> consumer) {
+            if (iterator != null) {
+                // invalidate iterator
+                iterator = null;
+            }
+            resultConsumers.add(consumer);
+        }
+
     }
 
 }
