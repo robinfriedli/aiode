@@ -35,7 +35,7 @@ public class Song extends PlaylistItem {
     private String id;
     @Column(name = "name")
     private String name;
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany
     private Set<Artist> artists = Sets.newHashSet();
 
     public Song() {
