@@ -1,5 +1,6 @@
 package net.robinfriedli.botify.persist.interceptors;
 
+import java.io.Serializable;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -11,8 +12,11 @@ import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
+import net.robinfriedli.botify.entities.Song;
 import net.robinfriedli.stringlist.StringList;
+import org.hibernate.Hibernate;
 import org.hibernate.Interceptor;
+import org.hibernate.type.Type;
 
 public class AlertPlaylistModificationInterceptor extends CollectingInterceptor {
 
@@ -23,6 +27,16 @@ public class AlertPlaylistModificationInterceptor extends CollectingInterceptor 
         super(next, logger);
         channel = executionContext.getChannel();
         this.messageService = messageService;
+    }
+
+    @Override
+    public void onDeleteChained(Object entity, Serializable id, Object[] state, String[] propertyNames, Type[] types) {
+        super.onDeleteChained(entity, id, state, propertyNames, types);
+        if (entity instanceof Song) {
+            // make sure artist collection is initialised before deletion since it might be required to display the removed
+            // song at which point the collection can not be initialised anymore
+            Hibernate.initialize(((Song) entity).getArtists());
+        }
     }
 
     @Override
