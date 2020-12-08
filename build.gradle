@@ -53,7 +53,7 @@ dependencies {
     implementation "org.hibernate:hibernate-validator:5.4.3.Final"
     implementation "org.hibernate:hibernate-validator-cdi:5.4.3.Final"
     implementation "org.kohsuke:groovy-sandbox:1.25"
-    implementation("org.liquibase:liquibase-core:4.1.1") {
+    implementation("org.liquibase:liquibase-core:4.2.1") {
         exclude group: "ch.qos.logback"
     }
     liquibaseRuntime "org.liquibase.ext:liquibase-hibernate5:3.9.0"
