@@ -45,9 +45,11 @@
   </xs:complexType>
   <xs:complexType name="excludes">
     <xs:attribute name="argument" type="xs:string" use="required"/>
+    <xs:attribute name="message" type="xs:string"/>
   </xs:complexType>
   <xs:complexType name="requires">
     <xs:attribute name="argument" type="xs:string" use="required"/>
+    <xs:attribute name="message" type="xs:string"/>
   </xs:complexType>
   <xs:complexType name="valueCheck">
     <xs:attribute name="errorMessage" type="xs:string" use="required"/>

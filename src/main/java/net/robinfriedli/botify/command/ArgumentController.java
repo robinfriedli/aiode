@@ -1,8 +1,8 @@
 package net.robinfriedli.botify.command;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
 
@@ -68,19 +68,14 @@ public class ArgumentController {
      * same as {@link #get(String)} but throws an exception if no argument definition was found
      */
     public ArgumentContribution require(String arg) {
-        return require(arg, InvalidArgumentException.class);
+        return require(arg, InvalidArgumentException::new);
     }
 
-    public ArgumentContribution require(String arg, Class<? extends RuntimeException> toThrow) {
+    public ArgumentContribution require(String arg, Function<String, ? extends RuntimeException> exceptionProducer) {
         ArgumentContribution argument = get(arg);
 
         if (argument == null) {
-            try {
-                throw toThrow.getConstructor(String.class)
-                    .newInstance(String.format("Undefined argument '%s' on command '%s'.", arg, sourceCommand.getIdentifier()));
-            } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
-                throw new RuntimeException("Could not instantiate " + toThrow);
-            }
+            throw exceptionProducer.apply(String.format("Undefined argument '%s' on command '%s'.", arg, sourceCommand.getIdentifier()));
         }
 
         return argument;
@@ -200,20 +195,39 @@ public class ArgumentController {
         }
 
         public void verify() {
-            groovyShell.setVariable("value", hasValue() ? getValue(argument.getValueType()) : value);
-            for (String excludedArgument : argument.getExcludedArguments()) {
-                if (argumentSet(excludedArgument)) {
-                    throw new InvalidCommandException(String.format("Argument '%s' can not be set if '%s' is set.",
-                        argument.getIdentifier(), excludedArgument));
+            for (XmlElement excludedArgument : argument.getExcludedArguments()) {
+                String excludedArgumentIdentifier = excludedArgument.getAttribute("argument").getValue();
+                if (argumentSet(excludedArgumentIdentifier)) {
+                    if (excludedArgument.hasAttribute("message")) {
+                        throw new InvalidCommandException(excludedArgument.getAttribute("message").getValue());
+                    } else {
+                        throw new InvalidCommandException(String.format("Argument '%s' can not be set if '%s' is set.",
+                            this.argument.getIdentifier(), excludedArgumentIdentifier));
+                    }
                 }
             }
 
-            for (String requiredArgument : argument.getRequiredArguments()) {
-                if (!argumentSet(requiredArgument)) {
-                    throw new InvalidCommandException(String.format("Argument '%s' may only be set if argument '%s' is set.",
-                        argument.getIdentifier(), requiredArgument));
+            for (XmlElement requiredArgument : argument.getRequiredArguments()) {
+                String requiredArgumentIdentifier = requiredArgument.getAttribute("argument").getValue();
+                if (!argumentSet(requiredArgumentIdentifier)) {
+                    if (requiredArgument.hasAttribute("message")) {
+                        throw new InvalidCommandException(requiredArgument.getAttribute("message").getValue());
+                    } else {
+                        throw new InvalidCommandException(String.format("Argument '%s' may only be set if argument '%s' is set.",
+                            this.argument.getIdentifier(), requiredArgumentIdentifier));
+                    }
                 }
             }
+
+            if (argument.getAttribute("requiresValue").getBool() && !hasValue()) {
+                throw new InvalidCommandException("Argument " + argument.getIdentifier() + " requires an assigned value!");
+            }
+
+            if (argument.getAttribute("requiresInput").getBool() && getSourceCommand().getCommandInput().isBlank()) {
+                throw new InvalidCommandException("Argument " + argument.getIdentifier() + " requires additional command input.");
+            }
+
+            groovyShell.setVariable("value", hasValue() ? getValue(argument.getValueType()) : value);
 
             for (XmlElement rule : argument.getRules()) {
                 String condition = rule.getTextContent();
@@ -233,14 +247,6 @@ public class ArgumentController {
                         throw new InvalidCommandException(String.format(valueCheck.getAttribute("errorMessage").getValue(), prefix, argumentPrefix));
                     }
                 }
-            }
-
-            if (argument.getAttribute("requiresValue").getBool() && !hasValue()) {
-                throw new InvalidCommandException("Argument " + argument.getIdentifier() + " requires an assigned value!");
-            }
-
-            if (argument.getAttribute("requiresInput").getBool() && getSourceCommand().getCommandInput().isBlank()) {
-                throw new InvalidCommandException("Argument " + argument.getIdentifier() + " requires additional command input.");
             }
         }
 

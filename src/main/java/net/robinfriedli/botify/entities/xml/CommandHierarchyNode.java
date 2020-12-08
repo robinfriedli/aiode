@@ -47,6 +47,8 @@ public abstract class CommandHierarchyNode extends GenericClassContribution<Abst
             return;
         }
 
+        collectArgumentsForSuperClass(superclass.getSuperclass(), set, context);
+
         CommandHierarchyNode commandHierarchyNode = context.query(and(
             instanceOf(CommandHierarchyNode.class),
             xmlElement -> {
@@ -58,15 +60,24 @@ public abstract class CommandHierarchyNode extends GenericClassContribution<Abst
         if (commandHierarchyNode != null) {
             addArgumentsFromNode(commandHierarchyNode, set);
         }
-
-        collectArgumentsForSuperClass(superclass.getSuperclass(), set, context);
     }
 
     private void addArgumentsFromNode(CommandHierarchyNode node, Set<ArgumentContribution> set) {
         set.addAll(node.getInstancesOf(ArgumentContribution.class));
         node.query(tagName("removeArgument"))
             .getResultStream()
-            .forEach(removeArgument -> set.removeIf(argument -> removeArgument.getAttribute("identifier").getValue().equals(argument.getIdentifier())));
+            .forEach(removeArgument -> {
+                String removeArgumentIdentifier = removeArgument.getAttribute("identifier").getValue();
+                boolean removed = set.removeIf(argument -> removeArgumentIdentifier.equals(argument.getIdentifier()));
+                if (!removed) {
+                    throw new IllegalStateException(
+                        String.format(
+                            "Could not remove argument '%s'. Either no such argument exists or it has already been removed further up in the hierarchy.",
+                            removeArgumentIdentifier
+                        )
+                    );
+                }
+            });
     }
 
 }

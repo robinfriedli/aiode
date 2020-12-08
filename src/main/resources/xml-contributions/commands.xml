@@ -226,7 +226,7 @@
            restrictedAccess="true"
            description="Add or remove a role required to run a certain command or list all commands and who they are available to. By default all commands are available to each user, except for this command and the commands in the scripting category which initially are only available to administrator roles. But as soon as a role has been added only those members with said role can use the command. If you add several roles to one command a member only requires one of those roles. The guild owner or members with administrator roles can always use any command.">
     <argument identifier="to" description="Specify the roles to grant access for.">
-      <requires argument="grand"/>
+      <requires argument="grant"/>
     </argument>
     <argument identifier="for" description="Specify the roles to remove access privileges from when using the %2$sdeny argument.">
       <excludes argument="to"/>
@@ -681,7 +681,7 @@ command.run('play')"
     <argument identifier="soundcloud" requiresInput="true" description="Search a track on soundcloud. Note that this argument is only required when searching, not when entering a URL.">
       <excludes argument="spotify"/>
       <excludes argument="youtube"/>
-      <excludes argument="list"/>
+      <excludes argument="list" message="Cannot search for soundcloud playlists."/>
     </argument>
     <argument identifier="episode" requiresInput="true" description="Search an episode of a podcast on Spotify. Note that this argument is only required when searching, not when entering a URL.">
       <excludes argument="album"/>

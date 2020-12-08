@@ -35,20 +35,12 @@ public class ArgumentContribution extends AbstractXmlElement {
         return getAttribute("description").getValue();
     }
 
-    public Set<String> getExcludedArguments() {
-        return query(tagName("excludes"))
-            .getResultStream()
-            .map(element -> element.getAttribute("argument").getValue())
-            .filter(s -> !s.isEmpty())
-            .collect(Collectors.toSet());
+    public Set<XmlElement> getExcludedArguments() {
+        return query(tagName("excludes")).collect(Collectors.toSet());
     }
 
-    public Set<String> getRequiredArguments() {
-        return query(tagName("requires"))
-            .getResultStream()
-            .map(element -> element.getAttribute("argument").getValue())
-            .filter(s -> !s.isEmpty())
-            .collect(Collectors.toSet());
+    public Set<XmlElement> getRequiredArguments() {
+        return query(tagName("requires")).collect(Collectors.toSet());
     }
 
     public Set<XmlElement> getRules() {

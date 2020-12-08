@@ -7,4 +7,5 @@
   <startupTask runForEachShard="true" implementation="net.robinfriedli.botify.boot.tasks.VersionUpdateAlertTask"/>
   <startupTask runForEachShard="false" implementation="net.robinfriedli.botify.boot.tasks.SetPlaylistItemIndexTask"/>
   <startupTask runForEachShard="false" implementation="net.robinfriedli.botify.boot.tasks.ResetOutdatedYouTubeQuotaTask"/>
+  <startupTask runForEachShard="false" implementation="net.robinfriedli.botify.boot.tasks.InitialiseCommandContributionsTask"/>
 </startupTasks>
