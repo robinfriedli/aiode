@@ -23,6 +23,8 @@ public class AlertPlaylistModificationInterceptor extends CollectingInterceptor 
     private final MessageChannel channel;
     private final MessageService messageService;
 
+    private boolean isFirstItemRemoval = true;
+
     public AlertPlaylistModificationInterceptor(Interceptor next, Logger logger, ExecutionContext executionContext, MessageService messageService) {
         super(next, logger);
         channel = executionContext.getChannel();
@@ -32,10 +34,15 @@ public class AlertPlaylistModificationInterceptor extends CollectingInterceptor 
     @Override
     public void onDeleteChained(Object entity, Serializable id, Object[] state, String[] propertyNames, Type[] types) {
         super.onDeleteChained(entity, id, state, propertyNames, types);
-        if (entity instanceof Song) {
+        if (isFirstItemRemoval && entity instanceof Song) {
             // make sure artist collection is initialised before deletion since it might be required to display the removed
-            // song at which point the collection can not be initialised anymore
+            // song at which point the collection can not be initialised anymore, this is only required if only one item
+            // is removed, else the number of removed items is shown
             Hibernate.initialize(((Song) entity).getArtists());
+        }
+
+        if (entity instanceof PlaylistItem) {
+            isFirstItemRemoval = false;
         }
     }
 
@@ -94,4 +101,11 @@ public class AlertPlaylistModificationInterceptor extends CollectingInterceptor 
             }
         }
     }
+
+    @Override
+    protected void clearState() {
+        super.clearState();
+        isFirstItemRemoval = true;
+    }
+
 }

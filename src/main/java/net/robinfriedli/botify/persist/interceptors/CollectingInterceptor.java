@@ -48,14 +48,13 @@ public abstract class CollectingInterceptor extends ChainableInterceptor {
 
     @Override
     public void afterTransactionCompletionChained(Transaction tx) {
-        if (!tx.getRollbackOnly()) {
-            StaticSessionProvider.consumeSessionWithoutInterceptors((CheckedConsumer<Session>) session -> {
-                afterCommit();
-            });
+        try {
+            if (!tx.getRollbackOnly()) {
+                StaticSessionProvider.consumeSessionWithoutInterceptors((CheckedConsumer<Session>) session -> afterCommit());
+            }
+        } finally {
+            clearState();
         }
-        createdEntities.clear();
-        deletedEntities.clear();
-        updatedEntities.clear();
     }
 
     public List<Object> getCreatedEntities() {
@@ -95,6 +94,12 @@ public abstract class CollectingInterceptor extends ChainableInterceptor {
             .filter(type::isInstance)
             .map(type::cast)
             .collect(Collectors.toList());
+    }
+
+    protected void clearState() {
+        createdEntities.clear();
+        deletedEntities.clear();
+        updatedEntities.clear();
     }
 
 }
