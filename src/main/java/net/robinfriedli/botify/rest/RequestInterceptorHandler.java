@@ -154,8 +154,7 @@ public class RequestInterceptorHandler implements HandlerInterceptor {
 
         JDA jda = guild.getJDA();
         GuildContext guildContext = guildManager.getContextForGuild(guild);
-        SpotifyApi spotifyApi = spotifyApiBuilder.build();
-        return new ExecutionContext(guild, guildContext, jda, member, sessionFactory, spotifyApi, textChannel);
+        return new ExecutionContext(guild, guildContext, jda, member, sessionFactory, spotifyApiBuilder, textChannel);
     }
 
 }

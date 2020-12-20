@@ -5,6 +5,7 @@ import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 import net.robinfriedli.botify.entities.xml.CronJobContribution;
 import net.robinfriedli.botify.entities.xml.EmbedDocumentContribution;
+import net.robinfriedli.botify.entities.xml.GroovyVariableProviderContribution;
 import net.robinfriedli.botify.entities.xml.GuildPropertyContribution;
 import net.robinfriedli.botify.entities.xml.HttpHandlerContribution;
 import net.robinfriedli.botify.entities.xml.StartupTaskContribution;
@@ -34,6 +35,7 @@ public class JxpComponent {
             .mapClass("widgetAction", WidgetContribution.WidgetActionContribution.class)
             .mapClass("version", Version.class)
             .mapClass("feature", Version.Feature.class)
+            .mapClass("groovyVariableProvider", GroovyVariableProviderContribution.class)
             .build();
     }
 

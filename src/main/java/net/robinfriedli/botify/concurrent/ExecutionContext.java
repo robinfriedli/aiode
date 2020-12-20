@@ -1,12 +1,12 @@
 package net.robinfriedli.botify.concurrent;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
 
 import com.wrapper.spotify.SpotifyApi;
-import groovy.lang.GroovyShell;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.GuildVoiceState;
@@ -33,7 +33,7 @@ import org.hibernate.SessionFactory;
  * Provides context for the task executed by the current thread. This is setup by {@link CommandExecutionTask} upon
  * execution.
  */
-public class ExecutionContext {
+public class ExecutionContext implements ForkableThreadContext<ExecutionContext> {
 
     protected final Guild guild;
     protected final GuildContext guildContext;
@@ -41,39 +41,85 @@ public class ExecutionContext {
     protected final Member member;
     protected final SessionFactory sessionFactory;
     protected final SpotifyApi spotifyApi;
+    protected final SpotifyApi.Builder spotifyApiBuilder;
     protected final String id;
     protected final TextChannel textChannel;
     protected final User user;
     protected Session session;
     protected SpotifyService spotifyService;
-    private Thread thread;
+    protected Thread thread;
 
-    public ExecutionContext(Guild guild,
-                            GuildContext guildContext,
-                            JDA jda,
-                            Member member,
-                            SessionFactory sessionFactory,
-                            SpotifyApi spotifyApi,
-                            TextChannel textChannel) {
-        this(guild, guildContext, jda, member, sessionFactory, spotifyApi, UUID.randomUUID().toString(), textChannel, member.getUser(), null);
+    public ExecutionContext(
+        Guild guild,
+        GuildContext guildContext,
+        JDA jda,
+        Member member,
+        SessionFactory sessionFactory,
+        SpotifyApi.Builder spotifyApiBuilder,
+        TextChannel textChannel
+    ) {
+        this(
+            guild,
+            guildContext,
+            jda,
+            member,
+            sessionFactory,
+            spotifyApiBuilder.build(),
+            spotifyApiBuilder,
+            UUID.randomUUID().toString(),
+            textChannel,
+            member.getUser(),
+            null
+        );
     }
 
-    public ExecutionContext(Guild guild,
-                            GuildContext guildContext,
-                            JDA jda,
-                            Member member,
-                            SessionFactory sessionFactory,
-                            SpotifyApi spotifyApi,
-                            String id,
-                            TextChannel textChannel,
-                            User user,
-                            SpotifyService spotifyService) {
+    // constructor intended for making copies
+    public ExecutionContext(
+        Guild guild,
+        GuildContext guildContext,
+        JDA jda,
+        Member member,
+        SessionFactory sessionFactory,
+        SpotifyApi.Builder spotifyApiBuilder,
+        String id,
+        TextChannel textChannel,
+        User user
+    ) {
+        this(
+            guild,
+            guildContext,
+            jda,
+            member,
+            sessionFactory,
+            spotifyApiBuilder.build(),
+            spotifyApiBuilder,
+            id,
+            textChannel,
+            user,
+            null
+        );
+    }
+
+    public ExecutionContext(
+        Guild guild,
+        GuildContext guildContext,
+        JDA jda,
+        Member member,
+        SessionFactory sessionFactory,
+        SpotifyApi spotifyApi,
+        SpotifyApi.Builder spotifyApiBuilder,
+        String id,
+        TextChannel textChannel,
+        User user,
+        SpotifyService spotifyService
+    ) {
         this.guild = guild;
         this.guildContext = guildContext;
         this.jda = jda;
         this.member = member;
         this.sessionFactory = sessionFactory;
         this.spotifyApi = spotifyApi;
+        this.spotifyApiBuilder = spotifyApiBuilder;
         this.id = id;
         this.textChannel = textChannel;
         this.user = user;
@@ -190,31 +236,30 @@ public class ExecutionContext {
         return spotifyService;
     }
 
-    public void addScriptParameters(GroovyShell shell) {
-        shell.setVariable("context", this);
-        shell.setVariable("guildContext", guildContext);
-        shell.setVariable("playback", guildContext.getPlayback());
-        shell.setVariable("guild", guild);
-        shell.setVariable("channel", getChannel());
-        shell.setVariable("member", member);
-        shell.setVariable("user", user);
+    public Map<String, Object> getScriptParameters() {
+        return Map.of(
+            "context", this,
+            "guildContext", guildContext,
+            "playback", guildContext.getPlayback(),
+            "guild", guild,
+            "channel", getChannel(),
+            "member", member,
+            "user", user
+        );
     }
 
-    /**
-     * @return a thread safe copy of this execution context that may be passed to sub tasks. This excludes the hibernate
-     * session and simply returns the current session for {@link #getSession()} as no manual session management is
-     * guaranteed for sub tasks.
-     */
-    public ExecutionContext threadSafe() {
-        return new ThreadSafeExecutionContext(guild, guildContext, jda, member, sessionFactory, spotifyApi, id, textChannel, user, spotifyService);
-    }
-
+    @Override
     public void setThread(Thread thread) {
         if (this.thread != null && this.thread != thread) {
             throw new IllegalStateException(String.format("Cannot install ExecutionContext for thread '%s', already installed on thread '%s'. Use ExecutionContext#threadSafe to create a thread safe copy.", thread, this.thread));
         }
 
         this.thread = thread;
+    }
+
+    @Override
+    public ExecutionContext fork() {
+        return new ExecutionContext(guild, guildContext, jda, member, sessionFactory, spotifyApiBuilder, id, textChannel, user);
     }
 
     /**
@@ -281,23 +326,6 @@ public class ExecutionContext {
             return optional().map(ec -> ec.unwrap(contextType));
         }
 
-    }
-
-    public static class ThreadSafeExecutionContext extends ExecutionContext {
-
-
-        public ThreadSafeExecutionContext(Guild guild, GuildContext guildContext, JDA jda, Member member, SessionFactory sessionFactory, SpotifyApi spotifyApi, String id, TextChannel textChannel, User user, SpotifyService spotifyService) {
-            super(guild, guildContext, jda, member, sessionFactory, spotifyApi, id, textChannel, user, spotifyService);
-        }
-
-        @Override
-        public Session getSession() {
-            return sessionFactory.getCurrentSession();
-        }
-
-        @Override
-        public void closeSession() {
-        }
     }
 
 }

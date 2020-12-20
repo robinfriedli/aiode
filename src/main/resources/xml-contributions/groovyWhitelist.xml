@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <whitelistConfiguration xmlns="whitelistSpace">
-  <whitelistMethods class="java.lang.Object">
+  <whitelistMethods class="java.lang.Object" allowConstructorCall="true">
     <method name="getClass"/>
     <method name="equals"/>
     <method name="toString"/>
     <method name="hashCode"/>
   </whitelistMethods>
-  <whitelistMethods class="java.lang.String">
+  <whitelistMethods class="java.lang.String" allowConstructorCall="true">
     <method name="length"/>
     <method name="isEmpty"/>
     <method name="charAt"/>
@@ -72,6 +72,7 @@
     <method name="compareTo"/>
   </whitelistMethods>
   <whitelistMethods class="java.util.Collection">
+    <method name="&lt;init&gt;"/>
     <method name="size"/>
     <method name="isEmpty"/>
     <method name="contains"/>
@@ -173,6 +174,7 @@
     <method name="mismatch"/>
   </whitelistMethods>
   <whitelistMethods class="java.util.Map">
+    <method name="&lt;init&gt;"/>
     <method name="size"/>
     <method name="isEmpty"/>
     <method name="containsKey"/>
@@ -202,6 +204,7 @@
     <method name="copyOf"/>
   </whitelistMethods>
   <whitelistMethods class="java.util.Map$Entry">
+    <method name="&lt;init&gt;"/>
     <method name="getKey"/>
     <method name="getValue"/>
     <method name="setValue"/>
@@ -211,6 +214,7 @@
     <method name="comparingByValue"/>
   </whitelistMethods>
   <whitelistMethods class="java.lang.Iterable">
+    <method name="&lt;init&gt;"/>
     <method name="iterator"/>
     <method name="forEach"/>
     <method name="spliterator"/>
@@ -380,6 +384,12 @@
     <method name="getTempMessageTimeout"/>
     <method name="getDefaultTextChannelId"/>
   </whitelistMethods>
+  <whitelistMethods class="net.robinfriedli.botify.util.Util">
+    <method name="getKeysForValue"/>
+    <method name="normalizeMillis"/>
+    <method name="appendEmbedList"/>
+    <method name="normalizeWhiteSpace"/>
+  </whitelistMethods>
   <whitelistMethods class="net.dv8tion.jda.api.entities.Guild">
     <method name="getMemberCount"/>
     <method name="getName"/>
@@ -536,6 +546,9 @@
     .eval "context.channel.sendMessage('destroyed').queue({msg -> System.exit(0)})"
 
     with submit we can control what methods of CompletableFuture may be used
+
+    -> this issue is now fixed with the new compile time checks, yet allowing async callbacks is still problematic when it
+       comes to invocation counts
      -->
     <method name="complete"/>
     <method name="submit"/>
@@ -571,5 +584,5 @@
   <whitelistClass class="net.dv8tion.jda.api.EmbedBuilder"/>
   <whitelistClass class="net.robinfriedli.botify.audio.AudioQueue"/>
   <whitelistClass class="net.robinfriedli.botify.command.SecurityManager"/>
-  <whitelistClass class="org.kohsuke.groovy.sandbox.impl.Checker"/>
+  <whitelistClass class="net.robinfriedli.botify.scripting.GroovyInvocationCountCustomizer$RuntimeInvocationCountChecker"/>
 </whitelistConfiguration>

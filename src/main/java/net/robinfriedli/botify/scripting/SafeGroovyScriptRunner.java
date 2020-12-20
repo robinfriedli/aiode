@@ -7,7 +7,6 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -18,6 +17,7 @@ import net.dv8tion.jda.api.entities.MessageChannel;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.boot.ShutdownableExecutorService;
 import net.robinfriedli.botify.command.CommandContext;
+import net.robinfriedli.botify.concurrent.ForkTaskTreadPool;
 import net.robinfriedli.botify.concurrent.LoggingThreadFactory;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
@@ -25,13 +25,19 @@ import net.robinfriedli.botify.entities.StoredScript;
 import net.robinfriedli.botify.exceptions.Abort;
 import net.robinfriedli.botify.exceptions.CommandFailure;
 import net.robinfriedli.botify.exceptions.ExceptionUtils;
+import net.robinfriedli.threadpool.ThreadPool;
 
 public class SafeGroovyScriptRunner {
 
-    private static final ThreadPoolExecutor GLOBAL_POOL = new ThreadPoolExecutor(3, Integer.MAX_VALUE,
-        60L, TimeUnit.SECONDS,
-        new SynchronousQueue<>(),
-        new LoggingThreadFactory("script-execution-pool"));
+    private static final ForkTaskTreadPool GLOBAL_POOL = new ForkTaskTreadPool(
+        ThreadPool.Builder.create()
+            .setCoreSize(3)
+            .setMaxSize(Integer.MAX_VALUE)
+            .setKeepAlive(60L, TimeUnit.SECONDS)
+            .setWorkQueue(new SynchronousQueue<>())
+            .setThreadFactory(new LoggingThreadFactory("script-execution-pool"))
+            .build()
+    );
 
     static {
         Botify.SHUTDOWNABLES.add(new ShutdownableExecutorService(GLOBAL_POOL));
@@ -39,12 +45,12 @@ public class SafeGroovyScriptRunner {
 
     private final CommandContext context;
     private final GroovyShell groovyShell;
-    private final GroovyWhitelistInterceptor groovyWhitelistInterceptor;
+    private final GroovyWhitelistManager groovyWhitelistManager;
 
-    public SafeGroovyScriptRunner(CommandContext context, GroovyShell groovyShell, GroovyWhitelistInterceptor groovyWhitelistInterceptor) {
+    public SafeGroovyScriptRunner(CommandContext context, GroovyShell groovyShell, GroovyWhitelistManager groovyWhitelistManager) {
         this.context = context;
         this.groovyShell = groovyShell;
-        this.groovyWhitelistInterceptor = groovyWhitelistInterceptor;
+        this.groovyWhitelistManager = groovyWhitelistManager;
     }
 
     public void runScripts(List<StoredScript> scripts, AtomicReference<StoredScript> currentScript, long timeout, TimeUnit timeUnit) throws ExecutionException, TimeoutException {
@@ -112,12 +118,10 @@ public class SafeGroovyScriptRunner {
 
     private <T> Future<T> scriptExecution(Callable<T> execution) {
         return GLOBAL_POOL.submit(() -> {
-            groovyWhitelistInterceptor.register();
             try {
                 return execution.call();
             } finally {
-                groovyWhitelistInterceptor.resetInvocationCount();
-                groovyWhitelistInterceptor.unregister();
+                groovyWhitelistManager.resetInvocationCounts();
             }
         });
     }

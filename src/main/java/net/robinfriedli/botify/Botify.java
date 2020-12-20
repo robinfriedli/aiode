@@ -34,6 +34,7 @@ import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.login.LoginManager;
 import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
+import net.robinfriedli.botify.scripting.GroovyVariableManager;
 import net.robinfriedli.botify.servers.HttpServerManager;
 import net.robinfriedli.jxp.api.JxpBackend;
 import org.hibernate.SessionFactory;
@@ -61,6 +62,7 @@ public class Botify {
     private final ConfigurableApplicationContext springBootContext;
     private final CronJobService cronJobService;
     private final GroovySandboxComponent groovySandboxComponent;
+    private final GroovyVariableManager groovyVariableManager;
     private final GuildManager guildManager;
     private final GuildPropertyManager guildPropertyManager;
     private final HibernateComponent hibernateComponent;
@@ -83,6 +85,7 @@ public class Botify {
                   ConfigurableApplicationContext springBootContext,
                   CronJobService cronJobService,
                   GroovySandboxComponent groovySandboxComponent,
+                  GroovyVariableManager groovyVariableManager,
                   GuildManager guildManager,
                   GuildPropertyManager guildPropertyManager,
                   HibernateComponent hibernateComponent,
@@ -104,6 +107,7 @@ public class Botify {
         this.springBootContext = springBootContext;
         this.cronJobService = cronJobService;
         this.groovySandboxComponent = groovySandboxComponent;
+        this.groovyVariableManager = groovyVariableManager;
         this.guildManager = guildManager;
         this.guildPropertyManager = guildPropertyManager;
         this.hibernateComponent = hibernateComponent;
@@ -128,6 +132,10 @@ public class Botify {
         }
 
         return instance;
+    }
+
+    public static boolean isInitialised() {
+        return instance != null;
     }
 
     public static void launch() throws IOException {
@@ -247,6 +255,10 @@ public class Botify {
 
     public GroovySandboxComponent getGroovySandboxComponent() {
         return groovySandboxComponent;
+    }
+
+    public GroovyVariableManager getGroovyVariableManager() {
+        return groovyVariableManager;
     }
 
     public GuildManager getGuildManager() {

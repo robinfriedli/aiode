@@ -727,4 +727,7 @@ command.run('play')"
       <excludes argument="delete"/>
     </argument>
   </abstractCommand>
+  <abstractCommand class="net.robinfriedli.botify.command.AbstractCommand">
+    <argument identifier="skipInterceptors" description="Disable script interceptors and finalizers for the execution of this command."/>
+  </abstractCommand>
 </commands>

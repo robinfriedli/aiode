@@ -70,7 +70,7 @@ public class WidgetListener extends ListenerAdapter {
         TextChannel channel = event.getChannel();
         Guild guild = event.getGuild();
         Botify botify = Botify.get();
-        SpotifyApi spotifyApi = botify.getSpotifyApiBuilder().build();
+        SpotifyApi.Builder spotifyApiBuilder = botify.getSpotifyApiBuilder();
         GuildContext guildContext = botify.getGuildManager().getContextForGuild(guild);
         String emojiUnicode = event.getReaction().getReactionEmote().getName();
         CommandContext commandContext = new CommandContext(
@@ -78,7 +78,7 @@ public class WidgetListener extends ListenerAdapter {
             guildContext,
             activeWidget.getMessage(),
             hibernateComponent.getSessionFactory(),
-            spotifyApi,
+            spotifyApiBuilder,
             emojiUnicode
         );
 

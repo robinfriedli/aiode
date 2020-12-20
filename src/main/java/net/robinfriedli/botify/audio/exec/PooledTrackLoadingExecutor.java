@@ -66,7 +66,7 @@ public class PooledTrackLoadingExecutor implements TrackLoadingExecutor {
         } else {
             channel = guildContext.getPlayback().getCommunicationChannel();
         }
-        ExecutionContext finalExecutionContext = executionContext != null ? executionContext.threadSafe() : null;
+        ExecutionContext finalExecutionContext = executionContext != null ? executionContext.fork() : null;
         QueuedTask thread = new QueuedTask(queue, () -> {
             try {
                 if (finalExecutionContext != null) {

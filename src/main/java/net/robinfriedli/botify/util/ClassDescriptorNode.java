@@ -1,23 +1,36 @@
 package net.robinfriedli.botify.util;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
 public interface ClassDescriptorNode {
 
+    @Nullable
     static <T extends ClassDescriptorNode> T selectClosestNode(Collection<T> results, Class<?> declarationClass) {
-        if (results.size() == 1) {
-            return results.iterator().next();
-        } else if (results.isEmpty()) {
-            return null;
+        Collection<T> closestMatches = selectClosestNodes(results, declarationClass);
+        Iterator<T> iterator = closestMatches.iterator();
+        if (iterator.hasNext()) {
+            return iterator.next();
         } else {
-            Optional<T> exactMatch = results.stream().filter(contribution -> contribution.getType().equals(declarationClass)).findFirst();
-            if (exactMatch.isPresent()) {
-                return exactMatch.get();
+            return null;
+        }
+    }
+
+    static <T extends ClassDescriptorNode> Collection<T> selectClosestNodes(Collection<T> results, Class<?> declarationClass) {
+        if (results.size() == 1 || results.isEmpty()) {
+            return results;
+        } else {
+            Set<T> exactMatches = results.stream().filter(contribution -> contribution.getType().equals(declarationClass)).collect(Collectors.toSet());
+            if (!exactMatches.isEmpty()) {
+                return exactMatches;
             }
 
             // if several contributions were found describing different super classes, count the number of super (or equal)
@@ -31,8 +44,7 @@ public interface ClassDescriptorNode {
 
             @SuppressWarnings("OptionalGetWithoutIsPresent")
             long maxLevelCount = classesByInheritanceLevel.entries().stream().mapToLong(Map.Entry::getKey).max().getAsLong();
-            Collection<T> closestMatches = classesByInheritanceLevel.get(maxLevelCount);
-            return closestMatches.iterator().next();
+            return classesByInheritanceLevel.get(maxLevelCount);
         }
     }
 

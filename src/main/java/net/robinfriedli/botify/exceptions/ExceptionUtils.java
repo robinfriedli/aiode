@@ -97,7 +97,14 @@ public class ExceptionUtils {
         String message = e instanceof GoogleJsonResponseException
             ? ((GoogleJsonResponseException) e).getDetails().getMessage()
             : e.getMessage();
-        embedBuilder.addField(isCause ? "Caused by" : "Exception", String.format("%s: %s", e.getClass().getSimpleName(), message), false);
+
+        String value = String.format("%s: %s", e.getClass().getSimpleName(), message);
+
+        if (value.length() > 500) {
+            value = value.substring(0, 495) + "[...]";
+        }
+
+        embedBuilder.addField(isCause ? "Caused by" : "Exception", value, false);
 
         if (e.getCause() != null) {
             appendException(embedBuilder, e.getCause(), true, counter + 1);

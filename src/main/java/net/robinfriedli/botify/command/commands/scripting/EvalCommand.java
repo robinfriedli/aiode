@@ -9,8 +9,8 @@ import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
-import net.robinfriedli.botify.scripting.GroovyVariables;
-import net.robinfriedli.botify.scripting.GroovyWhitelistInterceptor;
+import net.robinfriedli.botify.scripting.GroovyVariableManager;
+import net.robinfriedli.botify.scripting.GroovyWhitelistManager;
 import net.robinfriedli.botify.scripting.SafeGroovyScriptRunner;
 import org.codehaus.groovy.control.CompilerConfiguration;
 
@@ -23,14 +23,16 @@ public class EvalCommand extends AbstractCommand {
     @Override
     public void doRun() {
         CommandContext context = getContext();
-        GroovySandboxComponent groovySandboxComponent = Botify.get().getGroovySandboxComponent();
+        Botify botify = Botify.get();
+        GroovySandboxComponent groovySandboxComponent = botify.getGroovySandboxComponent();
+        GroovyVariableManager groovyVariableManager = botify.getGroovyVariableManager();
         CompilerConfiguration compilerConfiguration = groovySandboxComponent.getCompilerConfiguration();
-        GroovyWhitelistInterceptor groovyWhitelistInterceptor = groovySandboxComponent.getGroovyWhitelistInterceptor();
+        GroovyWhitelistManager groovyWhitelistManager = groovySandboxComponent.getGroovyWhitelistManager();
         GroovyShell groovyShell = new GroovyShell(compilerConfiguration);
-        GroovyVariables.addVariables(groovyShell, context, this, getMessageService(), Botify.get().getSecurityManager());
-        SafeGroovyScriptRunner groovyScriptRunner = new SafeGroovyScriptRunner(context, groovyShell, groovyWhitelistInterceptor);
+        groovyVariableManager.prepareShell(groovyShell);
+        SafeGroovyScriptRunner groovyScriptRunner = new SafeGroovyScriptRunner(context, groovyShell, groovyWhitelistManager);
 
-        groovyScriptRunner.runAndSendResult(getCommandInput(), 1, TimeUnit.MINUTES);
+        groovyScriptRunner.runAndSendResult(getCommandInput(), 10, TimeUnit.SECONDS);
     }
 
     @Override

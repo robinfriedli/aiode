@@ -145,8 +145,8 @@ public class CommandListener extends ListenerAdapter {
     private void startCommandExecution(String namePrefix, Message message, Guild guild, GuildContext guildContext, Session session, GuildMessageReceivedEvent event) {
         ThreadExecutionQueue queue = executionQueueManager.getForGuild(guild);
         String commandBody = message.getContentDisplay().substring(namePrefix.length()).trim();
-        CommandContext commandContext = new CommandContext(event, guildContext, hibernateComponent.getSessionFactory(), spotifyApiBuilder.build(), commandBody);
-        ExecutionContext.Current.set(commandContext.threadSafe());
+        CommandContext commandContext = new CommandContext(event, guildContext, hibernateComponent.getSessionFactory(), spotifyApiBuilder, commandBody);
+        ExecutionContext.Current.set(commandContext.fork());
         try {
             Optional<AbstractCommand> commandInstance = commandManager.instantiateCommandForContext(commandContext, session);
             commandInstance.ifPresent(command -> commandManager.runCommand(command, queue));

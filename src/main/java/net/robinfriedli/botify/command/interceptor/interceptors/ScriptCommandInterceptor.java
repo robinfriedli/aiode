@@ -24,8 +24,8 @@ import net.robinfriedli.botify.exceptions.Abort;
 import net.robinfriedli.botify.exceptions.CommandFailure;
 import net.robinfriedli.botify.exceptions.ExceptionUtils;
 import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
-import net.robinfriedli.botify.scripting.GroovyVariables;
-import net.robinfriedli.botify.scripting.GroovyWhitelistInterceptor;
+import net.robinfriedli.botify.scripting.GroovyVariableManager;
+import net.robinfriedli.botify.scripting.GroovyWhitelistManager;
 import net.robinfriedli.botify.scripting.SafeGroovyScriptRunner;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.hibernate.Session;
@@ -52,7 +52,13 @@ public abstract class ScriptCommandInterceptor extends AbstractChainableCommandI
 
     @Override
     public void performChained(Command command) {
-        if (!(command instanceof AbstractCommand && !((AbstractCommand) command).getCommandContribution().isDisableScriptInterceptors())) {
+        if (command instanceof AbstractCommand) {
+            AbstractCommand abstractCommand = (AbstractCommand) command;
+            if (abstractCommand.getArgumentController().argumentSet("skipInterceptors")
+                || abstractCommand.getCommandContribution().isDisableScriptInterceptors()) {
+                return;
+            }
+        } else {
             return;
         }
 
@@ -83,12 +89,14 @@ public abstract class ScriptCommandInterceptor extends AbstractChainableCommandI
             return;
         }
 
+        Botify botify = Botify.get();
         CompilerConfiguration compilerConfiguration = groovySandboxComponent.getCompilerConfiguration();
-        GroovyWhitelistInterceptor groovyWhitelistInterceptor = groovySandboxComponent.getGroovyWhitelistInterceptor();
+        GroovyWhitelistManager groovyWhitelistManager = groovySandboxComponent.getGroovyWhitelistManager();
+        GroovyVariableManager groovyVariableManager = botify.getGroovyVariableManager();
         GroovyShell groovyShell = new GroovyShell(compilerConfiguration);
-        GroovyVariables.addVariables(groovyShell, context, command, messageService, Botify.get().getSecurityManager());
+        groovyVariableManager.prepareShell(groovyShell);
 
-        SafeGroovyScriptRunner scriptRunner = new SafeGroovyScriptRunner(context, groovyShell, groovyWhitelistInterceptor);
+        SafeGroovyScriptRunner scriptRunner = new SafeGroovyScriptRunner(context, groovyShell, groovyWhitelistManager);
         AtomicReference<StoredScript> currentScriptReference = new AtomicReference<>();
         try {
             scriptRunner.runScripts(scriptInterceptors, currentScriptReference, 5, TimeUnit.SECONDS);

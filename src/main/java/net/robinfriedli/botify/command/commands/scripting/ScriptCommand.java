@@ -11,8 +11,8 @@ import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.StoredScript;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
-import net.robinfriedli.botify.scripting.GroovyVariables;
-import net.robinfriedli.botify.scripting.GroovyWhitelistInterceptor;
+import net.robinfriedli.botify.scripting.GroovyVariableManager;
+import net.robinfriedli.botify.scripting.GroovyWhitelistManager;
 import net.robinfriedli.botify.scripting.SafeGroovyScriptRunner;
 import net.robinfriedli.botify.util.SearchEngine;
 import org.codehaus.groovy.control.CompilerConfiguration;
@@ -44,12 +44,13 @@ public class ScriptCommand extends AbstractScriptCommand {
 
     private void executeScript(Botify botify, CommandContext context, Session session) {
         GroovySandboxComponent groovySandboxComponent = botify.getGroovySandboxComponent();
-        GroovyWhitelistInterceptor groovyWhitelistInterceptor = groovySandboxComponent.getGroovyWhitelistInterceptor();
+        GroovyVariableManager groovyVariableManager = botify.getGroovyVariableManager();
+
+        GroovyWhitelistManager groovyWhitelistManager = groovySandboxComponent.getGroovyWhitelistManager();
         CompilerConfiguration compilerConfiguration = groovySandboxComponent.getCompilerConfiguration();
         GroovyShell groovyShell = new GroovyShell(compilerConfiguration);
-        GroovyVariables.addVariables(groovyShell, context, this, getMessageService(), botify.getSecurityManager());
-        groovyShell.setVariable("input", getCommandInput());
-        SafeGroovyScriptRunner groovyScriptRunner = new SafeGroovyScriptRunner(context, groovyShell, groovyWhitelistInterceptor);
+        groovyVariableManager.prepareShell(groovyShell);
+        SafeGroovyScriptRunner groovyScriptRunner = new SafeGroovyScriptRunner(context, groovyShell, groovyWhitelistManager);
 
         String scriptString;
         if (script != null) {
@@ -65,7 +66,7 @@ public class ScriptCommand extends AbstractScriptCommand {
             }
         }
 
-        groovyScriptRunner.runAndSendResult(scriptString, 1, TimeUnit.MINUTES);
+        groovyScriptRunner.runAndSendResult(scriptString, 10, TimeUnit.SECONDS);
     }
 
 }

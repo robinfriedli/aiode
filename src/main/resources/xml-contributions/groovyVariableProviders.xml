@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<groovyVariableProviders xmlns="groovyVariableProviderSpace">
+  <groovyVariableProvider implementation="net.robinfriedli.botify.scripting.variables.ExecutionContextVariableProvider"/>
+  <groovyVariableProvider implementation="net.robinfriedli.botify.scripting.variables.SingletonVariableProvider"/>
+  <groovyVariableProvider implementation="net.robinfriedli.botify.scripting.variables.ThreadContextVariableProvider"/>
+</groovyVariableProviders>

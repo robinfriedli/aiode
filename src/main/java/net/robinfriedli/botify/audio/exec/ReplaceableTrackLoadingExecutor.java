@@ -47,7 +47,7 @@ public class ReplaceableTrackLoadingExecutor implements TrackLoadingExecutor {
         }
 
         int expectedThreadNumber = threadNumber.incrementAndGet();
-        ExecutionContext finalExecutionContext = executionContext != null ? executionContext.threadSafe() : null;
+        ExecutionContext finalExecutionContext = executionContext != null ? executionContext.fork() : null;
         Future<?> future = PooledTrackLoadingExecutor.GLOBAL_POOL.submit(() -> {
             try {
                 if (finalExecutionContext != null) {

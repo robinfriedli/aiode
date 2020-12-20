@@ -72,15 +72,15 @@ public class SpotifyTrackBulkLoadingService extends BulkOperationService<Spotify
         });
     }
 
+    public static SpotifyItem createItem(String id, SpotifyTrackKind kind) {
+        return new SpotifyItem(id, kind);
+    }
+
     @Override
     public void add(SpotifyItem key, Consumer<SpotifyTrack> action) {
         if (key != null && key.id != null) {
             super.add(key, action);
         }
-    }
-
-    public static SpotifyItem createItem(String id, SpotifyTrackKind kind) {
-        return new SpotifyItem(id, kind);
     }
 
     public static class SpotifyItem {

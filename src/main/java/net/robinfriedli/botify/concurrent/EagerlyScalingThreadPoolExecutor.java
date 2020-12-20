@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
+import net.robinfriedli.threadpool.ThreadPool;
 
 /**
  * The implementation of the ThreadPoolExecutor only starts creating additional threads up to the maxPoolSize once
@@ -24,7 +25,11 @@ import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
  * for each additional task up to the maxPoolSize and then implementing a {@link RejectedExecutionHandler} that
  * adds each additional task to a secondary queue that attempts to offer tasks to the main queue until there are
  * idle threads.
+ *
+ * @deprecated This {@link ThreadPoolExecutor} has been replaced with an independent threadpool implementation {@link ThreadPool} and its
+ * wrapper {@link ForkTaskTreadPool}.
  */
+@Deprecated
 public class EagerlyScalingThreadPoolExecutor extends ThreadPoolExecutor {
 
     public EagerlyScalingThreadPoolExecutor(String poolName, int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit keepAliveUnit) {

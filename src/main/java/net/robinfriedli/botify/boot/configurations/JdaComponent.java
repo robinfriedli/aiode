@@ -24,10 +24,9 @@ import static net.dv8tion.jda.api.utils.cache.CacheFlag.*;
 @DependsOn("liquibase")
 public class JdaComponent {
 
+    private final StartupListener startupListener;
     @Value("${botify.tokens.discord_token}")
     private String discordToken;
-
-    private final StartupListener startupListener;
 
     public JdaComponent(StartupListener startupListener) {
         this.startupListener = startupListener;

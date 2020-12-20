@@ -34,18 +34,16 @@ import static net.robinfriedli.jxp.queries.Conditions.*;
  */
 public class VersionUpdateAlertTask implements StartupTask {
 
-    // since the task is run for each shard separately and the launched flag gets set to true the first time,
-    // this flag is used to remember whether there has been an update
-    private static boolean UPDATED = false;
-    private static int OFFSET = 0;
-
     private static final Object DISPATCH_LOCK = new Object();
     private static final int MESSAGES_PER_SECOND = 3;
     private static final ScheduledExecutorService MESSAGE_DISPATCH = Executors.newScheduledThreadPool(
         0,
         new LoggingThreadFactory("version-update-dispatch")
     );
-
+    // since the task is run for each shard separately and the launched flag gets set to true the first time,
+    // this flag is used to remember whether there has been an update
+    private static boolean UPDATED = false;
+    private static int OFFSET = 0;
     private final MessageService messageService;
     private final StartupTaskContribution contribution;
     private final VersionManager versionManager;

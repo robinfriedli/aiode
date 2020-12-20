@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="groovyVariableProviderSpace">
+
+  <xs:element name="groovyVariableProviders" type="groovyVariableProviders"/>
+  <xs:complexType name="groovyVariableProviders">
+    <xs:sequence>
+      <xs:element name="groovyVariableProvider" type="groovyVariableProvider"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="groovyVariableProvider">
+    <xs:attribute name="implementation" type="xs:string"/>
+  </xs:complexType>
+
+</xs:schema>

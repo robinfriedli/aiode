@@ -9,23 +9,95 @@
     </xs:sequence>
   </xs:complexType>
   <xs:complexType name="whitelistMethods">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">
+        Whitelist methods and properties (for reassignment) of a class. By default the configuration also applies to subclasses
+        if not otherwise specified by the "inheritable" attribute.
+      </xs:documentation>
+    </xs:annotation>
     <xs:sequence>
       <xs:element name="method" type="method"/>
       <xs:element name="writeProperty" type="writeProperty"/>
     </xs:sequence>
-    <xs:attribute name="class" type="xs:string"/>
-    <xs:attribute name="maxMethodInvocations" type="xs:int"/>
+    <xs:attribute name="class" type="xs:string" use="required"/>
+    <xs:attribute name="maxMethodInvocations" type="xs:int">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">
+          Maximum number of times methods may be invoked on this Class, all methods share the same counter. If a method has
+          its own counter set both are incremented when the method is invoked.
+          More precisely, this sets a limit that throws an exception at runtime upon reaching. Methods for which a limit
+          is set are transformed at compile time by the GroovyInvocationCountCustomizer to increment and check the
+          invocation count before running. Those counters are reset by the SafeGroovyScriptRunner after running the
+          script(s). If the runScripts() method is used all scripts share the same limit and the invocation counts are not
+          reset after each script.
+          The default value is 0, which indicates that there is no limit.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="allowConstructorCall" type="xs:boolean" default="false">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">
+          Whether or not to allow a constructor call i.e. the "&lt;init&gt;" method. Setting this to true is a more convenient
+          alternative to adding the "&lt;init&gt;" <method/> element explicitly, which still can be done e.g. if an invocation
+          limit needs to be set. Access to the constructor is granted if either this attribute is set to true or the
+          <method/> element exists. This attribute is overwritten by <whitelistMethods/> contributions for subclasses.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:complexType name="whitelistClass">
-    <xs:attribute name="class" type="xs:string"/>
-    <xs:attribute name="maxMethodInvocations" type="xs:int"/>
+    <xs:annotation>
+      <xs:documentation xml:lang="en">
+        Whitelist all properties and methods of a Class. By default this automatically applies to all subclasses but may be
+        overwritten by <whitelistMethods/> contributions for sublasses.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="class" type="xs:string" use="required"/>
+    <xs:attribute name="maxMethodInvocations" type="xs:int">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">
+          Maximum number of times methods may be invoked on this Class, all methods share the same counter.
+          More precisely, this sets a limit that throws an exception at runtime upon reaching. Methods for which a limit
+          is set are transformed at compile time by the GroovyInvocationCountCustomizer to increment and check the
+          invocation count before running. Those counters are reset by the SafeGroovyScriptRunner after running the
+          script(s). If the runScripts() method is used all scripts share the same limit and the invocation counts are not
+          reset after each script.
+          The default value is 0, which indicates that there is no limit.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:complexType name="method">
-    <xs:attribute name="name" type="xs:string"/>
-    <xs:attribute name="maxInvocationCount" type="xs:int" default="0"/>
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Whitelist a method.</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="name" type="xs:string" use="required"/>
+    <xs:attribute name="maxInvocationCount" type="xs:int" default="0">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">
+          Maximum number of times the method may be invoked per script execution.
+          More precisely, this sets a limit that throws an exception at runtime upon reaching. Methods for which a limit
+          is set are transformed at compile time by the GroovyInvocationCountCustomizer to increment and check the
+          invocation count before running. Those counters are reset by the SafeGroovyScriptRunner after running the
+          script(s). If the runScripts() method is used all scripts share the same limit and the invocation counts are not
+          reset after each script.
+          The default value is 0, which indicates that there is no limit.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="inheritable" type="xs:boolean" default="true">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">If true (default) this method is also whitelisted for subclasses.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:complexType name="writeProperty">
-    <xs:attribute name="name"/>
+    <xs:attribute name="name" use="required"/>
+    <xs:attribute name="inheritable" type="xs:boolean" default="true">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">If true (default) write access to the property is also whitelisted for subclasses.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
 
 </xs:schema>
