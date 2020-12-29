@@ -1,7 +1,7 @@
 package net.robinfriedli.botify.command.parser;
 
 import net.robinfriedli.botify.command.AbstractCommand;
-import net.robinfriedli.botify.command.ArgumentController;
+import net.robinfriedli.botify.command.argument.ArgumentController;
 import net.robinfriedli.botify.discord.property.properties.ArgumentPrefixProperty;
 import net.robinfriedli.botify.exceptions.CommandParseException;
 import net.robinfriedli.botify.exceptions.InvalidArgumentException;

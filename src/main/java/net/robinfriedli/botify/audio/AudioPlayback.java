@@ -1,9 +1,6 @@
 package net.robinfriedli.botify.audio;
 
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 
 import javax.annotation.Nullable;
 
@@ -18,6 +15,7 @@ import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.VoiceChannel;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.boot.SpringPropertiesConfig;
+import net.robinfriedli.botify.discord.DiscordEntity;
 
 /**
  * There is exactly one AudioPlayback per guild instantiated when initializing the guild. This class holds all information
@@ -25,13 +23,13 @@ import net.robinfriedli.botify.boot.SpringPropertiesConfig;
  */
 public class AudioPlayback {
 
-    private final Guild guild;
+    private final DiscordEntity.Guild guild;
     private final AudioPlayer audioPlayer;
     private final AudioQueue audioQueue;
     private final Logger logger;
-    private VoiceChannel voiceChannel;
-    private MessageChannel communicationChannel;
-    private Message lastPlaybackNotification;
+    private DiscordEntity.VoiceChannel voiceChannel;
+    private DiscordEntity.MessageChannel communicationChannel;
+    private DiscordEntity.Message lastPlaybackNotification;
     private QueueIterator currentQueueIterator;
 
     // time the bot has been alone in the voice channel since
@@ -39,7 +37,7 @@ public class AudioPlayback {
     private LocalDateTime aloneSince;
 
     public AudioPlayback(AudioPlayer player, Guild guild) {
-        this.guild = guild;
+        this.guild = new DiscordEntity.Guild(guild);
         audioPlayer = player;
         this.logger = LoggerFactory.getLogger(getClass());
         SpringPropertiesConfig springPropertiesConfig = Botify.get().getSpringPropertiesConfig();
@@ -70,7 +68,7 @@ public class AudioPlayback {
     }
 
     public Guild getGuild() {
-        return guild;
+        return guild.get();
     }
 
     public AudioPlayer getAudioPlayer() {
@@ -82,19 +80,35 @@ public class AudioPlayback {
     }
 
     public VoiceChannel getVoiceChannel() {
-        return voiceChannel;
+        if (voiceChannel != null) {
+            return voiceChannel.get();
+        } else {
+            return null;
+        }
     }
 
     public void setVoiceChannel(VoiceChannel voiceChannel) {
-        this.voiceChannel = voiceChannel;
+        if (voiceChannel != null) {
+            this.voiceChannel = new DiscordEntity.VoiceChannel(voiceChannel);
+        } else {
+            this.voiceChannel = null;
+        }
     }
 
     public MessageChannel getCommunicationChannel() {
-        return communicationChannel;
+        if (communicationChannel != null) {
+            return communicationChannel.get();
+        } else {
+            return null;
+        }
     }
 
     public void setCommunicationChannel(MessageChannel communicationChannel) {
-        this.communicationChannel = communicationChannel;
+        if (communicationChannel != null) {
+            this.communicationChannel = DiscordEntity.MessageChannel.createForMessageChannel(communicationChannel);
+        } else {
+            this.communicationChannel = null;
+        }
     }
 
     public boolean isRepeatOne() {
@@ -139,7 +153,7 @@ public class AudioPlayback {
     }
 
     public void leaveChannel() {
-        guild.getAudioManager().closeAudioConnection();
+        guild.get().getAudioManager().closeAudioConnection();
         voiceChannel = null;
     }
 
@@ -175,7 +189,7 @@ public class AudioPlayback {
             changedAnything = true;
         }
         if (voiceChannel != null) {
-            guild.getAudioManager().closeAudioConnection();
+            guild.get().getAudioManager().closeAudioConnection();
             voiceChannel = null;
             changedAnything = true;
         }
@@ -191,16 +205,27 @@ public class AudioPlayback {
 
     public void setLastPlaybackNotification(Message message) {
         if (lastPlaybackNotification != null) {
-            try {
-                lastPlaybackNotification.delete().queue();
-            } catch (Exception e) {
-                OffsetDateTime timeCreated = lastPlaybackNotification.getTimeCreated();
-                ZonedDateTime zonedDateTime = timeCreated.atZoneSameInstant(ZoneId.systemDefault());
-                logger.warn(String.format("Cannot delete playback notification message from %s for channel %s on guild %s",
-                    zonedDateTime, communicationChannel, guild), e);
+            MessageChannel messageChannel = lastPlaybackNotification.getChannel().retrieve();
+            if (messageChannel != null) {
+                try {
+                    messageChannel.deleteMessageById(lastPlaybackNotification.getId()).queue();
+                } catch (Exception e) {
+                    logger.warn(
+                        String.format(
+                            "Cannot delete playback notification message for channel %s on guild %s",
+                            message,
+                            guild.getId()
+                        ),
+                        e
+                    );
+                }
             }
         }
-        this.lastPlaybackNotification = message;
+        if (message != null) {
+            this.lastPlaybackNotification = new DiscordEntity.Message(message);
+        } else {
+            this.lastPlaybackNotification = null;
+        }
     }
 
     public QueueIterator getCurrentQueueIterator() {

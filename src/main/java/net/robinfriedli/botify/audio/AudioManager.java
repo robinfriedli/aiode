@@ -30,8 +30,9 @@ import net.robinfriedli.botify.audio.spotify.SpotifyService;
 import net.robinfriedli.botify.audio.youtube.YouTubeService;
 import net.robinfriedli.botify.boot.AbstractShutdownable;
 import net.robinfriedli.botify.boot.configurations.HibernateComponent;
-import net.robinfriedli.botify.command.widgets.NowPlayingWidget;
-import net.robinfriedli.botify.command.widgets.WidgetManager;
+import net.robinfriedli.botify.command.widget.WidgetRegistry;
+import net.robinfriedli.botify.command.widget.widgets.NowPlayingWidget;
+import net.robinfriedli.botify.concurrent.CompletableFutures;
 import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.concurrent.HistoryPool;
 import net.robinfriedli.botify.discord.GuildContext;
@@ -172,8 +173,9 @@ public class AudioManager extends AbstractShutdownable {
     }
 
     void createNowPlayingWidget(CompletableFuture<Message> futureMessage, AudioPlayback playback) {
-        WidgetManager widgetManager = guildManager.getContextForGuild(playback.getGuild()).getWidgetManager();
-        futureMessage.thenAccept(message -> widgetManager.registerWidget(new NowPlayingWidget(widgetManager, message)));
+        Guild guild = playback.getGuild();
+        WidgetRegistry widgetRegistry = guildManager.getContextForGuild(guild).getWidgetRegistry();
+        CompletableFutures.thenAccept(futureMessage, message -> new NowPlayingWidget(widgetRegistry, guild, message).initialise());
     }
 
     private void setChannel(AudioPlayback audioPlayback, VoiceChannel channel) {

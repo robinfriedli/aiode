@@ -4,6 +4,7 @@ import java.util.List;
 
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
+import net.robinfriedli.botify.command.PermissionTarget;
 import net.robinfriedli.stringlist.StringList;
 
 
@@ -12,18 +13,30 @@ import net.robinfriedli.stringlist.StringList;
  */
 public class ForbiddenCommandException extends UserException {
 
-    public ForbiddenCommandException(User user, String commandIdentifier, List<Role> roles) {
-        super(String.format("User %s is not allowed to use command %s. %s.",
-            user.getName(),
-            commandIdentifier,
-            roles.isEmpty()
-                ? "Only available to guild owner and administrator roles"
-                : "Requires any of these roles: " + StringList.create(roles, Role::getName).toSeparatedString(", ")));
+    public ForbiddenCommandException(User user, PermissionTarget permissionTarget, List<Role> roles) {
+        super(
+            String.format(
+                "User %s is not allowed to use %s %s. %s.",
+                user.getAsMention(),
+                permissionTarget.getPermissionTargetType().getName(),
+                permissionTarget.getFullPermissionTargetIdentifier(),
+                roles.isEmpty()
+                    ? "Only available to guild owner and administrator roles"
+                    : "Requires any of these roles: " + StringList.create(roles, Role::getName).toSeparatedString(", ")
+            )
+        );
     }
 
-    public ForbiddenCommandException(User user, String commandIdentifier, String availableTo) {
-        super(String.format("User %s is not allowed to use command %s. Only available to %s.",
-            user.getName(), commandIdentifier, availableTo));
+    public ForbiddenCommandException(User user, PermissionTarget permissionTarget, String availableTo) {
+        super(
+            String.format(
+                "User %s is not allowed to use %s %s. Only available to %s.",
+                user.getAsMention(),
+                permissionTarget.getPermissionTargetType().getName(),
+                permissionTarget.getFullPermissionTargetIdentifier(),
+                availableTo
+            )
+        );
     }
 
 }

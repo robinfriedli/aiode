@@ -24,7 +24,7 @@ public abstract class AbstractAdminCommand extends AbstractCommand {
     @Override
     public void doRun() throws Exception {
         if (!Botify.get().getSecurityManager().isAdmin(getContext().getUser())) {
-            throw new ForbiddenCommandException(getContext().getUser(), getIdentifier(), "administrator");
+            throw new ForbiddenCommandException(getContext().getUser(), getCommandContribution(), "administrator");
         }
 
         runAdmin();

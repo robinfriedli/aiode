@@ -1,14 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <commandInterceptors xmlns="commandInterceptorSpace">
-  <commandInterceptor order="1" implementation="net.robinfriedli.botify.command.interceptor.interceptors.SecurityInterceptor">
+  <commandInterceptor order="1" implementation="net.robinfriedli.botify.command.interceptor.interceptors.CommandParserInterceptor">
+    <interruptingException class="net.robinfriedli.botify.exceptions.CommandParseException"/>
+    <interruptingException class="net.robinfriedli.botify.exceptions.UnexpectedCommandSetupException"/>
+  </commandInterceptor>
+  <commandInterceptor order="2" implementation="net.robinfriedli.botify.command.interceptor.interceptors.SecurityInterceptor">
     <interruptingException class="net.robinfriedli.botify.exceptions.ForbiddenCommandException"/>
     <interruptingException class="net.robinfriedli.botify.exceptions.InvalidCommandException"/>
-  </commandInterceptor>
-  <commandInterceptor order="2" implementation="net.robinfriedli.botify.command.interceptor.interceptors.CommandParserInterceptor">
-    <interruptingException class="net.robinfriedli.botify.exceptions.CommandParseException"/>
+    <interruptingException class="java.lang.SecurityException"/>
   </commandInterceptor>
   <commandInterceptor order="3" implementation="net.robinfriedli.botify.command.interceptor.interceptors.CommandVerificationInterceptor">
     <interruptingException class="net.robinfriedli.botify.exceptions.InvalidCommandException"/>
+    <interruptingException class="net.robinfriedli.botify.exceptions.UnexpectedCommandSetupException"/>
   </commandInterceptor>
   <commandInterceptor order="4" implementation="net.robinfriedli.botify.command.interceptor.interceptors.HistoryInterceptor"/>
   <commandInterceptor order="5" implementation="net.robinfriedli.botify.command.interceptor.interceptors.CommandMonitoringInterceptor"/>

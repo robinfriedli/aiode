@@ -18,8 +18,8 @@ public abstract class GenericClassContribution<E> extends AbstractXmlElement {
     }
 
     @SuppressWarnings("unchecked")
-    public Class<E> getImplementationClass() {
-        Class<E> implementation;
+    public Class<? extends E> getImplementationClass() {
+        Class<? extends E> implementation;
         String className = getAttribute(defineClassAttribute()).getValue();
         try {
             implementation = (Class<E>) Class.forName(className);
@@ -34,7 +34,7 @@ public abstract class GenericClassContribution<E> extends AbstractXmlElement {
 
     @SuppressWarnings("unchecked")
     public E instantiate() {
-        Class<E> implementation = getImplementationClass();
+        Class<? extends E> implementation = getImplementationClass();
 
         Constructor<?>[] constructors = implementation.getConstructors();
         if (constructors.length == 0) {

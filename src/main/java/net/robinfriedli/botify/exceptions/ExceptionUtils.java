@@ -14,6 +14,7 @@ import net.robinfriedli.botify.command.Command;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.discord.MessageService;
+import org.codehaus.groovy.control.CompilationFailedException;
 
 public class ExceptionUtils {
 
@@ -35,7 +36,7 @@ public class ExceptionUtils {
     }
 
     public static void handleCommandException(Throwable e, Command command, Logger logger) {
-        if (e instanceof CommandFailure || e instanceof Abort) {
+        if (e instanceof CommandFailure) {
             return;
         }
 
@@ -94,9 +95,14 @@ public class ExceptionUtils {
             return;
         }
 
-        String message = e instanceof GoogleJsonResponseException
-            ? ((GoogleJsonResponseException) e).getDetails().getMessage()
-            : e.getMessage();
+        String message;
+        if (e instanceof GoogleJsonResponseException) {
+            message = ((GoogleJsonResponseException) e).getDetails().getMessage();
+        } else if (e instanceof CompilationFailedException) {
+            message = "```" + e.getMessage() + "```";
+        } else {
+            message = e.getMessage();
+        }
 
         String value = String.format("%s: %s", e.getClass().getSimpleName(), message);
 

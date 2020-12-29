@@ -6,6 +6,7 @@ import java.util.Set;
 import com.google.common.collect.ImmutableSet;
 import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.discord.GuildManager;
+import net.robinfriedli.botify.entities.CustomPermissionTarget;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.Preset;
 import net.robinfriedli.botify.entities.StoredScript;
@@ -18,7 +19,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class PartitionedQueryInterceptor implements QueryInterceptor {
 
-    private static final Set<Class<?>> PARTITIONED_TABLES = ImmutableSet.of(Playlist.class, Preset.class, StoredScript.class);
+    private static final Set<Class<?>> PARTITIONED_TABLES = ImmutableSet.of(
+        Playlist.class,
+        Preset.class,
+        StoredScript.class,
+        CustomPermissionTarget.class
+    );
 
     private final GuildManager guildManager;
     private final String guildId;

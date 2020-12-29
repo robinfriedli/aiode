@@ -25,7 +25,6 @@ import net.robinfriedli.botify.entities.Preset;
 import net.robinfriedli.botify.entities.StoredScript;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
-import net.robinfriedli.botify.exceptions.Abort;
 import net.robinfriedli.botify.exceptions.ExceptionUtils;
 import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
 import net.robinfriedli.jxp.api.JxpBackend;
@@ -124,7 +123,6 @@ public class CommandManager {
             } else {
                 interceptorChainWithoutScripting.intercept(command);
             }
-        } catch (Abort ignored) {
         } finally {
             command.getContext().closeSession();
         }
@@ -280,7 +278,7 @@ public class CommandManager {
     public CommandContribution getCommandContribution(String name) {
         return commandContributionContext.query(and(
             instanceOf(CommandContribution.class),
-            attribute("identifier").is(name)
+            attribute("identifier").fuzzyIs(name)
         ), CommandContribution.class).getOnlyResult();
     }
 

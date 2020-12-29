@@ -15,7 +15,7 @@ import net.dv8tion.jda.api.EmbedBuilder;
  * <p>
  * As of botify 1.4 the table class has been replaced by the usage of {@link EmbedBuilder}
  * <p>
- * See {@link Table2} to create tables for the EmbedBuilder (since v1.5.1)
+ * See {@link EmbedTable} to create tables for the EmbedBuilder (since v1.5.1)
  */
 public class Table {
 

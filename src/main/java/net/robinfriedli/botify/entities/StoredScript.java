@@ -38,6 +38,8 @@ public class StoredScript implements Serializable, SanitizedEntity {
     private String script;
     @Column(name = "guild_id")
     private long guildId;
+    @Column(name = "active", nullable = false)
+    private boolean active = true;
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(nullable = false, name = "script_usage_pk")
     private ScriptUsage scriptUsage;
@@ -83,29 +85,32 @@ public class StoredScript implements Serializable, SanitizedEntity {
 
             if (hasNoCountUnitForInterceptorUsage) {
                 int maxEntityCount = getMaxEntityCount(springPropertiesConfig);
-                CountUnit countUnit = new CountUnit(
-                    getClass(),
-                    this,
-                    session -> queryBuilderFactory.select(StoredScript.class, (from, cb) -> cb.count(from.get("pk")), Long.class)
-                        .where((cb, root, subQueryFactory) -> cb.or(
-                            cb.equal(
-                                root.get("scriptUsage"),
-                                subQueryFactory.createUncorrelatedSubQuery(StoredScript.ScriptUsage.class, "pk")
-                                    .where((cb1, root1) -> cb1.equal(root1.get("uniqueId"), "interceptor"))
-                                    .build(session)
-                            ),
-                            cb.equal(
-                                root.get("scriptUsage"),
-                                subQueryFactory.createUncorrelatedSubQuery(StoredScript.ScriptUsage.class, "pk")
-                                    .where((cb1, root1) -> cb1.equal(root1.get("uniqueId"), "finalizer"))
-                                    .build(session)
-                            )
-                        )),
-                    String.format("Maximum interceptor / finalizer count of %d reached", maxEntityCount),
-                    maxEntityCount
-                );
 
-                countUnits.add(countUnit);
+                if (maxEntityCount > 0) {
+                    CountUnit countUnit = new CountUnit(
+                        getClass(),
+                        this,
+                        session -> queryBuilderFactory.select(StoredScript.class, (from, cb) -> cb.count(from.get("pk")), Long.class)
+                            .where((cb, root, subQueryFactory) -> cb.or(
+                                cb.equal(
+                                    root.get("scriptUsage"),
+                                    subQueryFactory.createUncorrelatedSubQuery(StoredScript.ScriptUsage.class, "pk")
+                                        .where((cb1, root1) -> cb1.equal(root1.get("uniqueId"), "interceptor"))
+                                        .build(session)
+                                ),
+                                cb.equal(
+                                    root.get("scriptUsage"),
+                                    subQueryFactory.createUncorrelatedSubQuery(StoredScript.ScriptUsage.class, "pk")
+                                        .where((cb1, root1) -> cb1.equal(root1.get("uniqueId"), "finalizer"))
+                                        .build(session)
+                                )
+                            )),
+                        String.format("Maximum interceptor / finalizer count of %d reached", maxEntityCount),
+                        maxEntityCount
+                    );
+
+                    countUnits.add(countUnit);
+                }
             }
         } else {
             addDefaultCountUnit(countUnits, scriptUsageId, queryBuilderFactory, springPropertiesConfig);
@@ -121,21 +126,24 @@ public class StoredScript implements Serializable, SanitizedEntity {
 
         if (hasNoCountUnitForScriptUsageType) {
             int maxEntityCount = getMaxEntityCount(springPropertiesConfig);
-            CountUnit countUnit = new CountUnit(
-                getClass(),
-                this,
-                session -> queryBuilderFactory.select(StoredScript.class, (from, cb) -> cb.count(from.get("pk")), Long.class)
-                    .where((cb, root, subQueryFactory) -> cb.equal(
-                        root.get("scriptUsage"),
-                        subQueryFactory.createUncorrelatedSubQuery(StoredScript.ScriptUsage.class, "pk")
-                            .where((cb1, root1) -> cb1.equal(root1.get("uniqueId"), scriptUsageId))
-                            .build(session)
-                    )),
-                String.format("Maximum %s count of %s reached", scriptUsageId, maxEntityCount),
-                maxEntityCount
-            );
 
-            countUnits.add(countUnit);
+            if (maxEntityCount > 0) {
+                CountUnit countUnit = new CountUnit(
+                    getClass(),
+                    this,
+                    session -> queryBuilderFactory.select(StoredScript.class, (from, cb) -> cb.count(from.get("pk")), Long.class)
+                        .where((cb, root, subQueryFactory) -> cb.equal(
+                            root.get("scriptUsage"),
+                            subQueryFactory.createUncorrelatedSubQuery(StoredScript.ScriptUsage.class, "pk")
+                                .where((cb1, root1) -> cb1.equal(root1.get("uniqueId"), scriptUsageId))
+                                .build(session)
+                        )),
+                    String.format("Maximum %s count of %s reached", scriptUsageId, maxEntityCount),
+                    maxEntityCount
+                );
+
+                countUnits.add(countUnit);
+            }
         }
     }
 
@@ -176,10 +184,18 @@ public class StoredScript implements Serializable, SanitizedEntity {
         this.scriptUsage = scriptUsage;
     }
 
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
     public ScriptCommand asCommand(CommandManager commandManager, CommandContext context, String input) {
         CommandContribution scriptCommandContribution = commandManager.getCommandContribution("script");
 
-        String commandBody = String.format("\"%s\"", input.substring(identifier.length()).trim());
+        String commandBody = input.substring(identifier.length()).trim();
 
         ScriptCommand scriptCommand = (ScriptCommand) scriptCommandContribution.instantiate(commandManager, context, commandBody);
         scriptCommand.setScript(this);

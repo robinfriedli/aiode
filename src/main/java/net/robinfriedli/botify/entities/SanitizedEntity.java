@@ -1,7 +1,10 @@
 package net.robinfriedli.botify.entities;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import net.robinfriedli.botify.boot.SpringPropertiesConfig;
 import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
@@ -25,14 +28,24 @@ public interface SanitizedEntity {
     default void addCountUnit(List<CountUnit> countUnits, QueryBuilderFactory queryBuilderFactory, SpringPropertiesConfig springPropertiesConfig) {
         if (countUnits.stream().noneMatch(countUnit -> countUnit.getType().equals(getClass()))) {
             int maxEntityCount = getMaxEntityCount(springPropertiesConfig);
-            countUnits.add(new CountUnit(
-                getClass(),
-                this,
-                session -> queryBuilderFactory.select(getClass(), ((from, cb) -> cb.count(from.get("pk"))), Long.class),
-                String.format("Maximum %s count of %s reached", getClass().getSimpleName(), maxEntityCount),
-                maxEntityCount
-            ));
+            if (maxEntityCount > 0) {
+                countUnits.add(createCountUnit(maxEntityCount, queryBuilderFactory));
+            }
         }
+    }
+
+    default CountUnit createCountUnit(int maxEntityCount, QueryBuilderFactory queryBuilderFactory) {
+        return new CountUnit(
+            getClass(),
+            this,
+            session -> queryBuilderFactory.select(getClass(), ((from, cb) -> cb.count(from.get("pk"))), Long.class),
+            String.format("Maximum %s count of %s reached", getClass().getSimpleName(), maxEntityCount),
+            maxEntityCount
+        );
+    }
+
+    default Set<IdentifierFormattingRule> getIdentifierFormattingRules() {
+        return Collections.emptySet();
     }
 
 
@@ -74,6 +87,30 @@ public interface SanitizedEntity {
 
         public int getMaxEntityCount() {
             return maxEntityCount;
+        }
+    }
+
+    /**
+     * Defines a condition that is checked for the identifier when saving an instance of this entity. If the predicate
+     * fails the provided errorMessage is sent and the transaction fails, the errorMessage string receives the actual
+     * identifier as parameter for formatting.
+     */
+    class IdentifierFormattingRule {
+
+        private final String errorMessage;
+        private final Predicate<String> predicate;
+
+        public IdentifierFormattingRule(String errorMessage, Predicate<String> predicate) {
+            this.errorMessage = errorMessage;
+            this.predicate = predicate;
+        }
+
+        public String getErrorMessage() {
+            return errorMessage;
+        }
+
+        public Predicate<String> getPredicate() {
+            return predicate;
         }
     }
 

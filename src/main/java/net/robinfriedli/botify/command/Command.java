@@ -2,7 +2,7 @@ package net.robinfriedli.botify.command;
 
 import javax.annotation.Nullable;
 
-import net.robinfriedli.botify.command.widgets.AbstractWidgetAction;
+import net.robinfriedli.botify.command.widget.AbstractWidgetAction;
 import net.robinfriedli.botify.concurrent.CommandExecutionTask;
 import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
 
@@ -33,9 +33,12 @@ public interface Command {
     void onFailure();
 
     /**
-     * @return true to define a custom condition where is command is failed
+     * @return true to declare the command has failed, this is called after execution and can be used to mark the command
+     * as failed even if no exception has been thrown.
      */
     boolean isFailed();
+
+    void setFailed(boolean failed);
 
     /**
      * @return the {@link CommandContext} for this command execution
@@ -87,4 +90,23 @@ public interface Command {
      * the user
      */
     String display();
+
+    /**
+     * @return the permission target for this command used to check access permissions.
+     */
+    PermissionTarget getPermissionTarget();
+
+    /**
+     * Abort command execution, must be called before the command begins execution, commonly from a command interceptor,
+     * possibly a scripted interceptor.
+     *
+     * @return true if the command has already been aborted
+     */
+    boolean abort();
+
+    /**
+     * @return true if command execution has been aborted
+     */
+    boolean isAborted();
+
 }

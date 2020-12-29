@@ -31,13 +31,13 @@ public class CreatePermissionAccessConfigurationTask implements StartupTask {
             // find all guild specifications where no access configuration for the permission command exists
             List<GuildSpecification> guildSpecifications = session.createQuery("from " + GuildSpecification.class.getName()
                 + " as g where not exists(from " + AccessConfiguration.class.getName() + " as a"
-                + " where a.guildSpecification.pk = g.pk and a.commandIdentifier = 'permission')", GuildSpecification.class)
+                + " where a.guildSpecification.pk = g.pk and a.permissionIdentifier = 'permission')", GuildSpecification.class)
                 .getResultList();
 
             if (!guildSpecifications.isEmpty()) {
                 session.beginTransaction();
                 for (GuildSpecification guildSpecification : guildSpecifications) {
-                    AccessConfiguration accessConfiguration = new AccessConfiguration("permission");
+                    AccessConfiguration accessConfiguration = new AccessConfiguration("permission", session);
                     session.persist(accessConfiguration);
                     guildSpecification.addAccessConfiguration(accessConfiguration);
                 }

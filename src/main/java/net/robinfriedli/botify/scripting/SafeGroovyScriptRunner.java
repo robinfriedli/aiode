@@ -14,15 +14,17 @@ import java.util.concurrent.atomic.AtomicReference;
 import groovy.lang.GroovyShell;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.boot.ShutdownableExecutorService;
+import net.robinfriedli.botify.boot.configurations.GroovySandboxComponent;
 import net.robinfriedli.botify.command.CommandContext;
+import net.robinfriedli.botify.command.SecurityManager;
 import net.robinfriedli.botify.concurrent.ForkTaskTreadPool;
 import net.robinfriedli.botify.concurrent.LoggingThreadFactory;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.entities.StoredScript;
-import net.robinfriedli.botify.exceptions.Abort;
 import net.robinfriedli.botify.exceptions.CommandFailure;
 import net.robinfriedli.botify.exceptions.ExceptionUtils;
 import net.robinfriedli.threadpool.ThreadPool;
@@ -44,16 +46,29 @@ public class SafeGroovyScriptRunner {
     }
 
     private final CommandContext context;
-    private final GroovyShell groovyShell;
+    private final GroovySandboxComponent groovySandboxComponent;
+    private final GroovyVariableManager groovyVariableManager;
     private final GroovyWhitelistManager groovyWhitelistManager;
+    private final SecurityManager securityManager;
+    private final boolean isPrivileged;
 
-    public SafeGroovyScriptRunner(CommandContext context, GroovyShell groovyShell, GroovyWhitelistManager groovyWhitelistManager) {
+    public SafeGroovyScriptRunner(
+        CommandContext context,
+        GroovySandboxComponent groovySandboxComponent,
+        GroovyVariableManager groovyVariableManager,
+        SecurityManager securityManager,
+        boolean isPrivileged
+    ) {
         this.context = context;
-        this.groovyShell = groovyShell;
-        this.groovyWhitelistManager = groovyWhitelistManager;
+        this.groovySandboxComponent = groovySandboxComponent;
+        this.groovyWhitelistManager = groovySandboxComponent.getGroovyWhitelistManager();
+        this.groovyVariableManager = groovyVariableManager;
+        this.securityManager = securityManager;
+        this.isPrivileged = isPrivileged;
     }
 
     public void runScripts(List<StoredScript> scripts, AtomicReference<StoredScript> currentScript, long timeout, TimeUnit timeUnit) throws ExecutionException, TimeoutException {
+        GroovyShell groovyShell = createShell();
         Future<Object> result = scriptExecution(() -> {
             for (StoredScript script : scripts) {
                 currentScript.set(script);
@@ -66,6 +81,7 @@ public class SafeGroovyScriptRunner {
     }
 
     public Object runWithTimeLimit(String script, long timeout, TimeUnit timeUnit) throws ExecutionException, TimeoutException {
+        GroovyShell groovyShell = createShell();
         Future<Object> result = scriptExecution(() -> groovyShell.evaluate(script));
 
         return runScriptWithTimeout(result, timeout, timeUnit);
@@ -105,8 +121,6 @@ public class SafeGroovyScriptRunner {
             if (error instanceof SecurityException) {
                 messageService.sendError(error.getMessage(), channel);
                 throw new CommandFailure(error);
-            } else if (error instanceof Abort) {
-                throw (Abort) error;
             } else if (!(error instanceof CommandFailure)) {
                 EmbedBuilder embedBuilder = ExceptionUtils.buildErrorEmbed(error);
                 embedBuilder.setTitle("Error occurred while executing script");
@@ -128,7 +142,11 @@ public class SafeGroovyScriptRunner {
 
     private <T> T runScriptWithTimeout(Future<T> result, long timeout, TimeUnit timeUnit) throws ExecutionException, TimeoutException {
         try {
-            return result.get(timeout, timeUnit);
+            if (isPrivileged) {
+                return result.get();
+            } else {
+                return result.get(timeout, timeUnit);
+            }
         } catch (CancellationException e) {
             return null;
         } catch (InterruptedException e) {
@@ -138,6 +156,24 @@ public class SafeGroovyScriptRunner {
             result.cancel(true);
             throw new TimeoutException("Script execution timed out");
         }
+    }
+
+    private GroovyShell createShell() {
+        GroovyShell groovyShell;
+
+        if (isPrivileged) {
+            User user = context.getUser();
+            if (!securityManager.isAdmin(user)) {
+                throw new SecurityException(String.format("Cannot set up privileged shell for user %s, only allowed for admin users.", user.getAsMention()));
+            }
+            groovyShell = new GroovyShell(groovySandboxComponent.getPrivilegedCompilerConfiguration());
+        } else {
+            groovyShell = new GroovyShell(groovySandboxComponent.getCompilerConfiguration());
+        }
+
+        groovyVariableManager.prepareShell(groovyShell);
+
+        return groovyShell;
     }
 
 }

@@ -9,8 +9,10 @@ import org.slf4j.Logger;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import net.robinfriedli.botify.command.CommandContext;
+import net.robinfriedli.botify.command.PermissionTarget;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.AccessConfiguration;
+import net.robinfriedli.botify.entities.CustomPermissionTarget;
 import net.robinfriedli.botify.entities.GrantedRole;
 import org.hibernate.Interceptor;
 
@@ -31,6 +33,8 @@ public class AlertAccessConfigurationModificationInterceptor extends CollectingI
         List<AccessConfiguration> deletedAccessConfigurations = getDeletedEntities(AccessConfiguration.class);
         List<GrantedRole> createdGrantedRoles = getCreatedEntities(GrantedRole.class);
         List<GrantedRole> deletedGrantedRoles = getDeletedEntities(GrantedRole.class);
+        List<CustomPermissionTarget> createdPermissionTargets = getCreatedEntities(CustomPermissionTarget.class);
+        List<CustomPermissionTarget> deletedPermissionTargets = getDeletedEntities(CustomPermissionTarget.class);
 
         StringBuilder builder = new StringBuilder();
 
@@ -50,6 +54,14 @@ public class AlertAccessConfigurationModificationInterceptor extends CollectingI
             handleModifiedAccessConfiguration(deletedAccessConfigurations, deletedGrantedRoles, false, builder);
         }
 
+        if (!createdPermissionTargets.isEmpty()) {
+            alertPermissionTargetModification("Created", builder, createdPermissionTargets);
+        }
+
+        if (!deletedPermissionTargets.isEmpty()) {
+            alertPermissionTargetModification("Deleted", builder, deletedPermissionTargets);
+        }
+
         String s = builder.toString();
         String message = s.length() > 2000 ? "Adjusted access configurations" : s;
         if (!message.isEmpty()) {
@@ -60,20 +72,21 @@ public class AlertAccessConfigurationModificationInterceptor extends CollectingI
     private void handleCreatedAccessConfigurations(List<AccessConfiguration> createdAccessConfigurations,
                                                    List<GrantedRole> createdGrantedRoles,
                                                    StringBuilder builder) {
-        Set<String> grantedCommands = createdAccessConfigurations.stream()
-            .map(AccessConfiguration::getCommandIdentifier)
+        Set<String> grantedPermissions = createdAccessConfigurations.stream()
+            .map(AccessConfiguration::getPermissionIdentifier)
             .collect(Collectors.toSet());
         Set<String> grantedRoles = createdGrantedRoles.stream()
             .map(role -> role.getRole(context.getGuild()).getName())
             .collect(Collectors.toSet());
 
-        String commandString = String.join(", ", grantedCommands);
+        String permissionString = String.join(", ", grantedPermissions);
         String roleString = String.join(", ", grantedRoles);
+        String prefix = getPermissionTypePrefix(createdAccessConfigurations, true);
 
         if (createdAccessConfigurations.size() == 1) {
-            builder.append("Command '").append(commandString).append("' is now limited to ");
+            builder.append(prefix).append(" '").append(permissionString).append("' is now limited to ");
         } else {
-            builder.append("Commands [").append(commandString).append("] are now limited to ");
+            builder.append(prefix).append("s [").append(permissionString).append("] are now limited to ");
         }
 
         if (grantedRoles.size() == 1) {
@@ -90,17 +103,20 @@ public class AlertAccessConfigurationModificationInterceptor extends CollectingI
             builder.append(System.lineSeparator());
         }
 
+        String prefix = getPermissionTypePrefix(deletedAccessConfigurations, true);
+
         Set<String> clearedCommands = deletedAccessConfigurations.stream()
-            .map(AccessConfiguration::getCommandIdentifier)
+            .map(AccessConfiguration::getPermissionIdentifier)
             .collect(Collectors.toSet());
         String commandString = String.join(", ", clearedCommands);
 
         if (deletedAccessConfigurations.size() == 1) {
-            builder.append("Command '").append(commandString).append("'");
+            builder.append(prefix).append(" '").append(commandString).append("'");
         } else {
-            builder.append("Commands [").append(commandString).append("]");
+            builder.append(prefix).append("s [").append(commandString).append("]");
         }
-        builder.append(" can now be used by everyone");
+
+        builder.append(" can now be accessed by everyone");
     }
 
     private void handleModifiedAccessConfiguration(List<AccessConfiguration> affectedAccessConfigurations,
@@ -123,9 +139,9 @@ public class AlertAccessConfigurationModificationInterceptor extends CollectingI
                     .collect(Collectors.toSet());
                 String roleString = String.join(", ", grantedRoles);
                 if (grantedRoles.size() == 1) {
-                    builder.append("Role '").append(roleString).append("' is");
+                    builder.append("Role '").append(roleString).append("'");
                 } else {
-                    builder.append("Roles [").append(roleString).append("] are");
+                    builder.append("Roles [").append(roleString).append("]");
                 }
 
                 if (added) {
@@ -133,9 +149,66 @@ public class AlertAccessConfigurationModificationInterceptor extends CollectingI
                 } else {
                     builder.append(" no longer ");
                 }
-                builder.append("allowed to use command '").append(accessConfiguration.getCommandIdentifier()).append("'");
+
+                builder.append(grantedRoles.size() == 1 ? "has " : "have ")
+                    .append("access to ")
+                    .append(accessConfiguration.getPermissionType().asEnum().getName())
+                    .append(" '")
+                    .append(accessConfiguration.getPermissionIdentifier())
+                    .append("'");
             }
         }
+    }
+
+    private void alertPermissionTargetModification(String verb, StringBuilder builder, List<CustomPermissionTarget> affectedEntities) {
+        if (!affectedEntities.isEmpty()) {
+            if (!builder.toString().isEmpty()) {
+                builder.append(System.lineSeparator());
+            }
+
+            if (affectedEntities.size() == 1) {
+                CustomPermissionTarget permissionTarget = affectedEntities.get(0);
+                builder.append(String.format("%s permission target '%s'", verb, permissionTarget.getFullPermissionTargetIdentifier()));
+            } else {
+                builder.append(String.format("%s %d permission targets", verb, affectedEntities.size()));
+            }
+        }
+    }
+
+    private String getPermissionTypePrefix(List<AccessConfiguration> accessConfigurations, boolean capitalize) {
+        boolean allOfSameType = true;
+        PermissionTarget.TargetType type = null;
+        for (AccessConfiguration deletedAccessConfiguration : accessConfigurations) {
+            PermissionTarget.TargetType targetType = deletedAccessConfiguration.getPermissionType().asEnum();
+            if (type != null && targetType != type) {
+                allOfSameType = false;
+                break;
+            } else if (type == null) {
+                type = targetType;
+            }
+        }
+
+        String prefix;
+        if (allOfSameType) {
+            // type is not null since deletedAccessConfigurations is not empty
+            //noinspection ConstantConditions
+            String typeName = type.getName();
+            if (capitalize) {
+                if (typeName.length() > 1) {
+                    prefix = typeName.substring(0, 1).toUpperCase() + typeName.substring(1);
+                } else {
+                    prefix = typeName.toUpperCase();
+                }
+            } else {
+                prefix = typeName;
+            }
+        } else if (capitalize) {
+            prefix = "Permission";
+        } else {
+            prefix = "permission";
+        }
+
+        return prefix;
     }
 
 }

@@ -34,8 +34,8 @@ import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 import net.robinfriedli.botify.exceptions.NoSpotifyResultsFoundException;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
+import net.robinfriedli.botify.util.EmbedTable;
 import net.robinfriedli.botify.util.SearchEngine;
-import net.robinfriedli.botify.util.Table2;
 import net.robinfriedli.botify.util.Util;
 import net.robinfriedli.stringlist.StringList;
 import org.hibernate.Session;
@@ -176,7 +176,7 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
             if (playlists.isEmpty()) {
                 embedBuilder.setDescription("No playlists");
             } else {
-                Table2 table = new Table2(embedBuilder);
+                EmbedTable table = new EmbedTable(embedBuilder);
                 table.addColumn("Playlist", playlists, Playlist::getName);
                 table.addColumn("Duration", playlists, playlist -> Util.normalizeMillis(playlist.getDuration()));
                 table.addColumn("Items", playlists, playlist -> String.valueOf(playlist.getSize()));

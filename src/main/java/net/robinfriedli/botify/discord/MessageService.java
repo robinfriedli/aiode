@@ -108,27 +108,23 @@ public class MessageService {
     }
 
     public CompletableFuture<Message> send(EmbedBuilder embedBuilder, MessageChannel channel) {
-        embedBuilder.setColor(ColorSchemeProperty.getColor());
-        return send(embedBuilder.build(), channel);
+        return send(buildEmbed(embedBuilder), channel);
     }
 
     public CompletableFuture<Message> send(EmbedBuilder embedBuilder, Guild guild) {
-        embedBuilder.setColor(ColorSchemeProperty.getColor());
-        return send(embedBuilder.build(), guild);
+        return send(buildEmbed(embedBuilder), guild);
     }
 
     public CompletableFuture<Message> sendWithLogo(EmbedBuilder embedBuilder, MessageChannel channel) {
         String baseUri = springPropertiesConfig.requireApplicationProperty("botify.server.base_uri");
         embedBuilder.setThumbnail(baseUri + "/resources-public/img/botify-logo.png");
-        embedBuilder.setColor(ColorSchemeProperty.getColor());
-        return send(embedBuilder.build(), channel);
+        return send(buildEmbed(embedBuilder), channel);
     }
 
     public CompletableFuture<Message> sendWithLogo(EmbedBuilder embedBuilder, Guild guild) {
         String baseUri = springPropertiesConfig.requireApplicationProperty("botify.server.base_uri");
         embedBuilder.setThumbnail(baseUri + "/resources-public/img/botify-logo.png");
-        embedBuilder.setColor(ColorSchemeProperty.getColor());
-        return send(embedBuilder.build(), guild);
+        return send(buildEmbed(embedBuilder), guild);
     }
 
     public CompletableFuture<Message> send(MessageBuilder messageBuilder, InputStream file, String fileName, MessageChannel messageChannel) {
@@ -346,6 +342,11 @@ public class MessageService {
         } else {
             return executeMessageAction(textChannel, function);
         }
+    }
+
+    public MessageEmbed buildEmbed(EmbedBuilder embedBuilder) {
+        embedBuilder.setColor(ColorSchemeProperty.getColor());
+        return embedBuilder.build();
     }
 
     private CompletableFuture<Message> executeForUser(User user, Function<PrivateChannel, CompletableFuture<Message>> action) {

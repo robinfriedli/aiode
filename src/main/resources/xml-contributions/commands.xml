@@ -232,11 +232,17 @@
       <excludes argument="to"/>
       <requires argument="deny"/>
     </argument>
-    <argument identifier="grant" requiresInput="true" description="Grant the selected commands to the selected roles. Limits the command to the selected roles if no roles were previously defined.">
+    <argument identifier="grant" description="Grant the selected commands or other permission targets to the selected roles. Limits the command to the selected roles if no roles were previously defined.">
       <excludes argument="deny"/>
+      <rule errorMessage="No commands selected! Either select commands (comma separated) or use the %2$sall or %2$scategory arguments">
+        !command.getCommandInput().isBlank() || command.argumentSet("all") || command.argumentSet("category")
+      </rule>
     </argument>
-    <argument identifier="deny" requiresInput="true" description="Denies a role from using a command that has previously been added as a granted role">
+    <argument identifier="deny" description="Denies a role from using a command or other permission target that has previously been added as a granted role">
       <excludes argument="grant"/>
+      <rule errorMessage="No commands selected! Either select commands (comma separated) or use the %2$sall or %2$scategory arguments">
+        !command.getCommandInput().isBlank() || command.argumentSet("all") || command.argumentSet("category")
+      </rule>
     </argument>
     <argument identifier="clear" description="Clear all restrictions for a command to make it available for everyone.">
       <excludes argument="grant"/>
@@ -244,10 +250,6 @@
       <rule errorMessage="No commands selected! Either select commands (comma separated) or use the %2$sall or %2$scategory arguments">
         !command.getCommandInput().isBlank() || command.argumentSet("all") || command.argumentSet("category")
       </rule>
-    </argument>
-    <argument identifier="category" requiresInput="true" description="Manage a category of commands. Use the help command to show all categories."/>
-    <argument identifier="all" description="Manage all commands at once. The inline arguments %2$sto and %2$sfor are not required with this argument.">
-      <excludes argument="category"/>
     </argument>
     <argument identifier="lock" description="Make the selected commands available only to the guild owner and administrator roles.">
       <excludes argument="grant"/>
@@ -257,18 +259,66 @@
         !command.getCommandInput().isBlank() || command.argumentSet("all") || command.argumentSet("category")
       </rule>
     </argument>
-    <example title="Add playbackmanager to the roles that can use command play">%1$spermission %2$sgrant play %2$sto
-      playbackmanager
-    </example>
-    <example title="Remove playbackmanager from the roles that can use command add">%1$spermission %2$sdeny add %2$sfor
-      playbackmanager
-    </example>
+    <argument identifier="category" description="Manage a category of commands. Use the help command to show all categories.">
+      <rule errorMessage="Argument 'category' only applies when granting or denying permissions using the grant, deny, clear or lock arguments.">
+        command.argumentSet("grant") ||
+        command.argumentSet("deny") ||
+        command.argumentSet("clear") ||
+        command.argumentSet("lock")
+      </rule>
+    </argument>
+    <argument identifier="all" description="Manage all commands at once. The inline arguments %2$sto and %2$sfor are not required with this argument.">
+      <excludes argument="category"/>
+      <rule errorMessage="Argument 'all' only applies when granting or denying permissions using the grant, deny, clear or lock arguments.">
+        command.argumentSet("grant") ||
+        command.argumentSet("deny") ||
+        command.argumentSet("clear") ||
+        command.argumentSet("lock")
+      </rule>
+    </argument>
+    <argument identifier="create" requiresInput="true" description="Create a new custom permission target that can be granted to roles and checked in scripts using `securityManager.askPermission('myperm', member)`.">
+      <excludes argument="grant"/>
+      <excludes argument="deny"/>
+      <excludes argument="clear"/>
+      <excludes argument="category"/>
+      <excludes argument="lock"/>
+    </argument>
+    <argument identifier="delete" requiresInput="true" description="Delete a custom permission target.">
+      <excludes argument="grant"/>
+      <excludes argument="deny"/>
+      <excludes argument="clear"/>
+      <excludes argument="category"/>
+      <excludes argument="lock"/>
+      <excludes argument="create"/>
+    </argument>
+    <argument identifier="argument" description="Manage permissions for a specific argument of a command or all selected commands. If no value is provided this manages all arguments of all selected commands.">
+      <excludes argument="create"/>
+      <excludes argument="delete"/>
+      <rule errorMessage="Argument 'argument' only applies when granting or denying permissions using the grant, deny, clear or lock arguments.">
+        command.argumentSet("grant") ||
+        command.argumentSet("deny") ||
+        command.argumentSet("clear") ||
+        command.argumentSet("lock")
+      </rule>
+    </argument>
+    <argument identifier="targets" description="Show all possible permissions that may be granted to roles. Includes all commands and custom targets.">
+      <excludes argument="grant"/>
+      <excludes argument="deny"/>
+      <excludes argument="clear"/>
+      <excludes argument="lock"/>
+      <excludes argument="create"/>
+      <excludes argument="delete"/>
+      <excludes argument="argument"/>
+    </argument>
+    <example title="Add playbackmanager to the roles that can use command play">%1$spermission %2$sgrant play %2$sto playbackmanager</example>
+    <example title="Remove playbackmanager from the roles that can use command add">%1$spermission %2$sdeny add %2$sfor playbackmanager</example>
     <example title="Clear all restrictions for command shuffle">%1$spermission %2$sclear shuffle</example>
-    <example title="grant all commands to the manager role">%1$spermission %2$sgrant %2$sall manager</example>
-    <example title="grant all commands in the playback category to role playbackmanager">%1$spermission %2$sgrant %2$scategory
-      playback %2$sto playbackmanager
-    </example>
-    <example title="make command add available to guild owner only">%1$spermission %2$slock add</example>
+    <example title="Grant all commands to the manager role">%1$spermission %2$sgrant %2$sall manager</example>
+    <example title="Grant all commands in the playback category to role playbackmanager">%1$spermission %2$sgrant %2$scategory playback %2$sto playbackmanager</example>
+    <example title="Make command add available to guild owner only">%1$spermission %2$slock add</example>
+    <example title="Grant arguments 'list' and 'spotify' of commands 'add' and 'play' to role 'manager'">%1$spermission %2$sgrant add, play %2$sargument list, spotify %2$sto manager</example>
+    <example title="Deny role 'rookie' from using any arguments of command 'preset'">%1$spermission %2$sdeny preset %2$sargument %2$sfor rookie</example>
+    <example title="Grant all arguments to role 'manager'">%1$spermission %2$sgrant %2$scategory command %2$sargument %2$sto manager</example>
   </command>
   <command identifier="logout"
            implementation="net.robinfriedli.botify.command.commands.spotify.LogoutCommand"
@@ -418,6 +468,9 @@
            category="SCRIPTING"
            restrictedAccess="true"
            description="Evaluate a groovy script. This command simply executes a groovy script and, if not null, prints the result.">
+    <argument identifier="privileged" description="Disables the security sandbox when compiling this script. May only be used by bot admins to store and run scripts that use non-whitelisted functions.">
+      <rule errorMessage="Argument 'privileged' may only be used by bot admins.">securityManager.isAdmin(user)</rule>
+    </argument>
     <example title="Provided variables:">
 ```css
 #context
@@ -534,6 +587,12 @@ if (i %% 33 == 0) {
     <argument identifier="invoke" requiresValue="true" description="Specify the identifier of the script you want to execute. Note that scripts can be run directly like normal commands or presets, thus '%1$smyscript myinput' is equivalent to '%1$sscript %2$sinvoke=&quot;myscript&quot;' myinput.">
       <excludes argument="delete"/>
       <excludes argument="identifier"/>
+      <excludes argument="activate"/>
+      <excludes argument="deactivate"/>
+    </argument>
+    <argument identifier="privileged" description="Disables the security sandbox when compiling this script. May only be used by bot admins to store and run scripts that use non-whitelisted functions.">
+      <rule errorMessage="Argument 'privileged' may only be used by bot admins.">securityManager.isAdmin(user)</rule>
+      <rule errorMessage="Argument 'privileged' may only be used when invoking a script or compiling a new script.">command.argumentSet("invoke") || (command.argumentSet("identifier") &amp;&amp; !command.getCommandInput().isBlank()) || command.script != null</rule>
     </argument>
     <example title="Create a script that adds a reaction to the command message, searches the album 'Meteora' and plays the first result">
 ```groovy
@@ -556,7 +615,7 @@ if (queue.isEmpty()) {
   return null
 }
 def target = input.toLowerCase()
-while (queue.getCurrent().getTitle().toLowerCase() != target) {
+while (queue.getCurrent().title().toLowerCase() != target) {
   if (!queue.hasNext(true)) {
     messages.sendError(String.format('Could not find %%s in upcoming tracks', input), channel)
     break
@@ -569,6 +628,7 @@ command.run('play')"
     <example title="Show script 'meteora'">%1$sscript meteora</example>
     <example title="List all scripts">%1$sscript</example>
     <example title="Delete script 'meteora'">%1$sscript %2$sdelete meteora</example>
+    <example title="Run script 'myscript' with input 'myinput' using a custom dynamic argument 'myarg'.">%1$smyscript %2$smyarg myinput</example>
     <example title="Run script 'skipTo' with input 'Numb'; this is equivalent to typing '%1$sskipTo Numb'">%1$sscript %2$sinvoke="skipTo" Numb</example>
   </command>
   <command identifier="finalizer"
@@ -720,11 +780,19 @@ command.run('play')"
     </argument>
   </abstractCommand>
   <abstractCommand class="net.robinfriedli.botify.command.commands.scripting.AbstractScriptCommand">
-    <argument identifier="delete" requiresInput="true" description="Specify a script / interceptor identifier to delete">
-      <excludes argument="identifier"/>
+    <argument identifier="delete" description="Specify a script / interceptor identifier to delete">
+      <rule errorMessage="Target script to delete must be specified either as command input or using the identifier argument">!command.getCommandInput().isBlank() || command.argumentSet("identifier")</rule>
     </argument>
-    <argument identifier="identifier" requiresValue="true" description="Define the name of the script / interceptor when creating a new script. E.g. '%2$sidentifier=&quot;myscript&quot;'">
+    <argument identifier="identifier" requiresValue="true" description="Define the name of the script / interceptor when creating a new script. E.g. '%2$sidentifier=&quot;myscript&quot;'. Optionally can also be used to specify the target script instead of the command input when deleting / activating / deactivating a script."/>
+    <argument identifier="activate" description="Active a deactivated script / interceptor / finalizer. Deactivated scripts can not be executed and deactivated interceptors / finalizers are ignored when running commands.">
       <excludes argument="delete"/>
+      <excludes argument="deactivate"/>
+      <rule errorMessage="Target script to activate must be specified either as command input or using the identifier argument">!command.getCommandInput().isBlank() || command.argumentSet("identifier")</rule>
+    </argument>
+    <argument identifier="deactivate" description="Deactivate an active script / interceptor / finalizer. Deactivated scripts can not be executed and deactivated interceptors / finalizers are ignored when running commands.">
+      <excludes argument="delete"/>
+      <excludes argument="activate"/>
+      <rule errorMessage="Target script to deactivate must be specified either as command input or using the identifier argument">!command.getCommandInput().isBlank() || command.argumentSet("identifier")</rule>
     </argument>
   </abstractCommand>
   <abstractCommand class="net.robinfriedli.botify.command.AbstractCommand">

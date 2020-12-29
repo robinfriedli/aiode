@@ -20,9 +20,7 @@ import com.google.common.collect.Sets;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.wrapper.spotify.SpotifyApi;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.sharding.ShardManager;
@@ -40,13 +38,13 @@ import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.PlaybackHistory;
 import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.PlaylistItem;
+import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.entities.xml.EmbedDocumentContribution;
 import net.robinfriedli.botify.function.HibernateInvoker;
 import net.robinfriedli.botify.persist.interceptors.InterceptorChain;
 import net.robinfriedli.botify.persist.interceptors.PlaylistItemTimestampInterceptor;
 import net.robinfriedli.botify.persist.interceptors.VerifyPlaylistInterceptor;
 import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
-import net.robinfriedli.botify.persist.qb.interceptor.interceptors.AccessConfigurationPartitionInterceptor;
 import net.robinfriedli.botify.persist.tasks.HibernatePlaylistMigrator;
 import net.robinfriedli.botify.util.SearchEngine;
 import net.robinfriedli.botify.util.SnowflakeMap;
@@ -119,30 +117,6 @@ public class GuildManager {
     @Nullable
     public String getPrefixForGuild(Guild guild) {
         return getContextForGuild(guild).getPrefix();
-    }
-
-    public boolean checkAccess(String commandIdentifier, Member member) {
-        if (member.isOwner()) {
-            return true;
-        }
-
-        if (member.getRoles().stream().anyMatch(role -> role.hasPermission(Permission.ADMINISTRATOR))) {
-            return true;
-        }
-
-        AccessConfiguration accessConfiguration = getAccessConfiguration(commandIdentifier, member.getGuild());
-        return accessConfiguration == null || accessConfiguration.canAccess(member);
-    }
-
-    @Nullable
-    public AccessConfiguration getAccessConfiguration(String commandIdentifier, Guild guild) {
-        return hibernateComponent.invokeWithSession(session -> queryBuilderFactory.find(AccessConfiguration.class)
-            .where((cb, root, subQueryFactory) -> cb.equal(root.get("commandIdentifier"), commandIdentifier))
-            .addInterceptors(new AccessConfigurationPartitionInterceptor(session, guild.getId()))
-            .build(session)
-            .setCacheable(true)
-            .uniqueResultOptional()
-            .orElse(null));
     }
 
     public GuildContext getContextForGuild(Guild guild) {
@@ -250,11 +224,10 @@ public class GuildManager {
             } else {
                 GuildSpecification newSpecification = new GuildSpecification(guild);
                 commandManager.getCommandContributionContext()
-                    .query(attribute("restrictedAccess").is(true))
+                    .query(attribute("restrictedAccess").is(true), CommandContribution.class)
                     .getResultStream()
-                    .map(elem -> elem.getAttribute("identifier").getValue())
-                    .forEach(restrictedCommandIdentifier -> {
-                        AccessConfiguration permissionConfiguration = new AccessConfiguration(restrictedCommandIdentifier);
+                    .forEach(restrictedCommand -> {
+                        AccessConfiguration permissionConfiguration = new AccessConfiguration(restrictedCommand, session);
                         session.persist(permissionConfiguration);
                         newSpecification.addAccessConfiguration(permissionConfiguration);
                     });

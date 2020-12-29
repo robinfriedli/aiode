@@ -27,6 +27,7 @@ import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.boot.configurations.SpotifyComponent;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.command.SecurityManager;
+import net.robinfriedli.botify.command.widget.WidgetManager;
 import net.robinfriedli.botify.concurrent.CommandExecutionQueueManager;
 import net.robinfriedli.botify.cron.CronJobService;
 import net.robinfriedli.botify.discord.GuildManager;
@@ -78,6 +79,7 @@ public class Botify {
     private final SpotifyComponent spotifyComponent;
     private final SpringPropertiesConfig springPropertiesConfig;
     private final VersionManager versionManager;
+    private final WidgetManager widgetManager;
 
     public Botify(AudioManager audioManager,
                   CommandExecutionQueueManager executionQueueManager,
@@ -100,6 +102,7 @@ public class Botify {
                   SpotifyComponent spotifyComponent,
                   SpringPropertiesConfig springPropertiesConfig,
                   VersionManager versionManager,
+                  WidgetManager widgetManager,
                   ListenerAdapter... listeners) {
         this.audioManager = audioManager;
         this.executionQueueManager = executionQueueManager;
@@ -122,6 +125,7 @@ public class Botify {
         this.spotifyComponent = spotifyComponent;
         this.springPropertiesConfig = springPropertiesConfig;
         this.versionManager = versionManager;
+        this.widgetManager = widgetManager;
         this.registeredListeners = listeners;
         instance = this;
     }
@@ -323,5 +327,9 @@ public class Botify {
 
     public VersionManager getVersionManager() {
         return versionManager;
+    }
+
+    public WidgetManager getWidgetManager() {
+        return widgetManager;
     }
 }

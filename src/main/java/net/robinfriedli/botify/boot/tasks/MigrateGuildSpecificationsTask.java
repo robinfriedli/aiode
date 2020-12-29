@@ -105,7 +105,7 @@ public class MigrateGuildSpecificationsTask implements StartupTask {
             List<XmlElement> accessConfigurations = specification.query(tagName("accessConfiguration")).collect();
             for (XmlElement accessConfiguration : accessConfigurations) {
                 String commandIdentifier = accessConfiguration.getAttribute("commandIdentifier").getValue();
-                AccessConfiguration ac = new AccessConfiguration(commandIdentifier);
+                AccessConfiguration ac = new AccessConfiguration(commandIdentifier, session);
                 String roleIdString = accessConfiguration.getAttribute("roleIds").getValue();
                 Iterable<String> roleIds = splitter.split(roleIdString);
 

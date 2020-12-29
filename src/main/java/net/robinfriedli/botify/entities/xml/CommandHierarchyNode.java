@@ -1,32 +1,41 @@
 package net.robinfriedli.botify.entities.xml;
 
-import java.util.Set;
+import java.util.Map;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
+import org.apache.commons.collections4.map.CaseInsensitiveMap;
+
 import net.robinfriedli.botify.command.AbstractCommand;
+import net.robinfriedli.botify.command.argument.ArgumentContributionDelegate;
 import net.robinfriedli.jxp.collections.NodeList;
 import net.robinfriedli.jxp.persist.Context;
-import net.robinfriedli.jxp.queries.Query;
 import org.w3c.dom.Element;
 
 import static net.robinfriedli.jxp.queries.Conditions.*;
 
-public abstract class CommandHierarchyNode extends GenericClassContribution<AbstractCommand> {
+public abstract class CommandHierarchyNode<T extends ArgumentContributionDelegate> extends GenericClassContribution<AbstractCommand> {
 
-    private Set<ArgumentContribution> argumentContributions;
+    private final Object setupLock = new Object();
+
+    private Map<String, T> argumentContributions;
 
     public CommandHierarchyNode(Element element, NodeList subElements, Context context) {
         super(element, subElements, context);
     }
 
-    public Set<ArgumentContribution> getArguments() {
+    public Map<String, T> getArguments() {
         if (argumentContributions == null) {
-            Set<ArgumentContribution> argumentContributions = Sets.newHashSet();
-            collectArgumentsForSuperClass(getImplementationClass().getSuperclass(), argumentContributions, getContext());
-            addArgumentsFromNode(this, argumentContributions);
-            this.argumentContributions = argumentContributions;
-            return argumentContributions;
+            synchronized (setupLock) {
+                // recheck after acquiring lock
+                if (argumentContributions != null) {
+                    return argumentContributions;
+                }
+
+                Map<String, T> argumentContributions = new CaseInsensitiveMap<>();
+                collectArgumentsForSuperClass(getImplementationClass().getSuperclass(), argumentContributions, getContext());
+                addArgumentsFromNode(this, argumentContributions);
+                this.argumentContributions = argumentContributions;
+                return argumentContributions;
+            }
         }
 
         return argumentContributions;
@@ -38,38 +47,42 @@ public abstract class CommandHierarchyNode extends GenericClassContribution<Abst
      * @param argument argument identifier
      * @return the argument defined on this or a CommandHierarchyNode defined for a super class or null
      */
-    public ArgumentContribution getArgument(String argument) {
-        return Query.evaluate(attribute("identifier").fuzzyIs(argument)).execute(Lists.newArrayList(getArguments()), ArgumentContribution.class).getOnlyResult();
+    public T getArgument(String argument) {
+        return argumentContributions.get(argument);
     }
 
-    private void collectArgumentsForSuperClass(Class<? super AbstractCommand> superclass, Set<ArgumentContribution> set, Context context) {
+    protected abstract T transformArgumentContribution(ArgumentContribution argumentContribution);
+
+    private void collectArgumentsForSuperClass(Class<?> superclass, Map<String, T> map, Context context) {
         if (superclass == null) {
             return;
         }
 
-        collectArgumentsForSuperClass(superclass.getSuperclass(), set, context);
+        collectArgumentsForSuperClass(superclass.getSuperclass(), map, context);
 
-        CommandHierarchyNode commandHierarchyNode = context.query(and(
+        CommandHierarchyNode<?> commandHierarchyNode = context.query(and(
             instanceOf(CommandHierarchyNode.class),
             xmlElement -> {
-                String classAttribute = ((CommandHierarchyNode) xmlElement).defineClassAttribute();
+                String classAttribute = ((CommandHierarchyNode<?>) xmlElement).defineClassAttribute();
                 return attribute(classAttribute).is(superclass.getName()).test(xmlElement);
             }
         ), CommandHierarchyNode.class).getOnlyResult();
 
         if (commandHierarchyNode != null) {
-            addArgumentsFromNode(commandHierarchyNode, set);
+            addArgumentsFromNode(commandHierarchyNode, map);
         }
     }
 
-    private void addArgumentsFromNode(CommandHierarchyNode node, Set<ArgumentContribution> set) {
-        set.addAll(node.getInstancesOf(ArgumentContribution.class));
+    private void addArgumentsFromNode(CommandHierarchyNode<?> node, Map<String, T> map) {
+        for (ArgumentContribution argumentContribution : node.getInstancesOf(ArgumentContribution.class)) {
+            map.put(argumentContribution.getIdentifier(), transformArgumentContribution(argumentContribution));
+        }
         node.query(tagName("removeArgument"))
             .getResultStream()
             .forEach(removeArgument -> {
                 String removeArgumentIdentifier = removeArgument.getAttribute("identifier").getValue();
-                boolean removed = set.removeIf(argument -> removeArgumentIdentifier.equals(argument.getIdentifier()));
-                if (!removed) {
+                T removed = map.remove(removeArgumentIdentifier);
+                if (removed == null) {
                     throw new IllegalStateException(
                         String.format(
                             "Could not remove argument '%s'. Either no such argument exists or it has already been removed further up in the hierarchy.",

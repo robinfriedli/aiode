@@ -1,16 +1,22 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <widgets xmlns="widgetSpace">
-  <widget implementation="net.robinfriedli.botify.command.widgets.NowPlayingWidget">
-    <widgetAction identifier="rewind" emojiUnicode="⏮" resetRequired="true" implementation="net.robinfriedli.botify.command.widgets.actions.RewindAction"/>
-    <widgetAction identifier="play" emojiUnicode="⏯" resetRequired="false" implementation="net.robinfriedli.botify.command.widgets.actions.PlayPauseAction"/>
-    <widgetAction identifier="skip" emojiUnicode="⏭" resetRequired="true" implementation="net.robinfriedli.botify.command.widgets.actions.SkipAction"/>
+  <widget implementation="net.robinfriedli.botify.command.widget.widgets.NowPlayingWidget">
+    <widgetAction identifier="rewind" emojiUnicode="⏮" resetRequired="true" implementation="net.robinfriedli.botify.command.widget.actions.RewindAction"/>
+    <widgetAction identifier="play" emojiUnicode="⏯" resetRequired="false" implementation="net.robinfriedli.botify.command.widget.actions.PlayPauseAction"/>
+    <widgetAction identifier="skip" emojiUnicode="⏭" resetRequired="true" implementation="net.robinfriedli.botify.command.widget.actions.SkipAction"/>
   </widget>
-  <widget implementation="net.robinfriedli.botify.command.widgets.QueueWidget">
-    <widgetAction identifier="shuffle" emojiUnicode="🔀" resetRequired="true" implementation="net.robinfriedli.botify.command.widgets.actions.ShuffleAction"/>
-    <widgetAction identifier="rewind" emojiUnicode="⏮" resetRequired="true" implementation="net.robinfriedli.botify.command.widgets.actions.RewindAction"/>
-    <widgetAction identifier="play" emojiUnicode="⏯" resetRequired="true" implementation="net.robinfriedli.botify.command.widgets.actions.PlayPauseAction"/>
-    <widgetAction identifier="skip" emojiUnicode="⏭" resetRequired="true" implementation="net.robinfriedli.botify.command.widgets.actions.SkipAction"/>
-    <widgetAction identifier="repeat" emojiUnicode="🔁" resetRequired="true" implementation="net.robinfriedli.botify.command.widgets.actions.RepeatAllAction"/>
-    <widgetAction identifier="repeat" emojiUnicode="🔂" resetRequired="true" implementation="net.robinfriedli.botify.command.widgets.actions.RepeatOneAction"/>
+  <widget implementation="net.robinfriedli.botify.command.widget.widgets.QueueWidget">
+    <widgetAction identifier="shuffle" emojiUnicode="🔀" resetRequired="true" implementation="net.robinfriedli.botify.command.widget.actions.ShuffleAction"/>
+    <widgetAction identifier="rewind" emojiUnicode="⏮" resetRequired="true" implementation="net.robinfriedli.botify.command.widget.actions.RewindAction"/>
+    <widgetAction identifier="play" emojiUnicode="⏯" resetRequired="true" implementation="net.robinfriedli.botify.command.widget.actions.PlayPauseAction"/>
+    <widgetAction identifier="skip" emojiUnicode="⏭" resetRequired="true" implementation="net.robinfriedli.botify.command.widget.actions.SkipAction"/>
+    <widgetAction identifier="repeat" emojiUnicode="🔁" resetRequired="true" implementation="net.robinfriedli.botify.command.widget.actions.RepeatAllAction"/>
+    <widgetAction identifier="repeat" emojiUnicode="🔂" resetRequired="true" implementation="net.robinfriedli.botify.command.widget.actions.RepeatOneAction"/>
+  </widget>
+  <widget clearReactionOnReset="true" implementation="net.robinfriedli.botify.command.widget.widgets.PermissionListPaginationWidget">
+    <widgetAction identifier="firstPage" emojiUnicode="⏮" resetRequired="true" displayPredicate="widget.getPages().size() > 1" implementation="net.robinfriedli.botify.command.widget.actions.FirstPageAction"/>
+    <widgetAction identifier="prevPage" emojiUnicode="⏪" resetRequired="true" displayPredicate="widget.getPages().size() > 1" implementation="net.robinfriedli.botify.command.widget.actions.PrevPageAction"/>
+    <widgetAction identifier="nextPage" emojiUnicode="⏩" resetRequired="true" displayPredicate="widget.getPages().size() > 1" implementation="net.robinfriedli.botify.command.widget.actions.NextPageAction"/>
+    <widgetAction identifier="lastPage" emojiUnicode="⏭" resetRequired="true" displayPredicate="widget.getPages().size() > 1" implementation="net.robinfriedli.botify.command.widget.actions.LastPageAction"/>
   </widget>
 </widgets>

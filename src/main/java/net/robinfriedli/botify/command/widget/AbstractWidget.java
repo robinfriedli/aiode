@@ -1,22 +1,25 @@
-package net.robinfriedli.botify.command;
+package net.robinfriedli.botify.command.widget;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import groovy.lang.GroovyShell;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageReaction;
+import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.robinfriedli.botify.Botify;
-import net.robinfriedli.botify.command.widgets.AbstractWidgetAction;
-import net.robinfriedli.botify.command.widgets.WidgetManager;
-import net.robinfriedli.botify.concurrent.CommandExecutionQueueManager;
+import net.robinfriedli.botify.command.CommandContext;
+import net.robinfriedli.botify.command.CommandManager;
+import net.robinfriedli.botify.concurrent.CompletableFutures;
+import net.robinfriedli.botify.discord.DiscordEntity;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.xml.WidgetContribution;
 import net.robinfriedli.botify.exceptions.UserException;
@@ -28,23 +31,24 @@ import net.robinfriedli.botify.exceptions.UserException;
 public abstract class AbstractWidget {
 
     private final CommandManager commandManager;
-    private final CommandExecutionQueueManager executionQueueManager;
     private final WidgetContribution widgetContribution;
     private final WidgetManager widgetManager;
-    private final Message message;
-    private final String guildId;
+    private final WidgetRegistry widgetRegistry;
+    private final DiscordEntity.Guild guild;
+    private final DiscordEntity.MessageChannel channel;
     private final Logger logger;
 
+    private DiscordEntity.Message message;
     private volatile CompletableFuture<Boolean> pendingMessageDeletion;
     private volatile boolean messageDeleted;
 
-    protected AbstractWidget(WidgetManager widgetManager, Message message) {
+    protected AbstractWidget(WidgetRegistry widgetRegistry, Guild guild, MessageChannel channel) {
         Botify botify = Botify.get();
         this.commandManager = botify.getCommandManager();
-        this.executionQueueManager = botify.getExecutionQueueManager();
-        this.widgetManager = widgetManager;
-        this.message = message;
-        this.guildId = message.getGuild().getId();
+        this.widgetManager = botify.getWidgetManager();
+        this.widgetRegistry = widgetRegistry;
+        this.guild = new DiscordEntity.Guild(guild);
+        this.channel = DiscordEntity.MessageChannel.createForMessageChannel(channel);
         widgetContribution = widgetManager.getContributionForWidget(getClass());
         logger = LoggerFactory.getLogger(getClass());
     }
@@ -55,23 +59,73 @@ public abstract class AbstractWidget {
      */
     public abstract void reset();
 
-    public Message getMessage() {
+    public abstract CompletableFuture<Message> prepareInitialMessage();
+
+    public DiscordEntity.Message getMessage() {
         return message;
+    }
+
+    public DiscordEntity.Guild getGuild() {
+        return guild;
+    }
+
+    public DiscordEntity.MessageChannel getChannel() {
+        return channel;
+    }
+
+    public WidgetContribution getWidgetContribution() {
+        return widgetContribution;
+    }
+
+    /**
+     * Set up the widget so that it is ready to be used. This creates and sends the initial message if necessary,
+     * registers the widget in the guild's {@link WidgetRegistry} so that it can be found when receiving reactions and
+     * sets up all actions by adding the corresponding reaction emote to the message.
+     */
+    public void initialise() {
+        CompletableFuture<Message> futureMessage = prepareInitialMessage();
+        try {
+            Message message = futureMessage.get();
+            this.message = new DiscordEntity.Message(message);
+            widgetRegistry.registerWidget(this);
+            setupActions(message);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (ExecutionException e) {
+            throw new RuntimeException("Could not initialise widget since setting up the message failed", e);
+        }
     }
 
     /**
      * Adds the reactions representing each available action to the message and prepares all actions
      */
-    public void setup() {
-        List<WidgetContribution.WidgetActionContribution> actionContributions =
-            widgetContribution.getSubElementsWithType(WidgetContribution.WidgetActionContribution.class);
+    public void setupActions(Message message) {
+        List<WidgetManager.WidgetActionDefinition> actions = widgetManager.getActionsForWidget(getClass());
+
+        GroovyShell predicateEvaluationShell = new GroovyShell();
+        predicateEvaluationShell.setVariable("widget", this);
+
         try {
             CompletableFuture<RuntimeException> futureException = new CompletableFuture<>();
-            for (int i = 0; i < actionContributions.size(); i++) {
-                WidgetContribution.WidgetActionContribution action = actionContributions.get(i);
+
+            for (int i = 0; i < actions.size(); i++) {
+                WidgetContribution.WidgetActionContribution action = actions.get(i).getImplementation();
+
+                if (action.hasAttribute("displayPredicate")) {
+                    try {
+                        if (!((boolean) predicateEvaluationShell.evaluate(action.getAttribute("displayPredicate").getValue()))) {
+                            break;
+                        }
+                    } catch (ClassCastException e) {
+                        throw new IllegalStateException(String.format("Groovy script in displayPredicate of action contribution %s did not return a boolean", action), e);
+                    } catch (Exception e) {
+                        throw new IllegalStateException("Exception occurred evaluating displayPredicate of action contribution " + action, e);
+                    }
+                }
+
                 int finalI = i;
                 message.addReaction(action.getEmojiUnicode()).queue(aVoid -> {
-                    if (finalI == actionContributions.size() - 1 && !futureException.isDone()) {
+                    if (finalI == actions.size() - 1 && !futureException.isDone()) {
                         futureException.cancel(false);
                     }
                 }, throwable -> {
@@ -113,14 +167,20 @@ public abstract class AbstractWidget {
     }
 
     public void destroy() {
-        widgetManager.removeWidget(this);
+        widgetRegistry.removeWidget(this);
         awaitMessageDeletionIfPendingThenDo(deleted -> {
             if (!deleted) {
+                Message retrievedMessage = message.retrieve();
+
+                if (retrievedMessage == null) {
+                    return;
+                }
+
                 try {
                     try {
-                        message.delete().queue();
+                        retrievedMessage.delete().queue();
                     } catch (InsufficientPermissionException ignored) {
-                        message.clearReactions().queue();
+                        retrievedMessage.clearReactions().queue();
                     }
                 } catch (Exception ignored) {
                 }
@@ -129,18 +189,14 @@ public abstract class AbstractWidget {
     }
 
     public void handleReaction(GuildMessageReactionAddEvent event, CommandContext context) {
-        MessageReaction reaction = event.getReaction();
-        Optional<AbstractWidgetAction> actionOptional = widgetContribution
-            .getSubElementsWithType(WidgetContribution.WidgetActionContribution.class)
-            .stream()
-            .filter(actionContribution -> actionContribution.getEmojiUnicode().equals(reaction.getReactionEmote().getName()))
-            .findAny()
-            .map(actionContribution -> actionContribution.instantiate(context, this, event));
-        actionOptional.ifPresent(commandManager::runCommand);
+        widgetManager
+            .getWidgetActionDefinitionForReaction(getClass(), event.getReaction())
+            .map(actionDefinition -> actionDefinition.getImplementation().instantiate(context, this, event, actionDefinition))
+            .ifPresent(commandManager::runCommand);
     }
 
-    public WidgetManager getWidgetManager() {
-        return widgetManager;
+    public WidgetRegistry getWidgetRegistry() {
+        return widgetRegistry;
     }
 
     /**
@@ -153,7 +209,7 @@ public abstract class AbstractWidget {
      */
     public void awaitMessageDeletionIfPendingThenDo(Consumer<Boolean> resultConsumer) {
         if (pendingMessageDeletion != null) {
-            pendingMessageDeletion.thenAccept(resultConsumer);
+            CompletableFutures.thenAccept(pendingMessageDeletion, resultConsumer);
         } else {
             resultConsumer.accept(messageDeleted);
         }
@@ -174,10 +230,6 @@ public abstract class AbstractWidget {
 
     public void awaitMessageDeletion() {
         pendingMessageDeletion = new CompletableFuture<>();
-    }
-
-    public String getGuildId() {
-        return guildId;
     }
 
 }

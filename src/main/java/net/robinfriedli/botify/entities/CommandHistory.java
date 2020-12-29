@@ -20,11 +20,11 @@ public class CommandHistory implements Serializable {
     private long pk;
     @Column(name = "timestamp")
     private LocalDateTime timestamp;
-    @Column(name = "start_millis")
+    @Column(name = "start_millis", nullable = false)
     private long startMillis;
     @Column(name = "command_identifier")
     private String commandIdentifier;
-    @Column(name = "is_widget")
+    @Column(name = "is_widget", nullable = false)
     private boolean isWidget;
     @Column(name = "command_context_id")
     private String commandContextId;
@@ -40,17 +40,19 @@ public class CommandHistory implements Serializable {
     private String user;
     @Column(name = "user_id")
     private String userId;
-    @Column(name = "completed_successfully")
+    @Column(name = "completed_successfully", nullable = false)
     private boolean completedSuccessfully;
     // if the command has failed by explicitly calling setFailed()
-    @Column(name = "failed_manually")
+    @Column(name = "failed_manually", nullable = false)
     private boolean failedManually;
-    @Column(name = "duration_ms")
+    @Column(name = "duration_ms", nullable = false)
     private long durationMs;
-    @Column(name = "unexpected_exception")
+    @Column(name = "unexpected_exception", nullable = false)
     private boolean unexpectedException;
     @Column(name = "error_message", length = 2000)
     private String errorMessage;
+    @Column(name = "aborted", nullable = false)
+    private boolean aborted;
 
     public long getPk() {
         return pk;
@@ -186,5 +188,13 @@ public class CommandHistory implements Serializable {
 
     public void setWidget(boolean widget) {
         isWidget = widget;
+    }
+
+    public boolean isAborted() {
+        return aborted;
+    }
+
+    public void setAborted(boolean aborted) {
+        this.aborted = aborted;
     }
 }

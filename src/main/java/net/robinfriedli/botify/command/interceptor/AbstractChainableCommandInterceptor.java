@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 
 import net.robinfriedli.botify.command.Command;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
-import net.robinfriedli.botify.exceptions.Abort;
 
 /**
  * CommandInterceptor extension that calls the next interceptor and handles exceptions according to the
@@ -25,8 +24,6 @@ public abstract class AbstractChainableCommandInterceptor implements CommandInte
     public void intercept(Command command) {
         try {
             performChained(command);
-        } catch (Abort e) {
-            throw new Abort();
         } catch (Exception e) {
             if (contribution.throwException(e)) {
                 throw e;

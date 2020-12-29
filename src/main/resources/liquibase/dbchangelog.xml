@@ -717,4 +717,132 @@ See application.properties -> spring.liquibase.contexts
   <changeSet author="robin (generated)" id="1591375305578-15">
     <dropColumn columnName="source" tableName="playback_history"/>
   </changeSet>
+
+  <!-- botify v2 - scripting and permission expansion -->
+  <changeSet author="robinfriedli (generated)" id="1608654895507-1">
+    <addColumn tableName="stored_script">
+      <column name="active" type="boolean" defaultValueBoolean="true">
+        <constraints nullable="false"/>
+      </column>
+    </addColumn>
+  </changeSet>
+  <changeSet author="robinfriedli" id="rename_column_access_configuration_command_identifier_to_permission_identifier-sdfesd/v2.0">
+    <preConditions onFail="MARK_RAN">
+      <columnExists tableName="access_configuration" columnName="command_identifier"/>
+    </preConditions>
+    <renameColumn tableName="access_configuration" oldColumnName="command_identifier" newColumnName="permission_identifier"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1608740624573-2">
+    <createTable tableName="custom_permission_target">
+      <column autoIncrement="true" name="pk" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="custom_permission_targetPK"/>
+      </column>
+      <column name="guild" type="VARCHAR(255)"/>
+      <column name="guild_id" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="identifier" type="VARCHAR(30)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="user_name" type="VARCHAR(255)"/>
+      <column name="user_id" type="BIGINT"/>
+    </createTable>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1608740624573-1">
+    <dropDefaultValue columnDataType="boolean" columnName="active" tableName="stored_script"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1608809046613-1">
+    <createTable tableName="permission_type">
+      <column autoIncrement="true" name="pk" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="permission_typePK"/>
+      </column>
+      <column name="unique_id" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+  </changeSet>
+  <changeSet id="insert_permission_type_values-4dfgdf4/2.0" author="robinfriedli" runAlways="true">
+    <customChange class="net.robinfriedli.botify.persist.customchange.PermissionTargetTypeInitialValues"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1608809046613-2">
+    <addColumn tableName="access_configuration">
+      <column name="fk_permission_type" type="int8"/>
+    </addColumn>
+  </changeSet>
+  <changeSet author="robinfriedli" id="set_default_access_configuration_permission_type-dsf324Df/2.0">
+    <preConditions>
+      <columnExists tableName="access_configuration" columnName="fk_permission_type"/>
+    </preConditions>
+    <update tableName="access_configuration">
+      <column name="fk_permission_type" valueComputed="(select pk from permission_type where unique_id = 'COMMAND')"/>
+      <where>fk_permission_type is null</where>
+    </update>
+  </changeSet>
+  <changeSet author="robinfriedli" id="add_access_configuration_fk_permission_type_not_null_constraint-sd32Dfs/2.0">
+    <preConditions>
+      <columnExists tableName="access_configuration" columnName="fk_permission_type"/>
+    </preConditions>
+    <addNotNullConstraint tableName="access_configuration" columnName="fk_permission_type"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1608809046613-3">
+    <addUniqueConstraint columnNames="unique_id" constraintName="UC_PERMISSION_TYPEUNIQUE_ID_COL" tableName="permission_type"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1608809046613-4">
+    <addForeignKeyConstraint baseColumnNames="fk_permission_type" baseTableName="access_configuration" constraintName="access_configuration_fk_permission_type_fkey" deferrable="false" initiallyDeferred="false" referencedColumnNames="pk" referencedTableName="permission_type" validate="true"/>
+  </changeSet>
+  <changeSet author="robinfriedli" id="rename_foreign_key_constraint_access_configuration_fk_guild_specification_drop-sd34hn/2.0">
+    <preConditions onFail="MARK_RAN">
+      <foreignKeyConstraintExists foreignKeyName="fk_guild_specification"/>
+    </preConditions>
+    <dropForeignKeyConstraint baseTableName="access_configuration" constraintName="fk_guild_specification"/>
+  </changeSet>
+  <changeSet author="robinfriedli" id="rename_column_access_configuration_guild_specification_pk-45Fgr8/2.0">
+    <preConditions onFail="MARK_RAN">
+      <columnExists tableName="access_configuration" columnName="guild_specification_pk"/>
+    </preConditions>
+    <renameColumn tableName="access_configuration" oldColumnName="guild_specification_pk" newColumnName="fk_guild_specification"/>
+  </changeSet>
+  <changeSet author="robinfriedli" id="">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <foreignKeyConstraintExists foreignKeyName="access_configuration_fk_guild_specification_fkey"/>
+      </not>
+    </preConditions>
+    <addForeignKeyConstraint baseTableName="access_configuration" baseColumnNames="fk_guild_specification" constraintName="access_configuration_fk_guild_specification_fkey" deferrable="false" initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION" referencedColumnNames="pk" referencedTableName="guild_specification" validate="true"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1609014530316-1">
+    <addColumn tableName="command_history">
+      <column name="aborted" type="boolean"/>
+    </addColumn>
+  </changeSet>
+  <changeSet author="robinfriedli" id="set_command_history_aborted_initial_values-435FDr4/2.0">
+    <preConditions>
+      <columnExists tableName="command_history" columnName="aborted"/>
+    </preConditions>
+    <update tableName="command_history">
+      <column name="aborted" valueBoolean="false"/>
+      <where>aborted is null</where>
+    </update>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1609015555077-1">
+    <addNotNullConstraint columnDataType="boolean" columnName="aborted" tableName="command_history" validate="true"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1609015555077-2">
+    <addNotNullConstraint columnDataType="boolean" columnName="completed_successfully" tableName="command_history" validate="true"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1609015555077-3">
+    <addNotNullConstraint columnDataType="bigint" columnName="duration_ms" tableName="command_history" validate="true"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1609015555077-4">
+    <addNotNullConstraint columnDataType="boolean" columnName="failed_manually" tableName="command_history" validate="true"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1609015555077-5">
+    <addNotNullConstraint columnDataType="boolean" columnName="is_widget" tableName="command_history" validate="true"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1609015555077-6">
+    <addNotNullConstraint columnDataType="bigint" columnName="start_millis" tableName="command_history" validate="true"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1609015555077-7">
+    <addNotNullConstraint columnDataType="boolean" columnName="unexpected_exception" tableName="command_history" validate="true"/>
+  </changeSet>
 </databaseChangeLog>

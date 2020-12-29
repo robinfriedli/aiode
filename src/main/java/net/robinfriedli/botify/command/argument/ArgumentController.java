@@ -1,18 +1,19 @@
-package net.robinfriedli.botify.command;
+package net.robinfriedli.botify.command.argument;
 
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
 
 import groovy.lang.GroovyShell;
+import net.robinfriedli.botify.Botify;
+import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.discord.property.properties.ArgumentPrefixProperty;
 import net.robinfriedli.botify.discord.property.properties.PrefixProperty;
-import net.robinfriedli.botify.entities.xml.ArgumentContribution;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidArgumentException;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
+import net.robinfriedli.botify.exceptions.UnexpectedCommandSetupException;
 import net.robinfriedli.jxp.api.StringConverter;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.exceptions.ConversionException;
@@ -29,12 +30,13 @@ public class ArgumentController {
     private final Map<String, ArgumentUsage> usedArguments;
     private final GroovyShell groovyShell;
 
+    private boolean shellInitialised;
+
     public ArgumentController(AbstractCommand sourceCommand) {
         this.sourceCommand = sourceCommand;
         commandContribution = sourceCommand.getCommandContribution();
         usedArguments = new CaseInsensitiveMap<>();
         groovyShell = new GroovyShell();
-        groovyShell.setVariable("command", sourceCommand);
     }
 
     /**
@@ -50,7 +52,7 @@ public class ArgumentController {
      * @param arg the identifier of the argument, case insensitive
      * @return the found argument definition
      */
-    public ArgumentContribution get(String arg) {
+    public ArgumentDefinition get(String arg) {
         return commandContribution.getArgument(arg);
     }
 
@@ -67,12 +69,12 @@ public class ArgumentController {
     /**
      * same as {@link #get(String)} but throws an exception if no argument definition was found
      */
-    public ArgumentContribution require(String arg) {
+    public ArgumentDefinition require(String arg) {
         return require(arg, InvalidArgumentException::new);
     }
 
-    public ArgumentContribution require(String arg, Function<String, ? extends RuntimeException> exceptionProducer) {
-        ArgumentContribution argument = get(arg);
+    public ArgumentDefinition require(String arg, Function<String, ? extends RuntimeException> exceptionProducer) {
+        ArgumentDefinition argument = get(arg);
 
         if (argument == null) {
             throw exceptionProducer.apply(String.format("Undefined argument '%s' on command '%s'.", arg, sourceCommand.getIdentifier()));
@@ -100,7 +102,7 @@ public class ArgumentController {
      * Same as {@link #setArgument(String)} but assigns the given value provided by the user
      */
     public void setArgument(String argument, String value) {
-        ArgumentContribution arg = require(argument);
+        ArgumentDefinition arg = require(argument);
         usedArguments.put(argument, new ArgumentUsage(arg, value));
     }
 
@@ -111,7 +113,7 @@ public class ArgumentController {
     /**
      * Verifies all set argument rules
      */
-    public void verify() {
+    public void verify() throws InvalidCommandException {
         for (ArgumentUsage value : usedArguments.values()) {
             value.verify();
         }
@@ -120,7 +122,7 @@ public class ArgumentController {
     /**
      * @return all arguments that may be used with this command
      */
-    public Set<ArgumentContribution> getArguments() {
+    public Map<String, CommandArgument> getArguments() {
         return commandContribution.getArguments();
     }
 
@@ -158,15 +160,15 @@ public class ArgumentController {
      */
     public class ArgumentUsage {
 
-        private final ArgumentContribution argument;
+        private final ArgumentDefinition argument;
         private final String value;
 
-        public ArgumentUsage(ArgumentContribution argument, String value) {
+        public ArgumentUsage(ArgumentDefinition argument, String value) {
             this.argument = argument;
             this.value = value;
         }
 
-        public ArgumentContribution getArgument() {
+        public ArgumentDefinition getArgument() {
             return argument;
         }
 
@@ -194,7 +196,7 @@ public class ArgumentController {
             return !value.isEmpty();
         }
 
-        public void verify() {
+        public void verify() throws InvalidCommandException {
             for (XmlElement excludedArgument : argument.getExcludedArguments()) {
                 String excludedArgumentIdentifier = excludedArgument.getAttribute("argument").getValue();
                 if (argumentSet(excludedArgumentIdentifier)) {
@@ -219,11 +221,13 @@ public class ArgumentController {
                 }
             }
 
-            if (argument.getAttribute("requiresValue").getBool() && !hasValue()) {
-                throw new InvalidCommandException("Argument " + argument.getIdentifier() + " requires an assigned value!");
+            if (argument.requiresValue() && !hasValue()) {
+                throw new InvalidCommandException("Argument " + argument.getIdentifier()
+                    + " requires an assigned value. E.g. $argument=value or $argument=\"val ue\". "
+                    + "Commands are parsed in the following manner: `command name $arg1 $arg2=arg2val $arg3=\"arg3 value\" input $arg4 arg4 value $arg5 arg5 value`.");
             }
 
-            if (argument.getAttribute("requiresInput").getBool() && getSourceCommand().getCommandInput().isBlank()) {
+            if (argument.requiresInput() && getSourceCommand().getCommandInput().isBlank()) {
                 throw new InvalidCommandException("Argument " + argument.getIdentifier() + " requires additional command input.");
             }
 
@@ -252,9 +256,16 @@ public class ArgumentController {
 
         private boolean evaluateScript(String script) {
             try {
+                if (!shellInitialised) {
+                    Botify.get().getGroovyVariableManager().prepareShell(groovyShell);
+                    shellInitialised = true;
+                }
+
                 return (boolean) groovyShell.evaluate(script);
             } catch (ClassCastException e) {
-                throw new IllegalArgumentException("Groovy script does not return boolean", e);
+                throw new UnexpectedCommandSetupException(String.format("Groovy script for argument '%s' does not return boolean", argument.getIdentifier()), e);
+            } catch (Exception e) {
+                throw new UnexpectedCommandSetupException(String.format("Groovy script for argument '%s' threw an exception", argument.getIdentifier()), e);
             }
         }
 

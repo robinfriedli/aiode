@@ -49,11 +49,11 @@ public class CommandParser {
         currentMode = new ScanningMode(command, this, argumentPrefixConfig);
     }
 
-    public void parse() {
+    public void parse() throws CommandParseException, IllegalEscapeCharacterException, UnclosedQuotationsException {
         parse(command.getCommandBody());
     }
 
-    public void parse(String input) {
+    public void parse(String input) throws CommandParseException, IllegalEscapeCharacterException, UnclosedQuotationsException {
         chars = input.toCharArray();
         for (; currentPosition < chars.length; currentPosition++) {
             char character = chars[currentPosition];
@@ -97,9 +97,6 @@ public class CommandParser {
                 throw e;
             } catch (UserException e) {
                 throw new CommandParseException(e.getMessage(), command.getCommandBody(), e, currentPosition);
-            } catch (Exception e) {
-                logger.error("Unexpected exception while parsing command", e);
-                throw e;
             }
 
             // fire mode switch event even if it's a different instance of the same mode

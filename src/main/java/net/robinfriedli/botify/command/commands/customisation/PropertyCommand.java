@@ -15,12 +15,11 @@ import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.entities.xml.GuildPropertyContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
-import net.robinfriedli.botify.util.Table2;
+import net.robinfriedli.botify.util.EmbedTable;
 
 import static net.robinfriedli.jxp.queries.Conditions.*;
 
 public class PropertyCommand extends AbstractCommand {
-
 
     public PropertyCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, boolean requiresInput, String identifier, String description, Category category) {
         super(commandContribution, context, commandManager, commandString, requiresInput, identifier, description, category);
@@ -71,7 +70,7 @@ public class PropertyCommand extends AbstractCommand {
         GuildSpecification specification = getContext().getGuildContext().getSpecification();
 
         EmbedBuilder embedBuilder = new EmbedBuilder();
-        Table2 table = new Table2(embedBuilder);
+        EmbedTable table = new EmbedTable(embedBuilder);
         table.addColumn("Name", properties, AbstractGuildProperty::getName);
         table.addColumn("Default Value", properties, AbstractGuildProperty::getDefaultValue);
         table.addColumn("Set Value", properties, property -> property.display(specification));
@@ -81,7 +80,8 @@ public class PropertyCommand extends AbstractCommand {
 
     private void describeProperty() {
         GuildPropertyManager guildPropertyManager = Botify.get().getGuildPropertyManager();
-        AbstractGuildProperty property = guildPropertyManager.getPropertyByName(getCommandInput());
+        String propertyName = getCommandInput();
+        AbstractGuildProperty property = guildPropertyManager.getPropertyByName(propertyName);
 
         if (property != null) {
             GuildPropertyContribution contribution = property.getContribution();
@@ -96,6 +96,8 @@ public class PropertyCommand extends AbstractCommand {
             }
 
             sendMessage(embedBuilder);
+        } else {
+            throw new InvalidCommandException(String.format("No such property '%s'", propertyName));
         }
     }
 

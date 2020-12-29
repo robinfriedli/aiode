@@ -25,6 +25,8 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.ISnowflake;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
+import net.robinfriedli.botify.command.PermissionTarget;
+import org.hibernate.Session;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
@@ -38,20 +40,29 @@ public class AccessConfiguration implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "pk")
     private long pk;
-    @Column(name = "command_identifier", nullable = false)
-    private String commandIdentifier;
+    @Column(name = "permission_identifier", nullable = false)
+    private String permissionIdentifier;
     @OneToMany(mappedBy = "accessConfiguration", fetch = FetchType.EAGER)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Set<GrantedRole> roles = Sets.newHashSet();
     @ManyToOne
-    @JoinColumn(name = "guild_specification_pk", referencedColumnName = "pk", foreignKey = @ForeignKey(name = "fk_guild_specification"))
+    @JoinColumn(name = "fk_guild_specification", referencedColumnName = "pk", foreignKey = @ForeignKey(name = "access_configuration_fk_guild_specification_fkey"))
     private GuildSpecification guildSpecification;
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "fk_permission_type", referencedColumnName = "pk", foreignKey = @ForeignKey(name = "access_configuration_fk_permission_type_fkey"))
+    private PermissionType permissionType;
 
     public AccessConfiguration() {
     }
 
-    public AccessConfiguration(String commandIdentifier) {
-        this.commandIdentifier = commandIdentifier;
+    public AccessConfiguration(String commandIdentifier, Session session) {
+        this.permissionIdentifier = commandIdentifier;
+        this.permissionType = PermissionTarget.TargetType.COMMAND.getEntity(session);
+    }
+
+    public AccessConfiguration(PermissionTarget permissionTarget, Session session) {
+        this.permissionIdentifier = permissionTarget.getFullPermissionTargetIdentifier();
+        this.permissionType = permissionTarget.getPermissionTargetType().getEntity(session);
     }
 
     public boolean canAccess(Member member) {
@@ -73,8 +84,8 @@ public class AccessConfiguration implements Serializable {
         this.pk = pk;
     }
 
-    public String getCommandIdentifier() {
-        return commandIdentifier;
+    public String getPermissionIdentifier() {
+        return permissionIdentifier;
     }
 
     public Optional<GrantedRole> getRole(String id) {
@@ -117,4 +128,36 @@ public class AccessConfiguration implements Serializable {
     public void setGuildSpecification(GuildSpecification guildSpecification) {
         this.guildSpecification = guildSpecification;
     }
+
+    public PermissionType getPermissionType() {
+        return permissionType;
+    }
+
+    public void setPermissionType(PermissionType permissionType) {
+        this.permissionType = permissionType;
+    }
+
+    @Entity
+    @Table(name = "permission_type")
+    public static class PermissionType extends LookupEntity {
+
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        @Column(name = "pk")
+        private long pk;
+
+        public long getPk() {
+            return pk;
+        }
+
+        public void setPk(long pk) {
+            this.pk = pk;
+        }
+
+        public PermissionTarget.TargetType asEnum() {
+            return PermissionTarget.TargetType.valueOf(getUniqueId());
+        }
+
+    }
+
 }

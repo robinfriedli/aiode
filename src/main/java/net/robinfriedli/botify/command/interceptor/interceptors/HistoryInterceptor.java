@@ -9,7 +9,7 @@ import net.robinfriedli.botify.command.Command;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.interceptor.AbstractChainableCommandInterceptor;
 import net.robinfriedli.botify.command.interceptor.CommandInterceptor;
-import net.robinfriedli.botify.command.widgets.AbstractWidgetAction;
+import net.robinfriedli.botify.command.widget.AbstractWidgetAction;
 import net.robinfriedli.botify.entities.CommandHistory;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 

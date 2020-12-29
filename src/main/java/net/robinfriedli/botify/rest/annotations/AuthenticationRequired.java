@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
 public @interface AuthenticationRequired {
 
     /**
-     * @return a string array containing the accessConfiguration commandIdentifiers required to access this endpoint.
+     * @return a string array containing the accessConfiguration permissionIdentifiers required to access this endpoint.
      */
     String[] requiredPermissions() default {};
 

@@ -63,4 +63,8 @@ public class AnswerCommand extends AbstractCommand {
     public void onSuccess() {
         targetCommand.onSuccess();
     }
+
+    public AbstractCommand getTargetCommand() {
+        return targetCommand;
+    }
 }

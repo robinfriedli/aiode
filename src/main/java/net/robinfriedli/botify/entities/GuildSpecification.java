@@ -1,7 +1,6 @@
 package net.robinfriedli.botify.entities;
 
 import java.io.Serializable;
-import java.util.Optional;
 import java.util.Set;
 
 import javax.annotation.Nullable;
@@ -126,13 +125,6 @@ public class GuildSpecification implements Serializable {
 
     public void setAccessConfigurations(Set<AccessConfiguration> accessConfigurations) {
         this.accessConfigurations = accessConfigurations;
-    }
-
-    public Optional<AccessConfiguration> getAccessConfiguration(String commandIdentifier) {
-        return accessConfigurations
-            .stream()
-            .filter(accessConfiguration -> accessConfiguration.getCommandIdentifier().equals(commandIdentifier))
-            .findAny();
     }
 
     public Guild getGuild(ShardManager shardManager) {

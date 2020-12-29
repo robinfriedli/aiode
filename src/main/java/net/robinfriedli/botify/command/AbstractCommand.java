@@ -1,20 +1,21 @@
 package net.robinfriedli.botify.command;
 
 import java.io.InputStream;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import com.antkorwin.xsync.XMutexFactory;
-import com.antkorwin.xsync.XMutexFactoryImpl;
 import com.google.api.client.util.Sets;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.MessageBuilder;
@@ -24,6 +25,7 @@ import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.spotify.SpotifyService;
+import net.robinfriedli.botify.command.argument.ArgumentController;
 import net.robinfriedli.botify.command.commands.general.AnswerCommand;
 import net.robinfriedli.botify.command.interceptor.CommandInterceptorChain;
 import net.robinfriedli.botify.command.interceptor.interceptors.CommandParserInterceptor;
@@ -35,7 +37,6 @@ import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
-import net.robinfriedli.botify.exceptions.Abort;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.function.CheckedRunnable;
 import net.robinfriedli.botify.function.HibernateInvoker;
@@ -44,8 +45,15 @@ import net.robinfriedli.botify.login.Login;
 import net.robinfriedli.botify.persist.StaticSessionProvider;
 import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
 import net.robinfriedli.botify.util.Util;
+import net.robinfriedli.exec.Mode;
+import net.robinfriedli.exec.MutexSync;
+import net.robinfriedli.exec.modes.MutexSyncMode;
+import net.robinfriedli.jxp.queries.Order;
 import net.robinfriedli.stringlist.StringList;
 import org.hibernate.Session;
+import org.jetbrains.annotations.Nullable;
+
+import static net.robinfriedli.jxp.queries.Conditions.*;
 
 /**
  * Abstract class to extend for any text based command implementation. Implementations need to be added and configured in the
@@ -56,7 +64,7 @@ import org.hibernate.Session;
  */
 public abstract class AbstractCommand implements Command {
 
-    private static final XMutexFactory<Long> GUILD_MUTEX_FACTORY = new XMutexFactoryImpl<>();
+    private static final MutexSync<Long> GUILD_MUTEX_SYNC = new MutexSync<>();
 
     private final CommandContribution commandContribution;
     private final CommandContext context;
@@ -69,6 +77,8 @@ public abstract class AbstractCommand implements Command {
     private final Category category;
     private final boolean requiresInput;
     private String commandInput;
+    // flag set when abort() is called
+    private boolean aborted;
     // used to prevent onSuccess being called when no exception has been thrown but the command failed anyway
     private boolean isFailed;
     private CommandExecutionTask task;
@@ -89,7 +99,7 @@ public abstract class AbstractCommand implements Command {
         this.identifier = identifier;
         this.description = description;
         this.category = category;
-        this.argumentController = new ArgumentController(this);
+        this.argumentController = createArgumentController();
         this.messageService = Botify.get().getMessageService();
         commandInput = "";
     }
@@ -107,7 +117,12 @@ public abstract class AbstractCommand implements Command {
     public void withUserResponse(Object chosenOption) throws Exception {
     }
 
-    public void verify() {
+    /**
+     * Verifies that all rules for this command including all arguments are met.
+     *
+     * @throws InvalidCommandException if a rule is violated
+     */
+    public void verify() throws InvalidCommandException {
         if (requiresInput() && getCommandInput().isBlank()) {
             throw new InvalidCommandException("That command requires more input!");
         }
@@ -187,72 +202,20 @@ public abstract class AbstractCommand implements Command {
         this.task = task;
     }
 
-    protected void invoke(CheckedRunnable runnable) {
-        invoke(() -> {
-            runnable.doRun();
-            return null;
-        });
-    }
-
-    protected <E> E invoke(Callable<E> callable) {
-        return createSynchronisedHibernateInvoker().invoke(callable);
-    }
-
-    protected void consumeSession(Consumer<Session> sessionConsumer) {
-        invokeWithSession(session -> {
-            sessionConsumer.accept(session);
-            return null;
-        });
-    }
-
-    protected <E> E invokeWithSession(Function<Session, E> function) {
-        return createSynchronisedHibernateInvoker().invokeFunction(function);
-    }
-
-    /**
-     * @return a {@link HibernateInvoker} that uses the current guild object as synchronisation lock to make sure the
-     * same guild cannot invoke the task concurrently. This is to counteract the spamming of a command that uses this
-     * method, e.g. spamming the add command concurrently could evade the playlist size limit.
-     */
-    protected HibernateInvoker createSynchronisedHibernateInvoker() {
-        return HibernateInvoker.create(getContext().getSession(), GUILD_MUTEX_FACTORY.getMutex(context.getGuild().getIdLong()));
-    }
-
-    /**
-     * Run code after setting the spotify access token to the one of the current user's login. This is required for
-     * commands that do not necessarily require a login, in which case the access token will always be set before
-     * executing the command, but might need to access a user's data under some condition.
-     *
-     * @param callable the code to run
-     */
-    protected <E> E runWithLogin(Callable<E> callable) throws Exception {
-        String market = getArgumentValueWithTypeOrCompute("market", String.class, () -> Botify.get().getSpotifyComponent().getDefaultMarket());
-        Login login = Botify.get().getLoginManager().requireLoginForUser(getContext().getUser());
-        return SpotifyInvoker.create(getContext().getSpotifyApi(), login, market).invoke(callable);
-    }
-
-    /**
-     * Run a callable with the default spotify credentials. Used for spotify api queries in commands.
-     */
-    protected <E> E runWithCredentials(Callable<E> callable) throws Exception {
-        String market = getArgumentValueWithTypeOrCompute("market", String.class, () -> Botify.get().getSpotifyComponent().getDefaultMarket());
-        return SpotifyInvoker.create(getContext().getSpotifyApi(), market).invoke(callable);
-    }
-
-    protected boolean argumentSet(String argument) {
+    public boolean argumentSet(String argument) {
         return argumentController.argumentSet(argument);
     }
 
-    protected String getArgumentValue(String argument) {
+    public String getArgumentValue(String argument) {
         return getArgumentValueWithType(argument, String.class);
     }
 
-    protected <E> E getArgumentValueWithType(String argument, Class<E> type) {
+    public <E> E getArgumentValueWithType(String argument, Class<E> type) {
         return getArgumentValueWithTypeOrCompute(argument, type, null);
     }
 
     @SuppressWarnings("unchecked")
-    protected <E> E getArgumentValueOrElse(String argument, E alternativeValue) {
+    public <E> E getArgumentValueOrElse(String argument, E alternativeValue) {
         if (alternativeValue != null) {
             return getArgumentValueWithTypeOrCompute(argument, (Class<E>) alternativeValue.getClass(), () -> alternativeValue);
         } else {
@@ -260,11 +223,11 @@ public abstract class AbstractCommand implements Command {
         }
     }
 
-    protected <E> E getArgumentValueWithTypeOrElse(String argument, Class<E> type, E alternativeValue) {
+    public <E> E getArgumentValueWithTypeOrElse(String argument, Class<E> type, E alternativeValue) {
         return getArgumentValueWithTypeOrCompute(argument, type, () -> alternativeValue);
     }
 
-    protected <E> E getArgumentValueWithTypeOrCompute(String argument, Class<E> type, Supplier<E> alternativeValueSupplier) {
+    public <E> E getArgumentValueWithTypeOrCompute(String argument, Class<E> type, Supplier<E> alternativeValueSupplier) {
         ArgumentController.ArgumentUsage usedArgument = argumentController.getUsedArgument(argument);
         if (usedArgument == null) {
             if (alternativeValueSupplier != null) {
@@ -277,14 +240,16 @@ public abstract class AbstractCommand implements Command {
             if (alternativeValueSupplier != null) {
                 return alternativeValueSupplier.get();
             } else {
-                throw new InvalidCommandException("Argument '" + argument + "' requires an assigned value!");
+                throw new InvalidCommandException("Argument " + argument
+                    + " requires an assigned value. E.g. $argument=value or $argument=\"val ue\". "
+                    + "Commands are parsed in the following manner: `command name $arg1 $arg2=arg2val $arg3=\"arg3 value\" input $arg4 arg4 value $arg5 arg5 value`.");
             }
         }
 
         return usedArgument.getValue(type);
     }
 
-    protected boolean isPartitioned() {
+    public boolean isPartitioned() {
         return Botify.get().getGuildManager().getMode() == GuildManager.Mode.PARTITIONED;
     }
 
@@ -338,6 +303,53 @@ public abstract class AbstractCommand implements Command {
     protected void askQuestion(ClientQuestionEvent question) {
         setFailed(true);
         question.ask();
+    }
+
+    protected void invoke(CheckedRunnable runnable) {
+        invoke(() -> {
+            runnable.doRun();
+            return null;
+        });
+    }
+
+    protected <E> E invoke(Callable<E> callable) {
+        HibernateInvoker hibernateInvoker = HibernateInvoker.create(context.getSession());
+        Mode mode = Mode.create().with(new MutexSyncMode<>(context.getGuild().getIdLong(), GUILD_MUTEX_SYNC));
+        return hibernateInvoker.invoke(mode, callable);
+    }
+
+    protected void consumeSession(Consumer<Session> sessionConsumer) {
+        invokeWithSession(session -> {
+            sessionConsumer.accept(session);
+            return null;
+        });
+    }
+
+    protected <E> E invokeWithSession(Function<Session, E> function) {
+        HibernateInvoker hibernateInvoker = HibernateInvoker.create(context.getSession());
+        Mode mode = Mode.create().with(new MutexSyncMode<>(context.getGuild().getIdLong(), GUILD_MUTEX_SYNC));
+        return hibernateInvoker.invokeFunction(mode, function);
+    }
+
+    /**
+     * Run code after setting the spotify access token to the one of the current user's login. This is required for
+     * commands that do not necessarily require a login, in which case the access token will always be set before
+     * executing the command, but might need to access a user's data under some condition.
+     *
+     * @param callable the code to run
+     */
+    protected <E> E runWithLogin(Callable<E> callable) throws Exception {
+        String market = getArgumentValueWithTypeOrCompute("market", String.class, () -> Botify.get().getSpotifyComponent().getDefaultMarket());
+        Login login = Botify.get().getLoginManager().requireLoginForUser(getContext().getUser());
+        return SpotifyInvoker.create(getContext().getSpotifyApi(), login, market).invoke(callable);
+    }
+
+    /**
+     * Run a callable with the default spotify credentials. Used for spotify api queries in commands.
+     */
+    protected <E> E runWithCredentials(Callable<E> callable) throws Exception {
+        String market = getArgumentValueWithTypeOrCompute("market", String.class, () -> Botify.get().getSpotifyComponent().getDefaultMarket());
+        return SpotifyInvoker.create(getContext().getSpotifyApi(), market).invoke(callable);
     }
 
     protected CompletableFuture<Message> sendMessage(String message) {
@@ -437,22 +449,36 @@ public abstract class AbstractCommand implements Command {
     }
 
     @Override
+    public boolean abort() {
+        boolean prev = aborted;
+        aborted = true;
+        return prev;
+    }
+
+    @Override
+    public boolean isAborted() {
+        return aborted;
+    }
+
+    @Override
     public boolean isFailed() {
         return isFailed;
     }
 
+    @Override
     public void setFailed(boolean isFailed) {
         this.isFailed = isFailed;
-    }
-
-    public void abort() {
-        throw new Abort();
     }
 
     @Override
     public String display() {
         String contentDisplay = context.getMessage().getContentDisplay();
         return contentDisplay.length() > 150 ? contentDisplay.substring(0, 150) + "[...]" : contentDisplay;
+    }
+
+    @Override
+    public PermissionTarget getPermissionTarget() {
+        return commandContribution;
     }
 
     public Category getCategory() {
@@ -491,6 +517,10 @@ public abstract class AbstractCommand implements Command {
         return Botify.get().getQueryBuilderFactory();
     }
 
+    protected ArgumentController createArgumentController() {
+        return new ArgumentController(this);
+    }
+
     /**
      * @param commandString the string following the command identifier
      * @deprecated replaced by the {@link CommandParser}
@@ -524,7 +554,7 @@ public abstract class AbstractCommand implements Command {
         commandInput = words.toString().substring(commandBodyIndex).trim();
     }
 
-    public enum Category {
+    public enum Category implements PermissionTarget.PermissionTypeCategory {
 
         PLAYBACK("playback", "Commands that manage the music playback"),
         PLAYLIST_MANAGEMENT("playlist management", "Commands that add or remove items from botify playlists"),
@@ -534,7 +564,12 @@ public abstract class AbstractCommand implements Command {
         SCRIPTING("scripting", "Commands that execute or manage groovy scripts"),
         SEARCH("search", "Commands that search for botify playlists or list all of them or search for Spotify and Youtube tracks, videos and playlists"),
         WEB("web", "Commands that manage the web client"),
-        ADMIN("admin", "Commands only available to administrators defined in settings-private.properties");
+        ADMIN("admin", "Commands only available to administrators defined in settings-private.properties") {
+            @Override
+            public MessageEmbed.Field createEmbedField() {
+                return null;
+            }
+        };
 
         private final String name;
         private final String description;
@@ -548,9 +583,92 @@ public abstract class AbstractCommand implements Command {
             return name;
         }
 
+        @Override
+        public String getCategoryName() {
+            return getName();
+        }
+
+        @Override
+        public Optional<CommandContribution> findPermissionTarget(String identifier) {
+            CommandManager commandManager = Botify.get().getCommandManager();
+            CommandContribution found = commandManager.getCommandContributionContext().query(and(
+                instanceOf(CommandContribution.class),
+                commandContribution -> ((CommandContribution) commandContribution).getCategory() == this,
+                attribute("identifier").fuzzyIs(identifier)
+            ), CommandContribution.class).getOnlyResult();
+            return Optional.ofNullable(found);
+        }
+
+        @Override
+        public Set<CommandContribution> getAllPermissionTargetsInCategory() {
+            CommandManager commandManager = Botify.get().getCommandManager();
+            return commandManager.getCommandContributionContext().query(and(
+                instanceOf(CommandContribution.class),
+                commandContribution -> ((CommandContribution) commandContribution).getCategory() == this
+            ), CommandContribution.class).collect(Collectors.toSet());
+        }
+
+        @Override
+        public String getCategoryIdentifier() {
+            return name();
+        }
+
+        @Override
+        public PermissionTarget.TargetType getParentCategory() {
+            return PermissionTarget.TargetType.COMMAND;
+        }
+
+        @Override
+        public MessageEmbed.Field createEmbedField() {
+            CommandManager commandManager = Botify.get().getCommandManager();
+
+            List<CommandContribution> commands = commandManager.getCommandContributionContext().query(
+                and(
+                    instanceOf(CommandContribution.class),
+                    command -> ((CommandContribution) command).getCategory() == this
+                ),
+                CommandContribution.class
+            ).order(Order.attribute("identifier")).collect();
+
+            Iterator<CommandContribution> commandIterator = commands.iterator();
+
+            String categoryString;
+            if (commandIterator.hasNext()) {
+                StringBuilder sb = new StringBuilder();
+
+                do {
+                    CommandContribution command = commandIterator.next();
+                    sb.append(command.getIdentifier());
+
+                    if (commandIterator.hasNext()) {
+                        sb.append(System.lineSeparator());
+                    }
+                } while (commandIterator.hasNext());
+
+                categoryString = sb.toString();
+            } else {
+                categoryString = "No applicable commands found in this category";
+            }
+
+            return new MessageEmbed.Field(getName(), categoryString, true);
+        }
+
+        @Nullable
+        @Override
+        public PermissionTarget.PermissionTypeCategory[] getSubCategories() {
+            return null;
+        }
+
+        @Override
+        public int getOrdinal() {
+            return ordinal();
+        }
+
+
         public String getDescription() {
             return description;
         }
+
     }
 
 }

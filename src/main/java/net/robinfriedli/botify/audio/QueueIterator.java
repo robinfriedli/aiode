@@ -15,6 +15,7 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.boot.SpringPropertiesConfig;
+import net.robinfriedli.botify.concurrent.CompletableFutures;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
@@ -239,7 +240,7 @@ public class QueueIterator extends AudioEventAdapter {
         embedBuilder.setColor(color);
 
         CompletableFuture<Message> futureMessage = messageService.send(embedBuilder.build(), playback.getCommunicationChannel());
-        futureMessage.thenAccept(playback::setLastPlaybackNotification);
+        CompletableFutures.thenAccept(futureMessage, playback::setLastPlaybackNotification);
         audioManager.createNowPlayingWidget(futureMessage, playback);
     }
 

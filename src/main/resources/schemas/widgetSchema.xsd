@@ -12,12 +12,14 @@
       <xs:element name="widgetAction" type="widgetAction"/>
     </xs:sequence>
     <xs:attribute name="implementation" type="xs:string"/>
+    <xs:attribute name="clearReactionOnReset" type="xs:boolean" default="false"/>
   </xs:complexType>
   <xs:complexType name="widgetAction">
     <xs:attribute name="identifier" type="xs:string"/>
     <xs:attribute name="emojiUnicode" type="xs:string"/>
     <xs:attribute name="resetRequired" type="xs:boolean"/>
     <xs:attribute name="implementation" type="xs:string"/>
+    <xs:attribute name="displayPredicate" type="xs:string"/>
   </xs:complexType>
 
 </xs:schema>

@@ -3,6 +3,7 @@ package net.robinfriedli.botify.persist.interceptors;
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import javax.persistence.FlushModeType;
 
@@ -10,6 +11,7 @@ import com.google.common.collect.Lists;
 import net.robinfriedli.botify.boot.SpringPropertiesConfig;
 import net.robinfriedli.botify.entities.SanitizedEntity;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
+import net.robinfriedli.botify.exceptions.InvalidPropertyValueException;
 import net.robinfriedli.botify.persist.StaticSessionProvider;
 import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
 import org.hibernate.Interceptor;
@@ -25,6 +27,23 @@ public class SanitizingEntityInterceptor extends ChainableInterceptor {
         super(next);
         this.queryBuilderFactory = queryBuilderFactory;
         this.springPropertiesConfig = springPropertiesConfig;
+    }
+
+    @Override
+    public boolean onSave(Object entity, Serializable id, Object[] state, String[] propertyNames, Type[] types) {
+        if (entity instanceof SanitizedEntity) {
+            SanitizedEntity sanitizedEntity = (SanitizedEntity) entity;
+            Set<SanitizedEntity.IdentifierFormattingRule> identifierFormattingRules = sanitizedEntity.getIdentifierFormattingRules();
+
+            for (SanitizedEntity.IdentifierFormattingRule identifierFormattingRule : identifierFormattingRules) {
+                String identifier = sanitizedEntity.getIdentifier();
+                if (!identifierFormattingRule.getPredicate().test(identifier)) {
+                    String errorMessage = String.format(identifierFormattingRule.getErrorMessage(), identifier);
+                    throw new InvalidPropertyValueException(errorMessage);
+                }
+            }
+        }
+        return super.onSave(entity, id, state, propertyNames, types);
     }
 
     @Override

@@ -7,6 +7,8 @@ import net.robinfriedli.botify.command.interceptor.CommandInterceptor;
 import net.robinfriedli.botify.command.parser.CommandParser;
 import net.robinfriedli.botify.discord.property.properties.ArgumentPrefixProperty;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
+import net.robinfriedli.botify.exceptions.CommandParseException;
+import net.robinfriedli.botify.exceptions.UnexpectedCommandSetupException;
 
 /**
  * Interceptor that parses the used arguments and command input for text based commands by calling the {@link CommandParser}
@@ -22,7 +24,14 @@ public class CommandParserInterceptor extends AbstractChainableCommandIntercepto
         if (command instanceof AbstractCommand) {
             AbstractCommand textBasedCommand = (AbstractCommand) command;
             CommandParser commandParser = new CommandParser(textBasedCommand, ArgumentPrefixProperty.getForCurrentContext());
-            commandParser.parse();
+
+            try {
+                commandParser.parse();
+            } catch (CommandParseException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new UnexpectedCommandSetupException(e);
+            }
         }
     }
 }

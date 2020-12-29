@@ -27,8 +27,8 @@ import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.command.commands.AbstractQueueLoadingCommand;
-import net.robinfriedli.botify.command.widgets.QueueWidget;
-import net.robinfriedli.botify.command.widgets.WidgetManager;
+import net.robinfriedli.botify.command.widget.WidgetRegistry;
+import net.robinfriedli.botify.command.widget.widgets.QueueWidget;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
 
@@ -72,8 +72,9 @@ public class QueueCommand extends AbstractQueueLoadingCommand {
         AudioQueue audioQueue = playback.getAudioQueue();
 
         CompletableFuture<Message> futureMessage = sendMessage(audioQueue.buildMessageEmbed(playback, guild));
-        WidgetManager widgetManager = getContext().getGuildContext().getWidgetManager();
-        widgetManager.registerWidget(new QueueWidget(widgetManager, futureMessage.get(), audioManager, playback));
+        WidgetRegistry widgetRegistry = getContext().getGuildContext().getWidgetRegistry();
+        QueueWidget queueWidget = new QueueWidget(widgetRegistry, guild, futureMessage.get(), audioManager, playback);
+        queueWidget.initialise();
     }
 
     @Override

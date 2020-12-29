@@ -11,8 +11,8 @@ import net.robinfriedli.botify.discord.property.properties.ArgumentPrefixPropert
 import net.robinfriedli.botify.entities.Preset;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
+import net.robinfriedli.botify.util.EmbedTable;
 import net.robinfriedli.botify.util.SearchEngine;
-import net.robinfriedli.botify.util.Table2;
 import org.hibernate.Session;
 
 public class PresetCommand extends AbstractCommand {
@@ -38,7 +38,7 @@ public class PresetCommand extends AbstractCommand {
             if (presets.isEmpty()) {
                 embedBuilder.setDescription("No presets saved");
             } else {
-                Table2 table = new Table2(embedBuilder);
+                EmbedTable table = new EmbedTable(embedBuilder);
                 table.addColumn("Name", presets, Preset::getName);
                 table.addColumn("Preset", presets, Preset::getPreset);
                 table.build();

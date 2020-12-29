@@ -23,7 +23,6 @@ import net.robinfriedli.botify.concurrent.HistoryPool;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.CommandHistory;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
-import net.robinfriedli.botify.exceptions.Abort;
 import net.robinfriedli.botify.exceptions.AmbiguousCommandException;
 import net.robinfriedli.botify.exceptions.CommandFailure;
 import net.robinfriedli.botify.exceptions.CommandRuntimeException;
@@ -52,8 +51,13 @@ public class CommandExecutionInterceptor extends AbstractChainableCommandInterce
         boolean failedManually = false;
         String errorMessage = null;
         boolean unexpectedException = false;
+        boolean aborted = false;
         try {
             try {
+                if (command.isAborted()) {
+                    aborted = true;
+                    return;
+                }
                 command.doRun();
             } catch (Exception e) {
                 if ((command.getTask() != null && command.getTask().isTerminated()) || Thread.currentThread().isInterrupted()) {
@@ -81,7 +85,7 @@ public class CommandExecutionInterceptor extends AbstractChainableCommandInterce
             } else {
                 throw e;
             }
-        } catch (Abort | CommandFailure e) {
+        } catch (CommandFailure e) {
             throw e;
         } catch (NoLoginException e) {
             MessageChannel channel = command.getContext().getChannel();
@@ -147,7 +151,7 @@ public class CommandExecutionInterceptor extends AbstractChainableCommandInterce
             unexpectedException = true;
             throw new CommandRuntimeException(e);
         } finally {
-            postCommand(command, completedSuccessfully, failedManually, errorMessage, unexpectedException);
+            postCommand(command, completedSuccessfully, failedManually, errorMessage, unexpectedException, aborted);
         }
     }
 
@@ -159,12 +163,14 @@ public class CommandExecutionInterceptor extends AbstractChainableCommandInterce
      * @param failedManually        whether the command failed because {@link Command#isFailed()} returned true
      * @param errorMessage          the error message if an exception was thrown
      * @param unexpectedException   whether an unexpected exception was thrown, this excludes {@link UserException}
+     * @param aborted               whether command execution was aborted
      */
     private void postCommand(Command command,
                              boolean completedSuccessfully,
                              boolean failedManually,
                              String errorMessage,
-                             boolean unexpectedException) {
+                             boolean unexpectedException,
+                             boolean aborted) {
         CommandContext context = command.getContext();
         context.interruptMonitoring();
         HistoryPool.execute(() -> {
@@ -175,6 +181,7 @@ public class CommandExecutionInterceptor extends AbstractChainableCommandInterce
                 history.setFailedManually(failedManually);
                 history.setUnexpectedException(unexpectedException);
                 history.setErrorMessage(errorMessage);
+                history.setAborted(aborted);
 
                 StaticSessionProvider.consumeSession(session -> session.persist(history));
             } else {

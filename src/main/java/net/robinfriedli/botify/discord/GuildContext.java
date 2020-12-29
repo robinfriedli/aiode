@@ -6,10 +6,10 @@ import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.audio.exec.PooledTrackLoadingExecutor;
 import net.robinfriedli.botify.audio.exec.ReplaceableTrackLoadingExecutor;
 import net.robinfriedli.botify.audio.exec.TrackLoadingExecutor;
-import net.robinfriedli.botify.command.AbstractWidget;
 import net.robinfriedli.botify.command.ClientQuestionEvent;
 import net.robinfriedli.botify.command.ClientQuestionEventManager;
-import net.robinfriedli.botify.command.widgets.WidgetManager;
+import net.robinfriedli.botify.command.widget.AbstractWidget;
+import net.robinfriedli.botify.command.widget.WidgetRegistry;
 import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
 import net.robinfriedli.botify.discord.property.properties.BotNameProperty;
@@ -27,24 +27,24 @@ public class GuildContext {
 
     private final AudioPlayback playback;
     private final ClientQuestionEventManager clientQuestionEventManager;
-    private final Guild guild;
+    private final DiscordEntity.Guild guild;
     private final long specificationPk;
     private final PooledTrackLoadingExecutor pooledTrackLoadingExecutor;
     private final ReplaceableTrackLoadingExecutor replaceableTrackLoadingExecutor;
-    private final WidgetManager widgetManager;
+    private final WidgetRegistry widgetRegistry;
 
     public GuildContext(Guild guild, AudioPlayback playback, long specificationPk) {
         this.playback = playback;
         clientQuestionEventManager = new ClientQuestionEventManager();
-        this.guild = guild;
+        this.guild = new DiscordEntity.Guild(guild);
         this.specificationPk = specificationPk;
         pooledTrackLoadingExecutor = new PooledTrackLoadingExecutor(guild.getId(), this);
         replaceableTrackLoadingExecutor = new ReplaceableTrackLoadingExecutor(this);
-        widgetManager = new WidgetManager();
+        widgetRegistry = new WidgetRegistry();
     }
 
     public Guild getGuild() {
-        return guild;
+        return guild.get();
     }
 
     public AudioPlayback getPlayback() {
@@ -111,8 +111,8 @@ public class GuildContext {
         return replaceableTrackLoadingExecutor;
     }
 
-    public WidgetManager getWidgetManager() {
-        return widgetManager;
+    public WidgetRegistry getWidgetRegistry() {
+        return widgetRegistry;
     }
 
     public ClientQuestionEventManager getClientQuestionEventManager() {

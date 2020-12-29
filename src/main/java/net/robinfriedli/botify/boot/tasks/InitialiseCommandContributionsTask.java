@@ -2,11 +2,12 @@ package net.robinfriedli.botify.boot.tasks;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 import net.dv8tion.jda.api.JDA;
 import net.robinfriedli.botify.boot.StartupTask;
 import net.robinfriedli.botify.command.CommandManager;
+import net.robinfriedli.botify.command.argument.ArgumentContributionDelegate;
 import net.robinfriedli.botify.entities.xml.ArgumentContribution;
 import net.robinfriedli.botify.entities.xml.CommandHierarchyNode;
 import net.robinfriedli.botify.entities.xml.StartupTaskContribution;
@@ -14,6 +15,7 @@ import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
 import org.jetbrains.annotations.Nullable;
 
+@SuppressWarnings("unchecked")
 public class InitialiseCommandContributionsTask implements StartupTask {
 
     private final CommandManager commandManager;
@@ -27,14 +29,16 @@ public class InitialiseCommandContributionsTask implements StartupTask {
     @Override
     public void perform(@Nullable JDA shard) throws Exception {
         Context commandContributionContext = commandManager.getCommandContributionContext();
+        @SuppressWarnings("rawtypes")
         List<CommandHierarchyNode> commandHierarchyNodes = commandContributionContext.getInstancesOf(CommandHierarchyNode.class);
 
-        for (CommandHierarchyNode commandHierarchyNode : commandHierarchyNodes) {
-            Set<ArgumentContribution> argumentContributions = commandHierarchyNode.getArguments();
+        for (@SuppressWarnings("unchecked") CommandHierarchyNode<ArgumentContributionDelegate> commandHierarchyNode : commandHierarchyNodes) {
+            Map<String, ArgumentContributionDelegate> argumentContributions = commandHierarchyNode.getArguments();
 
-            for (ArgumentContribution argumentContribution : argumentContributions) {
-                Set<XmlElement> excludedArguments = argumentContribution.getExcludedArguments();
-                Set<XmlElement> requiredArguments = argumentContribution.getRequiredArguments();
+            for (ArgumentContributionDelegate argumentContributionDelegate : argumentContributions.values()) {
+                ArgumentContribution argumentContribution = argumentContributionDelegate.unwrapArgumentContribution();
+                List<XmlElement> excludedArguments = argumentContribution.getExcludedArguments();
+                List<XmlElement> requiredArguments = argumentContribution.getRequiredArguments();
 
                 validateReferencedArguments(commandHierarchyNode, argumentContribution, excludedArguments);
                 validateReferencedArguments(commandHierarchyNode, argumentContribution, requiredArguments);
@@ -42,10 +46,10 @@ public class InitialiseCommandContributionsTask implements StartupTask {
         }
     }
 
-    private void validateReferencedArguments(CommandHierarchyNode commandHierarchyNode, ArgumentContribution argumentContribution, Collection<XmlElement> arguments) {
+    private void validateReferencedArguments(CommandHierarchyNode<?> commandHierarchyNode, ArgumentContribution argumentContribution, Collection<XmlElement> arguments) {
         for (XmlElement argument : arguments) {
             String argumentIdentifier = argument.getAttribute("argument").getValue();
-            ArgumentContribution referencedArgument = commandHierarchyNode.getArgument(argumentIdentifier);
+            ArgumentContribution referencedArgument = commandHierarchyNode.getArgument(argumentIdentifier).unwrapArgumentContribution();
 
             if (referencedArgument == null) {
                 throw new IllegalStateException(

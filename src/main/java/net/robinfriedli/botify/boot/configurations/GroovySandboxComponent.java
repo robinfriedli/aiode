@@ -53,8 +53,7 @@ public class GroovySandboxComponent {
             ConditionalInterrupt.class
         );
 
-        ImportCustomizer importCustomizer = new ImportCustomizer();
-        importCustomizer.addImports("net.dv8tion.jda.api.EmbedBuilder", "java.util.stream.Collectors");
+        ImportCustomizer importCustomizer = getImportCustomizer();
 
         GroovyWhitelistManager groovyWhitelistManager = getGroovyWhitelistManager();
         GroovyInvocationCountCustomizer groovyInvocationCountCustomizer = new GroovyInvocationCountCustomizer(groovyWhitelistManager);
@@ -69,9 +68,27 @@ public class GroovySandboxComponent {
         return compilerConfiguration;
     }
 
+    @Bean(name = "privileged_compiler_configuration", autowireCandidate = false)
+    public CompilerConfiguration getPrivilegedCompilerConfiguration() {
+        CompilerConfiguration compilerConfiguration = new CompilerConfiguration();
+
+        ASTTransformationCustomizer threadInterruptCustomizer = new ASTTransformationCustomizer(new HashMap<>(), ThreadInterrupt.class);
+        ImportCustomizer importCustomizer = getImportCustomizer();
+
+        compilerConfiguration.addCompilationCustomizers(threadInterruptCustomizer, importCustomizer);
+
+        return compilerConfiguration;
+    }
+
     @Bean
     public GroovyWhitelistManager getGroovyWhitelistManager() {
         return GroovyWhitelistManager.createFromConfiguration(whitelistConfiguration);
+    }
+
+    private ImportCustomizer getImportCustomizer() {
+        ImportCustomizer importCustomizer = new ImportCustomizer();
+        importCustomizer.addImports("net.dv8tion.jda.api.EmbedBuilder", "java.util.stream.Collectors");
+        return importCustomizer;
     }
 
 }

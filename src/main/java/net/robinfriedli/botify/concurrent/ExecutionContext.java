@@ -19,7 +19,7 @@ import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.persist.interceptors.AlertAccessConfigurationModificationInterceptor;
 import net.robinfriedli.botify.persist.interceptors.AlertPlaylistModificationInterceptor;
 import net.robinfriedli.botify.persist.interceptors.AlertPresetCreationInterceptor;
-import net.robinfriedli.botify.persist.interceptors.AlertScriptCreationInterceptor;
+import net.robinfriedli.botify.persist.interceptors.AlertScriptModificationInterceptor;
 import net.robinfriedli.botify.persist.interceptors.EntityValidationInterceptor;
 import net.robinfriedli.botify.persist.interceptors.GuildPropertyInterceptor;
 import net.robinfriedli.botify.persist.interceptors.InterceptorChain;
@@ -195,7 +195,7 @@ public class ExecutionContext implements ForkableThreadContext<ExecutionContext>
                     VerifyPlaylistInterceptor.class,
                     AlertAccessConfigurationModificationInterceptor.class,
                     AlertPlaylistModificationInterceptor.class,
-                    AlertScriptCreationInterceptor.class,
+                    AlertScriptModificationInterceptor.class,
                     AlertPresetCreationInterceptor.class,
                     GuildPropertyInterceptor.class,
                     EntityValidationInterceptor.class
