@@ -35,7 +35,7 @@ dependencies {
 
     implementation "commons-validator:commons-validator:1.7"
 
-    implementation "net.dv8tion:JDA:4.2.0_224"
+    implementation "net.dv8tion:JDA:4.2.0_225"
     implementation "net.robinfriedli:exec:1.1"
     implementation "net.robinfriedli:JXP:2.0.3"
     implementation "net.robinfriedli:StringList:1.6"
