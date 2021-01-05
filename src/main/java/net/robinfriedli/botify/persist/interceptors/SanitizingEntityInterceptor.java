@@ -14,9 +14,14 @@ import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.InvalidPropertyValueException;
 import net.robinfriedli.botify.persist.StaticSessionProvider;
 import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
+import net.robinfriedli.botify.util.Util;
 import org.hibernate.Interceptor;
 import org.hibernate.type.Type;
 
+/**
+ * Interceptor that performs additional actions for entities implementing the {@link SanitizedEntity} interface, such as
+ * normalizing whitespace in identifiers, checking identifier formatting rules and limiting maximum entity counts.
+ */
 public class SanitizingEntityInterceptor extends ChainableInterceptor {
 
     private final List<SanitizedEntity.CountUnit> countUnits = Lists.newArrayList();
@@ -53,7 +58,7 @@ public class SanitizingEntityInterceptor extends ChainableInterceptor {
             sanitizedEntity.addCountUnit(countUnits, queryBuilderFactory, springPropertiesConfig);
 
             String identifier = sanitizedEntity.getIdentifier();
-            String sanitizedIdentifier = identifier.trim().replaceAll("\\s+", " ");
+            String sanitizedIdentifier = Util.normalizeWhiteSpace(identifier);
 
             if (!identifier.equals(sanitizedIdentifier)) {
                 sanitizedEntity.setSanitizedIdentifier(sanitizedIdentifier);
