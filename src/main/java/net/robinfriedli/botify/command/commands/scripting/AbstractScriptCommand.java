@@ -103,7 +103,7 @@ public abstract class AbstractScriptCommand extends AbstractCommand {
         try {
             groovyShell.parse(script);
         } catch (CompilationFailedException e) {
-            throw new InvalidCommandException("Could not compile provided script: " + e.getMessage());
+            throw new InvalidCommandException(String.format("Could not compile provided script:%s```%s```", System.lineSeparator(), e.getMessage()));
         }
 
         StoredScript.ScriptUsage scriptUsage = queryBuilderFactory

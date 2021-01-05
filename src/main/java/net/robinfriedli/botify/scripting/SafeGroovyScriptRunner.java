@@ -18,8 +18,8 @@ import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.boot.ShutdownableExecutorService;
 import net.robinfriedli.botify.boot.configurations.GroovySandboxComponent;
-import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.SecurityManager;
+import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.concurrent.ForkTaskTreadPool;
 import net.robinfriedli.botify.concurrent.LoggingThreadFactory;
 import net.robinfriedli.botify.discord.MessageService;
@@ -29,6 +29,16 @@ import net.robinfriedli.botify.exceptions.CommandFailure;
 import net.robinfriedli.botify.exceptions.ExceptionUtils;
 import net.robinfriedli.threadpool.ThreadPool;
 
+/**
+ * Class that provides safe execution of untrusted groovy scripts by setting up a sandboxed {@link GroovyShell} with compilation
+ * customizers that check method and property access, transforms method invocations for which an invocation limit is set
+ * to check and increment the invocation counter, adds a total limit of loop iterations and method invocations and enables
+ * running scripts with a time limit by injecting interrupt checks into the script. The security sandbox can be disabled
+ * using the isPrivileged constructor parameter, reducing the number of applied compilation customizers and ignoring time
+ * limits while still applying the ImportCustomizer and ThreadInterrupt customizer to enable optionally interrupting the
+ * script manually using the abort command. Whitelisted methods and properties are configured in the groovyWhitelist.xml
+ * file.
+ */
 public class SafeGroovyScriptRunner {
 
     private static final ForkTaskTreadPool GLOBAL_POOL = new ForkTaskTreadPool(
@@ -45,7 +55,7 @@ public class SafeGroovyScriptRunner {
         Botify.SHUTDOWNABLES.add(new ShutdownableExecutorService(GLOBAL_POOL));
     }
 
-    private final CommandContext context;
+    private final ExecutionContext context;
     private final GroovySandboxComponent groovySandboxComponent;
     private final GroovyVariableManager groovyVariableManager;
     private final GroovyWhitelistManager groovyWhitelistManager;
@@ -53,7 +63,7 @@ public class SafeGroovyScriptRunner {
     private final boolean isPrivileged;
 
     public SafeGroovyScriptRunner(
-        CommandContext context,
+        ExecutionContext context,
         GroovySandboxComponent groovySandboxComponent,
         GroovyVariableManager groovyVariableManager,
         SecurityManager securityManager,
@@ -67,6 +77,20 @@ public class SafeGroovyScriptRunner {
         this.isPrivileged = isPrivileged;
     }
 
+    /**
+     * Run all provided scripts sequentially in the same thread. This counts as one single script execution, thus all scripts
+     * share the same method invocation limits and run with one time limit. This method is mainly used by the ScriptCommandInterceptor
+     * to run all interceptors or all finalizers. Just like {@link #evaluateScript(String, long, TimeUnit)} this applies
+     * all security checks and expression transformation if isPrivileged is false.
+     *
+     * @param scripts       a list of {@link StoredScript} entities representing the scripts to run
+     * @param currentScript a reference pointing to the script that is currently being executed, can be used to reference
+     *                      the last executed script if execution fails or execution runs into a timeout
+     * @param timeout       the time delta in which all provided scripts have to run, ignored if isPrivileged is true
+     * @param timeUnit      the time unit of the timeout
+     * @throws ExecutionException if a script fails due to an exception
+     * @throws TimeoutException   if not all scripts finish within the given time limit
+     */
     public void runScripts(List<StoredScript> scripts, AtomicReference<StoredScript> currentScript, long timeout, TimeUnit timeUnit) throws ExecutionException, TimeoutException {
         GroovyShell groovyShell = createShell();
         Future<Object> result = scriptExecution(() -> {
@@ -80,18 +104,40 @@ public class SafeGroovyScriptRunner {
         runScriptWithTimeout(result, timeout, timeUnit);
     }
 
-    public Object runWithTimeLimit(String script, long timeout, TimeUnit timeUnit) throws ExecutionException, TimeoutException {
+    /**
+     * Evaluate the script by running it using the groovy shell set up for this instance. If isPrivileged is false
+     * static compilation, the type checking extensions to check whitelisted method invocations and property access and
+     * other compilation customizers are applied and the script runs under a timeout.
+     *
+     * @param script   the groovy code to run
+     * @param timeout  the timeout, ignored if isPrivileged is true
+     * @param timeUnit the time unit for the timout parameter
+     * @return the object returned by the script
+     * @throws ExecutionException if script execution throws an exection
+     * @throws TimeoutException   if the script runs into a timeout
+     */
+    public Object evaluateScript(String script, long timeout, TimeUnit timeUnit) throws ExecutionException, TimeoutException {
         GroovyShell groovyShell = createShell();
         Future<Object> result = scriptExecution(() -> groovyShell.evaluate(script));
 
         return runScriptWithTimeout(result, timeout, timeUnit);
     }
 
+    /**
+     * Run a groovy script and send its result, returned object or thrown exception, to the channel of the {@link ExecutionContext}
+     * this instance was set up with. This method calls {@link #evaluateScript(String, long, TimeUnit)} and handles the
+     * result by sending the string representation of the result or an error message should an error occur. If the script
+     * returns null this method sends nothing.
+     *
+     * @param script   the groovy code to run
+     * @param timeout  the timeout, ignored if isPrivileged is true
+     * @param timeUnit the time unit for the timout parameter
+     */
     public void runAndSendResult(String script, long timeout, TimeUnit timeUnit) {
         MessageService messageService = Botify.get().getMessageService();
         MessageChannel channel = context.getChannel();
         try {
-            Object result = runWithTimeLimit(script, timeout, timeUnit);
+            Object result = evaluateScript(script, timeout, timeUnit);
             if (result != null) {
                 String resultString = result.toString();
                 if (resultString.length() < 1000) {
