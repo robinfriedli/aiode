@@ -223,6 +223,7 @@ public class GuildManager {
                 return new GuildContext(guild, new AudioPlayback(player, guild), existingSpecification.get());
             } else {
                 GuildSpecification newSpecification = new GuildSpecification(guild);
+                session.persist(newSpecification);
                 commandManager.getCommandContributionContext()
                     .query(attribute("restrictedAccess").is(true), CommandContribution.class)
                     .getResultStream()
@@ -231,7 +232,6 @@ public class GuildManager {
                         session.persist(permissionConfiguration);
                         newSpecification.addAccessConfiguration(permissionConfiguration);
                     });
-                session.persist(newSpecification);
                 session.flush();
 
                 GuildContext guildContext = new GuildContext(guild, new AudioPlayback(player, guild), newSpecification.getPk());
