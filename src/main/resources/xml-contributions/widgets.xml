@@ -5,7 +5,7 @@
     <widgetAction identifier="play" emojiUnicode="⏯" resetRequired="false" implementation="net.robinfriedli.botify.command.widget.actions.PlayPauseAction"/>
     <widgetAction identifier="skip" emojiUnicode="⏭" resetRequired="true" implementation="net.robinfriedli.botify.command.widget.actions.SkipAction"/>
   </widget>
-  <widget implementation="net.robinfriedli.botify.command.widget.widgets.QueueWidget">
+  <widget clearReactionOnReset="true" implementation="net.robinfriedli.botify.command.widget.widgets.QueueWidget">
     <widgetAction identifier="shuffle" emojiUnicode="🔀" resetRequired="true" implementation="net.robinfriedli.botify.command.widget.actions.ShuffleAction"/>
     <widgetAction identifier="rewind" emojiUnicode="⏮" resetRequired="true" implementation="net.robinfriedli.botify.command.widget.actions.RewindAction"/>
     <widgetAction identifier="play" emojiUnicode="⏯" resetRequired="true" implementation="net.robinfriedli.botify.command.widget.actions.PlayPauseAction"/>

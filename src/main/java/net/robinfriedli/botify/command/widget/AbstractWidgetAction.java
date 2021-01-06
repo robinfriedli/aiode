@@ -163,17 +163,15 @@ public abstract class AbstractWidgetAction implements Command {
     }
 
     private void removeReaction() {
-        widget.awaitMessageDeletionIfPendingThenDo(messageDeleted -> {
-            if (!messageDeleted) {
-                try {
-                    event.getReaction().removeReaction(getContext().getUser()).queue();
-                } catch (InsufficientPermissionException e) {
-                    MessageService messageService = Botify.get().getMessageService();
-                    Permission permission = e.getPermission();
-                    messageService.sendTemporary(String.format("Bot is missing permission '%s' to remove reactions.", permission.getName()), context.getChannel());
-                }
+        if (!widget.isMessageDeleted()) {
+            try {
+                event.getReaction().removeReaction(getContext().getUser()).queue();
+            } catch (InsufficientPermissionException e) {
+                MessageService messageService = Botify.get().getMessageService();
+                Permission permission = e.getPermission();
+                messageService.sendTemporary(String.format("Bot is missing permission '%s' to remove reactions.", permission.getName()), context.getChannel());
             }
-        });
+        }
     }
 
 }

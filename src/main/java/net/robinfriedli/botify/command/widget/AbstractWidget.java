@@ -3,7 +3,6 @@ package net.robinfriedli.botify.command.widget;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +17,6 @@ import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.concurrent.CompletableFutures;
 import net.robinfriedli.botify.discord.DiscordEntity;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.xml.WidgetContribution;
@@ -39,7 +37,6 @@ public abstract class AbstractWidget {
     private final Logger logger;
 
     private DiscordEntity.Message message;
-    private volatile CompletableFuture<Boolean> pendingMessageDeletion;
     private volatile boolean messageDeleted;
 
     protected AbstractWidget(WidgetRegistry widgetRegistry, Guild guild, MessageChannel channel) {
@@ -168,24 +165,22 @@ public abstract class AbstractWidget {
 
     public void destroy() {
         widgetRegistry.removeWidget(this);
-        awaitMessageDeletionIfPendingThenDo(deleted -> {
-            if (!deleted) {
-                Message retrievedMessage = message.retrieve();
+        if (!messageDeleted) {
+            Message retrievedMessage = message.retrieve();
 
-                if (retrievedMessage == null) {
-                    return;
-                }
-
-                try {
-                    try {
-                        retrievedMessage.delete().queue();
-                    } catch (InsufficientPermissionException ignored) {
-                        retrievedMessage.clearReactions().queue();
-                    }
-                } catch (Exception ignored) {
-                }
+            if (retrievedMessage == null) {
+                return;
             }
-        });
+
+            try {
+                try {
+                    retrievedMessage.delete().queue();
+                } catch (InsufficientPermissionException ignored) {
+                    retrievedMessage.clearReactions().queue();
+                }
+            } catch (Exception ignored) {
+            }
+        }
     }
 
     public void handleReaction(GuildMessageReactionAddEvent event, CommandContext context) {
@@ -199,37 +194,11 @@ public abstract class AbstractWidget {
         return widgetRegistry;
     }
 
-    /**
-     * This method is used to run any logic that checks if this widget has deleted its associated message. If the widget
-     * is currently in the process of deleting the message, i.e. if pendingMessageDeletion is set to a non completed future
-     * but not null, this will execute the given code after the pendingMessageDeletion future is complete. Else this
-     * simply checks the value of the messageDeleted field and apply it to the given consumer.
-     *
-     * @param resultConsumer The logic to run that depends on whether or not the message of this widget has been deleted.
-     */
-    public void awaitMessageDeletionIfPendingThenDo(Consumer<Boolean> resultConsumer) {
-        if (pendingMessageDeletion != null) {
-            CompletableFutures.thenAccept(pendingMessageDeletion, resultConsumer);
-        } else {
-            resultConsumer.accept(messageDeleted);
-        }
+    public boolean isMessageDeleted() {
+        return messageDeleted;
     }
 
     public void setMessageDeleted(boolean messageDeleted) {
-        // calls to #awaitMessageDeletionIfPendingThenDo while the deletion is in progress will await the completable future
-        // and see the completion of the completable future instance; calls made to that method after deletion will see
-        // the altered messageDeleted field; the pending deletion future is set back to null for in case this widget sends
-        // a new message, i.e. after resetting
         this.messageDeleted = messageDeleted;
-
-        if (pendingMessageDeletion != null) {
-            pendingMessageDeletion.complete(messageDeleted);
-            pendingMessageDeletion = null;
-        }
     }
-
-    public void awaitMessageDeletion() {
-        pendingMessageDeletion = new CompletableFuture<>();
-    }
-
 }
