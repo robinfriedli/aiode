@@ -9,6 +9,7 @@ import java.util.concurrent.TimeoutException;
 import org.slf4j.LoggerFactory;
 
 import com.wrapper.spotify.requests.authorization.authorization_code.AuthorizationCodeUriRequest;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.Botify;
@@ -39,32 +40,45 @@ public class LoginCommand extends AbstractCommand {
         CompletableFuture<Login> pendingLogin = new CompletableFuture<>();
         loginManager.expectLogin(user, pendingLogin);
 
-        String response = String.format("Your login link:\n%s", uriRequest.execute().toString());
-        CompletableFuture<Message> futureMessage = sendMessage(user, response);
+        String loginUri = uriRequest.execute().toString();
+        EmbedBuilder loginLinkBuilder = new EmbedBuilder()
+            .setTitle("Spotify login")
+            .setDescription(String.format("Click [here](%s) to be redirected to Spotify", loginUri))
+            .setColor(0x1DB954);
+        CompletableFuture<Message> futurePrivateMessage = getMessageService().send(loginLinkBuilder.build(), user);
+        CompletableFuture<Message> futureNoticeMessage = new CompletableFuture<>();
         try {
-            futureMessage.get();
-            sendMessage("I sent you a login link");
+            futurePrivateMessage.get();
+            EmbedBuilder embedBuilder = new EmbedBuilder();
+            embedBuilder.setDescription("I have sent you a login link");
+            sendMessage(embedBuilder).thenAccept(futureNoticeMessage::complete);
         } catch (CancellationException | ExecutionException e) {
             loginManager.removePendingLogin(user);
             throw new UserException("I was unable to send you a message. Please adjust your privacy settings to allow direct messages from guild members.");
         } catch (InterruptedException ignored) {
         }
 
-        pendingLogin.orTimeout(10, TimeUnit.MINUTES).whenComplete((login, throwable) -> {
-            if (login != null) {
-                sendSuccess("User " + getContext().getUser().getName() + " logged in to Spotify");
-            }
-            if (throwable != null) {
-                loginManager.removePendingLogin(user);
-
-                if (throwable instanceof TimeoutException) {
-                    sendMessage(user, "Login attempt timed out");
-                    setFailed(true);
-                } else {
-                    getMessageService().sendException("There has been an unexpected error while completing your login, please try again.", getContext().getChannel());
-                    LoggerFactory.getLogger(getClass()).error("unexpected exception while completing login", throwable);
-                    setFailed(true);
+        CompletableFuture<Login> futureLogin = pendingLogin.orTimeout(10, TimeUnit.MINUTES);
+        futureLogin.whenComplete((login, throwable) -> {
+            try {
+                futureNoticeMessage.thenAccept(message -> message.delete().queue());
+                futurePrivateMessage.thenAccept(message -> message.delete().queue());
+                if (login != null) {
+                    getMessageService().sendSuccess("You have successfully connected your Spotify account and may now search and play tracks from your library", user);
+                    sendSuccess("User " + getContext().getUser().getName() + " logged in to Spotify");
                 }
+                if (throwable != null) {
+                    loginManager.removePendingLogin(user);
+
+                    if (throwable instanceof TimeoutException) {
+                        getMessageService().sendError("Login attempt timed out", user);
+                    } else {
+                        getMessageService().sendException("There has been an unexpected error while completing your login, please try again.", getContext().getChannel());
+                        LoggerFactory.getLogger(getClass()).error("unexpected exception while completing login", throwable);
+                    }
+                }
+            } catch (Exception e) {
+                LoggerFactory.getLogger(getClass()).error("Unexpected error in whenComplete of pending login handler", e);
             }
         });
     }

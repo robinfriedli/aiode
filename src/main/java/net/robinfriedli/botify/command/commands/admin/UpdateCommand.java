@@ -47,7 +47,7 @@ public class UpdateCommand extends AbstractAdminCommand {
             MessageChannel channel = getContext().getChannel();
             Message message = new MessageBuilder().append("Output too long, attaching as file").build();
             ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(inputStreamString.getBytes());
-            getMessageService().accept(channel, c -> {
+            getMessageService().executeMessageAction(channel, c -> {
                 MessageAction messageAction = c.sendMessage(message);
                 return messageAction.addFile(byteArrayInputStream, "output.txt");
             });

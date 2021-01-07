@@ -7,8 +7,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -26,6 +24,7 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.PrivateChannel;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
@@ -49,7 +48,6 @@ public class MessageService {
 
     private static final Invoker RECURSION_PREVENTION_INVOKER = Invoker.newInstance();
     private static final Mode RECURSION_PREVENTION_MODE = Mode.create().with(new RecursionPreventionMode());
-    private static final ScheduledExecutorService TEMP_MESSAGE_DELETION_SCHEDULER = Executors.newScheduledThreadPool(3);
 
     private final int limit;
     private final Logger logger;
@@ -68,97 +66,133 @@ public class MessageService {
             return sendInternal(channel, message);
         } else {
             List<String> outputParts = separateMessage(message);
-            outputParts.forEach(part -> sendInternal(channel, part));
-            CompletableFuture<Message> canceledFuture = new CompletableFuture<>();
-            canceledFuture.cancel(true);
-            return canceledFuture;
+
+            List<CompletableFuture<Message>> futureMessages = outputParts.stream()
+                .map(part -> sendInternal(channel, part))
+                .collect(Collectors.toList());
+
+            return futureMessages.get(futureMessages.size() - 1);
         }
     }
 
     public CompletableFuture<Message> send(String message, User user) {
-        CompletableFuture<Message> futureMessage = new CompletableFuture<>();
         if (message.length() < limit) {
-            user.openPrivateChannel().queue(channel -> {
-                CompletableFuture<Message> future = sendInternal(channel, message);
-                future.whenComplete((msg, e) -> {
-                    if (msg != null) {
-                        futureMessage.complete(msg);
-                    } else {
-                        futureMessage.completeExceptionally(e);
-                    }
-                });
-            });
+            return executeMessageAction(user, messageChannel -> messageChannel.sendMessage(message));
         } else {
             List<String> outputParts = separateMessage(message);
-            outputParts.forEach(part -> user.openPrivateChannel().queue(channel -> sendInternal(channel, part)));
-            futureMessage.cancel(false);
+
+            List<CompletableFuture<Message>> futureMessages = outputParts.stream()
+                .map(part -> executeMessageAction(user, messageChannel -> messageChannel.sendMessage(part)))
+                .collect(Collectors.toList());
+
+
+            return futureMessages.get(futureMessages.size() - 1);
         }
-        return futureMessage;
     }
 
     public CompletableFuture<Message> send(String message, Guild guild) {
-        return acceptForGuild(guild, messageChannel -> messageChannel.sendMessage(message));
+        return executeMessageAction(guild, messageChannel -> messageChannel.sendMessage(message));
     }
 
     public CompletableFuture<Message> send(MessageEmbed messageEmbed, MessageChannel messageChannel) {
         return sendInternal(messageChannel, messageEmbed);
     }
 
+    public CompletableFuture<Message> send(MessageEmbed messageEmbed, User user) {
+        return executeMessageAction(user, messageChannel -> messageChannel.sendMessage(messageEmbed));
+    }
+
     public CompletableFuture<Message> send(MessageEmbed messageEmbed, Guild guild) {
-        return acceptForGuild(guild, channel -> channel.sendMessage(messageEmbed));
+        return executeMessageAction(guild, channel -> channel.sendMessage(messageEmbed));
     }
 
     public CompletableFuture<Message> send(EmbedBuilder embedBuilder, MessageChannel channel) {
-        embedBuilder.setColor(ColorSchemeProperty.getColor());
-        return send(embedBuilder.build(), channel);
+        return send(buildEmbed(embedBuilder), channel);
     }
 
     public CompletableFuture<Message> send(EmbedBuilder embedBuilder, Guild guild) {
-        embedBuilder.setColor(ColorSchemeProperty.getColor());
-        return send(embedBuilder.build(), guild);
+        return send(buildEmbed(embedBuilder), guild);
     }
 
     public CompletableFuture<Message> sendWithLogo(EmbedBuilder embedBuilder, MessageChannel channel) {
         String baseUri = PropertiesLoadingService.requireProperty("BASE_URI");
         embedBuilder.setThumbnail(baseUri + "/resources-public/img/botify-logo.png");
-        embedBuilder.setColor(ColorSchemeProperty.getColor());
-        return send(embedBuilder.build(), channel);
+        return send(buildEmbed(embedBuilder), channel);
     }
 
     public CompletableFuture<Message> sendWithLogo(EmbedBuilder embedBuilder, Guild guild) {
         String baseUri = PropertiesLoadingService.requireProperty("BASE_URI");
         embedBuilder.setThumbnail(baseUri + "/resources-public/img/botify-logo.png");
-        embedBuilder.setColor(ColorSchemeProperty.getColor());
-        return send(embedBuilder.build(), guild);
+        return send(buildEmbed(embedBuilder), guild);
     }
 
     public CompletableFuture<Message> send(MessageBuilder messageBuilder, InputStream file, String fileName, MessageChannel messageChannel) {
-        return accept(messageChannel, c -> {
+        return executeMessageAction(messageChannel, c -> {
             MessageAction messageAction = c.sendMessage(messageBuilder.build());
             return messageAction.addFile(file, fileName);
         });
     }
 
     public CompletableFuture<Message> send(MessageBuilder messageBuilder, InputStream file, String fileName, Guild guild) {
-        return acceptForGuild(guild, c -> {
+        return executeMessageAction(guild, c -> {
             MessageAction messageAction = c.sendMessage(messageBuilder.build());
             return messageAction.addFile(file, fileName);
         });
     }
 
     public CompletableFuture<Message> sendSuccess(String message, MessageChannel channel) {
-        return sendBoxed("Success", message, Color.GREEN, channel, true);
+        return sendSuccess(message, channel, true);
+    }
+
+    public CompletableFuture<Message> sendSuccess(String message, MessageChannel channel, boolean temporary) {
+        return sendEmbed("Success", message, Color.GREEN, channel, temporary);
     }
 
     public CompletableFuture<Message> sendError(String message, MessageChannel channel) {
-        return sendBoxed("Error", message, Color.RED, channel, true);
+        return sendError(message, channel, true);
+    }
+
+    public CompletableFuture<Message> sendError(String message, MessageChannel channel, boolean temporary) {
+        return sendEmbed("Error", message, Color.RED, channel, temporary);
     }
 
     public CompletableFuture<Message> sendException(String message, MessageChannel channel) {
-        return sendBoxed("Exception", message, Color.RED, channel, false);
+        return sendException(message, channel, false);
     }
 
-    public CompletableFuture<Message> sendBoxed(String title, String message, Color color, MessageChannel channel, boolean temporary) {
+    public CompletableFuture<Message> sendException(String message, MessageChannel channel, boolean temporary) {
+        return sendEmbed("Exception", message, Color.RED, channel, temporary);
+    }
+
+    public CompletableFuture<Message> sendSuccess(String message, User user) {
+        return sendSuccess(message, user, false);
+    }
+
+    public CompletableFuture<Message> sendSuccess(String message, User user, boolean temporary) {
+        return sendEmbed("Success", message, Color.GREEN, user, temporary);
+    }
+
+    public CompletableFuture<Message> sendError(String message, User user) {
+        return sendError(message, user, false);
+    }
+
+    public CompletableFuture<Message> sendError(String message, User user, boolean temporary) {
+        return sendEmbed("Error", message, Color.RED, user, temporary);
+    }
+
+    public CompletableFuture<Message> sendException(String message, User user) {
+        return sendException(message, user, false);
+    }
+
+    public CompletableFuture<Message> sendException(String message, User user, boolean temporary) {
+        return sendEmbed("Exception", message, Color.RED, user, temporary);
+    }
+
+    public CompletableFuture<Message> sendEmbed(String title, String message, Color color, User user, boolean temporary) {
+        return executeForUser(user, privateChannel -> sendEmbed(title, message, color, privateChannel, temporary));
+    }
+
+    public CompletableFuture<Message> sendEmbed(String title, String message, Color color, MessageChannel channel, boolean temporary) {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setColor(color);
         embedBuilder.setTitle(title);
@@ -186,6 +220,14 @@ public class MessageService {
         CompletableFuture<Message> futureMessage = send(message, messageChannel);
         futureMessage.thenAccept(msg -> new TempMessageDeletionTask(msg).schedule());
         return futureMessage;
+    }
+
+    public CompletableFuture<Message> sendTemporary(MessageEmbed messageEmbed, User user) {
+        return executeForUser(user, privateChannel -> sendTemporary(messageEmbed, privateChannel));
+    }
+
+    public CompletableFuture<Message> sendTemporary(String message, User user) {
+        return executeForUser(user, privateChannel -> sendTemporary(message, privateChannel));
     }
 
     public CompletableFuture<Message> sendTemporary(MessageEmbed messageEmbed, Guild guild) {
@@ -240,7 +282,7 @@ public class MessageService {
         return futureMessages;
     }
 
-    public CompletableFuture<Message> accept(MessageChannel channel, Function<MessageChannel, MessageAction> function) {
+    public CompletableFuture<Message> executeMessageAction(MessageChannel channel, Function<MessageChannel, MessageAction> function) {
         CompletableFuture<Message> futureMessage = new CompletableFuture<>();
         try {
             MessageAction messageAction = function.apply(channel);
@@ -255,7 +297,7 @@ public class MessageService {
                     RECURSION_PREVENTION_INVOKER.invoke(RECURSION_PREVENTION_MODE, () -> {
                         Guild guild = ((TextChannel) channel).getGuild();
                         sendTemporary("I do not have permission to send any messages to channel " + channel.getName() + " so I'll send it here instead.", guild);
-                        acceptForGuild(guild, function).thenAccept(futureMessage::complete);
+                        executeMessageAction(guild, function).thenAccept(futureMessage::complete);
                     });
                 } else if (channel instanceof TextChannel) {
                     logger.warn("Unable to send messages to guild " + ((TextChannel) channel).getGuild());
@@ -286,14 +328,67 @@ public class MessageService {
         return futureMessage;
     }
 
-    public CompletableFuture<Message> acceptForGuild(Guild guild, Function<MessageChannel, MessageAction> function) {
+    public CompletableFuture<Message> executeMessageAction(User user, Function<MessageChannel, MessageAction> function) {
+        return executeForUser(user, privateChannel -> executeMessageAction(privateChannel, function));
+    }
+
+    public CompletableFuture<Message> executeMessageAction(Guild guild, Function<MessageChannel, MessageAction> function) {
         TextChannel textChannel = getTextChannelForGuild(guild);
 
         if (textChannel == null) {
             logger.warn("Unable to send any messages to guild " + guild.getName() + " (" + guild.getId() + ")");
             return CompletableFuture.failedFuture(new CancellationException());
         } else {
-            return accept(textChannel, function);
+            return executeMessageAction(textChannel, function);
+        }
+    }
+
+    public MessageEmbed buildEmbed(EmbedBuilder embedBuilder) {
+        embedBuilder.setColor(ColorSchemeProperty.getColor());
+        return embedBuilder.build();
+    }
+
+    private CompletableFuture<Message> executeForUser(User user, Function<PrivateChannel, CompletableFuture<Message>> action) {
+        CompletableFuture<Message> futureMessage = new CompletableFuture<>();
+        user.openPrivateChannel().queue(channel -> {
+            CompletableFuture<Message> future = action.apply(channel);
+            future.whenComplete((msg, e) -> {
+                if (e != null) {
+                    futureMessage.completeExceptionally(e);
+                } else {
+                    futureMessage.complete(msg);
+                }
+            });
+        }, futureMessage::completeExceptionally);
+
+        return futureMessage;
+    }
+
+    private CompletableFuture<Message> sendInternal(MessageChannel channel, String text) {
+        return executeMessageAction(channel, c -> c.sendMessage(text));
+    }
+
+    private CompletableFuture<Message> sendInternal(MessageChannel channel, MessageEmbed messageEmbed) {
+        return executeMessageAction(channel, c -> c.sendMessage(messageEmbed));
+    }
+
+    private boolean canTalk(Guild guild) {
+        return guild.getTextChannels().stream().anyMatch(TextChannel::canTalk);
+    }
+
+    private void handleError(Throwable e, MessageChannel channel) {
+        if (e instanceof ErrorResponseException) {
+            if (e.getCause() instanceof SocketTimeoutException) {
+                logger.warn("Timeout sending message to channel " + channel);
+            } else {
+                logger.warn(String.format("Error response msg: %s cause: %s: %s sending message to channel %s",
+                    e.getMessage(),
+                    e.getCause(),
+                    e.getCause() != null ? e.getCause().getMessage() : "null",
+                    channel));
+            }
+        } else {
+            logger.error("Unexpected exception sending message to channel " + channel, e);
         }
     }
 
@@ -339,34 +434,6 @@ public class MessageService {
             return null;
         } else {
             return availableChannels.get(0);
-        }
-    }
-
-    private CompletableFuture<Message> sendInternal(MessageChannel channel, String text) {
-        return accept(channel, c -> c.sendMessage(text));
-    }
-
-    private CompletableFuture<Message> sendInternal(MessageChannel channel, MessageEmbed messageEmbed) {
-        return accept(channel, c -> c.sendMessage(messageEmbed));
-    }
-
-    private boolean canTalk(Guild guild) {
-        return guild.getTextChannels().stream().anyMatch(TextChannel::canTalk);
-    }
-
-    private void handleError(Throwable e, MessageChannel channel) {
-        if (e instanceof ErrorResponseException) {
-            if (e.getCause() instanceof SocketTimeoutException) {
-                logger.warn("Timeout sending message to channel " + channel);
-            } else {
-                logger.warn(String.format("Error response msg: %s cause: %s: %s sending message to channel %s",
-                    e.getMessage(),
-                    e.getCause(),
-                    e.getCause() != null ? e.getCause().getMessage() : "null",
-                    channel));
-            }
-        } else {
-            logger.error("Unexpected exception sending message to channel " + channel, e);
         }
     }
 
@@ -424,7 +491,7 @@ public class MessageService {
         }
     }
 
-    private class TempMessageDeletionTask implements Runnable {
+    private class TempMessageDeletionTask {
 
         private final Message message;
 
@@ -432,29 +499,24 @@ public class MessageService {
             this.message = message;
         }
 
-        @Override
-        public void run() {
-            try {
-                message.delete().queue(v -> {
-                }, this::logError);
-            } catch (InsufficientPermissionException e) {
-                logger.warn(String.format("Insufficient permission to delete temp message %s on guild %s", message, message.getGuild()));
-            } catch (Throwable e) {
-                logError(e);
-            }
-        }
-
-        void schedule() {
+        private void schedule() {
             int timeoutSeconds;
             try {
                 timeoutSeconds = getTimeout();
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 logger.error("Exception loading tempMessageTimeout property", e);
                 return;
             }
 
             if (timeoutSeconds > 0) {
-                TEMP_MESSAGE_DELETION_SCHEDULER.schedule(this, timeoutSeconds, TimeUnit.SECONDS);
+                try {
+                    message.delete().queueAfter(timeoutSeconds, TimeUnit.SECONDS, v -> {
+                    }, this::logError);
+                } catch (InsufficientPermissionException e) {
+                    logger.warn(String.format("Insufficient permission to delete temp message %s on guild %s", message, message.getGuild()));
+                } catch (Exception e) {
+                    logError(e);
+                }
             }
         }
 
