@@ -11,7 +11,9 @@ public class CompletableFutures {
      * the whenComplete consumer by passing them to the errorConsumer and delegates callbacks to the {@link EventHandlerPool}.
      */
     public static <E> CompletableFuture<E> handleWhenComplete(CompletableFuture<E> completableFuture, BiConsumer<E, ? super Throwable> handle, Consumer<Throwable> errorConsumer) {
+        ThreadContext forkedContext = ThreadContext.Current.get().fork();
         return completableFuture.whenComplete((result, throwable) -> EventHandlerPool.execute(() -> {
+            ThreadContext.Current.installExplicitly(forkedContext);
             try {
                 handle.accept(result, throwable);
             } catch (Exception e) {
@@ -25,7 +27,11 @@ public class CompletableFutures {
      * {@link EventHandlerPool}. Exceptions in the tasks will be handled and logged by the pool's exception handler.
      */
     public static <E> CompletableFuture<Void> thenAccept(CompletableFuture<E> completableFuture, Consumer<? super E> consumer) {
-        return completableFuture.thenAccept(result -> EventHandlerPool.execute(() -> consumer.accept(result)));
+        ThreadContext forkedContext = ThreadContext.Current.get().fork();
+        return completableFuture.thenAccept(result -> EventHandlerPool.execute(() -> {
+            ThreadContext.Current.installExplicitly(forkedContext);
+            consumer.accept(result);
+        }));
     }
 
 }
