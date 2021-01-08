@@ -258,6 +258,9 @@ public class ArgumentController {
             try {
                 if (!shellInitialised) {
                     Botify.get().getGroovyVariableManager().prepareShell(groovyShell);
+                    // make sure the command variable is set to the source command is it might differ from the command of
+                    // the current execution context if a command verifies another command, e.g. the PresetCommand
+                    groovyShell.setVariable("command", sourceCommand);
                     shellInitialised = true;
                 }
 
