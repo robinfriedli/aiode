@@ -46,7 +46,9 @@ public abstract class AbstractWidgetAction implements Command {
     public void onSuccess() {
         if (resetRequired) {
             widget.reset();
-        } else if (!widget.isMessageDeleted()) {
+        }
+
+        if (!widget.isMessageDeleted()) {
             removeReaction();
         }
     }

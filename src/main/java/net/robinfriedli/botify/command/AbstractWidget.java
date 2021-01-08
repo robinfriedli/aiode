@@ -7,7 +7,9 @@ import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageReaction;
 import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
@@ -31,6 +33,8 @@ public abstract class AbstractWidget {
     private final WidgetContribution widgetContribution;
     private final WidgetManager widgetManager;
     private final Message message;
+    private final MessageChannel channel;
+    private final Guild guild;
     private final String guildId;
     private final Logger logger;
     // if the message has been deleted by a widget action that does not always require a reset
@@ -42,6 +46,8 @@ public abstract class AbstractWidget {
         this.executionQueueManager = botify.getExecutionQueueManager();
         this.widgetManager = widgetManager;
         this.message = message;
+        this.channel = message.getChannel();
+        this.guild = message.getGuild();
         this.guildId = message.getGuild().getId();
         widgetContribution = widgetManager.getContributionForWidget(getClass());
         logger = LoggerFactory.getLogger(getClass());
@@ -54,6 +60,10 @@ public abstract class AbstractWidget {
 
     public Message getMessage() {
         return message;
+    }
+
+    public MessageChannel getChannel() {
+        return channel;
     }
 
     /**
@@ -145,6 +155,10 @@ public abstract class AbstractWidget {
 
     public void setMessageDeleted(boolean messageDeleted) {
         this.messageDeleted = messageDeleted;
+    }
+
+    public Guild getGuild() {
+        return guild;
     }
 
     public String getGuildId() {

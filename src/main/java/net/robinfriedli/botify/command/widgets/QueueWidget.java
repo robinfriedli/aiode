@@ -1,52 +1,34 @@
 package net.robinfriedli.botify.command.widgets;
 
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.util.concurrent.CompletableFuture;
-
-import org.slf4j.LoggerFactory;
-
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
+import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.robinfriedli.botify.Botify;
-import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
 import net.robinfriedli.botify.command.AbstractWidget;
 import net.robinfriedli.botify.discord.MessageService;
 
 public class QueueWidget extends AbstractWidget {
 
-    private final AudioManager audioManager;
     private final AudioPlayback audioPlayback;
 
-    public QueueWidget(WidgetManager widgetManager, Message message, AudioManager audioManager, AudioPlayback audioPlayback) {
+    public QueueWidget(WidgetManager widgetManager, Message message, AudioPlayback audioPlayback) {
         super(widgetManager, message);
-        this.audioManager = audioManager;
         this.audioPlayback = audioPlayback;
     }
 
     @Override
     public void reset() {
         MessageService messageService = Botify.get().getMessageService();
+        Guild guild = getGuild();
+        MessageChannel channel = getChannel();
         Message message = getMessage();
-        try {
-            message.delete().queue();
-            setMessageDeleted(true);
-        } catch (InsufficientPermissionException e) {
-            messageService.sendError("Bot is missing permission: " + e.getPermission().getName(), message.getChannel());
-        } catch (Throwable e) {
-            OffsetDateTime timeCreated = message.getTimeCreated();
-            ZonedDateTime zonedDateTime = timeCreated.atZoneSameInstant(ZoneId.systemDefault());
-            LoggerFactory.getLogger(getClass()).warn(String.format("Cannot delete queue widget message from %s for channel %s on guild %s",
-                zonedDateTime, message.getChannel(), message.getGuild()), e);
-        }
 
-        EmbedBuilder embedBuilder = audioPlayback.getAudioQueue().buildMessageEmbed(audioPlayback, message.getGuild());
-        CompletableFuture<Message> futureMessage = messageService.send(embedBuilder, message.getChannel());
-        WidgetManager manager = getWidgetManager();
-        futureMessage.thenAccept(completedMessage -> manager.registerWidget(new QueueWidget(manager, completedMessage, audioManager, audioPlayback)));
+        EmbedBuilder embedBuilder = audioPlayback.getAudioQueue().buildMessageEmbed(audioPlayback, guild);
+        MessageEmbed messageEmbed = messageService.buildEmbed(embedBuilder);
+        messageService.executeMessageAction(channel, c -> c.editMessageById(message.getId(), messageEmbed));
     }
 
 }
