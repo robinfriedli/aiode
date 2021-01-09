@@ -7,10 +7,13 @@ import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageReaction;
+import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
@@ -72,6 +75,14 @@ public abstract class AbstractWidget {
     public void setup() {
         List<WidgetContribution.WidgetActionContribution> actionContributions =
             widgetContribution.getSubElementsWithType(WidgetContribution.WidgetActionContribution.class);
+
+        Member selfMember = guild.getSelfMember();
+        if (channel instanceof TextChannel) {
+            if (!selfMember.hasPermission((TextChannel) channel, Permission.MESSAGE_ADD_REACTION)) {
+                throw new UserException("Bot is missing permission to add reactions");
+            }
+        }
+
         try {
             CompletableFuture<RuntimeException> futureException = new CompletableFuture<>();
             for (int i = 0; i < actionContributions.size(); i++) {

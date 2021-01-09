@@ -21,6 +21,7 @@ import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.ChannelType;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -285,6 +286,17 @@ public class MessageService {
     public CompletableFuture<Message> executeMessageAction(MessageChannel channel, Function<MessageChannel, MessageAction> function) {
         CompletableFuture<Message> futureMessage = new CompletableFuture<>();
         try {
+            if (channel instanceof TextChannel) {
+                TextChannel textChannel = (TextChannel) channel;
+                Guild guild = textChannel.getGuild();
+                Member selfMember = guild.getSelfMember();
+                if (!(selfMember.hasAccess(textChannel) && textChannel.canTalk(selfMember))) {
+                    logger.warn(String.format("Can't execute message actions for channel %s on guild %s", textChannel, guild));
+                    futureMessage.cancel(false);
+                    return futureMessage;
+                }
+            }
+
             MessageAction messageAction = function.apply(channel);
             messageAction.queue(futureMessage::complete, e -> {
                 handleError(e, channel);
@@ -293,19 +305,12 @@ public class MessageService {
         } catch (InsufficientPermissionException e) {
             Permission permission = e.getPermission();
             if (permission == Permission.MESSAGE_WRITE || permission == Permission.MESSAGE_READ) {
-                if (channel instanceof TextChannel && canTalk(((TextChannel) channel).getGuild())) {
-                    RECURSION_PREVENTION_INVOKER.invoke(RECURSION_PREVENTION_MODE, () -> {
-                        Guild guild = ((TextChannel) channel).getGuild();
-                        sendTemporary("I do not have permission to send any messages to channel " + channel.getName() + " so I'll send it here instead.", guild);
-                        executeMessageAction(guild, function).thenAccept(futureMessage::complete);
-                    });
-                } else if (channel instanceof TextChannel) {
+                if (channel instanceof TextChannel) {
                     logger.warn("Unable to send messages to guild " + ((TextChannel) channel).getGuild());
-                    futureMessage.completeExceptionally(e);
                 } else {
                     logger.warn("Unable to send messages to " + channel);
-                    futureMessage.completeExceptionally(e);
                 }
+                futureMessage.completeExceptionally(e);
             } else {
                 StringBuilder errorMessage = new StringBuilder("Missing permission ").append(permission);
                 if (channel instanceof TextChannel) {
@@ -323,6 +328,9 @@ public class MessageService {
                     });
                 }
             }
+        } catch (Exception e) {
+            handleError(e, channel);
+            futureMessage.completeExceptionally(e);
         }
 
         return futureMessage;
@@ -370,10 +378,6 @@ public class MessageService {
 
     private CompletableFuture<Message> sendInternal(MessageChannel channel, MessageEmbed messageEmbed) {
         return executeMessageAction(channel, c -> c.sendMessage(messageEmbed));
-    }
-
-    private boolean canTalk(Guild guild) {
-        return guild.getTextChannels().stream().anyMatch(TextChannel::canTalk);
     }
 
     private void handleError(Throwable e, MessageChannel channel) {
