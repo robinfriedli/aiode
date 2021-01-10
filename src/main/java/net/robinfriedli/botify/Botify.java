@@ -33,6 +33,7 @@ import net.robinfriedli.botify.cron.CronJobService;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.discord.property.GuildPropertyManager;
+import net.robinfriedli.botify.exceptions.handler.ExceptionHandlerRegistry;
 import net.robinfriedli.botify.login.LoginManager;
 import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
 import net.robinfriedli.botify.scripting.GroovyVariableManager;
@@ -62,6 +63,7 @@ public class Botify {
     private final CommandManager commandManager;
     private final ConfigurableApplicationContext springBootContext;
     private final CronJobService cronJobService;
+    private final ExceptionHandlerRegistry exceptionHandlerRegistry;
     private final GroovySandboxComponent groovySandboxComponent;
     private final GroovyVariableManager groovyVariableManager;
     private final GuildManager guildManager;
@@ -86,6 +88,7 @@ public class Botify {
                   CommandManager commandManager,
                   ConfigurableApplicationContext springBootContext,
                   CronJobService cronJobService,
+                  ExceptionHandlerRegistry exceptionHandlerRegistry,
                   GroovySandboxComponent groovySandboxComponent,
                   GroovyVariableManager groovyVariableManager,
                   GuildManager guildManager,
@@ -109,6 +112,7 @@ public class Botify {
         this.commandManager = commandManager;
         this.springBootContext = springBootContext;
         this.cronJobService = cronJobService;
+        this.exceptionHandlerRegistry = exceptionHandlerRegistry;
         this.groovySandboxComponent = groovySandboxComponent;
         this.groovyVariableManager = groovyVariableManager;
         this.guildManager = guildManager;
@@ -255,6 +259,10 @@ public class Botify {
 
     public CronJobService getCronJobService() {
         return cronJobService;
+    }
+
+    public ExceptionHandlerRegistry getExceptionHandlerRegistry() {
+        return exceptionHandlerRegistry;
     }
 
     public GroovySandboxComponent getGroovySandboxComponent() {

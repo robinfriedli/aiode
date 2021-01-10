@@ -15,10 +15,9 @@ import javax.annotation.Nullable;
  */
 public class ThreadContext {
 
-    @Nullable
-    private final Map<String, Object> inheritedContexts;
     private final Map<String, Object> installedContexts = new HashMap<>();
-    private boolean installedExplicitly;
+    @Nullable
+    private Map<String, Object> inheritedContexts;
 
     public ThreadContext() {
         this(null);
@@ -96,6 +95,11 @@ public class ThreadContext {
     }
 
     public void clear() {
+        for (Object context : installedContexts.values()) {
+            if (context instanceof CloseableThreadContext) {
+                ((CloseableThreadContext) context).close();
+            }
+        }
         installedContexts.clear();
     }
 
@@ -109,7 +113,11 @@ public class ThreadContext {
 
     /**
      * @return a new ThreadContext based on this one with the same content, invoking {@link ForkableThreadContext#fork()}
-     * for each installed Context that implements that interface, to be used in forked tasks.
+     * for each installed Context that implements that interface. The new ThreadContext will receive a copy of the map
+     * of installed contexts of the this ThreadContext as inheritedContexts. Once the new ThreadContext is installed via
+     * {@link ThreadContext.Current#installExplicitly(ThreadContext)} the inherited contexts are installed on the new
+     * ThreadContext and {@link ForkableThreadContext#fork()} is called for each applicable context.
+     * To be used in forked tasks.
      */
     public ThreadContext fork() {
         Map<String, Object> inheritedContexts = installedContexts
@@ -126,7 +134,7 @@ public class ThreadContext {
 
         public static void installExplicitly(ThreadContext threadContext) {
             THREAD_CONTEXT.set(threadContext);
-            if (threadContext.inheritedContexts != null && !threadContext.installedExplicitly) {
+            if (threadContext.inheritedContexts != null) {
                 for (Map.Entry<String, Object> contextMapping : threadContext.inheritedContexts.entrySet()) {
                     String key = contextMapping.getKey();
                     Object context = contextMapping.getValue();
@@ -136,8 +144,8 @@ public class ThreadContext {
                         threadContext.install(key, context);
                     }
                 }
+                threadContext.inheritedContexts = null;
             }
-            threadContext.installedExplicitly = true;
         }
 
         public static ThreadContext get() {

@@ -8,9 +8,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import groovy.lang.GroovyShell;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
@@ -102,6 +105,16 @@ public abstract class AbstractWidget {
         GroovyShell predicateEvaluationShell = new GroovyShell();
         predicateEvaluationShell.setVariable("widget", this);
 
+        MessageChannel channel = message.getChannel();
+        if (channel instanceof TextChannel) {
+            TextChannel textChannel = (TextChannel) channel;
+            Guild guild = textChannel.getGuild();
+            Member selfMember = guild.getSelfMember();
+            if (!selfMember.hasPermission((TextChannel) channel, Permission.MESSAGE_ADD_REACTION)) {
+                throw new UserException("Bot is missing permission to add reactions");
+            }
+        }
+
         try {
             CompletableFuture<RuntimeException> futureException = new CompletableFuture<>();
 
@@ -140,11 +153,11 @@ public abstract class AbstractWidget {
                 MessageService messageService = Botify.get().getMessageService();
                 if (e instanceof InsufficientPermissionException) {
                     messageService.sendError("Bot is missing permission: "
-                        + ((InsufficientPermissionException) e).getPermission().getName(), message.getChannel());
+                        + ((InsufficientPermissionException) e).getPermission().getName(), channel);
                 } else if (e instanceof ErrorResponseException) {
                     int errorCode = ((ErrorResponseException) e).getErrorCode();
                     if (errorCode == 50013) {
-                        messageService.sendError("Bot is missing permission to add reactions", message.getChannel());
+                        messageService.sendError("Bot is missing permission to add reactions", channel);
                     } else if (errorCode != 10008) {
                         // ignore errors thrown when the message has been deleted
                         logger.warn("Could not add reaction to message " + message, e);

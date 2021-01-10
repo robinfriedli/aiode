@@ -30,7 +30,7 @@ public class UserException extends RuntimeException {
 
     private static String shortenMessage(String message) {
         if (message.length() > 1000) {
-            return message.substring(0, 1000) + "...";
+            return message.substring(0, 995) + "[...]";
         }
 
         return message;

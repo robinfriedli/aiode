@@ -16,8 +16,9 @@ import net.robinfriedli.botify.concurrent.QueuedTask;
 import net.robinfriedli.botify.concurrent.ThreadContext;
 import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
 import net.robinfriedli.botify.discord.GuildContext;
-import net.robinfriedli.botify.exceptions.ExceptionUtils;
-import net.robinfriedli.botify.exceptions.handlers.TrackLoadingExceptionHandler;
+import net.robinfriedli.botify.exceptions.CommandRuntimeException;
+import net.robinfriedli.botify.exceptions.handler.TrackLoadingExceptionHandlerExecutor;
+import net.robinfriedli.botify.exceptions.handler.handlers.TrackLoadingUncaughtExceptionHandler;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -39,7 +40,7 @@ public class PooledTrackLoadingExecutor implements TrackLoadingExecutor {
             public Thread newThread(@NotNull Runnable r) {
                 Thread thread = new Thread(r);
                 thread.setName("pooled-track-loading-thread-" + threadId.getAndIncrement());
-                thread.setUncaughtExceptionHandler(new TrackLoadingExceptionHandler(LoggerFactory.getLogger(PooledTrackLoadingExecutor.class)));
+                thread.setUncaughtExceptionHandler(new TrackLoadingUncaughtExceptionHandler(LoggerFactory.getLogger(PooledTrackLoadingExecutor.class)));
                 return thread;
             }
         });
@@ -79,7 +80,11 @@ public class PooledTrackLoadingExecutor implements TrackLoadingExecutor {
 
                 trackLoadingRunnable.run();
             } catch (Exception e) {
-                ExceptionUtils.handleTrackLoadingException(e, LoggerFactory.getLogger(ReplaceableTrackLoadingExecutor.class), finalExecutionContext, channel);
+                try {
+                    new TrackLoadingExceptionHandlerExecutor(finalExecutionContext, channel).handleException(e);
+                } catch (Throwable propagate) {
+                    CommandRuntimeException.throwRuntimeException(propagate);
+                }
             } finally {
                 ThreadContext.Current.clear();
             }

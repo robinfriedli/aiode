@@ -1,4 +1,4 @@
-package net.robinfriedli.botify.exceptions.handlers;
+package net.robinfriedli.botify.exceptions.handler.handlers;
 
 import org.slf4j.Logger;
 
@@ -7,17 +7,17 @@ import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.concurrent.ThreadContext;
 import net.robinfriedli.botify.exceptions.ExceptionUtils;
 
-public class TrackLoadingExceptionHandler implements Thread.UncaughtExceptionHandler {
+public class TrackLoadingUncaughtExceptionHandler implements Thread.UncaughtExceptionHandler {
 
     private final Logger logger;
     private MessageChannel messageChannel;
     private ExecutionContext executionContext;
 
-    public TrackLoadingExceptionHandler(Logger logger) {
+    public TrackLoadingUncaughtExceptionHandler(Logger logger) {
         this(logger, null, null);
     }
 
-    public TrackLoadingExceptionHandler(Logger logger, MessageChannel messageChannel, ExecutionContext executionContext) {
+    public TrackLoadingUncaughtExceptionHandler(Logger logger, MessageChannel messageChannel, ExecutionContext executionContext) {
         this.logger = logger;
         this.messageChannel = messageChannel;
         this.executionContext = executionContext;

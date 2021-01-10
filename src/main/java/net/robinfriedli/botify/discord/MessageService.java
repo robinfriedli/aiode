@@ -20,6 +20,7 @@ import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.ChannelType;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -47,7 +48,6 @@ import org.springframework.stereotype.Component;
 public class MessageService {
 
     private static final Invoker RECURSION_PREVENTION_INVOKER = Invoker.newInstance();
-    private static final Mode RECURSION_PREVENTION_MODE = Mode.create().with(new RecursionPreventionMode());
 
     private final int limit = 1000;
     private final GuildManager guildManager;
@@ -286,6 +286,17 @@ public class MessageService {
     public CompletableFuture<Message> executeMessageAction(MessageChannel channel, Function<MessageChannel, MessageAction> function) {
         CompletableFuture<Message> futureMessage = new CompletableFuture<>();
         try {
+            if (channel instanceof TextChannel) {
+                TextChannel textChannel = (TextChannel) channel;
+                Guild guild = textChannel.getGuild();
+                Member selfMember = guild.getSelfMember();
+                if (!(selfMember.hasAccess(textChannel) && textChannel.canTalk(selfMember))) {
+                    logger.warn(String.format("Can't execute message actions for channel %s on guild %s due to a lack of permissions", textChannel, guild));
+                    futureMessage.cancel(false);
+                    return futureMessage;
+                }
+            }
+
             MessageAction messageAction = function.apply(channel);
             messageAction.queue(futureMessage::complete, e -> {
                 handleError(e, channel);
@@ -294,19 +305,12 @@ public class MessageService {
         } catch (InsufficientPermissionException e) {
             Permission permission = e.getPermission();
             if (permission == Permission.MESSAGE_WRITE || permission == Permission.MESSAGE_READ) {
-                if (channel instanceof TextChannel && canTalk(((TextChannel) channel).getGuild())) {
-                    RECURSION_PREVENTION_INVOKER.invoke(RECURSION_PREVENTION_MODE, () -> {
-                        Guild guild = ((TextChannel) channel).getGuild();
-                        sendTemporary("I do not have permission to send any messages to channel " + channel.getName() + " so I'll send it here instead.", guild);
-                        executeMessageAction(guild, function).thenAccept(futureMessage::complete);
-                    });
-                } else if (channel instanceof TextChannel) {
+                if (channel instanceof TextChannel) {
                     logger.warn("Unable to send messages to guild " + ((TextChannel) channel).getGuild());
-                    futureMessage.completeExceptionally(e);
                 } else {
                     logger.warn("Unable to send messages to " + channel);
-                    futureMessage.completeExceptionally(e);
                 }
+                futureMessage.completeExceptionally(e);
             } else {
                 StringBuilder errorMessage = new StringBuilder("Missing permission ").append(permission);
                 if (channel instanceof TextChannel) {
@@ -319,7 +323,8 @@ public class MessageService {
                 if (permission != Permission.VIEW_CHANNEL) {
                     String message = "Bot is missing permission: " + permission.getName();
 
-                    RECURSION_PREVENTION_INVOKER.invoke(RECURSION_PREVENTION_MODE, () -> {
+                    Mode mode = Mode.create().with(new RecursionPreventionMode("message_service_send_missing_permission_message"));
+                    RECURSION_PREVENTION_INVOKER.invoke(mode, () -> {
                         send(message, channel);
                     });
                 }
@@ -380,16 +385,16 @@ public class MessageService {
     private void handleError(Throwable e, MessageChannel channel) {
         if (e instanceof ErrorResponseException) {
             if (e.getCause() instanceof SocketTimeoutException) {
-                logger.warn("Timeout sending message to channel " + channel);
+                logger.warn("Timeout executing message action for channel " + channel);
             } else {
-                logger.warn(String.format("Error response msg: %s cause: %s: %s sending message to channel %s",
+                logger.warn(String.format("Error response msg: %s cause: %s: %s executing message action for channel %s",
                     e.getMessage(),
                     e.getCause(),
                     e.getCause() != null ? e.getCause().getMessage() : "null",
                     channel));
             }
         } else {
-            logger.error("Unexpected exception sending message to channel " + channel, e);
+            logger.error("Unexpected exception executing message action for channel " + channel, e);
         }
     }
 

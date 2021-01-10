@@ -33,7 +33,7 @@ import org.hibernate.SessionFactory;
  * Provides context for the task executed by the current thread. This is setup by {@link CommandExecutionTask} upon
  * execution.
  */
-public class ExecutionContext implements ForkableThreadContext<ExecutionContext> {
+public class ExecutionContext implements CloseableThreadContext, ForkableThreadContext<ExecutionContext> {
 
     protected final Guild guild;
     protected final GuildContext guildContext;
@@ -260,6 +260,11 @@ public class ExecutionContext implements ForkableThreadContext<ExecutionContext>
     @Override
     public ExecutionContext fork() {
         return new ExecutionContext(guild, guildContext, jda, member, sessionFactory, spotifyApiBuilder, id, textChannel, user);
+    }
+
+    @Override
+    public void close() {
+        closeSession();
     }
 
     /**

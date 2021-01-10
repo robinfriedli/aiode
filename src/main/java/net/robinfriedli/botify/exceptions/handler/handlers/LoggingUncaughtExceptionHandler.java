@@ -1,8 +1,8 @@
-package net.robinfriedli.botify.exceptions.handlers;
+package net.robinfriedli.botify.exceptions.handler.handlers;
 
 import net.robinfriedli.botify.Botify;
 
-public class LoggingExceptionHandler implements Thread.UncaughtExceptionHandler {
+public class LoggingUncaughtExceptionHandler implements Thread.UncaughtExceptionHandler {
 
     @Override
     public void uncaughtException(Thread t, Throwable e) {

@@ -13,7 +13,7 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.boot.ShutdownableExecutorService;
 import net.robinfriedli.botify.command.Command;
-import net.robinfriedli.botify.exceptions.handlers.CommandExceptionHandler;
+import net.robinfriedli.botify.exceptions.handler.handlers.CommandUncaughtExceptionHandler;
 import net.robinfriedli.botify.util.SnowflakeMap;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
@@ -34,7 +34,7 @@ public class CommandExecutionQueueManager {
             public Thread newThread(@NotNull Runnable r) {
                 Thread thread = new Thread(r);
                 thread.setName("command-execution-queue-idle-thread-" + threadId.getAndIncrement());
-                thread.setUncaughtExceptionHandler(new CommandExceptionHandler(LoggerFactory.getLogger(Command.class)));
+                thread.setUncaughtExceptionHandler(new CommandUncaughtExceptionHandler(LoggerFactory.getLogger(Command.class)));
                 return thread;
             }
         });

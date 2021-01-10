@@ -12,7 +12,7 @@ import net.robinfriedli.botify.concurrent.CommandExecutionTask;
 import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
 import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
-import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
+import net.robinfriedli.botify.exceptions.handler.handlers.LoggingUncaughtExceptionHandler;
 
 public class AbortCommand extends AbstractCommand {
 
@@ -50,7 +50,7 @@ public class AbortCommand extends AbstractCommand {
             }
         });
         abortThread.setName("botify abort thread");
-        abortThread.setUncaughtExceptionHandler(new LoggingExceptionHandler());
+        abortThread.setUncaughtExceptionHandler(new LoggingUncaughtExceptionHandler());
         abortThread.start();
     }
 

@@ -1,11 +1,10 @@
 package net.robinfriedli.botify.concurrent;
 
-import org.slf4j.LoggerFactory;
-
 import net.robinfriedli.botify.command.Command;
 import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
-import net.robinfriedli.botify.exceptions.ExceptionUtils;
+import net.robinfriedli.botify.exceptions.handler.CommandExceptionHandlerExecutor;
+import net.robinfriedli.botify.exceptions.handler.ExceptionHandlerExecutor;
 
 /**
  * Type of thread used to run commands that sets up the current {@link CommandContext} before running and extends
@@ -38,8 +37,8 @@ public class CommandExecutionTask extends QueuedTask {
     }
 
     @Override
-    protected void handleException(Throwable e) {
-        ExceptionUtils.handleCommandException(e, command, LoggerFactory.getLogger(getClass()));
+    protected ExceptionHandlerExecutor createExceptionHandlerExecutor() {
+        return new CommandExceptionHandlerExecutor(command);
     }
 
     public Command getCommand() {

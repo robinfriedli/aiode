@@ -25,7 +25,8 @@ import net.robinfriedli.botify.entities.Preset;
 import net.robinfriedli.botify.entities.StoredScript;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
-import net.robinfriedli.botify.exceptions.ExceptionUtils;
+import net.robinfriedli.botify.exceptions.CommandRuntimeException;
+import net.robinfriedli.botify.exceptions.handler.CommandExceptionHandlerExecutor;
 import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.persist.Context;
@@ -89,7 +90,11 @@ public class CommandManager {
         try {
             doRunCommand(command);
         } catch (Exception e) {
-            ExceptionUtils.handleCommandException(e, command, logger);
+            try {
+                new CommandExceptionHandlerExecutor(command).handleException(e);
+            } catch (Throwable propagate) {
+                CommandRuntimeException.throwRuntimeException(propagate);
+            }
         } finally {
             ThreadContext.Current.clear();
         }

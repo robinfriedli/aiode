@@ -1,6 +1,7 @@
 package net.robinfriedli.botify.concurrent;
 
 import net.robinfriedli.botify.exceptions.CommandRuntimeException;
+import net.robinfriedli.botify.exceptions.handler.ExceptionHandlerExecutor;
 
 /**
  * Thread type that may be added to a {@link ThreadExecutionQueue} that frees up its slot after completion
@@ -39,7 +40,13 @@ public class QueuedTask implements Runnable {
                 runWithSlot();
             }
         } catch (Throwable e) {
-            handleException(e);
+            ExceptionHandlerExecutor exceptionHandlerExecutor = createExceptionHandlerExecutor();
+
+            try {
+                exceptionHandlerExecutor.handleException(e);
+            } catch (Throwable propagate) {
+                CommandRuntimeException.throwRuntimeException(propagate);
+            }
         } finally {
             complete = true;
 
@@ -125,15 +132,8 @@ public class QueuedTask implements Runnable {
         return false;
     }
 
-    protected void handleException(Throwable e) {
-        // default implementation: pass exception to uncaught exception handler
-        if (e instanceof RuntimeException) {
-            throw (RuntimeException) e;
-        } else if (e instanceof Error) {
-            throw (Error) e;
-        } else {
-            throw new CommandRuntimeException(e);
-        }
+    protected ExceptionHandlerExecutor createExceptionHandlerExecutor() {
+        return ExceptionHandlerExecutor.PropagatingExecutor.INSTANCE;
     }
 
     private void runWithSlot() {

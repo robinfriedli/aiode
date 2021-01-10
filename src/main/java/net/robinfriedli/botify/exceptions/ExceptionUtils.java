@@ -91,23 +91,25 @@ public class ExceptionUtils {
     }
 
     private static void appendException(EmbedBuilder embedBuilder, Throwable e, boolean isCause, int counter) {
-        if (counter > 5) {
+        if (counter >= 5) {
             return;
         }
 
         String message;
         if (e instanceof GoogleJsonResponseException) {
             message = ((GoogleJsonResponseException) e).getDetails().getMessage();
-        } else if (e instanceof CompilationFailedException) {
-            message = "```" + e.getMessage() + "```";
         } else {
             message = e.getMessage();
         }
 
         String value = String.format("%s: %s", e.getClass().getSimpleName(), message);
 
-        if (value.length() > 500) {
-            value = value.substring(0, 495) + "[...]";
+        if (value.length() > 1000) {
+            value = value.substring(0, 995) + "[...]";
+        }
+
+        if (e instanceof CompilationFailedException) {
+            value = "```" + value + "```";
         }
 
         embedBuilder.addField(isCause ? "Caused by" : "Exception", value, false);

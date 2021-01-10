@@ -1,6 +1,7 @@
 package net.robinfriedli.botify.util;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -46,6 +47,21 @@ public interface ClassDescriptorNode {
             long maxLevelCount = classesByInheritanceLevel.entries().stream().mapToLong(Map.Entry::getKey).max().getAsLong();
             return classesByInheritanceLevel.get(maxLevelCount);
         }
+    }
+
+    static <T extends ClassDescriptorNode> Comparator<T> getComparator() {
+        return (o1, o2) -> {
+            Class<?> type1 = o1.getType();
+            Class<?> type2 = o2.getType();
+
+            if (type2.isAssignableFrom(type1)) {
+                return -1;
+            } else if (type1.isAssignableFrom(type2)) {
+                return 1;
+            }
+
+            return 0;
+        };
     }
 
     Class<?> getType();

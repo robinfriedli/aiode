@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.boot.ShutdownableExecutorService;
-import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
+import net.robinfriedli.botify.exceptions.handler.handlers.LoggingUncaughtExceptionHandler;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -29,7 +29,7 @@ public class DaemonThreadPool {
             public Thread newThread(@NotNull Runnable r) {
                 Thread thread = new Thread(r);
                 thread.setName("daemon-pool-thread-" + threadId.getAndIncrement());
-                thread.setUncaughtExceptionHandler(new LoggingExceptionHandler());
+                thread.setUncaughtExceptionHandler(new LoggingUncaughtExceptionHandler());
                 thread.setDaemon(true);
                 return thread;
             }

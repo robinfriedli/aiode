@@ -97,7 +97,7 @@ public class AudioPlayback {
 
     public MessageChannel getCommunicationChannel() {
         if (communicationChannel != null) {
-            return communicationChannel.get();
+            return communicationChannel.retrieve();
         } else {
             return null;
         }

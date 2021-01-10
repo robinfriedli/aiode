@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
+import net.robinfriedli.botify.exceptions.handler.handlers.LoggingUncaughtExceptionHandler;
 import net.robinfriedli.threadpool.ThreadPool;
 
 /**
@@ -113,7 +113,7 @@ public class EagerlyScalingThreadPoolExecutor extends ThreadPoolExecutor {
                     });
 
                     newWorkerThread.setName(mainPoolName + "-secondary-queue-handler-thread-" + workerId.getAndIncrement());
-                    newWorkerThread.setUncaughtExceptionHandler(new LoggingExceptionHandler());
+                    newWorkerThread.setUncaughtExceptionHandler(new LoggingUncaughtExceptionHandler());
                     newWorkerThread.start();
                     this.currentWorker.setRelease(newWorkerThread);
                 }
