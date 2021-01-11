@@ -19,6 +19,7 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.youtube.YouTube;
 import com.google.common.base.Strings;
+import com.sedmelluq.discord.lavaplayer.jdaudp.NativeAudioSendFactory;
 import com.wrapper.spotify.SpotifyApi;
 import com.wrapper.spotify.SpotifyHttpManager;
 import net.dv8tion.jda.api.JDA;
@@ -136,13 +137,21 @@ public class Launcher {
 
             // setup JDA
             EnumSet<GatewayIntent> gatewayIntents = EnumSet.of(GUILD_MESSAGES, GUILD_MESSAGE_REACTIONS, GUILD_VOICE_STATES);
-            ShardManager shardManager = DefaultShardManagerBuilder.create(discordToken, gatewayIntents)
+            DefaultShardManagerBuilder shardManagerBuilder = DefaultShardManagerBuilder.create(discordToken, gatewayIntents)
                 .disableCache(EnumSet.of(CacheFlag.ACTIVITY, CacheFlag.EMOTE, CacheFlag.CLIENT_STATUS))
                 .setMemberCachePolicy(MemberCachePolicy.DEFAULT)
                 .setStatus(OnlineStatus.IDLE)
                 .setChunkingFilter(ChunkingFilter.NONE)
-                .addEventListeners(startupListener)
-                .build();
+                .addEventListeners(startupListener);
+
+            if (platformSupportsJdaNas()) {
+                logger.info("Using NativeAudioSendFactory");
+                shardManagerBuilder = shardManagerBuilder.setAudioSendFactory(new NativeAudioSendFactory());
+            } else {
+                logger.info("NativeAudioSendFactory not supported by current platform");
+            }
+
+            ShardManager shardManager = shardManagerBuilder.build();
 
             // setup discordbots.org
             DiscordBotListAPI discordBotListAPI;
@@ -221,6 +230,13 @@ public class Launcher {
             logger.error("Exception in starter. Application will terminate.", e);
             System.exit(1);
         }
+    }
+
+    private static boolean platformSupportsJdaNas() {
+        String osName = System.getProperty("os.name").toLowerCase();
+        String osArch = System.getProperty("os.arch").toLowerCase();
+        return (osName.contains("linux") || osName.contains("windows"))
+            && (osArch.contains("amd64") || osArch.contains("x86"));
     }
 
     private static class StartupListener extends ListenerAdapter {
