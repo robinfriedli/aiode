@@ -4,6 +4,7 @@ import java.util.EnumSet;
 
 import javax.security.auth.login.LoginException;
 
+import com.sedmelluq.discord.lavaplayer.jdaudp.NativeAudioSendFactory;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder;
@@ -45,6 +46,7 @@ public class JdaComponent {
                 .setStatus(OnlineStatus.IDLE)
                 .setChunkingFilter(ChunkingFilter.NONE)
                 .addEventListeners(startupListener)
+                .setAudioSendFactory(new NativeAudioSendFactory())
                 .build();
         } catch (LoginException e) {
             throw new RuntimeException("Failed to log in to discord", e);
