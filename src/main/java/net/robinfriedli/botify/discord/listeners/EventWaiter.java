@@ -5,13 +5,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 
 import com.google.common.collect.LinkedHashMultimap;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import net.dv8tion.jda.api.events.GenericEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -23,22 +23,35 @@ public class EventWaiter extends ListenerAdapter {
 
     @SuppressWarnings("rawtypes")
     private final Multimap<Class<? extends GenericEvent>, AwaitedEvent> awaitedEventMap = LinkedHashMultimap.create();
+    private final ReentrantReadWriteLock mapLock = new ReentrantReadWriteLock();
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public void onGenericEvent(@Nonnull GenericEvent event) {
-        List<AwaitedEvent> awaitedEvents = Lists.newArrayList(awaitedEventMap.get(event.getClass()))
-            .stream()
-            .filter(awaitedEvent -> awaitedEvent.getFilterPredicate().test(event))
-            .collect(Collectors.toList());
-
-        if (!awaitedEvents.isEmpty()) {
-            EventHandlerPool.execute(() -> awaitedEvents.forEach(awaitedEvent -> {
-                // completing the future might trigger afterCompletion handles in the current thread
-                awaitedEvent.getCompletableFuture().complete(event);
-                awaitedEventMap.remove(awaitedEvent.getEventType(), awaitedEvent);
-            }));
+        if (awaitedEventMap.isEmpty()) {
+            return;
         }
+
+        EventHandlerPool.execute(() -> {
+            ReentrantReadWriteLock.ReadLock readLock = mapLock.readLock();
+            readLock.lock();
+            try {
+                List<AwaitedEvent> awaitedEvents = awaitedEventMap.get(event.getClass())
+                    .stream()
+                    .filter(awaitedEvent -> awaitedEvent.getFilterPredicate().test(event))
+                    .collect(Collectors.toList());
+
+                if (!awaitedEvents.isEmpty()) {
+                    awaitedEvents.forEach(awaitedEvent -> {
+                        // completing the future might trigger afterCompletion handles in the current thread
+                        awaitedEvent.getCompletableFuture().complete(event);
+                        awaitedEventMap.remove(awaitedEvent.getEventType(), awaitedEvent);
+                    });
+                }
+            } finally {
+                readLock.unlock();
+            }
+        });
     }
 
     public <E extends GenericEvent> E awaitEvent(Class<E> eventType, Predicate<E> predicate, long timeout, TimeUnit timeUnit) throws InterruptedException, TimeoutException {
@@ -51,9 +64,15 @@ public class EventWaiter extends ListenerAdapter {
     }
 
     public <E extends GenericEvent> CompletableFuture<E> awaitEvent(Class<E> eventType, Predicate<E> predicate) {
-        AwaitedEvent<E> awaitedEvent = new AwaitedEvent<>(eventType, predicate);
-        awaitedEventMap.put(eventType, awaitedEvent);
-        return awaitedEvent.getCompletableFuture();
+        ReentrantReadWriteLock.WriteLock writeLock = mapLock.writeLock();
+        writeLock.lock();
+        try {
+            AwaitedEvent<E> awaitedEvent = new AwaitedEvent<>(eventType, predicate);
+            awaitedEventMap.put(eventType, awaitedEvent);
+            return awaitedEvent.getCompletableFuture();
+        } finally {
+            writeLock.unlock();
+        }
     }
 
     private static class AwaitedEvent<E extends GenericEvent> {
