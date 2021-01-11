@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <versions xmlns="versionSpace">
-  <version launched="false" silent="true" version="1.6.LTS.17">
+  <version launched="false" silent="true" version="1.6.LTS.18">
+    <feature title="Use jda-nas to enable native audio streaming">jda-nas enables using native code to buffer and stream audio to reduce stuttering caused by garbage collection activity if supported by the current platform.</feature>
+  </version>
+  <version launched="true" silent="true" version="1.6.LTS.17">
     <feature title="Improved queue widget">The queue widget now edits its message on reset rather than deleting and resending.</feature>
     <feature title="Improved login command">The output of the login command was improved and the link is deleted after usage to signal that it cannot be used anymore.</feature>
   </version>
