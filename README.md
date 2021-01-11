@@ -29,13 +29,15 @@ Milestones:
 - [x] fully configure command arguments in XML and use groovy scripts for rules
 - [ ] advanced queue management that allows removing items from the queue and reflects changes to queued playlists
 - [ ] store discord snowflake ids as long instead of string
-- [ ] better manage storage / retrieval of JDA entities (esp. on AudioPlayback, GuildContext and AbstractWidget)
+- [x] better manage storage / retrieval of JDA entities (esp. on AudioPlayback, GuildContext and AbstractWidget)
 - [ ] drop cached GuildContext instances for inactive guilds
+- [x] implement system for pagination widgets
 - [ ] pagination widget for playlist view and maybe add pagination to queue widget
 - [ ] enable skipping to a specific queue index
 - [ ] save and restore playback states when rebooting (queue, current track position etc)
 - [ ] adjust charts command and add user specific charts
 - [ ] user specific track suggestions
+- [x] enhanced permission system that allows setting permissions for command arguments and custom targets
 - [x] evaluate command / scripting sandbox + custom scripted CommandInterceptors
 - [ ] web client that communicates with Botify via rest (eval Rust + WebAssembly vs TypeScript)
 
