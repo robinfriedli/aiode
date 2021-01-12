@@ -49,7 +49,7 @@ public class QueueCommand extends AbstractQueueLoadingCommand {
         playback.getAudioQueue().add(playables);
     }
 
-    private void listQueue() throws Exception {
+    private void listQueue() {
         Guild guild = getContext().getGuild();
         AudioManager audioManager = Botify.get().getAudioManager();
         AudioPlayback playback = audioManager.getPlaybackForGuild(guild);
@@ -57,7 +57,7 @@ public class QueueCommand extends AbstractQueueLoadingCommand {
 
         CompletableFuture<Message> futureMessage = sendMessage(audioQueue.buildMessageEmbed(playback, guild));
         WidgetManager widgetManager = getContext().getGuildContext().getWidgetManager();
-        widgetManager.registerWidget(new QueueWidget(widgetManager, futureMessage.get(), playback));
+        futureMessage.thenAccept(message -> widgetManager.registerWidget(new QueueWidget(widgetManager, message, playback)));
     }
 
     @Override
