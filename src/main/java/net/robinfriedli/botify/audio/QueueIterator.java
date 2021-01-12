@@ -13,6 +13,7 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageChannel;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.boot.SpringPropertiesConfig;
 import net.robinfriedli.botify.concurrent.CompletableFutures;
@@ -211,6 +212,12 @@ public class QueueIterator extends AudioEventAdapter {
     }
 
     private void sendCurrentTrackNotification(Playable currentTrack) {
+        MessageChannel communicationChannel = playback.getCommunicationChannel();
+
+        if (communicationChannel == null) {
+            return;
+        }
+
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.addField("Now playing", currentTrack.display(), false);
 
@@ -239,7 +246,7 @@ public class QueueIterator extends AudioEventAdapter {
         });
         embedBuilder.setColor(color);
 
-        CompletableFuture<Message> futureMessage = messageService.send(embedBuilder.build(), playback.getCommunicationChannel());
+        CompletableFuture<Message> futureMessage = messageService.send(embedBuilder.build(), communicationChannel);
         CompletableFutures.thenAccept(futureMessage, playback::setLastPlaybackNotification);
         audioManager.createNowPlayingWidget(futureMessage, playback);
     }
