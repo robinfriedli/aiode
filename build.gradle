@@ -102,7 +102,7 @@ def privateProperties = new Properties()
 file("src/main/resources/settings-private.properties").withInputStream { privateProperties.load(it) }
 
 bootRun {
-    jvmArgs("-Xmx" + applicationProperties.getProperty("botify.preferences.maxHeapSize"))
+    jvmArgs("-Xmx" + applicationProperties.getProperty("botify.preferences.max_heap_size"))
 }
 
 liquibase {

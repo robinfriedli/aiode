@@ -61,12 +61,12 @@
       "description": "Maximum number of custom permission targets per guild (or in total if mode_partitioned is false)."
     },
     {
-      "name": "botify.preferences.maxHeapSize",
+      "name": "botify.preferences.max_heap_size",
       "type": "java.lang.String",
       "description": "Maximum JVM heap size for the bootRun task."
     },
     {
-      "name": "botify.preferences.enableScripting",
+      "name": "botify.preferences.enable_scripting",
       "type": "java.lang.Boolean",
       "description": "Disable / enable commands in the scripting category and custom scripted command interceptors."
     },

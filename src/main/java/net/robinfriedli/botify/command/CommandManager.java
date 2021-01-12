@@ -60,7 +60,7 @@ public class CommandManager {
     private CommandInterceptorChain interceptorChain;
     private CommandInterceptorChain interceptorChainWithoutScripting;
 
-    public CommandManager(@Value("${botify.preferences.enableScripting}") boolean isScriptingEnabled,
+    public CommandManager(@Value("${botify.preferences.enable_scripting}") boolean isScriptingEnabled,
                           @Value("classpath:xml-contributions/commands.xml") Resource commandResource,
                           @Value("classpath:xml-contributions/commandInterceptors.xml") Resource commandInterceptorResource,
                           EventWaiter eventWaiter,

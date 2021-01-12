@@ -47,7 +47,7 @@ public class SecurityInterceptor extends AbstractChainableCommandInterceptor {
             CommandContext context = command.getContext();
 
             if (command instanceof AbstractCommand && ((AbstractCommand) command).getCategory() == AbstractCommand.Category.SCRIPTING) {
-                if (!springPropertiesConfig.requireApplicationProperty(Boolean.class, "botify.preferences.enableScripting")) {
+                if (!springPropertiesConfig.requireApplicationProperty(Boolean.class, "botify.preferences.enable_scripting")) {
                     throw new InvalidCommandException("The bot hoster disabled scripting. None of the commands in the scripting category may be used.");
                 }
 

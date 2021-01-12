@@ -105,9 +105,9 @@ botify.preferences.preset_count_max=100
 botify.preferences.script_count_max=100
 botify.preferences.interceptor_count_max=10
 # defines max heap size for the bootRun task
-botify.preferences.maxHeapSize=2048m
+botify.preferences.max_heap_size=2048m
 # disable / enable commands in the scripting category and custom scripted command interceptors
-botify.preferences.enableScripting=true
+botify.preferences.enable_scripting=true
 ##############
 # datasource #
 ##############
