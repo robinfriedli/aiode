@@ -21,6 +21,7 @@ public abstract class ExceptionHandlerExecutor {
      * @param e the exception to handle.
      * @throws Throwable any throwable, usually the input throwable propagated by {@link #handleUnhandled(Throwable)}
      */
+    @SuppressWarnings("unchecked")
     public final void handleException(Throwable e) throws Throwable {
         if (Botify.isInitialised()) {
             boolean handled = false;
