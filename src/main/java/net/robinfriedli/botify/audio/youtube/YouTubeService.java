@@ -30,6 +30,7 @@ import com.google.api.services.youtube.model.SearchResult;
 import com.google.api.services.youtube.model.Video;
 import com.google.api.services.youtube.model.VideoContentDetails;
 import com.google.api.services.youtube.model.VideoListResponse;
+import com.google.api.services.youtube.model.VideoSnippet;
 import com.google.api.services.youtube.model.VideoStatistics;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
@@ -625,7 +626,19 @@ public class YouTubeService extends AbstractShutdownable {
                 if (artists.stream().anyMatch(a -> {
                     String artist = a.toLowerCase();
                     String artistNoSpace = artist.replace(" ", "");
-                    String channel = v.getSnippet().getChannelTitle().toLowerCase();
+                    VideoSnippet snippet = v.getSnippet();
+
+                    if (snippet == null) {
+                        return false;
+                    }
+
+                    String channelTitle = snippet.getChannelTitle();
+
+                    if (channelTitle == null) {
+                        return false;
+                    }
+
+                    String channel = channelTitle.toLowerCase();
                     String channelNoSpace = channel.replace(" ", "");
                     return channel.contains(artist) || artist.contains(channel) || channelNoSpace.contains(artistNoSpace) || artistNoSpace.contains(channelNoSpace);
                 })) {
