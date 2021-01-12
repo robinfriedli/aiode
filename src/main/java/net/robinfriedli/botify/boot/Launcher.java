@@ -96,6 +96,7 @@ public class Launcher {
             String discordBotId = PropertiesLoadingService.loadProperty("DISCORD_BOT_ID");
             String discordbotsToken = PropertiesLoadingService.loadProperty("DISCORDBOTS_TOKEN");
             int youtubeApiDailyQuota = PropertiesLoadingService.requireProperty(Integer.class, "YOUTUBE_API_DAILY_QUOTA");
+            String nativeAudioBuffer = PropertiesLoadingService.loadProperty("NATIVE_AUDIO_BUFFER");
             // setup persistence
             JxpBackend jxpBackend = new JxpBuilder()
                 .mapClass("command", CommandContribution.class)
@@ -144,11 +145,16 @@ public class Launcher {
                 .setChunkingFilter(ChunkingFilter.NONE)
                 .addEventListeners(startupListener);
 
-            if (platformSupportsJdaNas()) {
-                logger.info("Using NativeAudioSendFactory");
-                shardManagerBuilder = shardManagerBuilder.setAudioSendFactory(new NativeAudioSendFactory());
+            int nativeAudioBufferMs;
+            if (!Strings.isNullOrEmpty(nativeAudioBuffer) && (nativeAudioBufferMs = Integer.parseInt(nativeAudioBuffer)) > 0) {
+                if (platformSupportsJdaNas()) {
+                    logger.info("Using NativeAudioSendFactory with a buffer duration of " + nativeAudioBufferMs + "ms");
+                    shardManagerBuilder = shardManagerBuilder.setAudioSendFactory(new NativeAudioSendFactory(nativeAudioBufferMs));
+                } else {
+                    logger.info("NativeAudioSendFactory not supported by current platform");
+                }
             } else {
-                logger.info("NativeAudioSendFactory not supported by current platform");
+                logger.info("Native audio buffer disabled");
             }
 
             ShardManager shardManager = shardManagerBuilder.build();
