@@ -189,6 +189,6 @@ changeLogFile=src/main/resources/liquibase/dbchangelog.xml
 ### 6 Compile and run botify
 Navigate to the project root directory and install botify by running `mvn clean install`. Then you can launch botify
 using the main class `net.robinfriedli.botify.boot.Launcher`. You can either run the bash script `resources/bash/launch.sh`
-or run `mvn exec:java -Dexec.mainClass=net.robinfriedli.botify.boot.Launcher` directly. Note that this command is written
-for Unix-like operating systems such as macOS and Linux. For windows you might need to adjust this command to
+or run `java -jar target/botify-1.0-SNAPSHOT.jar` or `mvn exec:java -Dexec.mainClass=net.robinfriedli.botify.boot.Launcher` directly.
+Note that this command is written for Unix-like operating systems such as macOS and Linux. For windows you might need to adjust this command to
 `mvn exec:java -D"exec.mainClass"="net.robinfriedli.botify.boot.Launcher"`.
