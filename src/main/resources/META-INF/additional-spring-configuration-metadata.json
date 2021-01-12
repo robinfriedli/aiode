@@ -74,6 +74,11 @@
       "name": "botify.preferences.spotify_market",
       "type": "java.lang.String",
       "description": "The country code of the default spotify market to use for spotify API requests, can be manually set for AbstractPlayableLoadingCommand commands using the 'market' argument."
+    },
+    {
+      "name": "botify.preferences.native_audio_buffer",
+      "type": "java.lang.Integer",
+      "description": "The amount of milliseconds of audio to buffer and stream using native code to avoid stutters caused by garbage collection activity. Ignored if not on Linux / Windows and amd64 / x86 and disabled if 0."
     }
   ]
 }

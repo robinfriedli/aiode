@@ -33,6 +33,8 @@ public class JdaComponent {
     private final StartupListener startupListener;
     @Value("${botify.tokens.discord_token}")
     private String discordToken;
+    @Value("${botify.preferences.native_audio_buffer}")
+    private int nativeBufferDuration;
 
     public JdaComponent(StartupListener startupListener) {
         this.startupListener = startupListener;
@@ -52,11 +54,15 @@ public class JdaComponent {
                 .setChunkingFilter(ChunkingFilter.NONE)
                 .addEventListeners(startupListener);
 
-            if (platformSupportsJdaNas()) {
-                logger.info("Using NativeAudioSendFactory as AudioSendFactory");
-                shardManagerBuilder = shardManagerBuilder.setAudioSendFactory(new NativeAudioSendFactory());
+            if (nativeBufferDuration > 0) {
+                if (platformSupportsJdaNas()) {
+                    logger.info("Using NativeAudioSendFactory as AudioSendFactory with a buffer duration of " + nativeBufferDuration + "ms");
+                    shardManagerBuilder = shardManagerBuilder.setAudioSendFactory(new NativeAudioSendFactory(nativeBufferDuration));
+                } else {
+                    logger.info("NativeAudioSendFactory not supported on this platform");
+                }
             } else {
-                logger.info("NativeAudioSendFactory not supported on this platform");
+                logger.info("Native audio buffer disabled");
             }
 
             return shardManagerBuilder.build();
