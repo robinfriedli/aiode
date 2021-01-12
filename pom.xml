@@ -46,7 +46,7 @@
       <plugin>
         <groupId>org.liquibase</groupId>
         <artifactId>liquibase-maven-plugin</artifactId>
-        <version>3.8.0</version>
+        <version>3.8.1</version>
         <configuration>
           <propertyFile>src/main/resources/liquibase/liquibase.properties</propertyFile>
         </configuration>
@@ -205,7 +205,7 @@
     <dependency>
       <groupId>org.liquibase</groupId>
       <artifactId>liquibase-core</artifactId>
-      <version>3.8.0</version>
+      <version>3.8.1</version>
       <exclusions>
         <exclusion>
           <groupId>ch.qos.logback</groupId>
