@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <versions xmlns="versionSpace">
-  <version launched="false" silent="true" version="1.6.LTS.18">
+  <version launched="false" silent="true" version="1.6.LTS.19">
+    <feature title="Change default launch option to running as jar">Use maven-shade-plugin to enable building shaded jar with all dependencies and adjust launch script to use jar as launch option and add HEAP_SIZE property to specify the -Xmx flag.</feature>
+    <feature title="Add property to adjust or disable native buffer duration">Add NATIVE_AUDIO_BUFFER property to enable adjusting the duration of the native buffer used by jda-nas. Also allows to disable jda-nas by setting the value to 0.</feature>
+    <feature title="Other improvements">Various minor improvements.</feature>
+  </version>
+  <version launched="true" silent="true" version="1.6.LTS.18">
     <feature title="Use jda-nas to enable native audio streaming">jda-nas enables using native code to buffer and stream audio to reduce stuttering caused by garbage collection activity if supported by the current platform.</feature>
   </version>
   <version launched="true" silent="true" version="1.6.LTS.17">
