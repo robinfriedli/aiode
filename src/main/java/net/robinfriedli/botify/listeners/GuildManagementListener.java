@@ -14,11 +14,11 @@ import org.slf4j.LoggerFactory;
 
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.events.Event;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent;
 import net.dv8tion.jda.api.events.role.RoleDeleteEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.discord.CommandExecutionQueueManager;
 import net.robinfriedli.botify.discord.GuildManager;
 import net.robinfriedli.botify.entities.GrantedRole;
@@ -38,12 +38,10 @@ public class GuildManagementListener extends ListenerAdapter {
     private final ExecutorService guildEventHandlerExecutorService;
     private final GuildManager guildManager;
     private final Logger logger;
-    private final ShardManager shardManager;
 
     public GuildManagementListener(CommandExecutionQueueManager executionQueueManager,
                                    @Nullable DiscordBotListAPI discordBotListAPI,
-                                   GuildManager guildManager,
-                                   ShardManager shardManager) {
+                                   GuildManager guildManager) {
         this.executionQueueManager = executionQueueManager;
         this.discordBotListAPI = discordBotListAPI;
         guildEventHandlerExecutorService = Executors.newFixedThreadPool(3, r -> {
@@ -53,7 +51,6 @@ public class GuildManagementListener extends ListenerAdapter {
         });
         this.guildManager = guildManager;
         logger = LoggerFactory.getLogger(getClass());
-        this.shardManager = shardManager;
     }
 
     @Override
@@ -63,12 +60,7 @@ public class GuildManagementListener extends ListenerAdapter {
             guildManager.addGuild(guild);
             executionQueueManager.addGuild(guild);
 
-            if (discordBotListAPI != null) {
-                for (JDA shard : shardManager.getShards()) {
-                    JDA.ShardInfo shardInfo = shard.getShardInfo();
-                    discordBotListAPI.setStats(shardInfo.getShardId(), shardInfo.getShardTotal(), shard.getGuilds().size());
-                }
-            }
+            updateDiscordBotsApiStats(event);
         });
     }
 
@@ -79,12 +71,7 @@ public class GuildManagementListener extends ListenerAdapter {
             guildManager.removeGuild(guild);
             executionQueueManager.removeGuild(guild);
 
-            if (discordBotListAPI != null) {
-                for (JDA shard : shardManager.getShards()) {
-                    JDA.ShardInfo shardInfo = shard.getShardInfo();
-                    discordBotListAPI.setStats(shardInfo.getShardId(), shardInfo.getShardTotal(), shard.getGuilds().size());
-                }
-            }
+            updateDiscordBotsApiStats(event);
         });
     }
 
@@ -105,4 +92,17 @@ public class GuildManagementListener extends ListenerAdapter {
             });
         });
     }
+
+    private void updateDiscordBotsApiStats(Event event) {
+        if (discordBotListAPI != null) {
+            try {
+                JDA jda = event.getJDA();
+                JDA.ShardInfo shardInfo = jda.getShardInfo();
+                discordBotListAPI.setStats(shardInfo.getShardId(), shardInfo.getShardTotal(), (int) jda.getGuildCache().size());
+            } catch (Exception e) {
+                logger.error("Exception setting discordBotListAPI stats", e);
+            }
+        }
+    }
+
 }
