@@ -70,6 +70,7 @@ import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static net.dv8tion.jda.api.requests.GatewayIntent.*;
 
@@ -131,10 +132,22 @@ public class Launcher {
             }).setApplicationName("botify-youtube-search").build();
             YouTubeService youTubeService = new YouTubeService(youTube, youTubeCredentials, youtubeApiDailyQuota);
 
+            // setup top.gg api
+            DiscordBotListAPI discordBotListAPI;
+            if (!Strings.isNullOrEmpty(discordBotId) && !Strings.isNullOrEmpty(discordbotsToken)) {
+                discordBotListAPI = new DiscordBotListAPI.Builder()
+                    .botId(discordBotId)
+                    .token(discordbotsToken)
+                    .build();
+            } else {
+                logger.warn("discordbots.org api not set up, missing properties");
+                discordBotListAPI = null;
+            }
+
             // prepare startup tasks
             Context startupTaskContext = jxpBackend.getContext(startupTasksPath);
             List<StartupTaskContribution> startupTaskContributions = startupTaskContext.getInstancesOf(StartupTaskContribution.class);
-            StartupListener startupListener = new StartupListener(startupTaskContributions);
+            StartupListener startupListener = new StartupListener(discordBotListAPI, startupTaskContributions);
 
             // setup JDA
             EnumSet<GatewayIntent> gatewayIntents = EnumSet.of(GUILD_MESSAGES, GUILD_MESSAGE_REACTIONS, GUILD_VOICE_STATES);
@@ -159,22 +172,6 @@ public class Launcher {
 
             ShardManager shardManager = shardManagerBuilder.build();
 
-            // setup discordbots.org
-            DiscordBotListAPI discordBotListAPI;
-            if (!Strings.isNullOrEmpty(discordBotId) && !Strings.isNullOrEmpty(discordbotsToken)) {
-                discordBotListAPI = new DiscordBotListAPI.Builder()
-                    .botId(discordBotId)
-                    .token(discordbotsToken)
-                    .build();
-                for (JDA shard : shardManager.getShards()) {
-                    JDA.ShardInfo shardInfo = shard.getShardInfo();
-                    discordBotListAPI.setStats(shardInfo.getShardId(), shardInfo.getShardTotal(), shard.getGuilds().size());
-                }
-            } else {
-                logger.warn("discordbots.org api not set up, missing properties");
-                discordBotListAPI = null;
-            }
-
             // setup botify
             LoginManager loginManager = new LoginManager();
             GuildManager.Mode mode = modePartitioned ? GuildManager.Mode.PARTITIONED : GuildManager.Mode.SHARED;
@@ -192,7 +189,7 @@ public class Launcher {
             SecurityManager securityManager = new SecurityManager(guildManager);
 
             CommandListener commandListener = new CommandListener(executionQueueManager, commandManager, guildManager, messageService, sessionFactory, spotifyApiBuilder);
-            GuildManagementListener guildManagementListener = new GuildManagementListener(executionQueueManager, discordBotListAPI, guildManager, shardManager);
+            GuildManagementListener guildManagementListener = new GuildManagementListener(executionQueueManager, discordBotListAPI, guildManager);
             WidgetListener widgetListener = new WidgetListener(guildManager, messageService);
             VoiceChannelListener voiceChannelListener = new VoiceChannelListener(audioManager);
             VersionManager versionManager = new VersionManager(jxpBackend.getContext(PropertiesLoadingService.requireProperty("VERSIONS_PATH")));
@@ -260,11 +257,14 @@ public class Launcher {
         );
 
         private final CompletableFuture<Botify> futureBotify;
+        @Nullable
+        private final DiscordBotListAPI discordBotListAPI;
         private final List<StartupTaskContribution> startupTaskContributions;
 
         private final Logger logger = LoggerFactory.getLogger(getClass());
 
-        private StartupListener(List<StartupTaskContribution> startupTaskContributions) {
+        private StartupListener(@Nullable DiscordBotListAPI discordBotListAPI, List<StartupTaskContribution> startupTaskContributions) {
+            this.discordBotListAPI = discordBotListAPI;
             futureBotify = new CompletableFuture<>();
             this.startupTaskContributions = startupTaskContributions;
         }
@@ -273,6 +273,15 @@ public class Launcher {
         public void onReady(@NotNull ReadyEvent event) {
             STARTUP_TASK_EXECUTOR.execute(() -> {
                 JDA jda = event.getJDA();
+
+                if (discordBotListAPI != null) {
+                    try {
+                        JDA.ShardInfo shardInfo = jda.getShardInfo();
+                        discordBotListAPI.setStats(shardInfo.getShardId(), shardInfo.getShardTotal(), (int) jda.getGuildCache().size());
+                    } catch (Exception e) {
+                        logger.error("Exception setting discordBotListAPI stats", e);
+                    }
+                }
 
                 Botify botify;
                 try {
