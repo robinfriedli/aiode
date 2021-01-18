@@ -16,12 +16,12 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.events.Event;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent;
 import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateNicknameEvent;
 import net.dv8tion.jda.api.events.role.RoleDeleteEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.command.commands.customisation.RenameCommand;
 import net.robinfriedli.botify.concurrent.CommandExecutionQueueManager;
@@ -48,23 +48,18 @@ public class GuildManagementListener extends ListenerAdapter {
     private final HibernateComponent hibernateComponent;
     private final Logger logger;
     private final MessageService messageService;
-    private final Object statsUpdateLock;
-    private final ShardManager shardManager;
 
     public GuildManagementListener(CommandExecutionQueueManager executionQueueManager,
                                    @Nullable DiscordBotListAPI discordBotListAPI,
                                    GuildManager guildManager,
                                    HibernateComponent hibernateComponent,
-                                   MessageService messageService,
-                                   ShardManager shardManager) {
+                                   MessageService messageService) {
         this.executionQueueManager = executionQueueManager;
         this.discordBotListAPI = discordBotListAPI;
         this.guildManager = guildManager;
         this.hibernateComponent = hibernateComponent;
         logger = LoggerFactory.getLogger(getClass());
         this.messageService = messageService;
-        statsUpdateLock = new Object();
-        this.shardManager = shardManager;
     }
 
     @Override
@@ -74,14 +69,7 @@ public class GuildManagementListener extends ListenerAdapter {
             guildManager.addGuild(guild);
             executionQueueManager.addGuild(guild);
 
-            if (discordBotListAPI != null) {
-                synchronized (statsUpdateLock) {
-                    for (JDA shard : shardManager.getShards()) {
-                        JDA.ShardInfo shardInfo = shard.getShardInfo();
-                        discordBotListAPI.setStats(shardInfo.getShardId(), shardInfo.getShardTotal(), shard.getGuilds().size());
-                    }
-                }
-            }
+            updateDiscordBotsApiStats(event);
         });
     }
 
@@ -92,14 +80,7 @@ public class GuildManagementListener extends ListenerAdapter {
             guildManager.removeGuild(guild);
             executionQueueManager.removeGuild(guild);
 
-            if (discordBotListAPI != null) {
-                synchronized (statsUpdateLock) {
-                    for (JDA shard : shardManager.getShards()) {
-                        JDA.ShardInfo shardInfo = shard.getShardInfo();
-                        discordBotListAPI.setStats(shardInfo.getShardId(), shardInfo.getShardTotal(), shard.getGuilds().size());
-                    }
-                }
-            }
+            updateDiscordBotsApiStats(event);
         });
     }
 
@@ -159,4 +140,17 @@ public class GuildManagementListener extends ListenerAdapter {
             ));
         }
     }
+
+    private void updateDiscordBotsApiStats(Event event) {
+        if (discordBotListAPI != null) {
+            try {
+                JDA jda = event.getJDA();
+                JDA.ShardInfo shardInfo = jda.getShardInfo();
+                discordBotListAPI.setStats(shardInfo.getShardId(), shardInfo.getShardTotal(), (int) jda.getGuildCache().size());
+            } catch (Exception e) {
+                logger.error("Exception setting discordBotListAPI stats", e);
+            }
+        }
+    }
+
 }
