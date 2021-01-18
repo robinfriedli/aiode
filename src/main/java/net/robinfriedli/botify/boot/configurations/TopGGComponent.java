@@ -27,7 +27,7 @@ public class TopGGComponent {
                 .token(topGGToken)
                 .build();
         } else {
-            logger.warn("discordbots.org api not set up, missing properties");
+            logger.info("top.gg api not set up, missing properties");
             discordBotListAPI = null;
         }
         return discordBotListAPI;
