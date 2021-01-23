@@ -705,6 +705,22 @@ command.run('play')"
            requiresInput="false"
            category="ADMIN"
            description="Displays the current calculated usage of the daily YouTube API quota."/>
+  <command identifier="simulate audio traffic"
+           implementation="net.robinfriedli.botify.command.commands.admin.AudioTrafficSimulationCommand"
+           requiresInput="false"
+           category="ADMIN"
+           description="Spawns a specified amount of fake audio players to simulate higher audio traffic. If the nativeBuffer argument is used this creates a NativeAudioSendSystem for each stream to populate the native jda-nas buffer and send the packets to the local loopback address, else this spawns a Thread for each stream to poll the AudioTrack continuously.">
+    <argument identifier="streams" requiresValue="true" valueType="java.lang.Integer" description="Specify the number of fake audio streams to spawn, defaults to 200.">
+      <valueCheck errorMessage="Number of streams needs to be greater than 0" check="value &gt; 0"/>
+    </argument>
+    <argument identifier="duration" requiresValue="true" valueType="java.lang.Integer" description="Specify the amount of seconds the fake audio streams run for, defaults to 300.">
+      <valueCheck errorMessage="Duration needs to be greater than 0" check="value &gt; 0"/>
+    </argument>
+    <argument identifier="url" requiresValue="true" description="The URL of the track to use for all fake audio streams. Simply uses the first track if several tracks are found. The track is repeated until the duration limit is reached."/>
+    <argument identifier="nativeBuffer" requiresValue="true" valueType="java.lang.Integer" description="The buffer duration for jda-nas in milliseconds. If the argument is not set, jda-nas isn't used and the AudioPlayer is simply polled without doing anything with the returned frames.">
+      <valueCheck errorMessage="nativeBuffer needs to be greater than 0" check="value &gt; 0"/>
+    </argument>
+  </command>
 
   <!-- abstract super commands -->
   <abstractCommand class="net.robinfriedli.botify.command.commands.AbstractPlayableLoadingCommand">
