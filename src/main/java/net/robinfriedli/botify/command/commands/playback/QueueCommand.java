@@ -73,7 +73,7 @@ public class QueueCommand extends AbstractQueueLoadingCommand {
 
         CompletableFuture<Message> futureMessage = sendMessage(audioQueue.buildMessageEmbed(playback, guild));
         WidgetRegistry widgetRegistry = getContext().getGuildContext().getWidgetRegistry();
-        futureMessage.thenAccept(message -> widgetRegistry.registerWidget(new QueueWidget(widgetRegistry, guild, message, playback)));
+        futureMessage.thenAccept(message -> new QueueWidget(widgetRegistry, guild, message, playback).initialise());
     }
 
     @Override
