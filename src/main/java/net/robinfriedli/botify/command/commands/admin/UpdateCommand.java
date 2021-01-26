@@ -8,6 +8,7 @@ import java.io.InputStreamReader;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.MessageBuilder;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.requests.restaction.MessageAction;
@@ -50,7 +51,7 @@ public class UpdateCommand extends AbstractAdminCommand {
             getMessageService().executeMessageAction(channel, c -> {
                 MessageAction messageAction = c.sendMessage(message);
                 return messageAction.addFile(byteArrayInputStream, "output.txt");
-            });
+            }, Permission.MESSAGE_ATTACH_FILES);
         }
     }
 

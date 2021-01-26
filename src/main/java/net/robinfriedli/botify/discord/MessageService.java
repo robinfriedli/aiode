@@ -3,6 +3,7 @@ package net.robinfriedli.botify.discord;
 import java.awt.Color;
 import java.io.InputStream;
 import java.net.SocketTimeoutException;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
@@ -49,6 +50,7 @@ public class MessageService {
 
     private static final Invoker RECURSION_PREVENTION_INVOKER = Invoker.newInstance();
     private static final Mode RECURSION_PREVENTION_MODE = Mode.create().with(new RecursionPreventionMode());
+    private static final EnumSet<Permission> ESSENTIAL_PERMISSIONS = EnumSet.of(Permission.VIEW_CHANNEL, Permission.MESSAGE_WRITE, Permission.MESSAGE_READ);
 
     private final int limit;
     private final Logger logger;
@@ -104,7 +106,7 @@ public class MessageService {
     }
 
     public CompletableFuture<Message> send(MessageEmbed messageEmbed, Guild guild) {
-        return executeMessageAction(guild, channel -> channel.sendMessage(messageEmbed));
+        return executeMessageAction(guild, channel -> channel.sendMessage(messageEmbed), Permission.MESSAGE_EMBED_LINKS);
     }
 
     public CompletableFuture<Message> send(EmbedBuilder embedBuilder, MessageChannel channel) {
@@ -283,7 +285,7 @@ public class MessageService {
         return futureMessages;
     }
 
-    public CompletableFuture<Message> executeMessageAction(MessageChannel channel, Function<MessageChannel, MessageAction> function) {
+    public CompletableFuture<Message> executeMessageAction(MessageChannel channel, Function<MessageChannel, MessageAction> function, Permission... additionalPermissions) {
         CompletableFuture<Message> futureMessage = new CompletableFuture<>();
         try {
             if (channel instanceof TextChannel) {
@@ -294,6 +296,28 @@ public class MessageService {
                     logger.warn(String.format("Can't execute message actions for channel %s on guild %s", textChannel, guild));
                     futureMessage.cancel(false);
                     return futureMessage;
+                }
+
+                for (Permission additionalPermission : additionalPermissions) {
+                    if (!selfMember.hasPermission(textChannel, additionalPermission)) {
+                        logger.warn(String.format(
+                            "Can't execute message action for channel %s on guild %s due to missing permission %s",
+                            textChannel,
+                            guild,
+                            additionalPermission
+                        ));
+
+                        if (!ESSENTIAL_PERMISSIONS.contains(additionalPermission)) {
+                            String message = "Bot is missing permission: " + additionalPermission.getName();
+
+                            RECURSION_PREVENTION_INVOKER.invoke(RECURSION_PREVENTION_MODE, () -> {
+                                send(message, channel);
+                            });
+                        }
+
+                        futureMessage.cancel(false);
+                        return futureMessage;
+                    }
                 }
             }
 
@@ -340,14 +364,14 @@ public class MessageService {
         return executeForUser(user, privateChannel -> executeMessageAction(privateChannel, function));
     }
 
-    public CompletableFuture<Message> executeMessageAction(Guild guild, Function<MessageChannel, MessageAction> function) {
+    public CompletableFuture<Message> executeMessageAction(Guild guild, Function<MessageChannel, MessageAction> function, Permission... additionalPermissions) {
         TextChannel textChannel = getTextChannelForGuild(guild);
 
         if (textChannel == null) {
             logger.warn("Unable to send any messages to guild " + guild.getName() + " (" + guild.getId() + ")");
             return CompletableFuture.failedFuture(new CancellationException());
         } else {
-            return executeMessageAction(textChannel, function);
+            return executeMessageAction(textChannel, function, additionalPermissions);
         }
     }
 
@@ -377,19 +401,36 @@ public class MessageService {
     }
 
     private CompletableFuture<Message> sendInternal(MessageChannel channel, MessageEmbed messageEmbed) {
-        return executeMessageAction(channel, c -> c.sendMessage(messageEmbed));
+        return executeMessageAction(channel, c -> c.sendMessage(messageEmbed), Permission.MESSAGE_EMBED_LINKS);
     }
 
     private void handleError(Throwable e, MessageChannel channel) {
+        Guild guild;
+        if (channel instanceof TextChannel) {
+            guild = ((TextChannel) channel).getGuild();
+        } else {
+            guild = null;
+        }
+
         if (e instanceof ErrorResponseException) {
             if (e.getCause() instanceof SocketTimeoutException) {
-                logger.warn("Timeout sending message to channel " + channel);
+                String msg = "Timeout sending message to channel " + channel;
+                if (guild != null) {
+                    msg = msg + " on guild " + guild;
+                }
+                logger.warn(msg);
             } else {
-                logger.warn(String.format("Error response msg: %s cause: %s: %s sending message to channel %s",
+                String msg = String.format("Error response msg: %s cause: %s: %s sending message to channel %s",
                     e.getMessage(),
                     e.getCause(),
                     e.getCause() != null ? e.getCause().getMessage() : "null",
-                    channel));
+                    channel);
+
+                if (guild != null) {
+                    msg = msg + " on guild " + guild;
+                }
+
+                logger.warn(msg);
             }
         } else {
             logger.error("Unexpected exception sending message to channel " + channel, e);
