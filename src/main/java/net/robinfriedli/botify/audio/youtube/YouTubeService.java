@@ -402,7 +402,7 @@ public class YouTubeService extends AbstractShutdownable {
                 for (PlaylistItem item : items) {
                     String videoTitle = item.getSnippet().getTitle();
                     String videoId = item.getSnippet().getResourceId().getVideoId();
-                    if (index < hollowVideos.size() - 1) {
+                    if (index < hollowVideos.size()) {
                         HollowYouTubeVideo hollowVideo = hollowVideos.get(index);
                         hollowVideo.setTitle(videoTitle);
                         hollowVideo.setId(videoId);
