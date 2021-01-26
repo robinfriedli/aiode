@@ -2,6 +2,9 @@ package net.robinfriedli.botify.audio;
 
 import java.awt.Color;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.event.AudioEventAdapter;
@@ -19,9 +22,12 @@ import net.robinfriedli.botify.discord.property.AbstractGuildProperty;
 import net.robinfriedli.botify.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
+import net.robinfriedli.botify.exceptions.handlers.LoggingExceptionHandler;
 import net.robinfriedli.botify.util.EmojiConstants;
 import net.robinfriedli.botify.util.PropertiesLoadingService;
 import net.robinfriedli.botify.util.StaticSessionProvider;
+import net.robinfriedli.threadpool.ThreadPool;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Iterator to iterate the queue automatically when a track ends or fails loading. The current QueueIterator is registered
@@ -30,6 +36,25 @@ import net.robinfriedli.botify.util.StaticSessionProvider;
  * explicitly starts playing a new playback.
  */
 public class QueueIterator extends AudioEventAdapter {
+
+    private static final ThreadPool AUDIO_EVENT_POOL = ThreadPool.Builder.create()
+        .setCoreSize(3)
+        .setMaxSize(50)
+        .setKeepAlive(5L, TimeUnit.MINUTES)
+        .setThreadFactory(new ThreadFactory() {
+
+            private final AtomicInteger threadNumber = new AtomicInteger(1);
+
+            @Override
+            public Thread newThread(@NotNull Runnable r) {
+                Thread t = new Thread(r);
+                t.setName("audio-event-pool-thread-" + threadNumber.getAndIncrement());
+                t.setDaemon(true);
+                t.setUncaughtExceptionHandler(new LoggingExceptionHandler());
+                return t;
+            }
+        })
+        .build();
 
     private final AudioPlayback playback;
     private final AudioQueue queue;
@@ -43,9 +68,7 @@ public class QueueIterator extends AudioEventAdapter {
     //
     // For the perspective of QueueIterator instances tracks are either finished completely or fail
     // due to an error. If the user skips a track a new QueueIterator instance is created.
-    //
-    // Value is not atomic because it is not expected to be updated concurrently but only by the audio connection thread.
-    private int attemptCount;
+    private final AtomicInteger attemptCount = new AtomicInteger(0);
 
     QueueIterator(AudioPlayback playback, AudioManager audioManager) {
         this.playback = playback;
@@ -57,34 +80,38 @@ public class QueueIterator extends AudioEventAdapter {
 
     @Override
     public void onTrackStart(AudioPlayer player, AudioTrack track) {
-        if (playback.isPaused()) {
-            playback.unpause();
-        }
-
-        Playable current = track.getUserData(Playable.class);
-        if (current != null) {
-            audioManager.createHistoryEntry(current, playback.getGuild(), playback.getVoiceChannel());
-            if (shouldSendPlaybackNotification()) {
-                sendCurrentTrackNotification(current);
+        handleAudioEvent(() -> {
+            if (playback.isPaused()) {
+                playback.unpause();
             }
-        }
+
+            Playable current = track.getUserData(Playable.class);
+            if (current != null) {
+                audioManager.createHistoryEntry(current, playback.getGuild(), playback.getVoiceChannel());
+                if (shouldSendPlaybackNotification()) {
+                    sendCurrentTrackNotification(current);
+                }
+            }
+        });
     }
 
     @Override
     public void onTrackEnd(AudioPlayer player, AudioTrack track, AudioTrackEndReason reason) {
         if (reason.mayStartNext) {
-            if (reason == AudioTrackEndReason.LOAD_FAILED) {
-                iterateQueue(playback, queue, true);
-            } else {
-                // only reset the retryCount once a track has ended successfully, as tracks can fail after they started
-                // and tracks that fail immediately after they start, e.g. a soundcloud track throwing a 401, would still
-                // spam the chat
-                //
-                // hint: for the perspective of QueueIterator instances tracks are either finished completely or fail
-                // due to an error. If the user skips a track a new QueueIterator instance is created
-                resetAttemptCount();
-                iterateQueue(playback, queue);
-            }
+            handleAudioEvent(() -> {
+                if (reason == AudioTrackEndReason.LOAD_FAILED) {
+                    iterateQueue(playback, queue, true);
+                } else {
+                    // only reset the retryCount once a track has ended successfully, as tracks can fail after they started
+                    // and tracks that fail immediately after they start, e.g. a soundcloud track throwing a 401, would still
+                    // spam the chat
+                    //
+                    // hint: for the perspective of QueueIterator instances tracks are either finished completely or fail
+                    // due to an error. If the user skips a track a new QueueIterator instance is created
+                    resetAttemptCount();
+                    iterateQueue(playback, queue);
+                }
+            });
         }
     }
 
@@ -107,7 +134,7 @@ public class QueueIterator extends AudioEventAdapter {
         }
 
         // don't skip over more than 10 items to avoid a frozen queue
-        if (++attemptCount > 10) {
+        if (attemptCount.incrementAndGet() > 10) {
             MessageChannel communicationChannel = playback.getCommunicationChannel();
             if (communicationChannel != null) {
                 EmbedBuilder embedBuilder = new EmbedBuilder();
@@ -190,7 +217,7 @@ public class QueueIterator extends AudioEventAdapter {
     }
 
     private void sendError(Playable track, Throwable e) {
-        if (attemptCount == 1) {
+        if (attemptCount.get() == 1) {
             MessageChannel communicationChannel = playback.getCommunicationChannel();
 
             if (communicationChannel == null) {
@@ -257,6 +284,18 @@ public class QueueIterator extends AudioEventAdapter {
         audioManager.createNowPlayingWidget(futureMessage, playback);
     }
 
+    private void handleAudioEvent(Runnable runnable) {
+        AUDIO_EVENT_POOL.execute(() -> {
+            if (isReplaced) {
+                return;
+            }
+
+            synchronized (this) {
+                runnable.run();
+            }
+        });
+    }
+
     private boolean shouldSendPlaybackNotification() {
         return StaticSessionProvider.invokeWithSession(session -> {
             Guild guild = playback.getGuild();
@@ -277,7 +316,7 @@ public class QueueIterator extends AudioEventAdapter {
     }
 
     private void resetAttemptCount() {
-        attemptCount = 0;
+        attemptCount.set(0);
     }
 
     public Playable getCurrentlyPlaying() {
