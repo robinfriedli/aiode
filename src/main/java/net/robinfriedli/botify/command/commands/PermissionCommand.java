@@ -204,7 +204,7 @@ public class PermissionCommand extends AbstractCommand {
                 Optional<AccessConfiguration> existingAccessConfiguration = specification.getAccessConfiguration(selectedCommand.getIdentifier());
                 if (existingAccessConfiguration.isPresent()) {
                     AccessConfiguration accessConfiguration = existingAccessConfiguration.get();
-                    Set<GrantedRole> setRoles = accessConfiguration.getRoles();
+                    Set<GrantedRole> setRoles = Sets.newHashSet(accessConfiguration.getRoles());
                     for (GrantedRole setRole : setRoles) {
                         accessConfiguration.removeRole(setRole);
                         session.delete(setRole);
