@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <versions xmlns="versionSpace">
-  <version launched="false" silent="true" version="1.6.LTS.19">
+  <version launched="false" silent="true" version="1.6.LTS.20">
+    <feature title="Handle audio event in separate thread">When using jda-nas all audio events are handled by the same thread that populates the native buffer, meaning when one playback finishes a track and loads the next track it blocks populating the native buffer for all playbacks. This is not an issue without jda-nas because in that case the events are handled by the audio connection thread of the specific guild.</feature>
+    <feature title="Check additional permissions when sending message">Check MESSAGE_EMBED_LINKS when sending embeds and MESSAGE_ATTACH_FILES when attaching files.</feature>
+    <feature title="YouTubeService#populateList: fix completing last item">The last item was never completed due to incorrect index comparison.</feature>
+  </version>
+  <version launched="true" silent="true" version="1.6.LTS.19">
     <feature title="Change default launch option to running as jar">Use maven-shade-plugin to enable building shaded jar with all dependencies and adjust launch script to use jar as launch option and add HEAP_SIZE property to specify the -Xmx flag.</feature>
     <feature title="Add property to adjust or disable native buffer duration">Add NATIVE_AUDIO_BUFFER property to enable adjusting the duration of the native buffer used by jda-nas. Also allows to disable jda-nas by setting the value to 0.</feature>
     <feature title="Other improvements">Various minor improvements.</feature>
