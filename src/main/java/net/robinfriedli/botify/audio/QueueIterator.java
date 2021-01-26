@@ -108,10 +108,13 @@ public class QueueIterator extends AudioEventAdapter {
 
         // don't skip over more than 10 items to avoid a frozen queue
         if (++attemptCount > 10) {
-            EmbedBuilder embedBuilder = new EmbedBuilder();
-            embedBuilder.setColor(Color.RED);
-            embedBuilder.setDescription("Queue contains too many unplayable tracks subsequently for automatic skipping. You can skip to the next valid track manually.");
-            messageService.sendTemporary(embedBuilder.build(), playback.getCommunicationChannel());
+            MessageChannel communicationChannel = playback.getCommunicationChannel();
+            if (communicationChannel != null) {
+                EmbedBuilder embedBuilder = new EmbedBuilder();
+                embedBuilder.setColor(Color.RED);
+                embedBuilder.setDescription("Queue contains too many unplayable tracks subsequently for automatic skipping. You can skip to the next valid track manually.");
+                messageService.sendTemporary(embedBuilder.build(), communicationChannel);
+            }
             playback.stop();
             // reset just in case, even though the same QueueIterator instance will currently never be used again as the
             // user now either has to skip manually or start a new playback, creating a new iterator
@@ -188,6 +191,12 @@ public class QueueIterator extends AudioEventAdapter {
 
     private void sendError(Playable track, Throwable e) {
         if (attemptCount == 1) {
+            MessageChannel communicationChannel = playback.getCommunicationChannel();
+
+            if (communicationChannel == null) {
+                return;
+            }
+
             EmbedBuilder embedBuilder = new EmbedBuilder();
             if (track != null) {
                 embedBuilder.setTitle("Could not load track " + track.display());
@@ -205,7 +214,7 @@ public class QueueIterator extends AudioEventAdapter {
                 embedBuilder.addField("", "Skipping to the next playable track...", false);
             }
 
-            messageService.sendTemporary(embedBuilder.build(), playback.getCommunicationChannel());
+            messageService.sendTemporary(embedBuilder.build(), communicationChannel);
         }
     }
 
