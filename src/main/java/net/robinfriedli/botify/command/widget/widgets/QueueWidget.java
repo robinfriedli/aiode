@@ -1,6 +1,7 @@
 package net.robinfriedli.botify.command.widget.widgets;
 
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
@@ -30,7 +31,7 @@ public class QueueWidget extends AbstractDecoratingWidget {
 
         EmbedBuilder embedBuilder = audioPlayback.getAudioQueue().buildMessageEmbed(audioPlayback, guild);
         MessageEmbed messageEmbed = messageService.buildEmbed(embedBuilder);
-        messageService.executeMessageAction(channel, c -> c.editMessageById(message.getId(), messageEmbed));
+        messageService.executeMessageAction(channel, c -> c.editMessageById(message.getId(), messageEmbed), Permission.MESSAGE_EMBED_LINKS);
     }
 
 }

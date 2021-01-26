@@ -9,6 +9,7 @@ import java.util.List;
 
 import com.google.common.collect.Lists;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.requests.restaction.MessageAction;
 import net.robinfriedli.botify.command.AbstractAdminCommand;
@@ -48,7 +49,7 @@ public class UpdateCommand extends AbstractAdminCommand {
             }
 
             return messageAction;
-        });
+        }, Permission.MESSAGE_EMBED_LINKS, Permission.MESSAGE_ATTACH_FILES);
     }
 
     @Override

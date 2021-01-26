@@ -3,6 +3,7 @@ package net.robinfriedli.botify.discord;
 import java.awt.Color;
 import java.io.InputStream;
 import java.net.SocketTimeoutException;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
@@ -48,6 +49,7 @@ import org.springframework.stereotype.Component;
 public class MessageService {
 
     private static final Invoker RECURSION_PREVENTION_INVOKER = Invoker.newInstance();
+    private static final EnumSet<Permission> ESSENTIAL_PERMISSIONS = EnumSet.of(Permission.VIEW_CHANNEL, Permission.MESSAGE_WRITE, Permission.MESSAGE_READ);
 
     private final int limit = 1000;
     private final GuildManager guildManager;
@@ -104,7 +106,7 @@ public class MessageService {
     }
 
     public CompletableFuture<Message> send(MessageEmbed messageEmbed, Guild guild) {
-        return executeMessageAction(guild, channel -> channel.sendMessage(messageEmbed));
+        return executeMessageAction(guild, channel -> channel.sendMessage(messageEmbed), Permission.MESSAGE_EMBED_LINKS);
     }
 
     public CompletableFuture<Message> send(EmbedBuilder embedBuilder, MessageChannel channel) {
@@ -283,7 +285,7 @@ public class MessageService {
         return futureMessages;
     }
 
-    public CompletableFuture<Message> executeMessageAction(MessageChannel channel, Function<MessageChannel, MessageAction> function) {
+    public CompletableFuture<Message> executeMessageAction(MessageChannel channel, Function<MessageChannel, MessageAction> function, Permission... additionalPermissions) {
         CompletableFuture<Message> futureMessage = new CompletableFuture<>();
         try {
             if (channel instanceof TextChannel) {
@@ -295,6 +297,29 @@ public class MessageService {
                     futureMessage.cancel(false);
                     return futureMessage;
                 }
+
+                for (Permission additionalPermission : additionalPermissions) {
+                    if (!selfMember.hasPermission(textChannel, additionalPermission)) {
+                        logger.warn(String.format(
+                            "Can't execute message action for channel %s on guild %s due to missing permission %s",
+                            textChannel,
+                            guild,
+                            additionalPermission
+                        ));
+
+                        if (!ESSENTIAL_PERMISSIONS.contains(additionalPermission)) {
+                            String message = "Bot is missing permission: " + additionalPermission.getName();
+
+                            Mode mode = Mode.create().with(new RecursionPreventionMode("message_service_send_missing_permission_message"));
+                            RECURSION_PREVENTION_INVOKER.invoke(mode, () -> {
+                                send(message, channel);
+                            });
+                        }
+
+                        futureMessage.cancel(false);
+                        return futureMessage;
+                    }
+                }
             }
 
             MessageAction messageAction = function.apply(channel);
@@ -305,11 +330,11 @@ public class MessageService {
         } catch (InsufficientPermissionException e) {
             Permission permission = e.getPermission();
             if (permission == Permission.MESSAGE_WRITE || permission == Permission.MESSAGE_READ) {
+                String msg = "Unable to send messages to channel " + channel;
                 if (channel instanceof TextChannel) {
-                    logger.warn("Unable to send messages to guild " + ((TextChannel) channel).getGuild());
-                } else {
-                    logger.warn("Unable to send messages to " + channel);
+                    msg = msg + " on guild " + ((TextChannel) channel).getGuild();
                 }
+                logger.warn(msg);
                 futureMessage.completeExceptionally(e);
             } else {
                 StringBuilder errorMessage = new StringBuilder("Missing permission ").append(permission);
@@ -338,14 +363,14 @@ public class MessageService {
         return executeForUser(user, privateChannel -> executeMessageAction(privateChannel, function));
     }
 
-    public CompletableFuture<Message> executeMessageAction(Guild guild, Function<MessageChannel, MessageAction> function) {
+    public CompletableFuture<Message> executeMessageAction(Guild guild, Function<MessageChannel, MessageAction> function, Permission... additionalPermissions) {
         TextChannel textChannel = guildManager.getDefaultTextChannelForGuild(guild);
 
         if (textChannel == null) {
             logger.warn("Unable to send any messages to guild " + guild.getName() + " (" + guild.getId() + ")");
             return CompletableFuture.failedFuture(new CancellationException());
         } else {
-            return executeMessageAction(textChannel, function);
+            return executeMessageAction(textChannel, function, additionalPermissions);
         }
     }
 
@@ -375,23 +400,36 @@ public class MessageService {
     }
 
     private CompletableFuture<Message> sendInternal(MessageChannel channel, MessageEmbed messageEmbed) {
-        return executeMessageAction(channel, c -> c.sendMessage(messageEmbed));
-    }
-
-    private boolean canTalk(Guild guild) {
-        return guild.getTextChannels().stream().anyMatch(TextChannel::canTalk);
+        return executeMessageAction(channel, c -> c.sendMessage(messageEmbed), Permission.MESSAGE_EMBED_LINKS);
     }
 
     private void handleError(Throwable e, MessageChannel channel) {
+        Guild guild;
+        if (channel instanceof TextChannel) {
+            guild = ((TextChannel) channel).getGuild();
+        } else {
+            guild = null;
+        }
+
         if (e instanceof ErrorResponseException) {
             if (e.getCause() instanceof SocketTimeoutException) {
-                logger.warn("Timeout executing message action for channel " + channel);
+                String msg = "Timeout executing message action for channel " + channel;
+                if (guild != null) {
+                    msg = msg + " on guild " + guild;
+                }
+                logger.warn(msg);
             } else {
-                logger.warn(String.format("Error response msg: %s cause: %s: %s executing message action for channel %s",
+                String msg = String.format("Error response msg: %s cause: %s: %s executing message action for channel %s",
                     e.getMessage(),
                     e.getCause(),
                     e.getCause() != null ? e.getCause().getMessage() : "null",
-                    channel));
+                    channel);
+
+                if (guild != null) {
+                    msg = msg + " on guild " + guild;
+                }
+
+                logger.warn(msg);
             }
         } else {
             logger.error("Unexpected exception executing message action for channel " + channel, e);

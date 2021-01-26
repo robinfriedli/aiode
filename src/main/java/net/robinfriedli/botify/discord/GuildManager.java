@@ -21,6 +21,7 @@ import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.wrapper.spotify.SpotifyApi;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.sharding.ShardManager;
@@ -288,6 +289,7 @@ public class GuildManager {
 
     private TextChannel getDefaultTextChannelForGuild(Guild guild, GuildContext guildContext) {
         Botify botify = Botify.get();
+        Member selfMember = guild.getSelfMember();
 
         // fetch the default text channel from the customised property
         GuildPropertyManager guildPropertyManager = botify.getGuildPropertyManager();
@@ -302,7 +304,7 @@ public class GuildManager {
 
             if (!Strings.isNullOrEmpty(defaultTextChannelId)) {
                 TextChannel textChannelById = guild.getTextChannelById(defaultTextChannelId);
-                if (textChannelById != null && textChannelById.canTalk()) {
+                if (textChannelById != null && selfMember.hasAccess(textChannelById) && textChannelById.canTalk(selfMember)) {
                     return textChannelById;
                 }
             }
@@ -310,22 +312,30 @@ public class GuildManager {
 
         // check if the guild's playback has a current communication text channel
         MessageChannel playbackCommunicationChannel = guildContext.getPlayback().getCommunicationChannel();
-        if (playbackCommunicationChannel instanceof TextChannel && ((TextChannel) playbackCommunicationChannel).canTalk()) {
-            return (TextChannel) playbackCommunicationChannel;
+        if (playbackCommunicationChannel instanceof TextChannel) {
+            TextChannel textChannelFromPlayback = (TextChannel) playbackCommunicationChannel;
+            if (selfMember.hasAccess(textChannelFromPlayback) && textChannelFromPlayback.canTalk(selfMember)) {
+                return textChannelFromPlayback;
+            }
         }
 
         // use guild default defined by discord
         TextChannel defaultChannel = guild.getDefaultChannel();
-        if (defaultChannel != null && defaultChannel.canTalk()) {
+        if (defaultChannel != null && selfMember.hasAccess(defaultChannel) && defaultChannel.canTalk(selfMember)) {
             return defaultChannel;
         } else {
             TextChannel systemChannel = guild.getSystemChannel();
-            if (systemChannel != null && systemChannel.canTalk()) {
+            if (systemChannel != null && selfMember.hasAccess(systemChannel) && systemChannel.canTalk()) {
                 return systemChannel;
             }
         }
 
-        List<TextChannel> availableChannels = guild.getTextChannels().stream().filter(TextChannel::canTalk).collect(Collectors.toList());
+        List<TextChannel> availableChannels = guild
+            .getTextChannels()
+            .stream()
+            .filter(channel -> selfMember.hasAccess(channel) && channel.canTalk(selfMember))
+            .collect(Collectors.toList());
+
         if (availableChannels.isEmpty()) {
             return null;
         } else {
