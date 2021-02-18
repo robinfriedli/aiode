@@ -80,7 +80,7 @@ Botify makes use of
 
 - Postgre SQL
 
-    - Make sure to keep username and password as ***postgres**.
+    - Make sure to keep username and password as **postgres**.
     
     - After install open PgAdmin 4 under Servers > PostgreSQL 13.Right click on Databases and create a database as `botify_playlists`.
 
