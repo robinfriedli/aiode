@@ -105,9 +105,15 @@ public class SpotifyService {
         int offset = 0;
         String nextPage;
         do {
-            Paging<PlaylistTrack> paging = spotifyApi.getPlaylistsTracks(playlistId).offset(offset).limit(limit).build().execute();
+            Paging<PlaylistTrack> paging = spotifyApi.getPlaylistsItems(playlistId).offset(offset).limit(limit).build().execute();
             PlaylistTrack[] items = paging.getItems();
-            tracks.addAll(Arrays.stream(items).map(PlaylistTrack::getTrack).filter(Objects::nonNull).collect(Collectors.toList()));
+            tracks.addAll(
+                Arrays.stream(items)
+                    .map(PlaylistTrack::getTrack)
+                    .filter(item -> item instanceof Track)
+                    .map(item -> (Track) item)
+                    .collect(Collectors.toList())
+            );
             offset = offset + limit;
             nextPage = paging.getNext();
         } while (nextPage != null);

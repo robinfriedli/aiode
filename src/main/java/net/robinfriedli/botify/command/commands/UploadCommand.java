@@ -46,7 +46,7 @@ public class UploadCommand extends AbstractCommand {
             List<String> trackUris = tracks.stream().map(Track::getUri).collect(Collectors.toList());
             List<List<String>> sequences = Lists.partition(trackUris, 90);
             for (List<String> sequence : sequences) {
-                spotifyApi.addTracksToPlaylist(playlistId, sequence.toArray(new String[0])).build().execute();
+                spotifyApi.addItemsToPlaylist(playlistId, sequence.toArray(new String[0])).build().execute();
             }
 
             return null;
