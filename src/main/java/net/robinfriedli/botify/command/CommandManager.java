@@ -15,6 +15,8 @@ import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.entities.Preset;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
+import net.robinfriedli.botify.exceptions.InvalidCommandException;
+import net.robinfriedli.botify.exceptions.RateLimitException;
 import net.robinfriedli.botify.exceptions.handlers.CommandExceptionHandler;
 import net.robinfriedli.botify.listeners.CommandListener;
 import net.robinfriedli.jxp.persist.Context;
@@ -59,11 +61,17 @@ public class CommandManager {
 
         commandExecutionThread.setUncaughtExceptionHandler(new CommandExceptionHandler(command, logger));
         commandExecutionThread.setName("botify command execution: " + context);
-        boolean queued = !executionQueue.add(commandExecutionThread);
+        try {
+            boolean queued = !executionQueue.add(commandExecutionThread);
 
-        if (queued) {
-            MessageService messageService = Botify.get().getMessageService();
-            messageService.sendError("Executing too many commands concurrently. This command will be executed after one has finished.", context.getChannel());
+            if (queued) {
+                MessageService messageService = Botify.get().getMessageService();
+                messageService.sendError("Executing too many commands concurrently. This command will be executed after one has finished.", context.getChannel());
+            }
+        } catch (RateLimitException e) {
+            if (!e.isTimeout()) {
+                throw new InvalidCommandException(e.getMessage());
+            }
         }
     }
 
