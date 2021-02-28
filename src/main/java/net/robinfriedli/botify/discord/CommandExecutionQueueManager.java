@@ -1,5 +1,7 @@
 package net.robinfriedli.botify.discord;
 
+import java.time.Duration;
+
 import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.botify.concurrent.ThreadExecutionQueue;
 import net.robinfriedli.botify.util.ISnowflakeMap;
@@ -9,6 +11,11 @@ import net.robinfriedli.botify.util.ISnowflakeMap;
  */
 public class CommandExecutionQueueManager {
 
+    private static final int EXECUTION_QUEUE_SIZE = 3;
+    private static final int RATE_LIMIT_FOR_PERIOD = 4;
+    private static final Duration RATE_LIMIT_PERIOD = Duration.ofSeconds(5);
+    private static final Duration RATE_LIMIT_VIOLATION_TIMEOUT = Duration.ofSeconds(15);
+
     private final ISnowflakeMap<ThreadExecutionQueue> guildExecutionQueues;
 
     public CommandExecutionQueueManager() {
@@ -16,7 +23,17 @@ public class CommandExecutionQueueManager {
     }
 
     public void addGuild(Guild guild) {
-        guildExecutionQueues.put(guild, new ThreadExecutionQueue(3));
+        guildExecutionQueues.put(
+            guild,
+            new ThreadExecutionQueue(
+                EXECUTION_QUEUE_SIZE,
+                false,
+                guild.getId(),
+                RATE_LIMIT_FOR_PERIOD,
+                RATE_LIMIT_PERIOD,
+                RATE_LIMIT_VIOLATION_TIMEOUT
+            )
+        );
     }
 
     public void removeGuild(Guild guild) {
@@ -24,15 +41,14 @@ public class CommandExecutionQueueManager {
     }
 
     public ThreadExecutionQueue getForGuild(Guild guild) {
-        ThreadExecutionQueue threadExecutionQueue = guildExecutionQueues.get(guild);
-
-        if (threadExecutionQueue == null) {
-            ThreadExecutionQueue newQueue = new ThreadExecutionQueue(3);
-            guildExecutionQueues.put(guild, newQueue);
-            return newQueue;
-        }
-
-        return threadExecutionQueue;
+        return guildExecutionQueues.computeIfAbsent(guild, g -> new ThreadExecutionQueue(
+            EXECUTION_QUEUE_SIZE,
+            false,
+            g.getId(),
+            RATE_LIMIT_FOR_PERIOD,
+            RATE_LIMIT_PERIOD,
+            RATE_LIMIT_VIOLATION_TIMEOUT
+        ));
     }
 
     public ISnowflakeMap<ThreadExecutionQueue> getGuildExecutionQueues() {
