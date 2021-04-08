@@ -223,6 +223,19 @@
   </whitelistMethods>
   <whitelistMethods class="java.util.Set">
     <method name="of"/>
+    <method name="asImmutable"/>
+    <method name="asSynchronized"/>
+    <method name="asUnmodifiable"/>
+    <method name="each"/>
+    <method name="eachWithIndex"/>
+    <method name="findAll"/>
+    <method name="flatten"/>
+    <method name="grep"/>
+    <method name="intersect"/>
+    <method name="leftShift"/>
+    <method name="minus"/>
+    <method name="plus"/>
+    <method name="split"/>
   </whitelistMethods>
   <whitelistMethods class="java.util.Arrays">
     <method name="rangeCheck"/>
@@ -277,6 +290,50 @@
     <method name="ofEntries"/>
     <method name="entry"/>
     <method name="copyOf"/>
+    <!-- groovy enhanced jdk -->
+    <method name="any"/>
+    <method name="asBoolean"/>
+    <method name="asImmutable"/>
+    <method name="asSynchronized"/>
+    <method name="asUnmodifiable"/>
+    <method name="collect"/>
+    <method name="collectEntries"/>
+    <method name="collectMany"/>
+    <method name="count"/>
+    <method name="countBy"/>
+    <method name="drop"/>
+    <method name="dropWhile"/>
+    <method name="each"/>
+    <method name="eachWithIndex"/>
+    <method name="every"/>
+    <method name="find"/>
+    <method name="findAll"/>
+    <method name="findResult"/>
+    <method name="findResults"/>
+    <method name="getAt"/>
+    <method name="groupBy"/>
+    <method name="groupEntriesBy"/>
+    <method name="inject"/>
+    <method name="intersect"/>
+    <method name="isCase"/>
+    <method name="leftShift"/>
+    <method name="max"/>
+    <method name="min"/>
+    <method name="minus"/>
+    <method name="plus"/>
+    <method name="putAt"/>
+    <method name="removeAll"/>
+    <method name="retainAll"/>
+    <method name="reverseEach"/>
+    <method name="sort"/>
+    <method name="spread"/>
+    <method name="subMap"/>
+    <method name="take"/>
+    <method name="takeWhile"/>
+    <method name="toMapString"/>
+    <method name="toSorted"/>
+    <method name="toSpreadMap"/>
+    <method name="withDefault"/>
   </whitelistMethods>
   <whitelistMethods class="java.util.Map$Entry">
     <method name="&lt;init&gt;"/>
@@ -679,9 +736,11 @@
   <whitelistClass class="java.time.LocalDate"/>
   <whitelistClass class="java.time.LocalDateTime"/>
   <whitelistClass class="java.util.stream.Stream"/>
+  <whitelistClass class="java.util.stream.IntStream"/>
   <whitelistClass class="java.util.stream.Collectors"/>
   <whitelistClass class="java.util.Random"/>
   <whitelistClass class="net.dv8tion.jda.api.EmbedBuilder"/>
   <whitelistClass class="net.robinfriedli.botify.audio.AudioQueue"/>
-  <whitelistClass class="net.robinfriedli.botify.scripting.GroovyInvocationCountCustomizer$RuntimeInvocationCountChecker"/>
+  <whitelistClass onlyGenerated="true" class="net.robinfriedli.botify.scripting.GroovyCompilationCustomizer$RuntimeInvocationCountChecker"/>
+  <whitelistClass onlyGenerated="true" class="org.codehaus.groovy.runtime.InvokerHelper"/>
 </whitelistConfiguration>

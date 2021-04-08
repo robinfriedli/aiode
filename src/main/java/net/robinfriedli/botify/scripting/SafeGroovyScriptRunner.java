@@ -1,5 +1,6 @@
 package net.robinfriedli.botify.scripting;
 
+import java.awt.Color;
 import java.io.ByteArrayInputStream;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -28,6 +29,7 @@ import net.robinfriedli.botify.entities.StoredScript;
 import net.robinfriedli.botify.exceptions.CommandFailure;
 import net.robinfriedli.botify.exceptions.ExceptionUtils;
 import net.robinfriedli.threadpool.ThreadPool;
+import org.codehaus.groovy.control.MultipleCompilationErrorsException;
 
 /**
  * Class that provides safe execution of untrusted groovy scripts by setting up a sandboxed {@link GroovyShell} with compilation
@@ -166,6 +168,14 @@ public class SafeGroovyScriptRunner {
 
             if (error instanceof SecurityException) {
                 messageService.sendError(error.getMessage(), channel);
+                throw new CommandFailure(error);
+            } else if (error instanceof MultipleCompilationErrorsException) {
+                MultipleCompilationErrorsException compilationErrorsException = (MultipleCompilationErrorsException) error;
+                EmbedBuilder embedBuilder = new EmbedBuilder();
+                embedBuilder.setColor(Color.RED);
+                embedBuilder.setTitle("Could not compile script");
+                embedBuilder.setDescription(ExceptionUtils.formatScriptCompilationError(compilationErrorsException));
+                messageService.sendTemporary(embedBuilder.build(), channel);
                 throw new CommandFailure(error);
             } else if (!(error instanceof CommandFailure)) {
                 EmbedBuilder embedBuilder = ExceptionUtils.buildErrorEmbed(error);

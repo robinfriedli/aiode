@@ -7,7 +7,7 @@ import groovy.lang.GroovyShell;
 import groovy.transform.CompileStatic;
 import groovy.transform.ConditionalInterrupt;
 import groovy.transform.ThreadInterrupt;
-import net.robinfriedli.botify.scripting.GroovyInvocationCountCustomizer;
+import net.robinfriedli.botify.scripting.GroovyCompilationCustomizer;
 import net.robinfriedli.botify.scripting.GroovyWhitelistManager;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.persist.Context;
@@ -49,19 +49,19 @@ public class GroovySandboxComponent {
             CompileStatic.class
         );
         ASTTransformationCustomizer globalInvocationCounterCustomizer = new ASTTransformationCustomizer(
-            singletonMap("value", GroovyInvocationCountCustomizer.GLOBAL_COUNT_INCREMENTATION_CLOSURE),
+            singletonMap("value", GroovyCompilationCustomizer.GLOBAL_COUNT_INCREMENTATION_CLOSURE),
             ConditionalInterrupt.class
         );
 
         ImportCustomizer importCustomizer = getImportCustomizer();
 
         GroovyWhitelistManager groovyWhitelistManager = getGroovyWhitelistManager();
-        GroovyInvocationCountCustomizer groovyInvocationCountCustomizer = new GroovyInvocationCountCustomizer(groovyWhitelistManager);
+        GroovyCompilationCustomizer groovyCompilationCustomizer = new GroovyCompilationCustomizer(groovyWhitelistManager);
         compilerConfiguration.addCompilationCustomizers(
             compileStaticCustomizer,
             importCustomizer,
             threadInterruptCustomizer,
-            groovyInvocationCountCustomizer,
+            groovyCompilationCustomizer,
             globalInvocationCounterCustomizer
         );
 

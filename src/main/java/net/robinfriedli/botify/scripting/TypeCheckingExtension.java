@@ -1,12 +1,17 @@
 package net.robinfriedli.botify.scripting;
 
+import javax.annotation.Nullable;
+
 import net.robinfriedli.botify.Botify;
 import org.codehaus.groovy.ast.ClassCodeVisitorSupport;
 import org.codehaus.groovy.ast.ClassHelper;
 import org.codehaus.groovy.ast.ClassNode;
 import org.codehaus.groovy.ast.MethodNode;
 import org.codehaus.groovy.ast.expr.BinaryExpression;
+import org.codehaus.groovy.ast.expr.ClassExpression;
+import org.codehaus.groovy.ast.expr.ConstantExpression;
 import org.codehaus.groovy.ast.expr.Expression;
+import org.codehaus.groovy.ast.expr.MethodPointerExpression;
 import org.codehaus.groovy.ast.expr.PropertyExpression;
 import org.codehaus.groovy.ast.expr.VariableExpression;
 import org.codehaus.groovy.control.SourceUnit;
@@ -14,6 +19,7 @@ import org.codehaus.groovy.syntax.Types;
 import org.codehaus.groovy.transform.sc.StaticCompilationMetadataKeys;
 import org.codehaus.groovy.transform.stc.AbstractTypeCheckingExtension;
 import org.codehaus.groovy.transform.stc.StaticTypeCheckingVisitor;
+import org.codehaus.groovy.transform.stc.StaticTypesMarker;
 
 // invoked by groovy
 @SuppressWarnings("unused")
@@ -30,13 +36,20 @@ public class TypeCheckingExtension extends AbstractTypeCheckingExtension {
     public void onMethodSelection(Expression expression, MethodNode target) {
         initGroovyWhitelistManager();
         ClassNode declaringClass = target.getDeclaringClass();
+        boolean isGenerated = !(expression.getColumnNumber() > 0 && expression.getLineNumber() > 0);
         // declaring class is the Script itself or a class declared within the script, always allow those methods
         if (!declaringClass.isScript() && !declaringClass.isPrimaryClassNode()) {
             Class<?> type = declaringClass.getTypeClass();
             String methodName = target.getName();
 
-            if (!groovyWhitelistManager.checkMethodCall(type, methodName)) {
-                addStaticTypeError(String.format("Method invocation not allowed %s#%s", type.getSimpleName(), methodName), expression);
+            if (!groovyWhitelistManager.checkMethodCall(type, methodName, isGenerated)) {
+                if (isGenerated) {
+                    // groovy ignores static type errors for certain generated method calls, even if 'groovy.stc.debug'
+                    // is enabled, throw exception immediately
+                    throw new SecurityException(String.format("Forbidden usage of generated method: %s#%s", type.getSimpleName(), methodName));
+                } else {
+                    addStaticTypeError(String.format("Method invocation not allowed %s#%s", type.getSimpleName(), methodName), expression);
+                }
             }
         }
         super.onMethodSelection(expression, target);
@@ -139,6 +152,68 @@ public class TypeCheckingExtension extends AbstractTypeCheckingExtension {
             super.visitBinaryExpression(expression);
         }
 
+        @Override
+        public void visitMethodPointerExpression(MethodPointerExpression expression) {
+            Expression expr = expression.getExpression();
+
+            ClassNode classNode = getClassNodeForExpression(expr);
+
+            if (classNode != null && !classNode.isScript() && !classNode.isPrimaryClassNode()) {
+                Class<?> typeClass = classNode.getTypeClass();
+
+                String methodName = getMethodPointerConstantMethodName(expression);
+                if (methodName != null) {
+                    boolean isGenerated = !(expression.getColumnNumber() > 0 && expression.getLineNumber() > 0);
+
+                    if (!groovyWhitelistManager.checkMethodCall(typeClass, methodName, isGenerated)) {
+                        addStaticTypeError(String.format("Method pointer not allowed %s#%s", typeClass.getSimpleName(), methodName), expression);
+                    }
+                }
+            } else if (classNode == null) {
+                addStaticTypeError("Could not determine target class for MethodPointerExpression", expression);
+            }
+
+            super.visitMethodPointerExpression(expression);
+        }
+    }
+
+    @Nullable
+    static ClassNode getClassNodeForExpression(Expression expr) {
+        if (expr instanceof ClassExpression) {
+            ClassExpression classExpression = (ClassExpression) expr;
+            return classExpression.getType();
+        } else if (expr instanceof VariableExpression) {
+            VariableExpression variableExpression = (VariableExpression) expr;
+            Object inferredReturnType = variableExpression.getMetaDataMap().get(StaticTypesMarker.INFERRED_RETURN_TYPE);
+            if (inferredReturnType instanceof ClassNode) {
+                return (ClassNode) inferredReturnType;
+            }
+        } else if (expr instanceof PropertyExpression) {
+            PropertyExpression propertyExpression = (PropertyExpression) expr;
+            Object inferredType = propertyExpression.getMetaDataMap().get(StaticTypesMarker.INFERRED_TYPE);
+
+            if (inferredType instanceof ClassNode) {
+                return (ClassNode) inferredType;
+            }
+        }
+
+        return null;
+    }
+
+    @Nullable
+    static String getMethodPointerConstantMethodName(MethodPointerExpression expression) {
+        Expression methodNameExpression = expression.getMethodName();
+
+        if (methodNameExpression instanceof ConstantExpression) {
+            Object value = ((ConstantExpression) methodNameExpression).getValue();
+            if (value instanceof String) {
+                boolean isGenerated = !(expression.getColumnNumber() > 0 && expression.getLineNumber() > 0);
+
+                return (String) value;
+            }
+        }
+
+        return null;
     }
 
 }

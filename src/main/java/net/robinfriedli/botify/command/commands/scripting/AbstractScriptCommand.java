@@ -11,12 +11,13 @@ import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.command.CommandManager;
 import net.robinfriedli.botify.entities.StoredScript;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
+import net.robinfriedli.botify.exceptions.ExceptionUtils;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
 import net.robinfriedli.botify.scripting.GroovyVariableManager;
 import net.robinfriedli.botify.util.EmbedTable;
 import net.robinfriedli.botify.util.SearchEngine;
-import org.codehaus.groovy.control.CompilationFailedException;
+import org.codehaus.groovy.control.MultipleCompilationErrorsException;
 import org.hibernate.Session;
 
 public abstract class AbstractScriptCommand extends AbstractCommand {
@@ -102,14 +103,10 @@ public abstract class AbstractScriptCommand extends AbstractCommand {
         groovyVariableManager.prepareShell(groovyShell);
         try {
             groovyShell.parse(script);
-        } catch (CompilationFailedException e) {
-            String message = e.getMessage();
-
-            if (message.length() > 900) {
-                message = message.substring(0, 895) + "[...]";
-            }
-
-            throw new InvalidCommandException(String.format("Could not compile provided script:%s```%s```", System.lineSeparator(), message));
+        } catch (MultipleCompilationErrorsException e) {
+            throw new InvalidCommandException(
+                String.format("Could not compile provided script:%s%s", System.lineSeparator(), ExceptionUtils.formatScriptCompilationError(e))
+            );
         }
 
         StoredScript.ScriptUsage scriptUsage = queryBuilderFactory

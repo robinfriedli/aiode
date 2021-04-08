@@ -5,34 +5,46 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
 
+import com.google.common.collect.Lists;
 import groovy.lang.Closure;
 import net.robinfriedli.botify.Botify;
 import org.codehaus.groovy.ast.ClassCodeExpressionTransformer;
+import org.codehaus.groovy.ast.ClassHelper;
 import org.codehaus.groovy.ast.ClassNode;
+import org.codehaus.groovy.ast.ConstructorNode;
 import org.codehaus.groovy.ast.MethodNode;
 import org.codehaus.groovy.ast.Parameter;
 import org.codehaus.groovy.ast.VariableScope;
 import org.codehaus.groovy.ast.expr.ArgumentListExpression;
 import org.codehaus.groovy.ast.expr.BinaryExpression;
+import org.codehaus.groovy.ast.expr.BooleanExpression;
 import org.codehaus.groovy.ast.expr.ClassExpression;
 import org.codehaus.groovy.ast.expr.ClosureExpression;
 import org.codehaus.groovy.ast.expr.ClosureListExpression;
 import org.codehaus.groovy.ast.expr.ConstantExpression;
 import org.codehaus.groovy.ast.expr.ConstructorCallExpression;
+import org.codehaus.groovy.ast.expr.DeclarationExpression;
 import org.codehaus.groovy.ast.expr.Expression;
 import org.codehaus.groovy.ast.expr.MethodCall;
 import org.codehaus.groovy.ast.expr.MethodCallExpression;
+import org.codehaus.groovy.ast.expr.MethodPointerExpression;
+import org.codehaus.groovy.ast.expr.NotExpression;
 import org.codehaus.groovy.ast.expr.StaticMethodCallExpression;
+import org.codehaus.groovy.ast.expr.VariableExpression;
 import org.codehaus.groovy.ast.stmt.BlockStatement;
 import org.codehaus.groovy.ast.stmt.ExpressionStatement;
+import org.codehaus.groovy.ast.stmt.IfStatement;
 import org.codehaus.groovy.ast.stmt.Statement;
+import org.codehaus.groovy.ast.stmt.ThrowStatement;
 import org.codehaus.groovy.classgen.GeneratorContext;
 import org.codehaus.groovy.classgen.VariableScopeVisitor;
 import org.codehaus.groovy.control.CompilationFailedException;
 import org.codehaus.groovy.control.CompilePhase;
 import org.codehaus.groovy.control.SourceUnit;
 import org.codehaus.groovy.control.customizers.CompilationCustomizer;
+import org.codehaus.groovy.syntax.Token;
 import org.codehaus.groovy.transform.sc.transformers.CompareToNullExpression;
+import org.codehaus.groovy.transform.stc.StaticTypesMarker;
 
 /**
  * Transforms method calls for which an invocation limit is set (either using the "maxMethodInvocations" attribute
@@ -43,8 +55,12 @@ import org.codehaus.groovy.transform.sc.transformers.CompareToNullExpression;
  * <p>
  * Also manages a global limit of total method invocation counts and loop iterations using a ConditionalInterrupt combined
  * with the {@link #GLOBAL_COUNT_INCREMENTATION_CLOSURE}.
+ * <p>
+ * <p>
+ * Transforms method pointers that cannot be checked at compile time to check them at runtime. Includes any method pointer
+ * that does not consist of a ClassExpression / VariableExpression / PropertyExpression and ConstantExpression
  */
-public class GroovyInvocationCountCustomizer extends CompilationCustomizer {
+public class GroovyCompilationCustomizer extends CompilationCustomizer {
 
     private static final ClassNode CHECKER_CLASS = new ClassNode(RuntimeInvocationCountChecker.class);
     public static final ClosureExpression GLOBAL_COUNT_INCREMENTATION_CLOSURE = new ClosureExpression(
@@ -61,7 +77,7 @@ public class GroovyInvocationCountCustomizer extends CompilationCustomizer {
 
     private final GroovyWhitelistManager groovyWhitelistManager;
 
-    public GroovyInvocationCountCustomizer(GroovyWhitelistManager groovyWhitelistManager) {
+    public GroovyCompilationCustomizer(GroovyWhitelistManager groovyWhitelistManager) {
         super(CompilePhase.INSTRUCTION_SELECTION);
         this.groovyWhitelistManager = groovyWhitelistManager;
     }
@@ -126,14 +142,23 @@ public class GroovyInvocationCountCustomizer extends CompilationCustomizer {
         }
 
         @Override
+        public void visitThrowStatement(ThrowStatement ts) {
+            super.visitThrowStatement(ts);
+        }
+
+        @Override
         public Expression transform(Expression exp) {
-            Expression expression = doTransform(exp);
+            if (exp instanceof MethodPointerExpression) {
+                return transformMethodPointerExpression((MethodPointerExpression) exp);
+            } else {
+                Expression expression = doTransform(exp);
 
-            if (exp != expression) {
-                expression.setSourcePosition(exp);
+                if (exp != expression) {
+                    expression.setSourcePosition(exp);
+                }
+
+                return expression;
             }
-
-            return expression;
         }
 
         private Expression doTransform(Expression exp) {
@@ -241,6 +266,94 @@ public class GroovyInvocationCountCustomizer extends CompilationCustomizer {
             );
         }
 
+        private Expression transformMethodPointerExpression(MethodPointerExpression expression) {
+            Expression expr = expression.getExpression();
+            ClassNode classNode = TypeCheckingExtension.getClassNodeForExpression(expr);
+
+            if (classNode != null) {
+                if (classNode.isScript() || classNode.isPrimaryClassNode()) {
+                    return expression;
+                }
+
+                String constantMethodName = TypeCheckingExtension.getMethodPointerConstantMethodName(expression);
+                if (constantMethodName != null) {
+                    // method name can be determined statically, thus already handled by TypeCheckingExtension
+                    return expression;
+                }
+
+                VariableScope variableScope = scopeStack.peek();
+                VariableScope closureScope = new VariableScope(variableScope);
+
+                Expression methodNameExpression = expression.getMethodName();
+                VariableExpression methodNameVariableExpression = new VariableExpression("__botify_methodName__");
+                DeclarationExpression methodNameDeclarationExpression = new DeclarationExpression(methodNameVariableExpression, new Token(100, "=", -1, -1), methodNameExpression);
+
+                // create the following statement
+                // if (!(methodName instanceof String)) {
+                //     throw new SecurityException('Method name expression of method pointer does not evaluate to boolean')
+                // }
+                BooleanExpression booleanExpression = new BooleanExpression(
+                    new NotExpression(
+                        new BinaryExpression(
+                            methodNameVariableExpression,
+                            new Token(544, "instanceof", -1, -1),
+                            new ClassExpression(ClassHelper.STRING_TYPE)
+                        )
+                    )
+                );
+                ClassNode securityExceptionClass = ClassHelper.make(SecurityException.class);
+                ConstructorNode securityExceptionConstructor = securityExceptionClass.getDeclaredConstructor(new Parameter[]{new Parameter(ClassHelper.STRING_TYPE, null)});
+                ConstructorCallExpression securityExceptionConstructorCall = new ConstructorCallExpression(
+                    securityExceptionClass,
+                    new ArgumentListExpression(
+                        new ConstantExpression("Method name expression of method pointer does not evaluate to string")
+                    )
+                );
+                securityExceptionConstructorCall.setNodeMetaData(StaticTypesMarker.DIRECT_METHOD_CALL_TARGET, securityExceptionConstructor);
+                ThrowStatement throwStatement = new ThrowStatement(securityExceptionConstructorCall);
+                VariableScope ifStatementScope = new VariableScope(closureScope);
+                IfStatement ifStatement = new IfStatement(booleanExpression, new BlockStatement(Lists.newArrayList(throwStatement), ifStatementScope), new BlockStatement());
+
+                StaticMethodCallExpression checkWhitelistCallExpression = new StaticMethodCallExpression(
+                    CHECKER_CLASS,
+                    "checkMethodCall",
+                    new ArgumentListExpression(
+                        new ClassExpression(classNode),
+                        methodNameVariableExpression
+                    )
+                );
+
+                VariableExpression methodPointerVariable = new VariableExpression("__botify_methodPointer__");
+                MethodPointerExpression methodPointerExpression = new MethodPointerExpression(new ClassExpression(classNode), methodNameVariableExpression);
+                DeclarationExpression methodPointerDeclarationExpression = new DeclarationExpression(
+                    methodPointerVariable,
+                    new Token(100, "=", -1, -1),
+                    methodPointerExpression
+                );
+
+                MethodCallExpression methodCallExpression = new MethodCallExpression(methodPointerVariable, "call", new ArgumentListExpression(new VariableExpression("it")));
+
+                ClosureExpression closureExpression = new ClosureExpression(
+                    new Parameter[0],
+                    new BlockStatement(
+                        new Statement[]{
+                            new ExpressionStatement(methodNameDeclarationExpression),
+                            ifStatement,
+                            new ExpressionStatement(checkWhitelistCallExpression),
+                            new ExpressionStatement(methodPointerDeclarationExpression),
+                            new ExpressionStatement(methodCallExpression)
+                        },
+                        new VariableScope(closureScope)
+                    )
+                );
+                createdClosures.add(closureExpression);
+                closureExpression.setVariableScope(closureScope);
+                return closureExpression;
+            }
+
+            return expression;
+        }
+
     }
 
     public static class RuntimeInvocationCountChecker {
@@ -291,6 +404,16 @@ public class GroovyInvocationCountCustomizer extends CompilationCustomizer {
             }
 
             return methodInvocationClosure.call();
+        }
+
+        // invoked by groovy
+        @SuppressWarnings("unused")
+        public static void checkMethodCall(Class<?> type, String methodName) {
+            GroovyWhitelistManager groovyWhitelistManager = Botify.get().getGroovySandboxComponent().getGroovyWhitelistManager();
+
+            if (!groovyWhitelistManager.checkMethodCall(type, methodName, false)) {
+                throw new SecurityException(String.format("Method invocation not allowed: '%s#%s'", type.getSimpleName(), methodName));
+            }
         }
 
         // invoked by groovy

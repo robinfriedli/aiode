@@ -1,10 +1,15 @@
 package net.robinfriedli.botify.exceptions;
 
 import java.awt.Color;
+import java.io.PrintWriter;
+import java.io.Writer;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
+import org.apache.groovy.io.StringBuilderWriter;
 
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -15,6 +20,9 @@ import net.robinfriedli.botify.command.CommandContext;
 import net.robinfriedli.botify.concurrent.ExecutionContext;
 import net.robinfriedli.botify.discord.MessageService;
 import org.codehaus.groovy.control.CompilationFailedException;
+import org.codehaus.groovy.control.MultipleCompilationErrorsException;
+import org.codehaus.groovy.control.messages.ExceptionMessage;
+import org.codehaus.groovy.control.messages.SyntaxErrorMessage;
 
 public class ExceptionUtils {
 
@@ -90,6 +98,49 @@ public class ExceptionUtils {
         }
     }
 
+    public static String formatScriptCompilationError(MultipleCompilationErrorsException compilationErrorsException) {
+        List<?> errors = compilationErrorsException.getErrorCollector().getErrors();
+        boolean canHandleAll = errors.stream().allMatch(e ->
+            e instanceof SyntaxErrorMessage
+                || (e instanceof ExceptionMessage && ((ExceptionMessage) e).getCause() instanceof SecurityException)
+        );
+
+        if (canHandleAll) {
+            String message = errors.stream().map(e -> {
+                if (e instanceof SyntaxErrorMessage) {
+                    SyntaxErrorMessage syntaxErrorMessage = (SyntaxErrorMessage) e;
+                    Writer data = new StringBuilderWriter();
+                    PrintWriter writer = new PrintWriter(data);
+                    syntaxErrorMessage.write(writer);
+                    return data.toString();
+                } else if (e instanceof ExceptionMessage) {
+                    Exception cause = ((ExceptionMessage) e).getCause();
+                    if (cause instanceof SecurityException) {
+                        return String.format(
+                            "Security violation:%s%s",
+                            System.lineSeparator(),
+                            cause.getMessage()
+                        );
+                    }
+                }
+
+                throw new IllegalStateException("Unhandled error type: " + e);
+            }).collect(Collectors.joining(System.lineSeparator().repeat(2)));
+
+            return String.format("```%s```", shortenMessage(message, 1000));
+        } else {
+            return String.format("```%s```", shortenMessage(compilationErrorsException.getMessage(), 1000));
+        }
+    }
+
+    public static String shortenMessage(String message, int maxLength) {
+        if (message.length() > maxLength) {
+            message = message.substring(0, maxLength - 5) + "[...]";
+        }
+
+        return message;
+    }
+
     private static void appendException(EmbedBuilder embedBuilder, Throwable e, boolean isCause, int counter) {
         if (counter >= 5) {
             return;
@@ -102,11 +153,7 @@ public class ExceptionUtils {
             message = e.getMessage();
         }
 
-        String value = String.format("%s: %s", e.getClass().getSimpleName(), message);
-
-        if (value.length() > 1000) {
-            value = value.substring(0, 995) + "[...]";
-        }
+        String value = shortenMessage(String.format("%s: %s", e.getClass().getSimpleName(), message), 1000);
 
         if (e instanceof CompilationFailedException) {
             value = "```" + value + "```";
