@@ -48,7 +48,14 @@ public class JdaComponent {
         EnumSet<GatewayIntent> gatewayIntents = EnumSet.of(GUILD_MESSAGES, GUILD_MESSAGE_REACTIONS, DIRECT_MESSAGES, GUILD_VOICE_STATES);
         try {
             DefaultShardManagerBuilder shardManagerBuilder = DefaultShardManagerBuilder.create(discordToken, gatewayIntents)
-                .disableCache(EnumSet.of(ACTIVITY, EMOTE, CLIENT_STATUS))
+                .disableCache(EnumSet.of(
+                    ACTIVITY,
+                    CLIENT_STATUS,
+                    EMOTE,
+                    MEMBER_OVERRIDES,
+                    ONLINE_STATUS,
+                    ROLE_TAGS
+                ))
                 .setMemberCachePolicy(MemberCachePolicy.DEFAULT)
                 .setStatus(OnlineStatus.IDLE)
                 .setChunkingFilter(ChunkingFilter.NONE)
