@@ -152,7 +152,14 @@ public class Launcher {
             // setup JDA
             EnumSet<GatewayIntent> gatewayIntents = EnumSet.of(GUILD_MESSAGES, GUILD_MESSAGE_REACTIONS, GUILD_VOICE_STATES);
             DefaultShardManagerBuilder shardManagerBuilder = DefaultShardManagerBuilder.create(discordToken, gatewayIntents)
-                .disableCache(EnumSet.of(CacheFlag.ACTIVITY, CacheFlag.EMOTE, CacheFlag.CLIENT_STATUS))
+                .disableCache(EnumSet.of(
+                    CacheFlag.ACTIVITY,
+                    CacheFlag.CLIENT_STATUS,
+                    CacheFlag.EMOTE,
+                    CacheFlag.MEMBER_OVERRIDES,
+                    CacheFlag.ONLINE_STATUS,
+                    CacheFlag.ROLE_TAGS
+                ))
                 .setMemberCachePolicy(MemberCachePolicy.DEFAULT)
                 .setStatus(OnlineStatus.IDLE)
                 .setChunkingFilter(ChunkingFilter.NONE)
