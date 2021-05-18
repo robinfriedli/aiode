@@ -1,7 +1,6 @@
 plugins {
     id "java"
     id "org.springframework.boot" version "2.4.5"
-    id "io.spring.dependency-management" version "1.0.11.RELEASE"
     id "org.liquibase.gradle" version "2.0.4"
 }
 
@@ -41,7 +40,7 @@ dependencies {
 
     implementation "commons-validator:commons-validator:1.7"
 
-    implementation "net.dv8tion:JDA:4.2.1_261"
+    implementation "net.dv8tion:JDA:4.2.1_264"
     implementation "net.robinfriedli:exec:1.2"
     implementation "net.robinfriedli:JXP:2.0.4"
     implementation "net.robinfriedli:StringList:1.6"
@@ -49,7 +48,7 @@ dependencies {
 
     implementation "org.apache.commons:commons-collections4:4.4"
     implementation "org.apache.commons:commons-text:1.9"
-    implementation "org.codehaus.groovy:groovy-all:3.0.7"
+    implementation "org.codehaus.groovy:groovy-all:3.0.8"
     implementation "org.discordbots:DBL-Java-Library:2.0.1"
     implementation "org.ehcache:ehcache:3.9.0"
     implementation "org.glassfish:javax.el:3.0.1-b11"
@@ -63,9 +62,9 @@ dependencies {
     implementation "org.postgresql:postgresql:42.2.18"
     implementation "org.quartz-scheduler:quartz:2.3.2"
     implementation "org.springframework.boot:spring-boot-dependencies:2.4.5"
-    implementation "org.springframework.boot:spring-boot-starter-web"
-    implementation "org.springframework.boot:spring-boot-starter-jdbc"
-    implementation "org.springframework.boot:spring-boot-starter-data-jpa"
+    implementation "org.springframework.boot:spring-boot-starter-web:2.4.5"
+    implementation "org.springframework.boot:spring-boot-starter-jdbc:2.4.5"
+    implementation "org.springframework.boot:spring-boot-starter-data-jpa:2.4.5"
     implementation "org.springframework:spring-core:5.3.6"
 
     // check if IPlaylistItem implementations were added when upgrading and update SpotifyTrack accordingly
@@ -74,7 +73,7 @@ dependencies {
     liquibaseRuntime sourceSets.main.runtimeClasspath
     liquibaseRuntime sourceSets.main.output
 
-    annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
+    annotationProcessor "org.springframework.boot:spring-boot-configuration-processor:2.4.5"
 }
 
 group = "botify"
