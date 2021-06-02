@@ -26,6 +26,7 @@ import net.dv8tion.jda.api.entities.MessageActivity;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.MessageReaction;
+import net.dv8tion.jda.api.entities.MessageSticker;
 import net.dv8tion.jda.api.entities.MessageType;
 import net.dv8tion.jda.api.entities.PrivateChannel;
 import net.dv8tion.jda.api.entities.Role;
@@ -267,6 +268,12 @@ public class CompletablePlaceholderMessage implements Message {
     @Override
     public List<MessageReaction> getReactions() {
         return unwrap().getReactions();
+    }
+
+    @NotNull
+    @Override
+    public List<MessageSticker> getStickers() {
+        return unwrap().getStickers();
     }
 
     @Override
