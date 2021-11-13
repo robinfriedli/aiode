@@ -181,7 +181,7 @@ public class ExecutionContext implements CloseableThreadContext, ForkableThreadC
         if (executionContext != this) {
             throw new IllegalStateException("Invoking ExecutionContext#getSession from a thread that is not associated with this ExecutionContext. " +
                 "It is not safe to pass Sessions between threads, as such this method can only be called by the thread " +
-                "where this ExecutionContext is installed as current ExecutionContext. You may use ExecutionContext#threadSafe to create a thread safe copy.");
+                "where this ExecutionContext is installed as current ExecutionContext. You may use ExecutionContext#fork to create a thread safe copy.");
         }
 
         if (session != null && session.isOpen()) {
@@ -251,7 +251,7 @@ public class ExecutionContext implements CloseableThreadContext, ForkableThreadC
     @Override
     public void setThread(Thread thread) {
         if (this.thread != null && this.thread != thread) {
-            throw new IllegalStateException(String.format("Cannot install ExecutionContext for thread '%s', already installed on thread '%s'. Use ExecutionContext#threadSafe to create a thread safe copy.", thread, this.thread));
+            throw new IllegalStateException(String.format("Cannot install ExecutionContext for thread '%s', already installed on thread '%s'. Use ExecutionContext#fork to create a thread safe copy.", thread, this.thread));
         }
 
         this.thread = thread;

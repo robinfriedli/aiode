@@ -266,6 +266,32 @@ public class GroovyCompilationCustomizer extends CompilationCustomizer {
             );
         }
 
+        /**
+         * Transforms
+         *
+         * String foo() {
+         *     return 'exit';
+         * }
+         * java.util.Arrays.stream([1] as Integer[]).forEach(System.&(foo()))
+         *
+         *
+         * to
+         *
+         * String foo() {
+         *    return 'exit';
+         * }
+         * java.util.Arrays.stream([1] as Integer[]).forEach({
+         *     def __botify_methodName__ = foo()
+         *     if (!(__botify_methodName__ instanceof String)) {
+         *         throw new SecurityException('Method name expression of method pointer does not evaluate to string')
+         *     }
+         *     GroovyCompilationCustomizer$RuntimeInvocationCountChecker.checkMethodCall(System.class, __botify_methodName__)
+         *     def __botify_methodPointer__ = System&.__botify_methodName__
+         *     __botify_methodPointer__.call(it)
+         * })
+         * @param expression
+         * @return
+         */
         private Expression transformMethodPointerExpression(MethodPointerExpression expression) {
             Expression expr = expression.getExpression();
             ClassNode classNode = TypeCheckingExtension.getClassNodeForExpression(expr);
@@ -289,8 +315,8 @@ public class GroovyCompilationCustomizer extends CompilationCustomizer {
                 DeclarationExpression methodNameDeclarationExpression = new DeclarationExpression(methodNameVariableExpression, new Token(100, "=", -1, -1), methodNameExpression);
 
                 // create the following statement
-                // if (!(methodName instanceof String)) {
-                //     throw new SecurityException('Method name expression of method pointer does not evaluate to boolean')
+                // if (!(__botify_methodName__ instanceof String)) {
+                //     throw new SecurityException('Method name expression of method pointer does not evaluate to string')
                 // }
                 BooleanExpression booleanExpression = new BooleanExpression(
                     new NotExpression(

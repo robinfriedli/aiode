@@ -207,8 +207,6 @@ public class TypeCheckingExtension extends AbstractTypeCheckingExtension {
         if (methodNameExpression instanceof ConstantExpression) {
             Object value = ((ConstantExpression) methodNameExpression).getValue();
             if (value instanceof String) {
-                boolean isGenerated = !(expression.getColumnNumber() > 0 && expression.getLineNumber() > 0);
-
                 return (String) value;
             }
         }
