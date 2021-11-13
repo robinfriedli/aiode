@@ -1,5 +1,6 @@
 package net.robinfriedli.botify.concurrent;
 
+import java.time.Duration;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -15,6 +16,7 @@ import net.robinfriedli.botify.boot.ShutdownableExecutorService;
 import net.robinfriedli.botify.command.Command;
 import net.robinfriedli.botify.exceptions.handler.handlers.CommandUncaughtExceptionHandler;
 import net.robinfriedli.botify.util.SnowflakeMap;
+import net.robinfriedli.exec.MutexSync;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 
@@ -23,6 +25,12 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class CommandExecutionQueueManager {
+
+    private static final int EXECUTION_QUEUE_SIZE = 3;
+    private static final int EXECUTION_QUEUE_CONCURRENT_SIZE = 3;
+    private static final int RATE_LIMIT_FOR_PERIOD = 4;
+    private static final Duration RATE_LIMIT_PERIOD = Duration.ofSeconds(5);
+    private static final Duration RATE_LIMIT_VIOLATION_TIMEOUT = Duration.ofSeconds(15);
 
     private static final ThreadPoolExecutor GLOBAL_POOL = new ThreadPoolExecutor(3, Integer.MAX_VALUE,
         60L, TimeUnit.SECONDS,
@@ -43,6 +51,8 @@ public class CommandExecutionQueueManager {
         Botify.SHUTDOWNABLES.add(new ShutdownableExecutorService(GLOBAL_POOL));
     }
 
+    private final MutexSync<String> guildIdSync = new MutexSync<>();
+
     private final SnowflakeMap<ThreadExecutionQueue> guildExecutionQueues;
 
     public CommandExecutionQueueManager() {
@@ -50,7 +60,16 @@ public class CommandExecutionQueueManager {
     }
 
     public void addGuild(Guild guild) {
-        guildExecutionQueues.put(guild, new ThreadExecutionQueue("command-execution-queue-guild-" + guild.getId(), 3, GLOBAL_POOL));
+        guildExecutionQueues.put(guild, new ThreadExecutionQueue(
+            "command-execution-queue-guild-" + guild.getId(),
+            EXECUTION_QUEUE_CONCURRENT_SIZE,
+            EXECUTION_QUEUE_SIZE,
+            GLOBAL_POOL,
+            "command-rate_limiter-guild-" + guild.getId(),
+            RATE_LIMIT_FOR_PERIOD,
+            RATE_LIMIT_PERIOD,
+            RATE_LIMIT_VIOLATION_TIMEOUT
+        ));
     }
 
     public void removeGuild(Guild guild) {
@@ -61,9 +80,26 @@ public class CommandExecutionQueueManager {
         ThreadExecutionQueue threadExecutionQueue = guildExecutionQueues.get(guild);
 
         if (threadExecutionQueue == null) {
-            ThreadExecutionQueue newQueue = new ThreadExecutionQueue("command-execution-queue-guild-" + guild.getId(), 3, GLOBAL_POOL);
-            guildExecutionQueues.put(guild, newQueue);
-            return newQueue;
+            return guildIdSync.evaluate(guild.getId(), () -> {
+                ThreadExecutionQueue recheckedThreadExecutionQueue = guildExecutionQueues.get(guild);
+                if (recheckedThreadExecutionQueue != null) {
+                    return recheckedThreadExecutionQueue;
+                }
+
+                ThreadExecutionQueue newQueue = new ThreadExecutionQueue(
+                    "command-execution-queue-guild-" + guild.getId(),
+                    EXECUTION_QUEUE_CONCURRENT_SIZE,
+                    EXECUTION_QUEUE_SIZE,
+                    GLOBAL_POOL,
+                    "command-rate_limiter-guild-" + guild.getId(),
+                    RATE_LIMIT_FOR_PERIOD,
+                    RATE_LIMIT_PERIOD,
+                    RATE_LIMIT_VIOLATION_TIMEOUT
+                );
+
+                guildExecutionQueues.put(guild, newQueue);
+                return newQueue;
+            });
         }
 
         return threadExecutionQueue;

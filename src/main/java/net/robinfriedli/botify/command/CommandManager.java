@@ -26,6 +26,8 @@ import net.robinfriedli.botify.entities.StoredScript;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.entities.xml.CommandInterceptorContribution;
 import net.robinfriedli.botify.exceptions.CommandRuntimeException;
+import net.robinfriedli.botify.exceptions.InvalidCommandException;
+import net.robinfriedli.botify.exceptions.RateLimitException;
 import net.robinfriedli.botify.exceptions.handler.CommandExceptionHandlerExecutor;
 import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
 import net.robinfriedli.jxp.api.JxpBackend;
@@ -111,13 +113,19 @@ public class CommandManager {
         CommandExecutionTask commandExecutionTask = new CommandExecutionTask(command, executionQueue, this);
 
         commandExecutionTask.setName("command-execution-" + context);
-        boolean queued = !executionQueue.add(commandExecutionTask, false);
+        try {
+            boolean queued = !executionQueue.add(commandExecutionTask, false);
 
-        if (queued) {
-            MessageService messageService = Botify.get().getMessageService();
-            messageService.sendError("Executing too many commands concurrently. This command will be executed after one has finished. " +
-                "You may use the abort command to cancel queued commands and interrupt running commands.", context.getChannel());
-            logger.warn(String.format("Guild %s has reached the max concurrent commands limit.", context.getGuild()));
+            if (queued) {
+                MessageService messageService = Botify.get().getMessageService();
+                messageService.sendError("Executing too many commands concurrently. This command will be executed after one has finished. " +
+                    "You may use the abort command to cancel queued commands and interrupt running commands.", context.getChannel());
+                logger.warn(String.format("Guild %s has reached the max concurrent commands limit.", context.getGuild()));
+            }
+        } catch (RateLimitException e) {
+            if (!e.isTimeout()) {
+                throw new InvalidCommandException(e.getMessage());
+            }
         }
     }
 
