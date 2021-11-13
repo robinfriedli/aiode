@@ -29,7 +29,7 @@ public class SecurityManager {
     private final HibernateComponent hibernateComponent;
     private final QueryBuilderFactory queryBuilderFactory;
 
-    @Value("#{'${botify.security.admin_users}'.split('\\s+,\\s+')}")
+    @Value("#{'${botify.security.admin_users}'.split('[\\s]*,[\\s]*')}")
     private List<String> adminUserIds;
 
     public SecurityManager(HibernateComponent hibernateComponent, QueryBuilderFactory queryBuilderFactory) {
