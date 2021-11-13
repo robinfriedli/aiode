@@ -323,7 +323,7 @@ public class MessageService {
             }
 
             MessageAction messageAction = function.apply(channel);
-            messageAction.queue(futureMessage::complete, e -> {
+            messageAction.timeout(10, TimeUnit.SECONDS).queue(futureMessage::complete, e -> {
                 handleError(e, channel);
                 futureMessage.completeExceptionally(e);
             });
