@@ -625,7 +625,7 @@ public class YouTubeService extends AbstractShutdownable {
                 int artistMatchScore = 0;
                 if (artists.stream().anyMatch(a -> {
                     String artist = a.toLowerCase();
-                    String artistNoSpace = artist.replace(" ", "");
+                    String artistNoSpace = artist.replaceAll(" ", "");
                     VideoSnippet snippet = v.getSnippet();
 
                     if (snippet == null) {
@@ -668,8 +668,8 @@ public class YouTubeService extends AbstractShutdownable {
 
     private int getBestEditDistance(SpotifyTrack spotifyTrack, Video video) {
         LevenshteinDistance levenshteinDistance = LevenshteinDistance.getDefaultInstance();
-        String trackName = spotifyTrack.getName().toLowerCase();
-        String videoTitle = video.getSnippet().getTitle().toLowerCase();
+        String trackName = spotifyTrack.getName().toLowerCase().trim().replaceAll("\\s+", " ");
+        String videoTitle = video.getSnippet().getTitle().toLowerCase().trim().replaceAll("\\s+", " ");
         return spotifyTrack.exhaustiveMatch(
             track -> {
                 ArtistSimplified[] artists = track.getArtists();
@@ -683,7 +683,7 @@ public class YouTubeService extends AbstractShutdownable {
                     : "";
 
                 int parenthesesNotEscaped = bestEditDistanceForParams(levenshteinDistance, trackName, videoTitle, artists, artistString, firstArtist, featuringArtistString);
-                String videoTitleWithParenthesesRemoved = videoTitle.replaceAll("\\(.*\\)", "");
+                String videoTitleWithParenthesesRemoved = videoTitle.replaceAll("\\(.*\\)|\\[.*]", "").trim().replaceAll("\\s+", " ");
                 int parenthesesEscaped = bestEditDistanceForParams(levenshteinDistance, trackName, videoTitleWithParenthesesRemoved, artists, artistString, firstArtist, featuringArtistString);
                 return Math.min(parenthesesEscaped, parenthesesNotEscaped);
             },
