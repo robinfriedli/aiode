@@ -1,5 +1,8 @@
 package net.robinfriedli.botify.discord;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.ChannelType;
 import net.dv8tion.jda.api.entities.GuildChannel;
@@ -11,6 +14,8 @@ import net.robinfriedli.botify.exceptions.DiscordEntityInitialisationException;
 import org.jetbrains.annotations.Nullable;
 
 public abstract class DiscordEntity<T extends ISnowflake> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DiscordEntity.class);
 
     private final JDA jda;
     private final long id;
@@ -65,6 +70,7 @@ public abstract class DiscordEntity<T extends ISnowflake> {
         try {
             return fetch.complete();
         } catch (ErrorResponseException e) {
+            LOGGER.warn("Received error response trying to fetch discord entity", e);
             return null;
         } catch (InsufficientPermissionException e) {
             throw e;
