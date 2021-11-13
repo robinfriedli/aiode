@@ -10,11 +10,11 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.google.common.collect.Lists;
-import com.wrapper.spotify.SpotifyApi;
-import com.wrapper.spotify.model_objects.credentials.ClientCredentials;
 import net.robinfriedli.botify.function.CheckedFunction;
 import net.robinfriedli.botify.function.modes.SpotifyAuthorizationMode;
 import net.robinfriedli.botify.util.BulkOperationService;
+import se.michaelthelin.spotify.SpotifyApi;
+import se.michaelthelin.spotify.model_objects.credentials.ClientCredentials;
 
 /**
  * BulkOperationService extension that loads 50 Spotify tracks per request and performs the mapped action for each loaded

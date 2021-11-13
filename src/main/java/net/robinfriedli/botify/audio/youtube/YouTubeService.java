@@ -39,8 +39,6 @@ import com.sedmelluq.discord.lavaplayer.track.AudioItem;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
-import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
-import com.wrapper.spotify.model_objects.specification.ShowSimplified;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioTrackLoader;
 import net.robinfriedli.botify.audio.PlayableFactory;
@@ -61,6 +59,8 @@ import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
+import se.michaelthelin.spotify.model_objects.specification.ArtistSimplified;
+import se.michaelthelin.spotify.model_objects.specification.ShowSimplified;
 
 /**
  * Service to query data from YouTube via the YouTube Data API using the API key defined in settings-private.properties

@@ -4,13 +4,13 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import com.google.common.collect.Lists;
-import com.wrapper.spotify.exceptions.detailed.NotFoundException;
-import com.wrapper.spotify.model_objects.specification.Episode;
-import com.wrapper.spotify.model_objects.specification.Track;
 import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.audio.PlayableFactory;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.function.SpotifyInvoker;
+import se.michaelthelin.spotify.exceptions.detailed.NotFoundException;
+import se.michaelthelin.spotify.model_objects.specification.Episode;
+import se.michaelthelin.spotify.model_objects.specification.Track;
 
 /**
  * class to recognise, parse and load Spotify URIs. Currently Spotify URIs that point directly to a track, playlist or

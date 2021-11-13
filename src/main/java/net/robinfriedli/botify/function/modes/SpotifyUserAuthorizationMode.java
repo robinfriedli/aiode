@@ -2,10 +2,10 @@ package net.robinfriedli.botify.function.modes;
 
 import java.util.concurrent.Callable;
 
-import com.wrapper.spotify.SpotifyApi;
 import net.robinfriedli.botify.login.Login;
 import net.robinfriedli.exec.AbstractNestedModeWrapper;
 import org.jetbrains.annotations.NotNull;
+import se.michaelthelin.spotify.SpotifyApi;
 
 /**
  * Mode that runs the given task with Spotify credentials for the given Login applied applied

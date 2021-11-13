@@ -12,11 +12,11 @@ import javax.persistence.Table;
 import org.apache.hc.core5.http.ParseException;
 
 import com.google.common.base.Strings;
-import com.wrapper.spotify.SpotifyApi;
-import com.wrapper.spotify.exceptions.SpotifyWebApiException;
-import com.wrapper.spotify.model_objects.specification.ShowSimplified;
-import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.api.entities.User;
+import se.michaelthelin.spotify.SpotifyApi;
+import se.michaelthelin.spotify.exceptions.SpotifyWebApiException;
+import se.michaelthelin.spotify.model_objects.specification.ShowSimplified;
+import se.michaelthelin.spotify.model_objects.specification.Track;
 
 /**
  * Entity representing Spotify Podcast episodes
@@ -41,7 +41,7 @@ public class Episode extends PlaylistItem {
     public Episode() {
     }
 
-    public Episode(com.wrapper.spotify.model_objects.specification.Episode episode, User user, Playlist playlist) {
+    public Episode(se.michaelthelin.spotify.model_objects.specification.Episode episode, User user, Playlist playlist) {
         super(user, playlist);
         id = episode.getId();
         name = episode.getName();

@@ -23,7 +23,6 @@ import javax.validation.constraints.Size;
 import com.google.api.client.util.Sets;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
-import com.wrapper.spotify.SpotifyApi;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.audio.PlayableFactory;
@@ -32,6 +31,7 @@ import net.robinfriedli.botify.audio.spotify.SpotifyTrackBulkLoadingService;
 import net.robinfriedli.botify.audio.spotify.SpotifyTrackKind;
 import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
 import net.robinfriedli.botify.boot.SpringPropertiesConfig;
+import se.michaelthelin.spotify.SpotifyApi;
 
 import static net.robinfriedli.botify.audio.spotify.SpotifyTrackBulkLoadingService.*;
 import static net.robinfriedli.botify.audio.spotify.SpotifyTrackKind.*;

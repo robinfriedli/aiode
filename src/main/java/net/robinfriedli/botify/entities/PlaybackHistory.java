@@ -18,7 +18,6 @@ import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import com.google.api.client.util.Sets;
-import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
 import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.botify.audio.Playable;
 import net.robinfriedli.botify.audio.spotify.PlayableTrackWrapper;
@@ -27,6 +26,7 @@ import net.robinfriedli.botify.audio.spotify.SpotifyTrackKind;
 import net.robinfriedli.botify.audio.youtube.YouTubeVideo;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import org.hibernate.Session;
+import se.michaelthelin.spotify.model_objects.specification.ArtistSimplified;
 
 @Entity
 @Table(name = "playback_history")

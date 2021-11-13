@@ -1,6 +1,5 @@
 package net.robinfriedli.botify.rest;
 
-import com.wrapper.spotify.SpotifyApi;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.boot.configurations.HibernateComponent;
 import net.robinfriedli.botify.command.SecurityManager;
@@ -9,6 +8,7 @@ import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import se.michaelthelin.spotify.SpotifyApi;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {

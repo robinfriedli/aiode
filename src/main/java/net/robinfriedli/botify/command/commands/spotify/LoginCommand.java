@@ -8,7 +8,6 @@ import java.util.concurrent.TimeoutException;
 
 import org.slf4j.LoggerFactory;
 
-import com.wrapper.spotify.requests.authorization.authorization_code.AuthorizationCodeUriRequest;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
@@ -21,6 +20,7 @@ import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.UserException;
 import net.robinfriedli.botify.login.Login;
 import net.robinfriedli.botify.login.LoginManager;
+import se.michaelthelin.spotify.requests.authorization.authorization_code.AuthorizationCodeUriRequest;
 
 public class LoginCommand extends AbstractCommand {
 

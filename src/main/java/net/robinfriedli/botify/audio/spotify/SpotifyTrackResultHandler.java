@@ -14,12 +14,12 @@ import org.apache.commons.text.similarity.LevenshteinDistance;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
-import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.stringlist.StringList;
 import org.hibernate.Session;
 import org.hibernate.query.Query;
+import se.michaelthelin.spotify.model_objects.specification.ArtistSimplified;
+import se.michaelthelin.spotify.model_objects.specification.Track;
 
 /**
  * Determines the best result from a selection of results based on how popular each artist is on this guild, the edit

@@ -8,8 +8,6 @@ import org.slf4j.LoggerFactory;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.common.base.Strings;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
-import com.wrapper.spotify.exceptions.detailed.TooManyRequestsException;
-import com.wrapper.spotify.exceptions.detailed.UnauthorizedException;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.User;
@@ -29,6 +27,8 @@ import net.robinfriedli.botify.exceptions.CommandRuntimeException;
 import net.robinfriedli.botify.exceptions.NoLoginException;
 import net.robinfriedli.botify.exceptions.UserException;
 import net.robinfriedli.botify.persist.StaticSessionProvider;
+import se.michaelthelin.spotify.exceptions.detailed.TooManyRequestsException;
+import se.michaelthelin.spotify.exceptions.detailed.UnauthorizedException;
 
 /**
  * CommandInterceptor that runs the commands logic by calling {@link Command#doRun()} and handles exceptions thrown

@@ -10,13 +10,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.hc.core5.http.ParseException;
 
-import com.wrapper.spotify.SpotifyApi;
-import com.wrapper.spotify.exceptions.SpotifyWebApiException;
-import com.wrapper.spotify.model_objects.credentials.AuthorizationCodeCredentials;
 import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.boot.ShutdownableExecutorService;
 import net.robinfriedli.botify.concurrent.LoggingThreadFactory;
+import se.michaelthelin.spotify.SpotifyApi;
+import se.michaelthelin.spotify.exceptions.SpotifyWebApiException;
+import se.michaelthelin.spotify.model_objects.credentials.AuthorizationCodeCredentials;
 
 /**
  * Represents and automatically refreshes Spotify logins

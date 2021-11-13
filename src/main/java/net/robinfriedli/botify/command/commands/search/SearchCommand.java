@@ -9,12 +9,6 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
-import com.wrapper.spotify.model_objects.specification.AlbumSimplified;
-import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
-import com.wrapper.spotify.model_objects.specification.Episode;
-import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
-import com.wrapper.spotify.model_objects.specification.ShowSimplified;
-import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.sharding.ShardManager;
@@ -39,6 +33,12 @@ import net.robinfriedli.botify.util.SearchEngine;
 import net.robinfriedli.botify.util.Util;
 import net.robinfriedli.stringlist.StringList;
 import org.hibernate.Session;
+import se.michaelthelin.spotify.model_objects.specification.AlbumSimplified;
+import se.michaelthelin.spotify.model_objects.specification.ArtistSimplified;
+import se.michaelthelin.spotify.model_objects.specification.Episode;
+import se.michaelthelin.spotify.model_objects.specification.PlaylistSimplified;
+import se.michaelthelin.spotify.model_objects.specification.ShowSimplified;
+import se.michaelthelin.spotify.model_objects.specification.Track;
 
 public class SearchCommand extends AbstractSourceDecidingCommand {
 

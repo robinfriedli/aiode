@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
-import com.wrapper.spotify.SpotifyApi;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.spotify.SpotifyTrack;
 import net.robinfriedli.botify.audio.spotify.SpotifyTrackBulkLoadingService;
@@ -40,6 +39,7 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.quartz.JobExecutionContext;
+import se.michaelthelin.spotify.SpotifyApi;
 
 import static net.robinfriedli.botify.audio.spotify.SpotifyTrackBulkLoadingService.*;
 

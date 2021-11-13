@@ -2,12 +2,12 @@ package net.robinfriedli.botify.function;
 
 import java.util.concurrent.Callable;
 
-import com.wrapper.spotify.SpotifyApi;
-import com.wrapper.spotify.model_objects.credentials.ClientCredentials;
 import net.robinfriedli.botify.exceptions.CommandRuntimeException;
 import net.robinfriedli.botify.exceptions.UserException;
 import net.robinfriedli.botify.login.Login;
 import org.hibernate.Session;
+import se.michaelthelin.spotify.SpotifyApi;
+import se.michaelthelin.spotify.model_objects.credentials.ClientCredentials;
 
 /**
  * Invoker to run code either in a hibernate transaction or with Spotify credentials.

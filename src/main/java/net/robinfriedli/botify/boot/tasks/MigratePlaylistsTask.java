@@ -8,7 +8,6 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 
 import com.google.common.io.Files;
-import com.wrapper.spotify.SpotifyApi;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.botify.boot.StartupTask;
@@ -23,6 +22,7 @@ import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.persist.Context;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import se.michaelthelin.spotify.SpotifyApi;
 
 /**
  * Migrate the old XML playlists to the database for the v1.4 update

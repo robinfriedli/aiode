@@ -13,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.api.client.util.Sets;
-import com.wrapper.spotify.SpotifyApi;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -42,6 +41,7 @@ import net.robinfriedli.jxp.api.JxpBackend;
 import org.hibernate.SessionFactory;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.stereotype.Component;
+import se.michaelthelin.spotify.SpotifyApi;
 
 /**
  * This class offers several methods to manage the bot, such as un- / registering discord listeners or shutting down

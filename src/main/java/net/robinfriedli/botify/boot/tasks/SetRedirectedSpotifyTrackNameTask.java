@@ -11,16 +11,16 @@ import javax.annotation.Nullable;
 import org.apache.hc.core5.http.ParseException;
 
 import com.google.common.collect.Lists;
-import com.wrapper.spotify.SpotifyApi;
-import com.wrapper.spotify.exceptions.SpotifyWebApiException;
-import com.wrapper.spotify.model_objects.credentials.ClientCredentials;
-import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.api.JDA;
 import net.robinfriedli.botify.boot.StartupTask;
 import net.robinfriedli.botify.entities.xml.StartupTaskContribution;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
+import se.michaelthelin.spotify.SpotifyApi;
+import se.michaelthelin.spotify.exceptions.SpotifyWebApiException;
+import se.michaelthelin.spotify.model_objects.credentials.ClientCredentials;
+import se.michaelthelin.spotify.model_objects.specification.Track;
 
 import static net.robinfriedli.jxp.queries.Conditions.*;
 

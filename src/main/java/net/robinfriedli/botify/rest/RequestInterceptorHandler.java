@@ -8,7 +8,6 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.wrapper.spotify.SpotifyApi;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -27,6 +26,7 @@ import org.hibernate.SessionFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
+import se.michaelthelin.spotify.SpotifyApi;
 
 @Component
 public class RequestInterceptorHandler implements HandlerInterceptor {

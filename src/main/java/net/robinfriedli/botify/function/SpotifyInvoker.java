@@ -5,13 +5,13 @@ import java.util.concurrent.Callable;
 import javax.annotation.Nullable;
 
 import com.neovisionaries.i18n.CountryCode;
-import com.wrapper.spotify.SpotifyApi;
 import net.robinfriedli.botify.function.modes.SpotifyAuthorizationMode;
 import net.robinfriedli.botify.function.modes.SpotifyMarketMode;
 import net.robinfriedli.botify.function.modes.SpotifyUserAuthorizationMode;
 import net.robinfriedli.botify.login.Login;
 import net.robinfriedli.exec.BaseInvoker;
 import net.robinfriedli.exec.Mode;
+import se.michaelthelin.spotify.SpotifyApi;
 
 /**
  * Invoker that runs a task with the appropriate Spotify credentials -> the credentials for the provided login or, if

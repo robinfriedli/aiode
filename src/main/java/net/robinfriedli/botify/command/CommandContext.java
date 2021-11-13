@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Future;
 
-import com.wrapper.spotify.SpotifyApi;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -20,6 +19,7 @@ import net.robinfriedli.botify.discord.GuildContext;
 import net.robinfriedli.botify.entities.CommandHistory;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import se.michaelthelin.spotify.SpotifyApi;
 
 /**
  * Provides context for a command request, including JDA information specific to this command such as the message and

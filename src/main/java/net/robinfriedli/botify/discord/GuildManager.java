@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
-import com.wrapper.spotify.SpotifyApi;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -57,6 +56,7 @@ import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
+import se.michaelthelin.spotify.SpotifyApi;
 
 import static net.robinfriedli.jxp.queries.Conditions.*;
 

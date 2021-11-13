@@ -7,7 +7,6 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
 import com.google.api.client.util.Sets;
-import com.wrapper.spotify.SpotifyApi;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.Botify;
@@ -29,6 +28,7 @@ import net.robinfriedli.jxp.api.JxpBackend;
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationContext;
+import se.michaelthelin.spotify.SpotifyApi;
 
 import static net.robinfriedli.botify.util.ClassDescriptorNode.*;
 

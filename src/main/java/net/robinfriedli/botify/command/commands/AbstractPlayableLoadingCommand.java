@@ -10,12 +10,6 @@ import com.google.common.collect.Lists;
 import com.sedmelluq.discord.lavaplayer.track.AudioItem;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
-import com.wrapper.spotify.model_objects.specification.AlbumSimplified;
-import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
-import com.wrapper.spotify.model_objects.specification.Episode;
-import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
-import com.wrapper.spotify.model_objects.specification.ShowSimplified;
-import com.wrapper.spotify.model_objects.specification.Track;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.AudioManager;
 import net.robinfriedli.botify.audio.AudioPlayback;
@@ -40,6 +34,12 @@ import net.robinfriedli.botify.exceptions.NoSpotifyResultsFoundException;
 import net.robinfriedli.botify.exceptions.UnavailableResourceException;
 import net.robinfriedli.botify.util.SearchEngine;
 import net.robinfriedli.stringlist.StringList;
+import se.michaelthelin.spotify.model_objects.specification.AlbumSimplified;
+import se.michaelthelin.spotify.model_objects.specification.ArtistSimplified;
+import se.michaelthelin.spotify.model_objects.specification.Episode;
+import se.michaelthelin.spotify.model_objects.specification.PlaylistSimplified;
+import se.michaelthelin.spotify.model_objects.specification.ShowSimplified;
+import se.michaelthelin.spotify.model_objects.specification.Track;
 
 public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecidingCommand {
 

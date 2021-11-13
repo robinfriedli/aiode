@@ -12,13 +12,13 @@ import org.apache.hc.core5.http.ParseException;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-import com.wrapper.spotify.SpotifyApi;
-import com.wrapper.spotify.exceptions.SpotifyWebApiException;
-import com.wrapper.spotify.model_objects.credentials.AuthorizationCodeCredentials;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.exceptions.InvalidRequestException;
 import net.robinfriedli.botify.servers.ServerUtil;
+import se.michaelthelin.spotify.SpotifyApi;
+import se.michaelthelin.spotify.exceptions.SpotifyWebApiException;
+import se.michaelthelin.spotify.model_objects.credentials.AuthorizationCodeCredentials;
 
 /**
  * Handler for the login flow that completes pending logins

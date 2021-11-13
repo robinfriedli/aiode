@@ -1,11 +1,11 @@
 package net.robinfriedli.botify.boot.configurations;
 
-import com.wrapper.spotify.SpotifyApi;
-import com.wrapper.spotify.SpotifyHttpManager;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
+import se.michaelthelin.spotify.SpotifyApi;
+import se.michaelthelin.spotify.SpotifyHttpManager;
 
 @Configuration
 public class SpotifyComponent {

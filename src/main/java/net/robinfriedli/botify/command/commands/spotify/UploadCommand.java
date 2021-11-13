@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
-import com.wrapper.spotify.SpotifyApi;
 import net.robinfriedli.botify.audio.spotify.SpotifyTrack;
 import net.robinfriedli.botify.command.AbstractCommand;
 import net.robinfriedli.botify.command.CommandContext;
@@ -13,6 +12,7 @@ import net.robinfriedli.botify.entities.Playlist;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.util.SearchEngine;
+import se.michaelthelin.spotify.SpotifyApi;
 
 public class UploadCommand extends AbstractCommand {
 
@@ -40,7 +40,7 @@ public class UploadCommand extends AbstractCommand {
             }
 
             String userId = spotifyApi.getCurrentUsersProfile().build().execute().getId();
-            com.wrapper.spotify.model_objects.specification.Playlist spotifyPlaylist = spotifyApi.createPlaylist(userId, name).build().execute();
+            se.michaelthelin.spotify.model_objects.specification.Playlist spotifyPlaylist = spotifyApi.createPlaylist(userId, name).build().execute();
             uploadedPlaylistName = spotifyPlaylist.getName();
             String playlistId = spotifyPlaylist.getId();
             List<String> trackUris = tracks.stream().map(SpotifyTrack::getUri).collect(Collectors.toList());

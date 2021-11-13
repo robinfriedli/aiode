@@ -5,7 +5,6 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.wrapper.spotify.SpotifyApi;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
@@ -26,6 +25,7 @@ import net.robinfriedli.botify.discord.MessageService;
 import net.robinfriedli.botify.exceptions.UserException;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
+import se.michaelthelin.spotify.SpotifyApi;
 
 /**
  * Listener responsible for handling reaction events and widget execution

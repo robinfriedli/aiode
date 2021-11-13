@@ -16,7 +16,6 @@ import com.sedmelluq.discord.lavaplayer.track.AudioItem;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 import com.sedmelluq.discord.lavaplayer.track.playback.AudioFrame;
-import com.wrapper.spotify.SpotifyApi;
 import groovy.lang.Tuple2;
 import net.dv8tion.jda.api.audio.factory.IAudioSendSystem;
 import net.dv8tion.jda.api.audio.factory.IPacketProvider;
@@ -39,6 +38,7 @@ import net.robinfriedli.botify.exceptions.InvalidCommandException;
 import net.robinfriedli.botify.exceptions.handler.handlers.LoggingUncaughtExceptionHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import se.michaelthelin.spotify.SpotifyApi;
 
 public class AudioTrafficSimulationCommand extends AbstractAdminCommand {
 

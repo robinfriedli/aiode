@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.wrapper.spotify.SpotifyApi;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.sharding.ShardManager;
@@ -23,6 +22,7 @@ import net.robinfriedli.botify.function.SpotifyInvoker;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.persist.Context;
 import org.hibernate.Session;
+import se.michaelthelin.spotify.SpotifyApi;
 
 import static net.robinfriedli.botify.audio.spotify.SpotifyTrackBulkLoadingService.*;
 import static net.robinfriedli.botify.audio.spotify.SpotifyTrackKind.*;

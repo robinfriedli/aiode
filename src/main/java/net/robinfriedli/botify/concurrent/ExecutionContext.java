@@ -6,7 +6,6 @@ import java.util.UUID;
 
 import javax.annotation.Nullable;
 
-import com.wrapper.spotify.SpotifyApi;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.GuildVoiceState;
@@ -28,6 +27,7 @@ import net.robinfriedli.botify.persist.interceptors.SanitizingEntityInterceptor;
 import net.robinfriedli.botify.persist.interceptors.VerifyPlaylistInterceptor;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import se.michaelthelin.spotify.SpotifyApi;
 
 /**
  * Provides context for the task executed by the current thread. This is setup by {@link CommandExecutionTask} upon

@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 
 import org.apache.hc.core5.http.ParseException;
 
-import com.wrapper.spotify.exceptions.SpotifyWebApiException;
+import se.michaelthelin.spotify.exceptions.SpotifyWebApiException;
 
 public enum SpotifyTrackKind {
 

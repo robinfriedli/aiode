@@ -8,11 +8,6 @@ import java.util.concurrent.CompletableFuture;
 import com.google.common.base.Strings;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
-import com.wrapper.spotify.model_objects.specification.AlbumSimplified;
-import com.wrapper.spotify.model_objects.specification.Episode;
-import com.wrapper.spotify.model_objects.specification.PlaylistSimplified;
-import com.wrapper.spotify.model_objects.specification.ShowSimplified;
-import com.wrapper.spotify.model_objects.specification.Track;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.robinfriedli.botify.Botify;
@@ -31,6 +26,11 @@ import net.robinfriedli.botify.command.widget.WidgetRegistry;
 import net.robinfriedli.botify.command.widget.widgets.QueueWidget;
 import net.robinfriedli.botify.entities.xml.CommandContribution;
 import net.robinfriedli.botify.exceptions.NoResultsFoundException;
+import se.michaelthelin.spotify.model_objects.specification.AlbumSimplified;
+import se.michaelthelin.spotify.model_objects.specification.Episode;
+import se.michaelthelin.spotify.model_objects.specification.PlaylistSimplified;
+import se.michaelthelin.spotify.model_objects.specification.ShowSimplified;
+import se.michaelthelin.spotify.model_objects.specification.Track;
 
 public class QueueCommand extends AbstractQueueLoadingCommand {
 

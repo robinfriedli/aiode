@@ -10,7 +10,6 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
-import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.function.HibernateInvoker;
 import net.robinfriedli.botify.persist.qb.QueryBuilderFactory;
@@ -18,6 +17,7 @@ import net.robinfriedli.exec.Mode;
 import net.robinfriedli.exec.MutexSync;
 import net.robinfriedli.exec.modes.MutexSyncMode;
 import org.hibernate.Session;
+import se.michaelthelin.spotify.model_objects.specification.ArtistSimplified;
 
 @Entity
 @Table(name = "artist")

@@ -4,7 +4,6 @@ import java.util.Objects;
 import java.util.Optional;
 
 import com.google.common.base.Strings;
-import com.wrapper.spotify.SpotifyApi;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
@@ -29,6 +28,7 @@ import net.robinfriedli.botify.entities.GuildSpecification;
 import net.robinfriedli.botify.exceptions.UserException;
 import org.hibernate.Session;
 import org.springframework.stereotype.Component;
+import se.michaelthelin.spotify.SpotifyApi;
 
 /**
  * Listener responsible for filtering entered commands and creating a {@link CommandContext} to pass to the

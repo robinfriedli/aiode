@@ -1,8 +1,8 @@
 package net.robinfriedli.botify.audio.spotify;
 
 import com.neovisionaries.i18n.CountryCode;
-import com.wrapper.spotify.model_objects.credentials.ClientCredentials;
 import net.robinfriedli.botify.login.Login;
+import se.michaelthelin.spotify.model_objects.credentials.ClientCredentials;
 
 public class SpotifyContext {
 

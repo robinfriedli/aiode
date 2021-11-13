@@ -5,15 +5,15 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Strings;
-import com.wrapper.spotify.model_objects.IPlaylistItem;
-import com.wrapper.spotify.model_objects.specification.AlbumSimplified;
-import com.wrapper.spotify.model_objects.specification.ArtistSimplified;
-import com.wrapper.spotify.model_objects.specification.Episode;
-import com.wrapper.spotify.model_objects.specification.ExternalUrl;
-import com.wrapper.spotify.model_objects.specification.Image;
-import com.wrapper.spotify.model_objects.specification.ShowSimplified;
-import com.wrapper.spotify.model_objects.specification.Track;
 import net.robinfriedli.stringlist.StringList;
+import se.michaelthelin.spotify.model_objects.IPlaylistItem;
+import se.michaelthelin.spotify.model_objects.specification.AlbumSimplified;
+import se.michaelthelin.spotify.model_objects.specification.ArtistSimplified;
+import se.michaelthelin.spotify.model_objects.specification.Episode;
+import se.michaelthelin.spotify.model_objects.specification.ExternalUrl;
+import se.michaelthelin.spotify.model_objects.specification.Image;
+import se.michaelthelin.spotify.model_objects.specification.ShowSimplified;
+import se.michaelthelin.spotify.model_objects.specification.Track;
 
 /**
  * Wrap any Spotify entity that implements {@link IPlaylistItem} and provide access to their common methods. This is required
