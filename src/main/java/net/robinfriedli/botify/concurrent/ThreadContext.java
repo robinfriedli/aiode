@@ -104,7 +104,7 @@ public class ThreadContext {
     }
 
     public boolean isInstalled(Class<?> contextType) {
-        return installedContexts.containsKey(contextType.getName());
+        return optional(contextType).isPresent();
     }
 
     public boolean isInstalled(String key) {
