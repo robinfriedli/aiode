@@ -13,6 +13,7 @@ import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
+import net.dv8tion.jda.api.utils.ConcurrentSessionController;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.robinfriedli.botify.discord.listeners.StartupListener;
 import org.springframework.beans.factory.annotation.Value;
@@ -59,6 +60,7 @@ public class JdaComponent {
                 .setMemberCachePolicy(MemberCachePolicy.DEFAULT)
                 .setStatus(OnlineStatus.IDLE)
                 .setChunkingFilter(ChunkingFilter.NONE)
+                .setSessionController(new ConcurrentSessionController())
                 .addEventListeners(startupListener);
 
             if (nativeBufferDuration > 0) {
