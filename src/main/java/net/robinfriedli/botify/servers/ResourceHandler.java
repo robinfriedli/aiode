@@ -5,6 +5,8 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.slf4j.LoggerFactory;
+
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
@@ -15,10 +17,19 @@ public class ResourceHandler implements HttpHandler {
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
-        byte[] bytes = Files.readAllBytes(Path.of("." + exchange.getRequestURI().toString()));
-        exchange.sendResponseHeaders(200, bytes.length);
-        OutputStream responseBody = exchange.getResponseBody();
-        responseBody.write(bytes);
-        responseBody.close();
+        try {
+            byte[] bytes = Files.readAllBytes(Path.of("." + exchange.getRequestURI().toString()));
+            exchange.sendResponseHeaders(200, bytes.length);
+            OutputStream responseBody = exchange.getResponseBody();
+            responseBody.write(bytes);
+            responseBody.close();
+        } catch (Exception e) {
+            String response = e.toString();
+            exchange.sendResponseHeaders(500, response.getBytes().length);
+            OutputStream responseBody = exchange.getResponseBody();
+            responseBody.write(response.getBytes());
+            responseBody.close();
+            LoggerFactory.getLogger(getClass()).error("Error in HttpHandler", e);
+        }
     }
 }

@@ -2,13 +2,21 @@ package net.robinfriedli.botify.servers;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import net.robinfriedli.botify.boot.AbstractShutdownable;
 import net.robinfriedli.botify.entities.xml.HttpHandlerContribution;
+import net.robinfriedli.botify.exceptions.handler.handlers.LoggingUncaughtExceptionHandler;
 import net.robinfriedli.jxp.api.JxpBackend;
 import net.robinfriedli.jxp.persist.Context;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
@@ -35,7 +43,19 @@ public class HttpServerManager extends AbstractShutdownable {
 
     public void start() throws IOException {
         httpServer = HttpServer.create(new InetSocketAddress(port), 0);
-        httpServer.setExecutor(null);
+
+        ExecutorService executorService = new ThreadPoolExecutor(5, 50, 30, TimeUnit.SECONDS, new SynchronousQueue<>(), new ThreadFactory() {
+            final AtomicLong threadId = new AtomicLong(1);
+
+            @Override
+            public Thread newThread(@NotNull Runnable r) {
+                Thread thread = new Thread(r);
+                thread.setName("http-server-thread-" + threadId.getAndIncrement());
+                thread.setUncaughtExceptionHandler(new LoggingUncaughtExceptionHandler());
+                return thread;
+            }
+        });
+        httpServer.setExecutor(executorService);
 
         for (HttpHandlerContribution contribution : httpHandlersContext.getInstancesOf(HttpHandlerContribution.class)) {
             httpServer.createContext(contribution.getAttribute("path").getValue(), contribution.instantiate());

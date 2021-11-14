@@ -19,7 +19,7 @@ public class ServerUtil {
     public static void handleError(HttpExchange exchange, Throwable e) throws IOException {
         String html = Files.readString(Path.of("html/default_error_page.html"));
         String response = String.format(html, e.getMessage());
-        exchange.sendResponseHeaders(200, response.getBytes().length);
+        exchange.sendResponseHeaders(500, response.getBytes().length);
         OutputStream responseBody = exchange.getResponseBody();
         responseBody.write(response.getBytes());
         responseBody.close();
