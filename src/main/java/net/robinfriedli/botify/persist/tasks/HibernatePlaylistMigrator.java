@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.spotify.SpotifyTrackBulkLoadingService;
@@ -122,16 +121,15 @@ public class HibernatePlaylistMigrator implements PersistTask<Map<Playlist, List
                                  SpotifyTrackKind kind) {
         String id = item.getAttribute("id").getValue();
         spotifyBulkLoadingService.add(createItem(id, kind), spotifyTrack -> {
+            String addedUser = item.getAttribute("addedUser").getValue();
             String addedUserId = item.getAttribute("addedUserId").getValue();
-            User userById = "system".equals(addedUserId) ? null : shardManager.getUserById(addedUserId);
             PlaylistItem playlistItem = spotifyTrack.exhaustiveMatch(
-                track -> new Song(track, userById, newPlaylist, session),
-                episode -> new Episode(episode, userById, newPlaylist)
+                track -> new Song(track, addedUser, addedUserId, newPlaylist, session),
+                episode -> new Episode(episode, addedUser, addedUserId, newPlaylist)
             );
-            if (userById == null) {
-                playlistItem.setAddedUser(item.getAttribute("addedUser").getValue());
-                playlistItem.setAddedUserId(item.getAttribute("addedUserId").getValue());
-            }
+
+            playlistItem.setAddedUser(item.getAttribute("addedUser").getValue());
+            playlistItem.setAddedUserId(item.getAttribute("addedUserId").getValue());
             itemsWithIndex.put(playlistItem, index);
         });
     }

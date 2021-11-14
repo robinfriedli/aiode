@@ -45,14 +45,24 @@ public class Episode extends PlaylistItem {
         super(user, playlist);
         id = episode.getId();
         name = episode.getName();
+        duration = episode.getDurationMs();
+        initShow(episode);
+    }
 
+    public Episode(se.michaelthelin.spotify.model_objects.specification.Episode episode, String addedUser, String addedUserId, Playlist playlist) {
+        super(addedUser, addedUserId, playlist);
+        id = episode.getId();
+        name = episode.getName();
+        duration = episode.getDurationMs();
+        initShow(episode);
+    }
+
+    private void initShow(se.michaelthelin.spotify.model_objects.specification.Episode episode) {
         ShowSimplified show = episode.getShow();
         if (show != null) {
             showId = show.getId();
             showName = show.getName();
         }
-
-        this.duration = episode.getDurationMs();
     }
 
     @Override

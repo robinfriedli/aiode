@@ -11,6 +11,8 @@ import java.util.stream.Collectors;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
+import net.dv8tion.jda.api.requests.ErrorResponse;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.Botify;
 import net.robinfriedli.botify.audio.spotify.SpotifyTrack;
@@ -196,7 +198,16 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
                 createdUser = playlist.getCreatedUser();
             } else {
                 ShardManager shardManager = Botify.get().getShardManager();
-                User userById = shardManager.getUserById(createdUserId);
+                User userById;
+                try {
+                    userById = shardManager.retrieveUserById(createdUserId).complete();
+                } catch (ErrorResponseException e) {
+                    if (e.getErrorResponse() == ErrorResponse.UNKNOWN_USER) {
+                        userById = null;
+                    } else {
+                        throw e;
+                    }
+                }
                 createdUser = userById != null ? userById.getName() : playlist.getCreatedUser();
             }
 

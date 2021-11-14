@@ -13,6 +13,8 @@ import org.apache.hc.core5.http.ParseException;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
+import net.dv8tion.jda.api.requests.ErrorResponse;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.botify.exceptions.InvalidRequestException;
 import net.robinfriedli.botify.servers.ServerUtil;
@@ -47,7 +49,17 @@ public class LoginHandler implements HttpHandler {
 
             String response;
             if (accessCode != null) {
-                User user = shardManager.getUserById(userId);
+                User user;
+                try {
+                    user = shardManager.retrieveUserById(userId).complete();
+                } catch (ErrorResponseException e) {
+                    if (e.getErrorResponse() == ErrorResponse.UNKNOWN_USER) {
+                        throw new IllegalArgumentException(String.format("Could not find user with id '%s'. " +
+                            "Please make sure the login link is valid and the bot is still a member of your guild.", userId));
+                    }
+
+                    throw e;
+                }
                 if (user == null) {
                     throw new InvalidRequestException(String.format("No user found for id '%s'", userId));
                 }

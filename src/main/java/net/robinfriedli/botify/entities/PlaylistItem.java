@@ -36,6 +36,12 @@ public abstract class PlaylistItem implements Serializable {
         this.playlist = playlist;
     }
 
+    public PlaylistItem(String addedUser, String addedUserId, Playlist playlist) {
+        this.addedUser = addedUser;
+        this.addedUserId = addedUserId;
+        this.playlist = playlist;
+    }
+
     public abstract PlaylistItem copy(Playlist playlist);
 
     public abstract boolean matches(String searchTerm);

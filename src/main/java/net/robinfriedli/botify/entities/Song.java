@@ -47,12 +47,24 @@ public class Song extends PlaylistItem {
         super(user, playlist);
         id = track.getId();
         name = track.getName();
+        duration = track.getDurationMs();
+        initArtists(track, session);
+    }
+
+    public Song(Track track, String addedUser, String addedUserId, Playlist playlist, Session session) {
+        super(addedUser, addedUserId, playlist);
+        id = track.getId();
+        name = track.getName();
+        duration = track.getDurationMs();
+        initArtists(track, session);
+    }
+
+    private void initArtists(Track track, Session session) {
         for (ArtistSimplified artist : track.getArtists()) {
             if (artist.getId() != null) {
                 artists.add(Artist.getOrCreateArtist(artist, session));
             }
         }
-        this.duration = track.getDurationMs();
     }
 
     @Override
