@@ -535,6 +535,11 @@ See application.properties -> spring.liquibase.contexts
     </insert>
   </changeSet>
   <changeSet author="robin (generated)" id="1581299527413-1">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="spotify_redirect_index" columnName="last_used"/>
+      </not>
+    </preConditions>
     <addColumn tableName="spotify_redirect_index">
       <column name="last_used" type="date"/>
     </addColumn>
