@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <commands xmlns="commandSpace">
   <command identifier="add"
-           implementation="net.robinfriedli.botify.command.commands.playlistmanagement.AddCommand"
+           implementation="net.robinfriedli.aiode.command.commands.playlistmanagement.AddCommand"
            requiresInput="true"
            category="PLAYLIST_MANAGEMENT"
            description="Add a specific song from spotify, youtube, the current queue or any URL to the specified local playlist. Which source is used is decided by the used arguments or the default source and default list source properties. Spotify search queries support the Spotify query syntax (i.e. the &quot;artist:&quot;, &quot;album:&quot; and &quot;track:&quot; filters). To add tracks to the queue see the queue command.">
@@ -15,7 +15,7 @@
     <example title="Add tracks from a url">%1$sadd http://someurl.com %2$sto linkin park</example>
   </command>
   <command identifier="answer"
-           implementation="net.robinfriedli.botify.command.commands.general.AnswerCommand"
+           implementation="net.robinfriedli.aiode.command.commands.general.AnswerCommand"
            requiresInput="true"
            category="GENERAL"
            description="Answer a question asked by the bot. Commands like the play command may ask you to specify what track you meant if several options where found.">
@@ -23,21 +23,21 @@
     <example title="Choose options 2, 4 and 6">%1$sanswer 2,4,6</example>
   </command>
   <command identifier="create"
-           implementation="net.robinfriedli.botify.command.commands.playlistmanagement.CreateCommand"
+           implementation="net.robinfriedli.aiode.command.commands.playlistmanagement.CreateCommand"
            requiresInput="true"
            category="PLAYLIST_MANAGEMENT"
            description="Create an empty local playlist with the given name.">
     <example title="Create a playlist called &quot;my list&quot;">%1$screate my list</example>
   </command>
   <command identifier="delete"
-           implementation="net.robinfriedli.botify.command.commands.playlistmanagement.DeleteCommand"
+           implementation="net.robinfriedli.aiode.command.commands.playlistmanagement.DeleteCommand"
            requiresInput="true"
            category="PLAYLIST_MANAGEMENT"
            description="Delete the local playlist with the given name.">
     <example title="Delete a playlist called &quot;my list&quot;">%1$sdelete my list</example>
   </command>
   <command identifier="export"
-           implementation="net.robinfriedli.botify.command.commands.playlistmanagement.ExportCommand"
+           implementation="net.robinfriedli.aiode.command.commands.playlistmanagement.ExportCommand"
            requiresInput="true"
            category="PLAYLIST_MANAGEMENT"
            description="Export the current tracks in the queue to a new local list.">
@@ -45,21 +45,21 @@
     </example>
   </command>
   <command identifier="help"
-           implementation="net.robinfriedli.botify.command.commands.general.HelpCommand"
+           implementation="net.robinfriedli.aiode.command.commands.general.HelpCommand"
            requiresInput="false"
            category="GENERAL"
            description="Lists all available commands and their descriptions or provides help with a specific command.">
     <example title="Get help with the play command">%1$shelp play</example>
   </command>
   <command identifier="login"
-           implementation="net.robinfriedli.botify.command.commands.spotify.LoginCommand"
+           implementation="net.robinfriedli.aiode.command.commands.spotify.LoginCommand"
            requiresInput="false"
            category="SPOTIFY"
-           description="Login to spotify. This sends you a link to the spotify login page which then redirects to the botify callback.">
+           description="Login to spotify. This sends you a link to the spotify login page which then redirects to the aiode callback.">
     <example title="Login to Spotify.">%1$slogin</example>
   </command>
   <command identifier="play"
-           implementation="net.robinfriedli.botify.command.commands.playback.PlayCommand"
+           implementation="net.robinfriedli.aiode.command.commands.playback.PlayCommand"
            requiresInput="false"
            category="PLAYBACK"
            description="Resume the paused playback, play the current track in the queue or play the specified track, video or playlist. Can play any URL or search youtube and spotify tracks or lists and also local playlists. Local playlists, like the queue, can contain tracks from any source (YouTube, Spotify and URL). Spotify search queries support the Spotify query syntax (i.e. the &quot;artist:&quot;, &quot;album:&quot; and &quot;track:&quot; filters). Which source is used is decided by the used arguments or the default source and default list source properties.">
@@ -74,12 +74,12 @@
     <example title="Play a Spotify playlist from the current user's library">%1$splay %2$sspotify %2$slist %2$sown goat</example>
   </command>
   <command identifier="pause"
-           implementation="net.robinfriedli.botify.command.commands.playback.PauseCommand"
+           implementation="net.robinfriedli.aiode.command.commands.playback.PauseCommand"
            requiresInput="false"
            category="PLAYBACK"
            description="Pause the current playback."/>
   <command identifier="queue"
-           implementation="net.robinfriedli.botify.command.commands.playback.QueueCommand"
+           implementation="net.robinfriedli.aiode.command.commands.playback.QueueCommand"
            requiresInput="false"
            category="PLAYBACK"
            description="Display the current queue or add a youtube video or playlist, spotify track or playlist, local playlist or any URL to the current queue. Spotify search queries support the Spotify query syntax (i.e. the &quot;artist:&quot;, &quot;album:&quot; and &quot;track:&quot; filters). Which source is used is decided by the used arguments or the default source and default list source properties.">
@@ -93,26 +93,26 @@
     <example title="Add a YouTube playlist to the queue, showing a selection of 5 results">%1$squeue %2$syoutube %2$slist %2$slimit=5 memes</example>
   </command>
   <command identifier="remove"
-           implementation="net.robinfriedli.botify.command.commands.playlistmanagement.RemoveCommand"
+           implementation="net.robinfriedli.aiode.command.commands.playlistmanagement.RemoveCommand"
            requiresInput="true"
            category="PLAYLIST_MANAGEMENT"
            description="Remove an item from a local playlist. Put either the full title of the YouTube video or the Spotify track name. If it was a track added by URL from a different source you can either remove it via its title or URL.">
     <argument identifier="from" requiresValue="true" description="Mandatory argument to specify the playlist from which to remove the items."/>
-    <argument identifier="index" description="Remove items by their index. You can also provide an index range like %2$sbotify remove 13-19 %2$sfrom list. This includes starting and end index."/>
+    <argument identifier="index" description="Remove items by their index. You can also provide an index range like %1$sremove 13-19 %2$sfrom list. This includes starting and end index."/>
     <example title="Remove a Spotify track from a playlist">%1$sremove numb %2$sfrom my list</example>
     <example title="Remove an item added by URL">%1$sremove http://someurl.com/video1 %2$sfrom my list</example>
     <example title="Remove the track at position 3 from a playlist">%1$sremove %2$sindex 3 %2$sfrom my list</example>
     <example title="Remove positions 13 through 19 from a playlist">%1$sremove %2$sindex 13-19 %2$sfrom my list</example>
   </command>
   <command identifier="rename"
-           implementation="net.robinfriedli.botify.command.commands.customisation.RenameCommand"
+           implementation="net.robinfriedli.aiode.command.commands.customisation.RenameCommand"
            requiresInput="true"
            category="CUSTOMISATION"
-           description="Change the name of the bot. This name will then be used as the bot's nickname (if the bot has the permission to change it) and can be used as command prefix instead of '$botify'">
+           description="Change the name of the bot. This name will then be used as the bot's nickname (if the bot has the permission to change it) and can be used as command prefix instead of '$aiode'">
     <example title="Name the bot &quot;Patrice&quot;">%1$srename Patrice</example>
   </command>
   <command identifier="repeat"
-           implementation="net.robinfriedli.botify.command.commands.playback.RepeatCommand"
+           implementation="net.robinfriedli.aiode.command.commands.playback.RepeatCommand"
            requiresInput="false"
            category="PLAYBACK"
            description="Toggles repeat for either the entire queue (repeat %2$sall) or the current track (repeat %2$sone).">
@@ -126,7 +126,7 @@
     <example title="Repeat the current track">%1$srepeat %2$sone</example>
   </command>
   <command identifier="rewind"
-           implementation="net.robinfriedli.botify.command.commands.playback.RewindCommand"
+           implementation="net.robinfriedli.aiode.command.commands.playback.RewindCommand"
            requiresInput="false"
            category="PLAYBACK"
            description="Go back to the previous track in the queue. You can provide a number to rewind more than one track.">
@@ -134,7 +134,7 @@
     <example title="Rewind 6 tracks">%1$srewind 6</example>
   </command>
   <command identifier="search"
-           implementation="net.robinfriedli.botify.command.commands.search.SearchCommand"
+           implementation="net.robinfriedli.aiode.command.commands.search.SearchCommand"
            requiresInput="false"
            category="SEARCH"
            description="Search for YouTube and Spotify tracks or playlists and local playlists or list all local playlists. Spotify search queries support the Spotify query syntax (i.e. the &quot;artist:&quot;, &quot;album:&quot; and &quot;track:&quot; filters). Which source is used is decided by the used arguments or the default source and default list source properties.">
@@ -176,7 +176,7 @@
       <excludes argument="episode"/>
       <rule errorMessage="Argument 'podcast' may only be used with Spotify.">command.getSource().isSpotify()</rule>
     </argument>
-    <argument identifier="market" requiresValue="true" description="Specify the ISO 3166-1 country code of the target spotify market. Used to search a Spotify item in a specific country different from the default of this Botify instance.">
+    <argument identifier="market" requiresValue="true" description="Specify the ISO 3166-1 country code of the target spotify market. Used to search a Spotify item in a specific country different from the default of this Aiode instance.">
       <rule errorMessage="Argument 'market' may only be used with Spotify.">command.getSource().isSpotify()</rule>
       <rule errorMessage="'%3$s' is not a valid ISO 3166-1 country code">
         try {
@@ -195,12 +195,12 @@
     <example title="Search for a YouTube playlist, showing a selection of 5 results">%1$ssearch %2$syoutube %2$slist %2$slimit=6 memes</example>
   </command>
   <command identifier="shuffle"
-           implementation="net.robinfriedli.botify.command.commands.playback.ShuffleCommand"
+           implementation="net.robinfriedli.aiode.command.commands.playback.ShuffleCommand"
            requiresInput="false"
            category="PLAYBACK"
            description="Toggles shuffle for this guild's queue. This generates a random order in which each track only appears once."/>
   <command identifier="skip"
-           implementation="net.robinfriedli.botify.command.commands.playback.SkipCommand"
+           implementation="net.robinfriedli.aiode.command.commands.playback.SkipCommand"
            requiresInput="false"
            category="PLAYBACK"
            description="Skip to the next track in the queue or skip the specified amount of tracks. You can provide a number to skip more than one track.">
@@ -208,19 +208,19 @@
     <example title="Skip 6 tracks">%1$sskip 6</example>
   </command>
   <command identifier="stop"
-           implementation="net.robinfriedli.botify.command.commands.playback.StopCommand"
+           implementation="net.robinfriedli.aiode.command.commands.playback.StopCommand"
            requiresInput="false"
            category="PLAYBACK"
            description="Stop playback and empty the queue."/>
   <command identifier="upload"
-           implementation="net.robinfriedli.botify.command.commands.spotify.UploadCommand"
+           implementation="net.robinfriedli.aiode.command.commands.spotify.UploadCommand"
            requiresInput="true"
            category="SPOTIFY"
            description="Upload the items from a local list to a new Spotify playlist. This ignores elements that are not Spotify tracks.">
     <example title="Upload playlist &quot;my list&quot;">%1$supload my list</example>
   </command>
   <command identifier="permission"
-           implementation="net.robinfriedli.botify.command.commands.general.PermissionCommand"
+           implementation="net.robinfriedli.aiode.command.commands.general.PermissionCommand"
            requiresInput="false"
            category="GENERAL"
            restrictedAccess="true"
@@ -321,22 +321,22 @@
     <example title="Grant all arguments to role 'manager'">%1$spermission %2$sgrant %2$scategory command %2$sargument %2$sto manager</example>
   </command>
   <command identifier="logout"
-           implementation="net.robinfriedli.botify.command.commands.spotify.LogoutCommand"
+           implementation="net.robinfriedli.aiode.command.commands.spotify.LogoutCommand"
            requiresInput="false"
            category="SPOTIFY"
            description="Log out from Spotify."/>
   <command identifier="analytics"
-           implementation="net.robinfriedli.botify.command.commands.general.AnalyticsCommand"
+           implementation="net.robinfriedli.aiode.command.commands.general.AnalyticsCommand"
            requiresInput="false"
            category="GENERAL"
            description="Show various analytics about this bot."/>
   <command identifier="clear"
-           implementation="net.robinfriedli.botify.command.commands.playback.ClearCommand"
+           implementation="net.robinfriedli.aiode.command.commands.playback.ClearCommand"
            requiresInput="false"
            category="PLAYBACK"
            description="Clear the current queue of all tracks (except the currently playing track)."/>
   <command identifier="forward"
-           implementation="net.robinfriedli.botify.command.commands.playback.ForwardCommand"
+           implementation="net.robinfriedli.aiode.command.commands.playback.ForwardCommand"
            requiresInput="true"
            category="PLAYBACK"
            description="Skip the given amount of seconds or minutes in the current track.">
@@ -348,7 +348,7 @@
     <example title="Forward 2 minutes">%1$sforward %2$sminutes 2</example>
   </command>
   <command identifier="reverse"
-           implementation="net.robinfriedli.botify.command.commands.playback.ReverseCommand"
+           implementation="net.robinfriedli.aiode.command.commands.playback.ReverseCommand"
            requiresInput="true"
            category="PLAYBACK"
            description="Rewind the given amount of seconds or minutes in the current track.">
@@ -360,12 +360,12 @@
     <example title="Rewind 2 minutes">%1$sreverse %2$sminutes 2</example>
   </command>
   <command identifier="volume"
-           implementation="net.robinfriedli.botify.command.commands.playback.VolumeCommand"
+           implementation="net.robinfriedli.aiode.command.commands.playback.VolumeCommand"
            requiresInput="true"
            category="PLAYBACK"
            description="Change the music volume. Enter a value between 1 and 200."/>
   <command identifier="preset"
-           implementation="net.robinfriedli.botify.command.commands.customisation.PresetCommand"
+           implementation="net.robinfriedli.aiode.command.commands.customisation.PresetCommand"
            requiresInput="false"
            category="CUSTOMISATION"
            description="Create or delete a command preset or show all saved presets. Command presets can be used as shortcuts for lengthy commands or creating an alias for a command. Presets han hold one variable marked by &quot;%%s&quot; that may be assigned a value when using the preset. Syntax to create a preset: [preset] %2$sas [name]. Mind that if your preset contains arguments you either need to put the preset in quotation marks or escape the argument prefixes using the escape character '\\'; see the examples for references.">
@@ -382,17 +382,17 @@
     <example title="Delete a saved preset">%1$spreset %2$sdelete psol</example>
   </command>
   <command identifier="prefix"
-           implementation="net.robinfriedli.botify.command.commands.customisation.PrefixCommand"
+           implementation="net.robinfriedli.aiode.command.commands.customisation.PrefixCommand"
            requiresInput="true"
            category="CUSTOMISATION"
-           description="Set a custom command prefix. Can be used instead of &quot;$botify&quot; or the bot name to start a command.">
+           description="Set a custom command prefix. Can be used instead of &quot;$aiode&quot; or the bot name to start a command.">
     <example title="Set the command prefix to &quot;.&quot; to start a command like this: .play numb">%1$sprefix .</example>
   </command>
   <command identifier="move"
-           implementation="net.robinfriedli.botify.command.commands.playlistmanagement.MoveCommand"
+           implementation="net.robinfriedli.aiode.command.commands.playlistmanagement.MoveCommand"
            requiresInput="true"
            category="PLAYLIST_MANAGEMENT"
-           description="Move one or several items in a botify playlist to a different index. When moving items down the playlist the items will end up behind the track that is currently at the target index or before when moving items upwards. When entering an index range to move it includes the start and end index. Indices are human, meaning they start at 1. To view full playlists with all indices search the list (%1$ssearch %2$slist my list) and then click the view full list link.">
+           description="Move one or several items in an aiode playlist to a different index. When moving items down the playlist the items will end up behind the track that is currently at the target index or before when moving items upwards. When entering an index range to move it includes the start and end index. Indices are human, meaning they start at 1. To view full playlists with all indices search the list (%1$ssearch %2$slist my list) and then click the view full list link.">
     <argument identifier="to" requiresValue="true" description="Mandatory argument to specify the target index."/>
     <argument identifier="on" requiresValue="true" description="Mandatory argument to define the playlist where you want to move the tracks."/>
     <example title="Move the item that is currently at index 5 to index 10">%1$smove 5 %2$sto 10 %2$son my list</example>
@@ -400,16 +400,16 @@
     <example title="Move the items that are currently in range 14 - 16 (including start &amp; end) up between the items that are currently at index 9 and 10.">%1$smove 14-16 %2$sto 10 %2$son my list</example>
   </command>
   <command identifier="insert"
-           implementation="net.robinfriedli.botify.command.commands.playlistmanagement.InsertCommand"
+           implementation="net.robinfriedli.aiode.command.commands.playlistmanagement.InsertCommand"
            requiresInput="true"
            category="PLAYLIST_MANAGEMENT"
-           description="Add a track to a botify playlist. This command is an extension to the add command that inserts the tracks at a specific index within the playlist rather than adding them to the end of the list. This moves all items at and below the specified index down and inserts the new tracks starting at the provided index.">
+           description="Add a track to an aiode playlist. This command is an extension to the add command that inserts the tracks at a specific index within the playlist rather than adding them to the end of the list. This moves all items at and below the specified index down and inserts the new tracks starting at the provided index.">
     <argument identifier="at" requiresValue="true" description="Mandatory argument to define the index at which to insert the tracks."/>
     <example title="Add tracks to the start of a playlist">%1$sinsert %2$sspotify %2$sown %2$slist goat %2$sto my list %2$sat 1</example>
     <example title="Insert tracks at index 10">%1$sinsert %2$syoutube %2$slist favs %2$sto my list %2$sat 10</example>
   </command>
   <command identifier="property"
-           implementation="net.robinfriedli.botify.command.commands.customisation.PropertyCommand"
+           implementation="net.robinfriedli.aiode.command.commands.customisation.PropertyCommand"
            requiresInput="false"
            category="CUSTOMISATION"
            restrictedAccess="true"
@@ -423,7 +423,7 @@
       <excludes argument="set"/>
     </argument>
     <example title="list all properties">%1$sproperty</example>
-    <example title="set the color of botify messages to blue">%1$sproperty color %2$sset blue</example>
+    <example title="set the color of aiode messages to blue">%1$sproperty color %2$sset blue</example>
     <example title="set the color to Spotify green">%1$sproperty color %2$sset #1DB954</example>
     <example title="toggle playback notifications">%1$sproperty %2$stoggle playback notification</example>
     <example title="set the default service when searching for a track">%1$sproperty default source %2$sset youtube</example>
@@ -435,35 +435,35 @@
     <example title="describe property 'color'">%1$sproperty %2$sdescribe color</example>
   </command>
   <command identifier="charts"
-           implementation="net.robinfriedli.botify.command.commands.general.ChartsCommand"
+           implementation="net.robinfriedli.aiode.command.commands.general.ChartsCommand"
            requiresInput="false"
            category="GENERAL"
            description="Shows the most popular tracks and artists for this guild and globally"/>
   <command identifier="abort"
-           implementation="net.robinfriedli.botify.command.commands.general.AbortCommand"
+           implementation="net.robinfriedli.aiode.command.commands.general.AbortCommand"
            requiresInput="false"
            category="GENERAL"
            description="Sends all currently running commands an interrupt signal and cancels all queued commands. Not all operations are affected by the interrupt signal but those that actually might take a long time, such as loading a large YouTube playlist, usually are. Use this command carefully as an emergency break if, for example, someone spammed to bot with large commands."/>
   <command identifier="synchronise"
-           implementation="net.robinfriedli.botify.command.commands.playlistmanagement.SynchroniseCommand"
+           implementation="net.robinfriedli.aiode.command.commands.playlistmanagement.SynchroniseCommand"
            requiresInput="true"
            category="PLAYLIST_MANAGEMENT"
-           description="Synchronise a botify playlist with an external playlist. In practice this the same as the add command but empties the selected list first.">
-    <argument identifier="with" description="Specify the local botify playlist to synchronise the remote playlist with."/>
+           description="Synchronise an aiode playlist with an external playlist. In practice this the same as the add command but empties the selected list first.">
+    <argument identifier="with" description="Specify the local aiode playlist to synchronise the remote playlist with."/>
     <removeArgument identifier="to"/>
-    <example title="Sync the contents of a botify playlist with a YouTube playlist">%1$ssynchronise %2$syoutube %2$slist best of linkin park %2$swith mylist</example>
-    <example title="Sync the contents of a botify playlist with a Spotify playlist">%1$ssynchronise %2$sspotify %2$slist 00s Rock Anthems %2$swith mylist</example>
-    <example title="Sync the contents of a botify playlist with a URL">%1$ssynchronise `https://open.spotify.com/playlist/6XAFuwLF6q9wdGBobd8JPt?si=9upjrtjaSiaLboyKNlBhTQ` %2$swith mylist</example>
+    <example title="Sync the contents of an aiode playlist with a YouTube playlist">%1$ssynchronise %2$syoutube %2$slist best of linkin park %2$swith mylist</example>
+    <example title="Sync the contents of an aiode playlist with a Spotify playlist">%1$ssynchronise %2$sspotify %2$slist 00s Rock Anthems %2$swith mylist</example>
+    <example title="Sync the contents of an aiode playlist with a URL">%1$ssynchronise `https://open.spotify.com/playlist/6XAFuwLF6q9wdGBobd8JPt?si=9upjrtjaSiaLboyKNlBhTQ` %2$swith mylist</example>
   </command>
   <command identifier="empty"
-           implementation="net.robinfriedli.botify.command.commands.playlistmanagement.EmptyCommand"
+           implementation="net.robinfriedli.aiode.command.commands.playlistmanagement.EmptyCommand"
            requiresInput="true"
            category="PLAYLIST_MANAGEMENT"
-           description="Clears a botify playlist of all items.">
-    <example title="Empty the botify playlist 'favs'">%1$sempty favs</example>
+           description="Clears an aiode playlist of all items.">
+    <example title="Empty the aiode playlist 'favs'">%1$sempty favs</example>
   </command>
   <command identifier="eval"
-           implementation="net.robinfriedli.botify.command.commands.scripting.EvalCommand"
+           implementation="net.robinfriedli.aiode.command.commands.scripting.EvalCommand"
            requiresInput="true"
            category="SCRIPTING"
            restrictedAccess="true"
@@ -541,7 +541,7 @@ command.run('play')
     </example>
   </command>
   <command identifier="interceptor"
-           implementation="net.robinfriedli.botify.command.commands.scripting.InterceptorCommand"
+           implementation="net.robinfriedli.aiode.command.commands.scripting.InterceptorCommand"
            requiresInput="false"
            category="SCRIPTING"
            restrictedAccess="true"
@@ -579,7 +579,7 @@ if (i %% 33 == 0) {
     <example title="Delete interceptor 'rickroll'">%1$sinterceptor %2$sdelete rickroll</example>
   </command>
   <command identifier="script"
-           implementation="net.robinfriedli.botify.command.commands.scripting.ScriptCommand"
+           implementation="net.robinfriedli.aiode.command.commands.scripting.ScriptCommand"
            requiresInput="false"
            category="SCRIPTING"
            restrictedAccess="true"
@@ -632,7 +632,7 @@ command.run('play')"
     <example title="Run script 'skipTo' with input 'Numb'; this is equivalent to typing '%1$sskipTo Numb'">%1$sscript %2$sinvoke="skipTo" Numb</example>
   </command>
   <command identifier="finalizer"
-           implementation="net.robinfriedli.botify.command.commands.scripting.FinalizerCommand"
+           implementation="net.robinfriedli.aiode.command.commands.scripting.FinalizerCommand"
            requiresInput="false"
            category="SCRIPTING"
            restrictedAccess="true"
@@ -648,7 +648,7 @@ command.run('play')"
     <example title="Delete finalizer 'deleteMessage'">%1$sfinalizer %2$sdelete deleteMessage</example>
   </command>
   <command identifier="connect"
-           implementation="net.robinfriedli.botify.command.commands.web.ConnectCommand"
+           implementation="net.robinfriedli.aiode.command.commands.web.ConnectCommand"
            category="WEB"
            requiresInput="false"
            description="Connect a web client. After using this command you can DM me the token provided by the web client. This will prepare a session connected to this guild and user enabling the client to connect via the token.">
@@ -657,7 +657,7 @@ command.run('play')"
 
   <!-- Administrator commands -->
   <command identifier="reboot"
-           implementation="net.robinfriedli.botify.command.commands.admin.RebootCommand"
+           implementation="net.robinfriedli.aiode.command.commands.admin.RebootCommand"
            requiresInput="false"
            category="ADMIN"
            description="Restarts the bot">
@@ -668,7 +668,7 @@ command.run('play')"
     </argument>
   </command>
   <command identifier="quit"
-           implementation="net.robinfriedli.botify.command.commands.admin.QuitCommand"
+           implementation="net.robinfriedli.aiode.command.commands.admin.QuitCommand"
            requiresInput="false"
            category="ADMIN"
            description="Stops the bot">
@@ -679,34 +679,34 @@ command.run('play')"
     </argument>
   </command>
   <command identifier="update"
-           implementation="net.robinfriedli.botify.command.commands.admin.UpdateCommand"
+           implementation="net.robinfriedli.aiode.command.commands.admin.UpdateCommand"
            requiresInput="false"
            category="ADMIN"
            description="Update the bot if the current branch needs to be rebased. Performs a rebase and maven clean install if necessary. A restart might be required if an update was pulled."/>
   <command identifier="load document"
-           implementation="net.robinfriedli.botify.command.commands.admin.LoadDocumentCommand"
+           implementation="net.robinfriedli.aiode.command.commands.admin.LoadDocumentCommand"
            requiresInput="false"
            category="ADMIN"
            description="Load a document from the embedDocuments or list them."/>
   <command identifier="cleandb"
-           implementation="net.robinfriedli.botify.command.commands.admin.CleanDbCommand"
+           implementation="net.robinfriedli.aiode.command.commands.admin.CleanDbCommand"
            requiresInput="false"
            category="ADMIN"
            description="Deletes data associated with guilds the bot is no longer a part of. Discord listeners will be suspended during that time.">
     <argument identifier="silent" description="Disables alerting active guilds about the cleanup and associated suspension."/>
   </command>
   <command identifier="garbage collect"
-           implementation="net.robinfriedli.botify.command.commands.admin.GarbageCollectCommand"
+           implementation="net.robinfriedli.aiode.command.commands.admin.GarbageCollectCommand"
            requiresInput="false"
            category="ADMIN"
            description="Executes a Java garbage collection to manually clean up memory when convenient"/>
   <command identifier="youtube quota"
-           implementation="net.robinfriedli.botify.command.commands.admin.YouTubeQuotaCommand"
+           implementation="net.robinfriedli.aiode.command.commands.admin.YouTubeQuotaCommand"
            requiresInput="false"
            category="ADMIN"
            description="Displays the current calculated usage of the daily YouTube API quota."/>
   <command identifier="simulate audio traffic"
-           implementation="net.robinfriedli.botify.command.commands.admin.AudioTrafficSimulationCommand"
+           implementation="net.robinfriedli.aiode.command.commands.admin.AudioTrafficSimulationCommand"
            requiresInput="false"
            category="ADMIN"
            description="Spawns a specified amount of fake audio players to simulate higher audio traffic. If the nativeBuffer argument is used this creates a NativeAudioSendSystem for each stream to populate the native jda-nas buffer and send the packets to the local loopback address, else this spawns a Thread for each stream to poll the AudioTrack continuously.">
@@ -723,8 +723,8 @@ command.run('play')"
   </command>
 
   <!-- abstract super commands -->
-  <abstractCommand class="net.robinfriedli.botify.command.commands.AbstractPlayableLoadingCommand">
-    <argument identifier="list" requiresInput="true" description="Search for a youtube, spotify or botify playlist. Note that this argument is only required when searching, not when entering a URL."/>
+  <abstractCommand class="net.robinfriedli.aiode.command.commands.AbstractPlayableLoadingCommand">
+    <argument identifier="list" requiresInput="true" description="Search for a youtube, spotify or aiode playlist. Note that this argument is only required when searching, not when entering a URL."/>
     <argument identifier="spotify" requiresInput="true" description="Search for a Spotify track, list or album. This supports Spotify query syntax (i.e. the filters &quot;artist:&quot;, &quot;album:&quot;, etc.). Note that this argument is only required when searching, not when entering a URL.">
       <excludes argument="youtube"/>
       <excludes argument="soundcloud"/>
@@ -736,7 +736,7 @@ command.run('play')"
     <argument identifier="own" requiresInput="true" description="Limit search to Spotify tracks, lists or albums that are in the current user's library. This requires a Spotify login.">
       <rule errorMessage="Argument 'own' may only be used with Spotify.">command.getSource().isSpotify()</rule>
     </argument>
-    <argument identifier="local" description="Search for a local botify playlist.">
+    <argument identifier="local" description="Search for a local aiode playlist.">
       <excludes argument="spotify"/>
       <excludes argument="youtube"/>
       <requires argument="list"/>
@@ -771,7 +771,7 @@ command.run('play')"
       <excludes argument="episode"/>
       <rule errorMessage="Argument 'podcast' may only be used with Spotify.">command.getSource().isSpotify()</rule>
     </argument>
-    <argument identifier="market" requiresValue="true" description="Specify the ISO 3166-1 country code of the target spotify market. Used to search a Spotify item in a specific country different from the default of this Botify instance.">
+    <argument identifier="market" requiresValue="true" description="Specify the ISO 3166-1 country code of the target spotify market. Used to search a Spotify item in a specific country different from the default of this Aiode instance.">
       <rule errorMessage="Argument 'market' may only be used with Spotify.">command.getSource().isSpotify()</rule>
       <rule errorMessage="'%3$s' must be a valid ISO 3166-1 country code">
         try {
@@ -783,7 +783,7 @@ command.run('play')"
       </rule>
     </argument>
   </abstractCommand>
-  <abstractCommand class="net.robinfriedli.botify.command.commands.AbstractQueueLoadingCommand">
+  <abstractCommand class="net.robinfriedli.aiode.command.commands.AbstractQueueLoadingCommand">
     <argument identifier="preview" requiresInput="true" description="Load the short preview mp3 directly from Spotify instead of the full track from YouTube.">
       <rule errorMessage="Argument 'preview' may only be used with Spotify.">
         def source = command.getSource();
@@ -795,7 +795,7 @@ command.run('play')"
       </rule>
     </argument>
   </abstractCommand>
-  <abstractCommand class="net.robinfriedli.botify.command.commands.scripting.AbstractScriptCommand">
+  <abstractCommand class="net.robinfriedli.aiode.command.commands.scripting.AbstractScriptCommand">
     <argument identifier="delete" description="Specify a script / interceptor identifier to delete">
       <rule errorMessage="Target script to delete must be specified either as command input or using the identifier argument">!command.getCommandInput().isBlank() || command.argumentSet("identifier")</rule>
     </argument>
@@ -811,7 +811,7 @@ command.run('play')"
       <rule errorMessage="Target script to deactivate must be specified either as command input or using the identifier argument">!command.getCommandInput().isBlank() || command.argumentSet("identifier")</rule>
     </argument>
   </abstractCommand>
-  <abstractCommand class="net.robinfriedli.botify.command.AbstractCommand">
+  <abstractCommand class="net.robinfriedli.aiode.command.AbstractCommand">
     <argument identifier="skipInterceptors" description="Disable script interceptors and finalizers for the execution of this command."/>
   </abstractCommand>
 </commands>

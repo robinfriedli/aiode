@@ -1,82 +1,82 @@
 {
   "properties": [
     {
-      "name": "botify.server.port",
+      "name": "aiode.server.port",
       "type": "java.lang.Integer",
       "description": "Port for the legacy html server."
     },
     {
-      "name": "botify.server.base_uri",
+      "name": "aiode.server.base_uri",
       "type": "java.lang.String",
       "description": "Base uri to use for all endpoints."
     },
     {
-      "name": "botify.server.spotify_login_callback",
+      "name": "aiode.server.spotify_login_callback",
       "type": "java.lang.String",
       "description": "Callback for the spotify login."
     },
     {
-      "name": "botify.preferences.youtube_api_daily_quota",
+      "name": "aiode.preferences.youtube_api_daily_quota",
       "type": "java.lang.Integer",
-      "description": "The daily api quota provided by the YouTube data API. Botify will limit quota usage according to this property."
+      "description": "The daily api quota provided by the YouTube data API. Aiode will limit quota usage according to this property."
     },
     {
-      "name": "botify.preferences.mode_partitioned",
+      "name": "aiode.preferences.mode_partitioned",
       "type": "java.lang.Boolean",
       "description": "Whether data should be split across guilds. If false all guilds share the same playlists, presets, scripts etc."
     },
     {
-      "name": "botify.preferences.queue_size_max",
+      "name": "aiode.preferences.queue_size_max",
       "type": "java.lang.Integer",
       "description": "The maximum number of tracks in the queue per guild."
     },
     {
-      "name": "botify.preferences.playlist_count_max",
+      "name": "aiode.preferences.playlist_count_max",
       "type": "java.lang.Integer",
       "description": "Maximum number of playlists per guild (or in total if mode_partitioned is false)."
     },
     {
-      "name": "botify.preferences.playlist_size_max",
+      "name": "aiode.preferences.playlist_size_max",
       "type": "java.lang.Integer",
       "description": "Maximum number of tracks in one playlist."
     },
     {
-      "name": "botify.preferences.preset_count_max",
+      "name": "aiode.preferences.preset_count_max",
       "type": "java.lang.Integer",
       "description": "Maximum number of presets per guild (or in total if mode_partitioned is false)."
     },
     {
-      "name": "botify.preferences.script_count_max",
+      "name": "aiode.preferences.script_count_max",
       "type": "java.lang.Integer",
       "description": "Maximum number of scripts per guild (or in total if mode_partitioned is false)."
     },
     {
-      "name": "botify.preferences.interceptor_count_max",
+      "name": "aiode.preferences.interceptor_count_max",
       "type": "java.lang.Integer",
       "description": "Maximum number of interceptors and finalizers per guild (or in total if mode_partitioned is false)."
     },
     {
-      "name": "botify.preferences.custom_permission_target_max",
+      "name": "aiode.preferences.custom_permission_target_max",
       "type": "java.lang.Integer",
       "description": "Maximum number of custom permission targets per guild (or in total if mode_partitioned is false)."
     },
     {
-      "name": "botify.preferences.max_heap_size",
+      "name": "aiode.preferences.max_heap_size",
       "type": "java.lang.String",
       "description": "Maximum JVM heap size for the bootRun task."
     },
     {
-      "name": "botify.preferences.enable_scripting",
+      "name": "aiode.preferences.enable_scripting",
       "type": "java.lang.Boolean",
       "description": "Disable / enable commands in the scripting category and custom scripted command interceptors."
     },
     {
-      "name": "botify.preferences.spotify_market",
+      "name": "aiode.preferences.spotify_market",
       "type": "java.lang.String",
       "description": "The country code of the default spotify market to use for spotify API requests, can be manually set for AbstractPlayableLoadingCommand commands using the 'market' argument."
     },
     {
-      "name": "botify.preferences.native_audio_buffer",
+      "name": "aiode.preferences.native_audio_buffer",
       "type": "java.lang.Integer",
       "description": "The amount of milliseconds of audio to buffer and stream using native code to avoid stutters caused by garbage collection activity. Ignored if not on Linux / Windows and amd64 / x86 and disabled if 0."
     }

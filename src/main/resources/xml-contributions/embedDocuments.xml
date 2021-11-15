@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <embedDocuments xmlns="embedDocumentSpace">
   <embedDocument name="getting-started" title="**Getting started**"
-                 description="A brief introduction to Botify and the most important commands.">
-    <field title="Commands: The principle" inline="false">All commands follow the same structure: [bot name, custom prefix or $botify] [command name] [arguments (keywords starting with $ or your customised argument prefix property)] [input text]. E.g. mybot play $spotify $album meteora.</field>
+                 description="A brief introduction to Aiode and the most important commands.">
+    <field title="Commands: The principle" inline="false">All commands follow the same structure: [bot name, custom prefix or $aiode] [command name] [arguments (keywords starting with $ or your customised argument prefix property)] [input text]. E.g. mybot play $spotify $album meteora.</field>
     <field title="Commands: The essentials" inline="false">The most essential command is the play command. With the $spotify or $youtube arguments you can search a track or video from the corresponding platform or you can simply paste a link.
       The queue command displays the current tracks or adds elements to the queue.
       Also crucial to know is the answer command. Commands like the play or queue command might find several results when searching for tracks on Spotify, in which case the bot displays a list of options. Each option is usually mapped to a number. An option can be chosen like this: mybot answer 2.</field>
     <field title="Playback management" inline="false">The playback can be managed by using the controls shown by the queue command or &quot;Now playing...&quot; messages in the form of reactions or by using the commands in the playback management category (stop / pause / skip / forward etc.).</field>
     <field title="Playlist management" inline="false">Create cross-platform playlists with tracks from any source using the create command and add tracks using the add command or export the current queue to a new playlist using the export command. For more info see the commands in the playlist management category.</field>
     <field title="Customisation" inline="false">Tailor the bot to your needs using the commands in the customisation category of the help command. Define a prefix, rename the bot or save command presets to create shortcuts for your most used commands. Properties allow an even deeper level of customisation and can be set using the property command.</field>
-    <field title="Scripting" inline="false">Botify offers a sophisticated scripting sandbox that allows running and storing safe groovy scripts. These scripts can be used to create advanced custom commands (see the script command) or run custom code before or after each command (see the interceptor and finalizer commands).</field>
+    <field title="Scripting" inline="false">Aiode offers a sophisticated scripting sandbox that allows running and storing safe groovy scripts. These scripts can be used to create advanced custom commands (see the script command) or run custom code before or after each command (see the interceptor and finalizer commands).</field>
     <field title="Getting help" inline="false">The help command shows all available commands or provides help with a specific command (e.g. mybot help play).</field>
   </embedDocument>
 </embedDocuments>

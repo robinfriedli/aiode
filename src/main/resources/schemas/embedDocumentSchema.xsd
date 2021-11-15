@@ -20,6 +20,7 @@
   <xs:complexType name="field">
     <xs:attribute name="title" type="xs:string"/>
     <xs:attribute name="inline" type="xs:boolean"/>
+    <xs:attribute name="displayPredicate" type="xs:string"/>
   </xs:complexType>
 
 </xs:schema>

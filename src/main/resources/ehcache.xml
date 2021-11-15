@@ -1,24 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ehcache>
-  <cache name="net.robinfriedli.botify.entities.GuildSpecification"
+  <cache name="net.robinfriedli.aiode.entities.GuildSpecification"
          maxEntriesLocalHeap="10000"
          eternal="false"
          timeToLiveSeconds="3600">
     <persistence strategy="localTempSwap"/>
   </cache>
-  <cache name="net.robinfriedli.botify.entities.AccessConfiguration"
+  <cache name="net.robinfriedli.aiode.entities.AccessConfiguration"
          maxEntriesLocalHeap="20000"
          eternal="false"
          timeToLiveSeconds="3600">
     <persistence strategy="localTempSwap"/>
   </cache>
-  <cache name="net.robinfriedli.botify.entities.AccessConfiguration.roles"
+  <cache name="net.robinfriedli.aiode.entities.AccessConfiguration.roles"
          maxEntriesLocalHeap="40000"
          eternal="false"
          timeToLiveSeconds="3600">
     <persistence strategy="localTempSwap"/>
   </cache>
-  <cache name="net.robinfriedli.botify.entities.Preset"
+  <cache name="net.robinfriedli.aiode.entities.Preset"
          maxEntriesLocalHeap="50000"
          eternal="true">
     <persistence strategy="localTempSwap"/>

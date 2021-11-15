@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <httpHandlers xmlns="httpHandlerSpace">
-  <httpHandler path="/login" implementation="net.robinfriedli.botify.login.LoginHandler"/>
-  <httpHandler path="/resources-public" implementation="net.robinfriedli.botify.servers.ResourceHandler"/>
-  <httpHandler path="/list" implementation="net.robinfriedli.botify.servers.PlaylistViewHandler"/>
-  <httpHandler path="/queue" implementation="net.robinfriedli.botify.servers.QueueViewHandler"/>
+  <httpHandler path="/login" implementation="net.robinfriedli.aiode.login.LoginHandler"/>
+  <httpHandler path="/resources-public" implementation="net.robinfriedli.aiode.servers.ResourceHandler"/>
+  <httpHandler path="/list" implementation="net.robinfriedli.aiode.servers.PlaylistViewHandler"/>
+  <httpHandler path="/queue" implementation="net.robinfriedli.aiode.servers.QueueViewHandler"/>
 </httpHandlers>

@@ -1,0 +1,28 @@
+package net.robinfriedli.aiode.command.widget.actions;
+
+import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
+import net.robinfriedli.aiode.command.CommandContext;
+import net.robinfriedli.aiode.command.widget.AbstractPaginationAction;
+import net.robinfriedli.aiode.command.widget.AbstractPaginationWidget;
+import net.robinfriedli.aiode.command.widget.AbstractWidget;
+import net.robinfriedli.aiode.command.widget.WidgetManager;
+
+public class FirstPageAction extends AbstractPaginationAction {
+
+    public FirstPageAction(String identifier, String emojiUnicode, boolean resetRequired, CommandContext context, AbstractWidget widget, GuildMessageReactionAddEvent event, WidgetManager.WidgetActionDefinition widgetActionDefinition) {
+        super(identifier, emojiUnicode, resetRequired, context, widget, event, widgetActionDefinition);
+    }
+
+    @Override
+    public void doRun() throws Exception {
+        AbstractPaginationWidget<?> paginationWidget = getPaginationWidget();
+
+        int pageCount = paginationWidget.getPages().size();
+
+        if (pageCount > 1) {
+            paginationWidget.setCurrentPage(0);
+        } else {
+            setFailed(true);
+        }
+    }
+}

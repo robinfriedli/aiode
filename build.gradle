@@ -78,16 +78,16 @@ dependencies {
     annotationProcessor "org.springframework.boot:spring-boot-configuration-processor:2.4.5"
 }
 
-group = "botify"
+group = "aiode"
 version = "1.0-SNAPSHOT"
-description = "botify"
+description = "aiode"
 sourceCompatibility = "11"
 targetCompatibility = "11"
 
 jar {
     manifest {
         attributes(
-            "Main-Class": "net.robinfriedli.botify.boot.SpringBootstrap"
+            "Main-Class": "net.robinfriedli.aiode.boot.SpringBootstrap"
         )
     }
 }
@@ -106,7 +106,7 @@ def privateProperties = new Properties()
 file("src/main/resources/settings-private.properties").withInputStream { privateProperties.load(it) }
 
 bootRun {
-    jvmArgs("-Xmx" + applicationProperties.getProperty("botify.preferences.max_heap_size"))
+    jvmArgs("-Xmx" + applicationProperties.getProperty("aiode.preferences.max_heap_size"))
 }
 
 liquibase {
