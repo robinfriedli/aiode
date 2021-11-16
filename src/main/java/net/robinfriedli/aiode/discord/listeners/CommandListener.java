@@ -93,11 +93,13 @@ public class CommandListener extends ListenerAdapter {
             boolean startsWithName = !Strings.isNullOrEmpty(botName) && lowerCaseMsg.startsWith(botName.toLowerCase());
             boolean startsWithDefaultPrefix = !Strings.isNullOrEmpty(defaultPrefix) && lowerCaseMsg.startsWith(defaultPrefix);
             boolean startsWithDefaultName = !Strings.isNullOrEmpty(defaultBotName) && lowerCaseMsg.startsWith(defaultBotName);
+            boolean startsWithLegacyPrefix = lowerCaseMsg.startsWith("$botify");
 
             if (startsWithPrefix
                 || startsWithName
                 || startsWithDefaultPrefix
                 || startsWithDefaultName
+                || startsWithLegacyPrefix
             ) {
                 String usedPrefix = extractUsedPrefix(
                     botName,
@@ -105,7 +107,8 @@ public class CommandListener extends ListenerAdapter {
                     startsWithName,
                     startsWithPrefix,
                     startsWithDefaultName,
-                    startsWithDefaultPrefix
+                    startsWithDefaultPrefix,
+                    startsWithLegacyPrefix
                 );
                 startCommandExecution(usedPrefix, message, guild, guildContext, session, event);
             }
@@ -118,10 +121,11 @@ public class CommandListener extends ListenerAdapter {
         boolean startsWithName,
         boolean startsWithPrefix,
         boolean startsWithDefaultName,
-        boolean startsWithDefaultPrefix
+        boolean startsWithDefaultPrefix,
+        boolean startsWithLegacyPrefix
     ) {
-        boolean[] matches = {startsWithName, startsWithPrefix, startsWithDefaultName, startsWithDefaultPrefix};
-        String[] strings = {botName, prefix, defaultBotName, defaultPrefix};
+        boolean[] matches = {startsWithName, startsWithPrefix, startsWithDefaultName, startsWithDefaultPrefix, startsWithLegacyPrefix};
+        String[] strings = {botName, prefix, defaultBotName, defaultPrefix, "$botify"};
         return getLongestMatch(matches, strings);
     }
 
