@@ -372,7 +372,9 @@ public class PlayableFactory {
 
     private Map<String, String> getParameterMap(URI uri) {
         List<NameValuePair> parameters = URLEncodedUtils.parse(uri, StandardCharsets.UTF_8);
-        return parameters.stream().collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
+        return parameters.stream()
+            .filter(param -> param.getName() != null && param.getValue() != null)
+            .collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
     }
 
 }
