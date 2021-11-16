@@ -3,8 +3,6 @@ package net.robinfriedli.aiode.persist.customchange;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
 
 import liquibase.change.custom.CustomTaskChange;
 import liquibase.database.Database;
@@ -22,7 +20,7 @@ public class MigratePlaybackHistorySource implements CustomTaskChange {
     public void execute(Database database) throws CustomChangeException {
         JdbcConnection connection = (JdbcConnection) database.getConnection();
         try {
-            PreparedStatement queryAll = connection.prepareStatement("SELECT pk, source FROM playback_history");
+            PreparedStatement queryAll = connection.prepareStatement("SELECT DISTINCT source FROM playback_history");
             ResultSet resultSet = queryAll.executeQuery();
 
             PreparedStatement spotifyItemKindQuery = connection.prepareStatement("SELECT pk from spotify_item_kind where unique_id = 'TRACK'");
@@ -32,38 +30,36 @@ public class MigratePlaybackHistorySource implements CustomTaskChange {
             }
             long spotifyItemKindTrackPk = spotifyItemKindResultSet.getLong(1);
 
-            Map<String, Long> playbackSourceMap = new HashMap<>();
             while (resultSet.next()) {
-                long pk = resultSet.getLong(1);
-                String source = resultSet.getString(2);
+                String source = resultSet.getString(1);
 
                 switch (source) {
                     case "Spotify":
                         String spotifySourceId = Playable.Source.SPOTIFY.name();
-                        long spotifyPlaybackSourcePk = getOrQueryPlaybackSourcePk(spotifySourceId, playbackSourceMap, connection);
+                        long spotifyPlaybackSourcePk = queryPlaybackSourcePk(spotifySourceId, connection);
 
-                        PreparedStatement spotifyUpdateStatement = connection.prepareStatement("UPDATE playback_history SET fk_source = ?, fk_spotify_item_kind = ? where pk = ?");
+                        PreparedStatement spotifyUpdateStatement = connection.prepareStatement("UPDATE playback_history SET fk_source = ?, fk_spotify_item_kind = ? where source = ?");
                         spotifyUpdateStatement.setLong(1, spotifyPlaybackSourcePk);
                         spotifyUpdateStatement.setLong(2, spotifyItemKindTrackPk);
-                        spotifyUpdateStatement.setLong(3, pk);
+                        spotifyUpdateStatement.setString(3, "Spotify");
                         spotifyUpdateStatement.executeUpdate();
                         continue;
                     case "YouTube":
                         String youTubeSourceId = Playable.Source.YOUTUBE.name();
-                        long youTubePlaybackSourcePk = getOrQueryPlaybackSourcePk(youTubeSourceId, playbackSourceMap, connection);
+                        long youTubePlaybackSourcePk = queryPlaybackSourcePk(youTubeSourceId, connection);
 
-                        PreparedStatement youTubeUpdateStatement = connection.prepareStatement("UPDATE playback_history SET fk_source = ? where pk = ?");
+                        PreparedStatement youTubeUpdateStatement = connection.prepareStatement("UPDATE playback_history SET fk_source = ? where source = ?");
                         youTubeUpdateStatement.setLong(1, youTubePlaybackSourcePk);
-                        youTubeUpdateStatement.setLong(2, pk);
+                        youTubeUpdateStatement.setString(2, "YouTube");
                         youTubeUpdateStatement.executeUpdate();
                         continue;
                     case "Url":
                         String urlSourceId = Playable.Source.URL.name();
-                        long urlPlaybackSourcePk = getOrQueryPlaybackSourcePk(urlSourceId, playbackSourceMap, connection);
+                        long urlPlaybackSourcePk = queryPlaybackSourcePk(urlSourceId, connection);
 
-                        PreparedStatement urlUpdateStatement = connection.prepareStatement("UPDATE playback_history SET fk_source = ? where pk = ?");
+                        PreparedStatement urlUpdateStatement = connection.prepareStatement("UPDATE playback_history SET fk_source = ? where source = ?");
                         urlUpdateStatement.setLong(1, urlPlaybackSourcePk);
-                        urlUpdateStatement.setLong(2, pk);
+                        urlUpdateStatement.setString(2, "Url");
                         urlUpdateStatement.executeUpdate();
                         continue;
                     default:
@@ -75,22 +71,20 @@ public class MigratePlaybackHistorySource implements CustomTaskChange {
         }
     }
 
-    private long getOrQueryPlaybackSourcePk(String sourceId, Map<String, Long> playbackSourceMap, JdbcConnection connection) {
-        return playbackSourceMap.computeIfAbsent(sourceId, id -> {
-            try {
-                PreparedStatement sourceQuery = connection.prepareStatement("SELECT pk FROM playback_history_source where unique_id = ?");
-                sourceQuery.setString(1, id);
-                ResultSet sourceResultSet = sourceQuery.executeQuery();
+    private long queryPlaybackSourcePk(String sourceId, JdbcConnection connection) {
+        try {
+            PreparedStatement sourceQuery = connection.prepareStatement("SELECT pk FROM playback_history_source where unique_id = ?");
+            sourceQuery.setString(1, sourceId);
+            ResultSet sourceResultSet = sourceQuery.executeQuery();
 
-                if (!sourceResultSet.next()) {
-                    throw new IllegalStateException("no playback_history_source entity found for id " + id);
-                }
-
-                return sourceResultSet.getLong(1);
-            } catch (DatabaseException | SQLException e) {
-                throw new RuntimeException(e);
+            if (!sourceResultSet.next()) {
+                throw new IllegalStateException("no playback_history_source entity found for id " + sourceId);
             }
-        });
+
+            return sourceResultSet.getLong(1);
+        } catch (DatabaseException | SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
