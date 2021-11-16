@@ -110,7 +110,7 @@ public abstract class AbstractPaginationWidget<E> extends AbstractWidget {
         Aiode aiode = Aiode.get();
         SpringPropertiesConfig springPropertiesConfig = aiode.getSpringPropertiesConfig();
         String baseUri = springPropertiesConfig.requireApplicationProperty("aiode.server.base_uri");
-        String logoUrl = baseUri + "/resources-public/img/botify-logo-small.png";
+        String logoUrl = baseUri + "/resources-public/img/aiode-logo-small.png";
 
         embedBuilder.setFooter(String.format("Page %d of %d", currentPage + 1, Math.max(pageCount, 1)), logoUrl);
 
