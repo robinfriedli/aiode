@@ -561,7 +561,17 @@ public abstract class AbstractCommand implements Command {
         GENERAL("general", "General commands that manage this bot"),
         CUSTOMISATION("customisation", "Commands to customise the bot"),
         SPOTIFY("spotify", "Commands that manage the Spotify login or upload playlists to Spotify"),
-        SCRIPTING("scripting", "Commands that execute or manage groovy scripts"),
+        SCRIPTING("scripting", "Commands that execute or manage groovy scripts") {
+            @Override
+            public @Nullable MessageEmbed.Field createEmbedField() {
+                Boolean enableScriptingProp = Aiode.get().getSpringPropertiesConfig().getApplicationProperty(Boolean.class, "aiode.preferences.enable_scripting");
+                if (!Boolean.TRUE.equals(enableScriptingProp)) {
+                    return null;
+                }
+
+                return super.createEmbedField();
+            }
+        },
         SEARCH("search", "Commands that search for aiode playlists or list all of them or search for Spotify and Youtube tracks, videos and playlists"),
         WEB("web", "Commands that manage the web client"),
         ADMIN("admin", "Commands only available to administrators defined in settings-private.properties") {
@@ -618,6 +628,7 @@ public abstract class AbstractCommand implements Command {
             return PermissionTarget.TargetType.COMMAND;
         }
 
+        @Nullable
         @Override
         public MessageEmbed.Field createEmbedField() {
             CommandManager commandManager = Aiode.get().getCommandManager();
@@ -630,25 +641,24 @@ public abstract class AbstractCommand implements Command {
                 CommandContribution.class
             ).order(Order.attribute("identifier")).collect();
 
+            if (commands.isEmpty()) {
+                return null;
+            }
+
             Iterator<CommandContribution> commandIterator = commands.iterator();
 
-            String categoryString;
-            if (commandIterator.hasNext()) {
-                StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
 
-                do {
-                    CommandContribution command = commandIterator.next();
-                    sb.append(command.getIdentifier());
+            do {
+                CommandContribution command = commandIterator.next();
+                sb.append(command.getIdentifier());
 
-                    if (commandIterator.hasNext()) {
-                        sb.append(System.lineSeparator());
-                    }
-                } while (commandIterator.hasNext());
+                if (commandIterator.hasNext()) {
+                    sb.append(System.lineSeparator());
+                }
+            } while (commandIterator.hasNext());
 
-                categoryString = sb.toString();
-            } else {
-                categoryString = "No applicable commands found in this category";
-            }
+            String categoryString = sb.toString();
 
             return new MessageEmbed.Field(getName(), categoryString, true);
         }
