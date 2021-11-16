@@ -56,8 +56,8 @@ public class GuildSpecification implements Serializable {
     private Integer tempMessageTimeout;
     @Column(name = "default_text_channel_id")
     private String defaultTextChannelId;
-    @Column(name = "volume")
-    private int volume;
+    @Column(name = "default_volume")
+    private Integer defaultVolume;
     @Column(name = "enable_scripting")
     private Boolean enableScripting;
     @OneToMany(mappedBy = "guildSpecification")
@@ -197,12 +197,12 @@ public class GuildSpecification implements Serializable {
         this.defaultTextChannelId = defaultTextChannelId;
     }
 
-    public int getVolume() {
-        return volume;
+    public Integer getDefaultVolume() {
+        return defaultVolume;
     }
 
-    public void setVolume(int volume) {
-        this.volume = volume;
+    public void setDefaultVolume(Integer volume) {
+        this.defaultVolume = volume;
     }
 
     public Boolean isEnableScripting() {

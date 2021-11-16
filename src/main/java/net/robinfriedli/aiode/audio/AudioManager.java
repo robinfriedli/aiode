@@ -7,6 +7,9 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import net.robinfriedli.aiode.Aiode;
+import net.robinfriedli.aiode.discord.property.GuildPropertyManager;
+import net.robinfriedli.aiode.entities.GuildSpecification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -184,9 +187,22 @@ public class AudioManager extends AbstractShutdownable {
         guild.getAudioManager().setSendingHandler(new AudioPlayerSendHandler(audioPlayback.getAudioPlayer()));
         try {
             guild.getAudioManager().openAudioConnection(channel);
+            audioPlayback.setVolume(getDefaultVolume(guild));
         } catch (InsufficientPermissionException e) {
             throw new InvalidCommandException("I do not have permission to join this voice channel!");
         }
+    }
+
+    private int getDefaultVolume(Guild guild) {
+        return hibernateComponent.invokeWithSession(session -> {
+            GuildPropertyManager guildPropertyManager = Aiode.get().getGuildPropertyManager();
+            GuildManager guildManager = Aiode.get().getGuildManager();
+            GuildSpecification specification = guildManager.getContextForGuild(guild).getSpecification(session);
+
+            return guildPropertyManager
+                    .getPropertyValueOptional("defaultVolume", Integer.class, specification)
+                    .orElse(100);
+        });
     }
 
     @Override

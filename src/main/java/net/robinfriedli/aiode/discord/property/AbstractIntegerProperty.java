@@ -6,9 +6,9 @@ import net.robinfriedli.aiode.entities.xml.GuildPropertyContribution;
 /**
  * Property extension for properties that have a boolean value.
  */
-public abstract class AbstractIntProperty extends AbstractGuildProperty {
+public abstract class AbstractIntegerProperty extends AbstractGuildProperty {
 
-    public AbstractIntProperty(GuildPropertyContribution contribution) {
+    public AbstractIntegerProperty(GuildPropertyContribution contribution) {
         super(contribution);
     }
 
@@ -23,9 +23,9 @@ public abstract class AbstractIntProperty extends AbstractGuildProperty {
 
     @Override
     public void setValue(String value, GuildSpecification guildSpecification) {
-        setIntValue((int) process(value), guildSpecification);
+        setIntegerValue((Integer) process(value), guildSpecification);
     }
 
-    protected abstract void setIntValue(int integer, GuildSpecification guildSpecification);
+    protected abstract void setIntegerValue(Integer integer, GuildSpecification guildSpecification);
 
 }

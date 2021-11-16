@@ -850,4 +850,9 @@ See application.properties -> spring.liquibase.contexts
   <changeSet author="robinfriedli (generated)" id="1609015555077-7">
     <addNotNullConstraint columnDataType="boolean" columnName="unexpected_exception" tableName="command_history" validate="true"/>
   </changeSet>
+    <changeSet author="esieb (generated)" id="1637093581219-1">
+        <addColumn tableName="guild_specification">
+            <column name="default_volume" type="int4"/>
+        </addColumn>
+    </changeSet>
 </databaseChangeLog>
