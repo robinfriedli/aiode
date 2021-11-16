@@ -14,6 +14,7 @@ import net.robinfriedli.aiode.audio.AudioPlayback;
 import net.robinfriedli.aiode.cron.AbstractCronTask;
 import net.robinfriedli.aiode.discord.GuildContext;
 import net.robinfriedli.aiode.discord.GuildManager;
+import net.robinfriedli.aiode.exceptions.DiscordEntityInitialisationException;
 import net.robinfriedli.aiode.persist.StaticSessionProvider;
 import net.robinfriedli.exec.Mode;
 import org.quartz.JobExecutionContext;
@@ -38,23 +39,28 @@ public class PlaybackCleanupTask extends AbstractCronTask {
         int playbacksCleared = 0;
 
         for (GuildContext guildContext : guildContexts) {
-            AudioPlayback playback = guildContext.getPlayback();
-            LocalDateTime aloneSince = playback.getAloneSince();
-            if (aloneSince != null) {
-                Duration aloneSinceDuration = Duration.between(aloneSince, LocalDateTime.now());
-                Duration oneHour = Duration.ofHours(1);
-                if (aloneSinceDuration.compareTo(oneHour) > 0) {
-                    if (clearLonePlayback(guildContext, playback)) {
-                        ++clearedAlone;
-                        continue;
+            try {
+                AudioPlayback playback = guildContext.getPlayback();
+                LocalDateTime aloneSince = playback.getAloneSince();
+                if (aloneSince != null) {
+                    Duration aloneSinceDuration = Duration.between(aloneSince, LocalDateTime.now());
+                    Duration oneHour = Duration.ofHours(1);
+                    if (aloneSinceDuration.compareTo(oneHour) > 0) {
+                        if (clearLonePlayback(guildContext, playback)) {
+                            ++clearedAlone;
+                            continue;
+                        }
                     }
                 }
-            }
 
-            if (!activeGuilds.contains(playback.getGuild())) {
-                if (playback.clear()) {
-                    ++playbacksCleared;
+                if (!activeGuilds.contains(playback.getGuild())) {
+                    if (playback.clear()) {
+                        ++playbacksCleared;
+                    }
                 }
+            } catch (DiscordEntityInitialisationException e) {
+                // guild could not be loaded anymore, skip
+                continue;
             }
         }
 
