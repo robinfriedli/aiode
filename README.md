@@ -1,4 +1,4 @@
-![# botify](https://raw.githubusercontent.com/robinfriedli/aiode/master/resources-public/img/botify-logo-wide-legacy.png)
+![# botify](https://raw.githubusercontent.com/robinfriedli/aiode/master/resources-public/img/aiode-logo-wide.png)
  Discord bot that plays Spotify tracks and YouTube videos or any URL including Soundcloud links and Twitch streams.
 
 * Play and search Spotify tracks and YouTube videos or playlists or play any URL including Soundcloud links and Twitch streams

@@ -119,13 +119,13 @@ public class MessageService {
 
     public CompletableFuture<Message> sendWithLogo(EmbedBuilder embedBuilder, MessageChannel channel) {
         String baseUri = springPropertiesConfig.requireApplicationProperty("aiode.server.base_uri");
-        embedBuilder.setThumbnail(baseUri + "/resources-public/img/botify-logo.png");
+        embedBuilder.setThumbnail(baseUri + "/resources-public/img/aiode-logo.png");
         return send(buildEmbed(embedBuilder), channel);
     }
 
     public CompletableFuture<Message> sendWithLogo(EmbedBuilder embedBuilder, Guild guild) {
         String baseUri = springPropertiesConfig.requireApplicationProperty("aiode.server.base_uri");
-        embedBuilder.setThumbnail(baseUri + "/resources-public/img/botify-logo.png");
+        embedBuilder.setThumbnail(baseUri + "/resources-public/img/aiode-logo.png");
         return send(buildEmbed(embedBuilder), guild);
     }
 

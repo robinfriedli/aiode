@@ -841,11 +841,29 @@ See application.properties -> spring.liquibase.contexts
   <changeSet author="robinfriedli (generated)" id="1609015555077-4">
     <addNotNullConstraint columnDataType="boolean" columnName="failed_manually" tableName="command_history" validate="true"/>
   </changeSet>
+  <changeSet id="1609015555077-5-initalvalues" author="robinfriedli">
+    <preConditions>
+      <columnExists tableName="command_history" columnName="is_widget"/>
+    </preConditions>
+    <update tableName="command_history">
+      <column name="is_widget" valueBoolean="false"/>
+      <where>is_widget is null</where>
+    </update>
+  </changeSet>
   <changeSet author="robinfriedli (generated)" id="1609015555077-5">
     <addNotNullConstraint columnDataType="boolean" columnName="is_widget" tableName="command_history" validate="true"/>
   </changeSet>
   <changeSet author="robinfriedli (generated)" id="1609015555077-6">
     <addNotNullConstraint columnDataType="bigint" columnName="start_millis" tableName="command_history" validate="true"/>
+  </changeSet>
+  <changeSet id="1609015555077-7-initalvalues" author="robinfriedli">
+    <preConditions>
+      <columnExists tableName="command_history" columnName="unexpected_exception"/>
+    </preConditions>
+    <update tableName="command_history">
+      <column name="unexpected_exception" valueBoolean="false"/>
+      <where>unexpected_exception is null</where>
+    </update>
   </changeSet>
   <changeSet author="robinfriedli (generated)" id="1609015555077-7">
     <addNotNullConstraint columnDataType="boolean" columnName="unexpected_exception" tableName="command_history" validate="true"/>

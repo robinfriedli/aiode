@@ -200,7 +200,7 @@ public class AudioQueue {
             }
 
             String albumCoverUrl = current.getAlbumCoverUrl();
-            embedBuilder.setThumbnail(Objects.requireNonNullElseGet(albumCoverUrl, () -> baseUri + "/resources-public/img/botify-logo.png"));
+            embedBuilder.setThumbnail(Objects.requireNonNullElseGet(albumCoverUrl, () -> baseUri + "/resources-public/img/aiode-logo.png"));
         }
 
         Color color = StaticSessionProvider.invokeWithSession(session -> {

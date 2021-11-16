@@ -270,7 +270,7 @@ public class QueueIterator extends AudioEventAdapter {
         if (albumCoverUrl == null) {
             SpringPropertiesConfig springPropertiesConfig = Aiode.get().getSpringPropertiesConfig();
             String baseUri = springPropertiesConfig.requireApplicationProperty("aiode.server.base_uri");
-            albumCoverUrl = baseUri + "/resources-public/img/botify-logo-small.png";
+            albumCoverUrl = baseUri + "/resources-public/img/aiode-logo-small.png";
         }
         embedBuilder.setFooter(footerBuilder.toString(), albumCoverUrl);
 
