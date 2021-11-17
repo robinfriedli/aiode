@@ -27,7 +27,7 @@ import net.robinfriedli.threadpool.ThreadPool;
  * idle threads.
  *
  * @deprecated This {@link ThreadPoolExecutor} has been replaced with an independent threadpool implementation {@link ThreadPool} and its
- * wrapper {@link ForkTaskTreadPool}.
+ * wrapper {@link ForkTaskThreadPool}.
  */
 @Deprecated
 public class EagerlyScalingThreadPoolExecutor extends ThreadPoolExecutor {

@@ -7,11 +7,11 @@ import java.util.concurrent.TimeUnit;
 import net.robinfriedli.threadpool.ThreadPool;
 import org.jetbrains.annotations.NotNull;
 
-public class ForkTaskTreadPool extends AbstractExecutorService {
+public class ForkTaskThreadPool extends AbstractExecutorService {
 
     private final ThreadPool threadPool;
 
-    public ForkTaskTreadPool(ThreadPool threadPool) {
+    public ForkTaskThreadPool(ThreadPool threadPool) {
         this.threadPool = threadPool;
     }
 
