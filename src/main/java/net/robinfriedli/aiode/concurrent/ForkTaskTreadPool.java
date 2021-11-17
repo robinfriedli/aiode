@@ -20,7 +20,11 @@ public class ForkTaskTreadPool extends AbstractExecutorService {
         ThreadContext forkedThreadContext = ThreadContext.Current.get().fork();
         threadPool.execute(() -> {
             ThreadContext.Current.installExplicitly(forkedThreadContext);
-            command.run();
+            try {
+                command.run();
+            } finally {
+                forkedThreadContext.clear();
+            }
         });
     }
 
