@@ -360,10 +360,10 @@ public class PlayableFactory {
         try {
             String accessToken = spotifyApi.clientCredentials().build().execute().getAccessToken();
             spotifyApi.setAccessToken(accessToken);
-            return loadFunc.apply(id);
+            return loadFunc.doApply(id);
         } catch (NotFoundException e) {
             throw new NoResultsFoundException(String.format("No Spotify track found for id '%s'", id));
-        } catch (IOException | SpotifyWebApiException | ParseException e) {
+        } catch (Exception e) {
             throw new RuntimeException("Exception during Spotify request", e);
         } finally {
             spotifyApi.setAccessToken(null);
