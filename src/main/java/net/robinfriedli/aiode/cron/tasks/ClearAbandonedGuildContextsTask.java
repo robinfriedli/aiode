@@ -28,8 +28,8 @@ public class ClearAbandonedGuildContextsTask extends AbstractCronTask {
 
         int removedGuilds = 0;
         for (GuildContext guildContext : guildManager.getGuildContexts()) {
-            Guild guild = guildContext.getGuild();
-            if (shardManager.getGuildById(guild.getIdLong()) == null) {
+            Guild guild = guildContext.retrieveGuild();
+            if (guild == null || shardManager.getGuildById(guild.getIdLong()) == null) {
                 guildManager.removeGuild(guild);
                 executionQueueManager.removeGuild(guild);
                 ++removedGuilds;
