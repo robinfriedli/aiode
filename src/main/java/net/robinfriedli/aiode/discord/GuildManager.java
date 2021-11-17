@@ -254,7 +254,11 @@ public class GuildManager {
                 .getOnlyResult();
             if (embedDocumentContribution != null) {
                 EmbedBuilder embedBuilder = embedDocumentContribution.buildEmbed();
-                messageService.sendWithLogo(embedBuilder, getDefaultTextChannelForGuild(guild, guildContext));
+                TextChannel defaultTextChannelForGuild = getDefaultTextChannelForGuild(guild, guildContext);
+
+                if (defaultTextChannelForGuild != null) {
+                    messageService.sendWithLogo(embedBuilder, defaultTextChannelForGuild);
+                }
             }
         } catch (Exception e) {
             logger.error("Error sending getting started message", e);

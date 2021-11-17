@@ -141,7 +141,7 @@ public class SpotifyTrack {
                 AlbumSimplified album = track.getAlbum();
                 if (album != null) {
                     Image[] images = album.getImages();
-                    if (images.length > 0) {
+                    if (images != null && images.length > 0) {
                         return images[0].getUrl();
                     }
                 }
@@ -150,7 +150,7 @@ public class SpotifyTrack {
             },
             episode -> {
                 Image[] images = episode.getImages();
-                if (images.length > 0) {
+                if (images != null && images.length > 0) {
                     return images[0].getUrl();
                 }
 

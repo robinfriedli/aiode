@@ -88,7 +88,12 @@ public abstract class AbstractWidget {
             Message message = futureMessage.get();
             this.message = new DiscordEntity.Message(message);
             widgetRegistry.registerWidget(this);
-            setupActions(message);
+
+            try {
+                setupActions(message);
+            } catch (UserException e) {
+                Aiode.get().getMessageService().sendError(e.getMessage(), message.getChannel());
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } catch (ExecutionException e) {

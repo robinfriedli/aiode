@@ -360,10 +360,10 @@ public class PlayableFactory {
         try {
             String accessToken = spotifyApi.clientCredentials().build().execute().getAccessToken();
             spotifyApi.setAccessToken(accessToken);
-            return loadFunc.apply(id);
+            return loadFunc.doApply(id);
         } catch (NotFoundException e) {
             throw new NoResultsFoundException(String.format("No Spotify track found for id '%s'", id));
-        } catch (IOException | SpotifyWebApiException | ParseException e) {
+        } catch (Exception e) {
             throw new RuntimeException("Exception during Spotify request", e);
         } finally {
             spotifyApi.setAccessToken(null);
@@ -372,7 +372,9 @@ public class PlayableFactory {
 
     private Map<String, String> getParameterMap(URI uri) {
         List<NameValuePair> parameters = URLEncodedUtils.parse(uri, StandardCharsets.UTF_8);
-        return parameters.stream().collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
+        return parameters.stream()
+            .filter(param -> param.getName() != null && param.getValue() != null)
+            .collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
     }
 
 }

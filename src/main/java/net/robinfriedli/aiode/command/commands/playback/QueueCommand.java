@@ -24,6 +24,7 @@ import net.robinfriedli.aiode.command.CommandManager;
 import net.robinfriedli.aiode.command.commands.AbstractQueueLoadingCommand;
 import net.robinfriedli.aiode.command.widget.WidgetRegistry;
 import net.robinfriedli.aiode.command.widget.widgets.QueueWidget;
+import net.robinfriedli.aiode.concurrent.CompletableFutures;
 import net.robinfriedli.aiode.entities.xml.CommandContribution;
 import net.robinfriedli.aiode.exceptions.NoResultsFoundException;
 import se.michaelthelin.spotify.model_objects.specification.AlbumSimplified;
@@ -73,7 +74,7 @@ public class QueueCommand extends AbstractQueueLoadingCommand {
 
         CompletableFuture<Message> futureMessage = sendMessage(audioQueue.buildMessageEmbed(playback, guild));
         WidgetRegistry widgetRegistry = getContext().getGuildContext().getWidgetRegistry();
-        futureMessage.thenAccept(message -> new QueueWidget(widgetRegistry, guild, message, playback).initialise());
+        CompletableFutures.thenAccept(futureMessage, message -> new QueueWidget(widgetRegistry, guild, message, playback).initialise());
     }
 
     @Override

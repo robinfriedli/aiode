@@ -631,7 +631,7 @@ See application.properties -> spring.liquibase.contexts
       </column>
     </createTable>
   </changeSet>
-  <changeSet id="insert_playback_history_source_values-dE32F3/v2.0" author="robinfriedli" runAlways="true">
+  <changeSet id="insert_playback_history_source_values-dE32F32/v2.0" author="robinfriedli" runAlways="true">
     <customChange class="net.robinfriedli.aiode.persist.customchange.PlaybackHistorySourceInitialValues"/>
   </changeSet>
   <changeSet author="robin (generated)" id="1591375305578-3">
@@ -644,7 +644,7 @@ See application.properties -> spring.liquibase.contexts
       </column>
     </createTable>
   </changeSet>
-  <changeSet id="insert_spotify_item_kind_values-9De8d/v2.0" author="robinfriedli" runAlways="true">
+  <changeSet id="insert_spotify_item_kind_values-9De8d2/v2.0" author="robinfriedli" runAlways="true">
     <customChange class="net.robinfriedli.aiode.persist.customchange.SpotifyItemKindInitialValues"/>
   </changeSet>
   <changeSet author="robin (generated)" id="1591375305578-4">
@@ -716,7 +716,10 @@ See application.properties -> spring.liquibase.contexts
   <changeSet author="robin (generated)" id="1591375305578-14">
     <addForeignKeyConstraint baseColumnNames="fk_redirected_spotify_kind" baseTableName="video" constraintName="video_fk_redirected_spotify_kind_fkey" deferrable="false" initiallyDeferred="false" referencedColumnNames="pk" referencedTableName="spotify_item_kind" validate="true"/>
   </changeSet>
-  <changeSet id="migrate_playback_history_sources-7D3x3/v2.0" author="robinfriedli">
+  <changeSet id="migrate_playback_history_sources-7D3x32/v2.0" author="robinfriedli">
+    <preConditions onFail="MARK_RAN">
+      <columnExists tableName="playback_history" columnName="source"/>
+    </preConditions>
     <customChange class="net.robinfriedli.aiode.persist.customchange.MigratePlaybackHistorySource"/>
   </changeSet>
   <changeSet author="robin (generated)" id="1591375305578-15">
@@ -766,7 +769,7 @@ See application.properties -> spring.liquibase.contexts
       </column>
     </createTable>
   </changeSet>
-  <changeSet id="insert_permission_type_values-4dfgdf4/2.0" author="robinfriedli" runAlways="true">
+  <changeSet id="insert_permission_type_values-4dfgdf42/2.0" author="robinfriedli" runAlways="true">
     <customChange class="net.robinfriedli.aiode.persist.customchange.PermissionTargetTypeInitialValues"/>
   </changeSet>
   <changeSet author="robinfriedli (generated)" id="1608809046613-2">

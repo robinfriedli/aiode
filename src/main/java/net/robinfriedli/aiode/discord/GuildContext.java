@@ -17,6 +17,7 @@ import net.robinfriedli.aiode.discord.property.properties.PrefixProperty;
 import net.robinfriedli.aiode.entities.GuildSpecification;
 import net.robinfriedli.aiode.persist.StaticSessionProvider;
 import org.hibernate.Session;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Provides context for a guild by storing and loading the guild's {@link GuildSpecification}, holding the guild's
@@ -45,6 +46,11 @@ public class GuildContext {
 
     public Guild getGuild() {
         return guild.get();
+    }
+
+    @Nullable
+    public Guild retrieveGuild() {
+        return guild.retrieve();
     }
 
     public AudioPlayback getPlayback() {
