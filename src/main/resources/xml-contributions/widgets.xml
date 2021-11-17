@@ -12,6 +12,8 @@
     <widgetAction identifier="skip" emojiUnicode="⏭" resetRequired="true" implementation="net.robinfriedli.aiode.command.widget.actions.SkipAction"/>
     <widgetAction identifier="repeat" emojiUnicode="🔁" resetRequired="true" implementation="net.robinfriedli.aiode.command.widget.actions.RepeatAllAction"/>
     <widgetAction identifier="repeat" emojiUnicode="🔂" resetRequired="true" implementation="net.robinfriedli.aiode.command.widget.actions.RepeatOneAction"/>
+    <widgetAction identifier="volume" emojiUnicode="🔉" resetRequired="true" implementation="net.robinfriedli.aiode.command.widget.actions.VolumeDownAction"/>
+    <widgetAction identifier="volume" emojiUnicode="🔊" resetRequired="true" implementation="net.robinfriedli.aiode.command.widget.actions.VolumeUpAction"/>
   </widget>
   <widget clearReactionOnReset="true" implementation="net.robinfriedli.aiode.command.widget.widgets.PermissionListPaginationWidget">
     <widgetAction identifier="firstPage" emojiUnicode="⏮" resetRequired="true" displayPredicate="widget.getPages().size() > 1" implementation="net.robinfriedli.aiode.command.widget.actions.FirstPageAction"/>
