@@ -21,7 +21,7 @@ import net.robinfriedli.aiode.boot.ShutdownableExecutorService;
 import net.robinfriedli.aiode.boot.configurations.GroovySandboxComponent;
 import net.robinfriedli.aiode.command.SecurityManager;
 import net.robinfriedli.aiode.concurrent.ExecutionContext;
-import net.robinfriedli.aiode.concurrent.ForkTaskTreadPool;
+import net.robinfriedli.aiode.concurrent.ForkTaskThreadPool;
 import net.robinfriedli.aiode.concurrent.LoggingThreadFactory;
 import net.robinfriedli.aiode.discord.MessageService;
 import net.robinfriedli.aiode.discord.property.properties.ColorSchemeProperty;
@@ -43,7 +43,7 @@ import org.codehaus.groovy.control.MultipleCompilationErrorsException;
  */
 public class SafeGroovyScriptRunner {
 
-    private static final ForkTaskTreadPool GLOBAL_POOL = new ForkTaskTreadPool(
+    private static final ForkTaskThreadPool GLOBAL_POOL = new ForkTaskThreadPool(
         ThreadPool.Builder.create()
             .setCoreSize(3)
             .setMaxSize(Integer.MAX_VALUE)

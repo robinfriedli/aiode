@@ -13,7 +13,7 @@ import net.robinfriedli.threadpool.ThreadPool;
  */
 public class EagerFetchQueue {
 
-    public static final ForkTaskTreadPool FETCH_POOL = new ForkTaskTreadPool(
+    public static final ForkTaskThreadPool FETCH_POOL = new ForkTaskThreadPool(
         ThreadPool.Builder.create()
             .setCoreSize(3)
             .setMaxSize(20)
