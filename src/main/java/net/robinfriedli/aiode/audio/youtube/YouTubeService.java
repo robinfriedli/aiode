@@ -850,6 +850,10 @@ public class YouTubeService extends AbstractShutdownable {
             videoIds.add(id);
         }
 
+        if (videoIds.isEmpty()) {
+            return;
+        }
+
         EagerFetchQueue.submitFetch(() -> {
             try {
                 Map<String, Long> durationMillis = getDurationMillis(videoIds);
