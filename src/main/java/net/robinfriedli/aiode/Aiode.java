@@ -39,6 +39,7 @@ import net.robinfriedli.aiode.scripting.GroovyVariableManager;
 import net.robinfriedli.aiode.servers.HttpServerManager;
 import net.robinfriedli.jxp.api.JxpBackend;
 import org.hibernate.SessionFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.stereotype.Component;
 import se.michaelthelin.spotify.SpotifyApi;
@@ -57,6 +58,8 @@ public class Aiode {
     private static volatile boolean shuttingDown;
 
     private static Aiode instance;
+
+    private final boolean mainInstance;
 
     private final AudioManager audioManager;
     private final CommandExecutionQueueManager executionQueueManager;
@@ -83,30 +86,34 @@ public class Aiode {
     private final VersionManager versionManager;
     private final WidgetManager widgetManager;
 
-    public Aiode(AudioManager audioManager,
-                 CommandExecutionQueueManager executionQueueManager,
-                 CommandManager commandManager,
-                 ConfigurableApplicationContext springBootContext,
-                 CronJobService cronJobService,
-                 ExceptionHandlerRegistry exceptionHandlerRegistry,
-                 GroovySandboxComponent groovySandboxComponent,
-                 GroovyVariableManager groovyVariableManager,
-                 GuildManager guildManager,
-                 GuildPropertyManager guildPropertyManager,
-                 HibernateComponent hibernateComponent,
-                 HttpServerManager httpServerManager,
-                 JxpBackend jxpBackend,
-                 LoginManager loginManager,
-                 MessageService messageService,
-                 QueryBuilderFactory queryBuilderFactory,
-                 SecurityManager securityManager,
-                 ShardManager shardManager,
-                 SpotifyApi.Builder spotifyApiBuilder,
-                 SpotifyComponent spotifyComponent,
-                 SpringPropertiesConfig springPropertiesConfig,
-                 VersionManager versionManager,
-                 WidgetManager widgetManager,
-                 ListenerAdapter... listeners) {
+    public Aiode(
+        @Value("${aiode.preferences.main_instance:true}") boolean mainInstance,
+        AudioManager audioManager,
+        CommandExecutionQueueManager executionQueueManager,
+        CommandManager commandManager,
+        ConfigurableApplicationContext springBootContext,
+        CronJobService cronJobService,
+        ExceptionHandlerRegistry exceptionHandlerRegistry,
+        GroovySandboxComponent groovySandboxComponent,
+        GroovyVariableManager groovyVariableManager,
+        GuildManager guildManager,
+        GuildPropertyManager guildPropertyManager,
+        HibernateComponent hibernateComponent,
+        HttpServerManager httpServerManager,
+        JxpBackend jxpBackend,
+        LoginManager loginManager,
+        MessageService messageService,
+        QueryBuilderFactory queryBuilderFactory,
+        SecurityManager securityManager,
+        ShardManager shardManager,
+        SpotifyApi.Builder spotifyApiBuilder,
+        SpotifyComponent spotifyComponent,
+        SpringPropertiesConfig springPropertiesConfig,
+        VersionManager versionManager,
+        WidgetManager widgetManager,
+        ListenerAdapter... listeners
+    ) {
+        this.mainInstance = mainInstance;
         this.audioManager = audioManager;
         this.executionQueueManager = executionQueueManager;
         this.commandManager = commandManager;
@@ -239,6 +246,10 @@ public class Aiode {
 
     public static boolean isShuttingDown() {
         return shuttingDown;
+    }
+
+    public boolean isMainInstance() {
+        return mainInstance;
     }
 
     public AudioManager getAudioManager() {
