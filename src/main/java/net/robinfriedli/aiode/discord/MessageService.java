@@ -3,6 +3,7 @@ package net.robinfriedli.aiode.discord;
 import java.awt.Color;
 import java.io.InputStream;
 import java.net.SocketTimeoutException;
+import java.time.Duration;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -38,6 +39,7 @@ import net.robinfriedli.aiode.discord.property.GuildPropertyManager;
 import net.robinfriedli.aiode.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.aiode.discord.property.properties.TempMessageTimeoutProperty;
 import net.robinfriedli.aiode.entities.GuildSpecification;
+import net.robinfriedli.aiode.function.RateLimitInvoker;
 import net.robinfriedli.aiode.function.modes.RecursionPreventionMode;
 import net.robinfriedli.exec.Invoker;
 import net.robinfriedli.exec.Mode;
@@ -50,6 +52,8 @@ public class MessageService {
 
     private static final Invoker RECURSION_PREVENTION_INVOKER = Invoker.newInstance();
     private static final EnumSet<Permission> ESSENTIAL_PERMISSIONS = EnumSet.of(Permission.VIEW_CHANNEL, Permission.MESSAGE_WRITE, Permission.MESSAGE_READ);
+    private static final RateLimitInvoker MESSAGE_DISPATCH_RATE_LIMITER = new RateLimitInvoker("message_service", 25, Duration.ofSeconds(10));
+    private static final Mode EMPTY_MODE = Mode.create();
 
     private final int limit = 1000;
     private final GuildManager guildManager;
@@ -287,74 +291,77 @@ public class MessageService {
 
     public CompletableFuture<Message> executeMessageAction(MessageChannel channel, Function<MessageChannel, MessageAction> function, Permission... additionalPermissions) {
         CompletableFuture<Message> futureMessage = new CompletableFuture<>();
-        try {
-            if (channel instanceof TextChannel) {
-                TextChannel textChannel = (TextChannel) channel;
-                Guild guild = textChannel.getGuild();
-                Member selfMember = guild.getSelfMember();
-                if (!(selfMember.hasAccess(textChannel) && textChannel.canTalk(selfMember))) {
-                    logger.warn(String.format("Can't execute message actions for channel %s on guild %s due to a lack of permissions", textChannel, guild));
-                    futureMessage.cancel(false);
-                    return futureMessage;
+
+        MESSAGE_DISPATCH_RATE_LIMITER.invokeLimited(EMPTY_MODE, () -> {
+            try {
+                if (channel instanceof TextChannel) {
+                    TextChannel textChannel = (TextChannel) channel;
+                    Guild guild = textChannel.getGuild();
+                    Member selfMember = guild.getSelfMember();
+                    if (!(selfMember.hasAccess(textChannel) && textChannel.canTalk(selfMember))) {
+                        logger.warn(String.format("Can't execute message actions for channel %s on guild %s due to a lack of permissions", textChannel, guild));
+                        futureMessage.cancel(false);
+                        return;
+                    }
+
+                    for (Permission additionalPermission : additionalPermissions) {
+                        if (!selfMember.hasPermission(textChannel, additionalPermission)) {
+                            logger.warn(String.format(
+                                "Can't execute message action for channel %s on guild %s due to missing permission %s",
+                                textChannel,
+                                guild,
+                                additionalPermission
+                            ));
+
+                            if (!ESSENTIAL_PERMISSIONS.contains(additionalPermission)) {
+                                String message = "Bot is missing permission: " + additionalPermission.getName();
+
+                                Mode mode = Mode.create().with(new RecursionPreventionMode("message_service_send_missing_permission_message"));
+                                RECURSION_PREVENTION_INVOKER.invoke(mode, () -> {
+                                    send(message, channel);
+                                });
+                            }
+
+                            futureMessage.cancel(false);
+                            return;
+                        }
+                    }
                 }
 
-                for (Permission additionalPermission : additionalPermissions) {
-                    if (!selfMember.hasPermission(textChannel, additionalPermission)) {
-                        logger.warn(String.format(
-                            "Can't execute message action for channel %s on guild %s due to missing permission %s",
-                            textChannel,
-                            guild,
-                            additionalPermission
-                        ));
+                MessageAction messageAction = function.apply(channel);
+                messageAction.timeout(10, TimeUnit.SECONDS).queue(futureMessage::complete, e -> {
+                    handleError(e, channel);
+                    futureMessage.completeExceptionally(e);
+                });
+            } catch (InsufficientPermissionException e) {
+                Permission permission = e.getPermission();
+                if (permission == Permission.MESSAGE_WRITE || permission == Permission.MESSAGE_READ) {
+                    String msg = "Unable to send messages to channel " + channel;
+                    if (channel instanceof TextChannel) {
+                        msg = msg + " on guild " + ((TextChannel) channel).getGuild();
+                    }
+                    logger.warn(msg);
+                    futureMessage.completeExceptionally(e);
+                } else {
+                    StringBuilder errorMessage = new StringBuilder("Missing permission ").append(permission);
+                    if (channel instanceof TextChannel) {
+                        errorMessage.append(" on guild ").append(((TextChannel) channel).getGuild());
+                    }
+                    logger.warn(errorMessage.toString());
 
-                        if (!ESSENTIAL_PERMISSIONS.contains(additionalPermission)) {
-                            String message = "Bot is missing permission: " + additionalPermission.getName();
+                    futureMessage.completeExceptionally(e);
 
-                            Mode mode = Mode.create().with(new RecursionPreventionMode("message_service_send_missing_permission_message"));
-                            RECURSION_PREVENTION_INVOKER.invoke(mode, () -> {
-                                send(message, channel);
-                            });
-                        }
+                    if (permission != Permission.VIEW_CHANNEL) {
+                        String message = "Bot is missing permission: " + permission.getName();
 
-                        futureMessage.cancel(false);
-                        return futureMessage;
+                        Mode mode = Mode.create().with(new RecursionPreventionMode("message_service_send_missing_permission_message"));
+                        RECURSION_PREVENTION_INVOKER.invoke(mode, () -> {
+                            send(message, channel);
+                        });
                     }
                 }
             }
-
-            MessageAction messageAction = function.apply(channel);
-            messageAction.timeout(10, TimeUnit.SECONDS).queue(futureMessage::complete, e -> {
-                handleError(e, channel);
-                futureMessage.completeExceptionally(e);
-            });
-        } catch (InsufficientPermissionException e) {
-            Permission permission = e.getPermission();
-            if (permission == Permission.MESSAGE_WRITE || permission == Permission.MESSAGE_READ) {
-                String msg = "Unable to send messages to channel " + channel;
-                if (channel instanceof TextChannel) {
-                    msg = msg + " on guild " + ((TextChannel) channel).getGuild();
-                }
-                logger.warn(msg);
-                futureMessage.completeExceptionally(e);
-            } else {
-                StringBuilder errorMessage = new StringBuilder("Missing permission ").append(permission);
-                if (channel instanceof TextChannel) {
-                    errorMessage.append(" on guild ").append(((TextChannel) channel).getGuild());
-                }
-                logger.warn(errorMessage.toString());
-
-                futureMessage.completeExceptionally(e);
-
-                if (permission != Permission.VIEW_CHANNEL) {
-                    String message = "Bot is missing permission: " + permission.getName();
-
-                    Mode mode = Mode.create().with(new RecursionPreventionMode("message_service_send_missing_permission_message"));
-                    RECURSION_PREVENTION_INVOKER.invoke(mode, () -> {
-                        send(message, channel);
-                    });
-                }
-            }
-        }
+        });
 
         return futureMessage;
     }
