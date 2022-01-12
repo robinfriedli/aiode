@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import javax.annotation.Nullable;
+import javax.persistence.LockModeType;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +54,7 @@ import net.robinfriedli.aiode.entities.CurrentYouTubeQuotaUsage;
 import net.robinfriedli.aiode.exceptions.CommandRuntimeException;
 import net.robinfriedli.aiode.exceptions.NoResultsFoundException;
 import net.robinfriedli.aiode.exceptions.UnavailableResourceException;
+import net.robinfriedli.aiode.function.HibernateInvoker;
 import net.robinfriedli.aiode.persist.StaticSessionProvider;
 import net.robinfriedli.stringlist.StringList;
 import org.hibernate.Session;
@@ -105,9 +107,12 @@ public class YouTubeService extends AbstractShutdownable {
      * @param session the hibernate session to load the entity from.
      * @return the unique persistent {@link CurrentYouTubeQuotaUsage} entity.
      */
-    public static CurrentYouTubeQuotaUsage getCurrentQuotaUsage(Session session) {
+    public static CurrentYouTubeQuotaUsage getCurrentQuotaUsage(Session session, LockModeType lockModeType) {
         Class<CurrentYouTubeQuotaUsage> currentYouTubeQuotaUsageClass = CurrentYouTubeQuotaUsage.class;
-        return session.createQuery("from " + currentYouTubeQuotaUsageClass.getName(), currentYouTubeQuotaUsageClass).uniqueResult();
+        return session
+            .createQuery("from " + currentYouTubeQuotaUsageClass.getName(), currentYouTubeQuotaUsageClass)
+            .setLockMode(lockModeType)
+            .uniqueResult();
     }
 
     @Override
@@ -926,17 +931,20 @@ public class YouTubeService extends AbstractShutdownable {
 
     private <E> E doWithQuota(int cost, Callable<E> callable) {
         try {
-            E retVal = callable.call();
-            int prevVal = currentQuota.getAndAdd(cost);
-            int newVal = prevVal + cost;
-            if (prevVal < quotaThreshold && newVal >= quotaThreshold) {
-                logger.warn("Reached the YouTube quota threshold of " + quotaThreshold
-                    + ". From now on queries will no longer be executed via the YouTube API but by lavaplayer (except for playlists) " +
-                    "until the quota resets at midnight PT.");
-            }
+            UPDATE_QUOTA_SERVICE.execute(() -> hibernateComponent.consumeSession(session -> {
+                CurrentYouTubeQuotaUsage currentQuotaUsage = getCurrentQuotaUsage(session, LockModeType.PESSIMISTIC_WRITE);
+                int newQuota = currentQuotaUsage.getQuota() + cost;
+                currentQuotaUsage.setQuota(newQuota);
 
-            UPDATE_QUOTA_SERVICE.execute(this::updatePersistentQuota);
-            return retVal;
+                int prevVal = currentQuota.getAndSet(newQuota);
+                if (prevVal < quotaThreshold && newQuota >= quotaThreshold) {
+                    logger.warn("Reached the YouTube quota threshold of " + quotaThreshold
+                        + ". From now on queries will no longer be executed via the YouTube API but by lavaplayer (except for playlists) " +
+                        "until the quota resets at midnight PT.");
+                }
+            }));
+
+            return callable.call();
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
@@ -948,14 +956,8 @@ public class YouTubeService extends AbstractShutdownable {
         // read the value in a fresh session to ensure the current value in the database is returned, not the cached state
         // of the current session
         try (Session session = StaticSessionProvider.getSessionFactory().openSession()) {
-            return getCurrentQuotaUsage(session).getQuota();
+            return HibernateInvoker.create(session).invokeFunction(s -> getCurrentQuotaUsage(s, LockModeType.NONE).getQuota());
         }
     }
 
-    private void updatePersistentQuota() {
-        hibernateComponent.consumeSession(session -> {
-            CurrentYouTubeQuotaUsage currentQuotaUsage = getCurrentQuotaUsage(session);
-            currentQuotaUsage.setQuota(currentQuota.get());
-        });
-    }
 }
