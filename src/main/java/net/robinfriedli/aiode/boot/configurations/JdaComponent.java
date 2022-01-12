@@ -81,7 +81,7 @@ public class JdaComponent {
             }
 
             if (!Strings.isNullOrEmpty(shardRange)) {
-                String[] split = shardRange.split("\\w*-\\w*");
+                String[] split = shardRange.split("\\s*-\\s*");
                 if (split.length != 2) {
                     throw new IllegalArgumentException(String.format("Range '%s' is not formatted correctly", shardRange));
                 }
