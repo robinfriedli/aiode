@@ -72,7 +72,14 @@ dependencies {
     liquibaseRuntime sourceSets.main.runtimeClasspath
     liquibaseRuntime sourceSets.main.output
 
+    testImplementation "org.testng:testng:7.5"
+    testImplementation "com.google.truth:truth:1.1.3"
+
     annotationProcessor "org.springframework.boot:spring-boot-configuration-processor:2.4.5"
+}
+
+test {
+    useTestNG()
 }
 
 group = "aiode"
