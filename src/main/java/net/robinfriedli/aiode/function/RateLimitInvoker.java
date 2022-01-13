@@ -42,7 +42,17 @@ public class RateLimitInvoker extends BaseInvoker {
     private final Shutdownable shutdownable;
 
     public RateLimitInvoker(String identifier, int limitForPeriod, Duration period) {
-        RateLimiterConfig config = RateLimiterConfig.custom().limitForPeriod(limitForPeriod).limitRefreshPeriod(period).build();
+        this(identifier, limitForPeriod, period, Duration.ofMinutes(5));
+    }
+
+    public RateLimitInvoker(String identifier, int limitForPeriod, Duration period, Duration timeout) {
+        RateLimiterConfig config = RateLimiterConfig
+            .custom()
+            .limitForPeriod(limitForPeriod)
+            .limitRefreshPeriod(period)
+            .timeoutDuration(timeout)
+            .build();
+
         rateLimiter = RATE_LIMITER_REGISTRY.rateLimiter(identifier, config);
 
         rateLimitQueueExecutor = Executors.newScheduledThreadPool(0, new LoggingThreadFactory(identifier + "-rate_limit_queue_executor"));
