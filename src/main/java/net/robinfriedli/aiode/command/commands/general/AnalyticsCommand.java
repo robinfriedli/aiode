@@ -4,12 +4,14 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.util.List;
 
+import com.google.common.base.Strings;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.audio.AudioManager;
 import net.robinfriedli.aiode.audio.AudioPlayback;
+import net.robinfriedli.aiode.boot.SpringPropertiesConfig;
 import net.robinfriedli.aiode.command.AbstractCommand;
 import net.robinfriedli.aiode.command.CommandContext;
 import net.robinfriedli.aiode.command.CommandManager;
@@ -36,6 +38,7 @@ public class AnalyticsCommand extends AbstractCommand {
         Aiode aiode = Aiode.get();
         AudioManager audioManager = aiode.getAudioManager();
         GuildManager guildManager = aiode.getGuildManager();
+        SpringPropertiesConfig springPropertiesConfig = aiode.getSpringPropertiesConfig();
         Session session = getContext().getSession();
         Runtime runtime = Runtime.getRuntime();
 
@@ -68,6 +71,12 @@ public class AnalyticsCommand extends AbstractCommand {
         embedBuilder.addField("Saved tracks", String.valueOf(trackCount), true);
         embedBuilder.addField("Total tracks played", String.valueOf(playedCount), true);
         embedBuilder.addField("Thread count", String.format("%d (%d daemons)", threadCount, daemonThreadCount), true);
+
+        String shardRange = springPropertiesConfig.getApplicationProperty("aiode.preferences.shard_range");
+        if (!Strings.isNullOrEmpty(shardRange)) {
+            embedBuilder.addField("Shards", shardRange, true);
+        }
+
         embedBuilder.addField("Memory (in MB)",
             "Total: " + maxMemory + System.lineSeparator() +
                 "Allocated: " + allocatedMemory + System.lineSeparator() +

@@ -19,6 +19,7 @@ import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager;
+import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeHttpContextFilter;
 import com.sedmelluq.lava.extensions.youtuberotator.YoutubeIpRotatorSetup;
 import com.sedmelluq.lava.extensions.youtuberotator.planner.RotatingNanoIpRoutePlanner;
 import com.sedmelluq.lava.extensions.youtuberotator.tools.ip.IpBlock;
@@ -61,10 +62,14 @@ public class AudioManager extends AbstractShutdownable {
     private final Logger logger;
     private final YouTubeService youTubeService;
 
-    public AudioManager(GuildManager guildManager,
-                        HibernateComponent hibernateComponent,
-                        YouTubeService youTubeService,
-                        @Value("${aiode.preferences.ipv6_blocks}") String ipv6Blocks) {
+    public AudioManager(
+        GuildManager guildManager,
+        HibernateComponent hibernateComponent,
+        YouTubeService youTubeService,
+        @Value("${aiode.preferences.ipv6_blocks:#{null}}") String ipv6Blocks,
+        @Value("${aiode.tokens.yt-3PSID:#{null}}") String yt3Psid,
+        @Value("${aiode.tokens.yt-3PAPISID:#{null}}") String yt3Papisid
+    ) {
         playerManager = new DefaultAudioPlayerManager();
         audioTrackLoader = new AudioTrackLoader(playerManager);
 
@@ -93,6 +98,13 @@ public class AudioManager extends AbstractShutdownable {
             YoutubeIpRotatorSetup youtubeIpRotatorSetup = new YoutubeIpRotatorSetup(new RotatingNanoIpRoutePlanner(ipv6BlockList, ip -> true, true));
             youtubeIpRotatorSetup.forSource(youtubeAudioSourceManager).setup();
             logger.info("YouTubeIpRotator set up with block: " + ipv6Blocks);
+        }
+
+        if (!Strings.isNullOrEmpty(yt3Psid)) {
+            YoutubeHttpContextFilter.setPSID(yt3Psid);
+        }
+        if (!Strings.isNullOrEmpty(yt3Papisid)) {
+            YoutubeHttpContextFilter.setPAPISID(yt3Papisid);
         }
     }
 

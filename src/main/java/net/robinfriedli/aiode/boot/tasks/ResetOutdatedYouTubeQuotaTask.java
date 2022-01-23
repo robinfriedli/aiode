@@ -7,6 +7,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
 import javax.annotation.Nullable;
+import javax.persistence.LockModeType;
 
 import net.dv8tion.jda.api.JDA;
 import net.robinfriedli.aiode.audio.youtube.YouTubeService;
@@ -36,7 +37,7 @@ public class ResetOutdatedYouTubeQuotaTask implements StartupTask {
     @Override
     public void perform(@Nullable JDA shard) {
         StaticSessionProvider.consumeSession(session -> {
-            CurrentYouTubeQuotaUsage currentQuotaUsage = YouTubeService.getCurrentQuotaUsage(session);
+            CurrentYouTubeQuotaUsage currentQuotaUsage = YouTubeService.getCurrentQuotaUsage(session, LockModeType.PESSIMISTIC_WRITE);
             LocalDateTime lastUpdatedNoZone = currentQuotaUsage.getLastUpdated();
 
             if (lastUpdatedNoZone != null) {

@@ -10,6 +10,14 @@
   <xs:complexType name="startupTask">
     <xs:attribute name="runForEachShard" type="xs:boolean"/>
     <xs:attribute name="implementation" type="xs:string"/>
+    <xs:attribute name="mainInstanceOnly" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">
+          Whether this task should only run on the main instance, see application property
+          aiode.preferences.main_instance. Only applicable to tasks where runForEachShard is false.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
 
 </xs:schema>

@@ -11,8 +11,8 @@ import javax.annotation.Nullable;
 
 import io.github.resilience4j.ratelimiter.RateLimiter;
 import io.github.resilience4j.ratelimiter.RateLimiterConfig;
-import io.github.resilience4j.ratelimiter.RateLimiterRegistry;
 import net.robinfriedli.aiode.exceptions.RateLimitException;
+import net.robinfriedli.aiode.function.RateLimitInvoker;
 
 /**
  * Thread queue that allows a certain amount of threads to run concurrently based on the size parameter
@@ -76,8 +76,7 @@ public class ThreadExecutionQueue {
                 .timeoutDuration(Duration.ofSeconds(1))
                 .build();
 
-            RateLimiterRegistry rateLimiterRegistry = RateLimiterRegistry.of(rateLimiterConfig);
-            this.rateLimiter = rateLimiterRegistry.rateLimiter(rateLimiterIdentifier);
+            this.rateLimiter = RateLimitInvoker.RATE_LIMITER_REGISTRY.rateLimiter(rateLimiterIdentifier, this.rateLimiterConfig);
             this.violationTimeout = violationTimeout;
         } else if (rateLimiterIdentifier != null || limitForPeriod > 0 || period != null || violationTimeout != null) {
             throw new IllegalArgumentException("Incomplete RateLimiter configuration");

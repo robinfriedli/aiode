@@ -1,5 +1,6 @@
 package net.robinfriedli.aiode.audio;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 import javax.annotation.Nullable;
@@ -16,12 +17,16 @@ import net.dv8tion.jda.api.entities.VoiceChannel;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.boot.SpringPropertiesConfig;
 import net.robinfriedli.aiode.discord.DiscordEntity;
+import net.robinfriedli.aiode.function.RateLimitInvoker;
+import net.robinfriedli.exec.Mode;
 
 /**
  * There is exactly one AudioPlayback per guild instantiated when initializing the guild. This class holds all information
  * about a guilds playback and its {@link AudioPlayer} and {@link AudioQueue} and is used to pause / stop the playback.
  */
 public class AudioPlayback {
+
+    private static final RateLimitInvoker MESSAGE_DELETION_RATE_LIMITED = new RateLimitInvoker("audio_playback_message_deletion", 2, Duration.ofSeconds(1));
 
     private final DiscordEntity.Guild guild;
     private final AudioPlayer audioPlayer;
@@ -205,21 +210,24 @@ public class AudioPlayback {
 
     public void setLastPlaybackNotification(Message message) {
         if (lastPlaybackNotification != null) {
-            MessageChannel messageChannel = lastPlaybackNotification.getChannel().retrieve();
-            if (messageChannel != null) {
-                try {
-                    messageChannel.deleteMessageById(lastPlaybackNotification.getId()).queue();
-                } catch (Exception e) {
-                    logger.warn(
-                        String.format(
-                            "Cannot delete playback notification message for channel %s on guild %s",
-                            message,
-                            guild.getId()
-                        ),
-                        e
-                    );
+            DiscordEntity.Message messageToDelete = lastPlaybackNotification;
+            MESSAGE_DELETION_RATE_LIMITED.invokeLimited(Mode.create(), () -> {
+                MessageChannel messageChannel = messageToDelete.getChannel().retrieve();
+                if (messageChannel != null) {
+                    try {
+                        messageChannel.deleteMessageById(messageToDelete.getId()).queue();
+                    } catch (Exception e) {
+                        logger.warn(
+                            String.format(
+                                "Cannot delete playback notification message for channel %s on guild %s",
+                                message,
+                                guild.getId()
+                            ),
+                            e
+                        );
+                    }
                 }
-            }
+            });
         }
         if (message != null) {
             this.lastPlaybackNotification = new DiscordEntity.Message(message);

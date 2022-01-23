@@ -68,6 +68,12 @@ aiode.preferences.ipv6_blocks=
 aiode.tokens.discord_bot_id=
 #copy your top.gg token here
 aiode.tokens.topgg_token=
+###################
+# youtube cookies #
+###################
+# set these properties to support age restricted videos on YouTube, see https://github.com/Walkyst/lavaplayer-fork/issues/18
+aiode.tokens.yt-3PSID=
+aiode.tokens.yt-3PAPISID=
 ```
 #### 4.2 Adjust application.properties
 ##### 4.2.1 Review the datasource properties and make necessary adjustments. If you are using a local postgres server and name your database "aiode" you can leave it as it is. If you need help setting up your postgres server, please refer to their official documentation: http://www.postgresqltutorial.com/.
