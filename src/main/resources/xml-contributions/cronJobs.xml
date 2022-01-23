@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <cronJobs xmlns="cronJobSpace">
   <cronJob id="playbackCleanup" cron="0 */3 * * * ? *" implementation="net.robinfriedli.aiode.cron.tasks.PlaybackCleanupTask"/>
-  <cronJob id="spotifyRedirectIndexRefresh" cron="0 0 3 * * ? *" implementation="net.robinfriedli.aiode.cron.tasks.RefreshSpotifyRedirectIndicesTask"/>
+  <cronJob id="spotifyRedirectIndexRefresh" cron="0 0 3 * * ? *" mainInstanceOnly="true" implementation="net.robinfriedli.aiode.cron.tasks.RefreshSpotifyRedirectIndicesTask"/>
   <cronJob id="clearAbandonedGuildContexts" cron="0 */3 * * * ? *" implementation="net.robinfriedli.aiode.cron.tasks.ClearAbandonedGuildContextsTask"/>
   <cronJob id="deleteGrantedRolesForDeletedRoles" cron="0 0 */1 * * ? *" implementation="net.robinfriedli.aiode.cron.tasks.DeleteGrantedRolesForDeletedRolesTask"/>
-  <cronJob id="resetCurrentYouTubeQuota" cron="0 0 0 * * ? *" timeZone="PST" implementation="net.robinfriedli.aiode.cron.tasks.ResetCurrentYouTubeQuotaTask"/>
+  <cronJob id="resetCurrentYouTubeQuota" cron="0 0 0 * * ? *" timeZone="PST" mainInstanceOnly="true" implementation="net.robinfriedli.aiode.cron.tasks.ResetCurrentYouTubeQuotaTask"/>
 </cronJobs>

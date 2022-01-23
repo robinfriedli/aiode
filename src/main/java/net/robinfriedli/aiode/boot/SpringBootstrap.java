@@ -49,6 +49,10 @@ public class SpringBootstrap implements CommandLineRunner {
             InputStream startupTasksFile = getClass().getResourceAsStream("/xml-contributions/startupTasks.xml");
             Context context = jxpBackend.createContext(startupTasksFile);
             for (StartupTaskContribution element : context.getInstancesOf(StartupTaskContribution.class)) {
+                if (!aiode.isMainInstance() && element.getAttribute("mainInstanceOnly").getBool()) {
+                    continue;
+                }
+
                 if (!element.getAttribute("runForEachShard").getBool()) {
                     element.instantiate().runTask(null);
                 }

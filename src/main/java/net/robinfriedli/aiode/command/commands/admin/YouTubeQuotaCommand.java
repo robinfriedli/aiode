@@ -1,5 +1,7 @@
 package net.robinfriedli.aiode.command.commands.admin;
 
+import javax.persistence.LockModeType;
+
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.audio.youtube.YouTubeService;
@@ -18,7 +20,7 @@ public class YouTubeQuotaCommand extends AbstractAdminCommand {
     public void runAdmin() {
         YouTubeService youTubeService = Aiode.get().getAudioManager().getYouTubeService();
         int atomic = youTubeService.getAtomicQuotaUsage();
-        int persistent = YouTubeService.getCurrentQuotaUsage(getContext().getSession()).getQuota();
+        int persistent = YouTubeService.getCurrentQuotaUsage(getContext().getSession(), LockModeType.NONE).getQuota();
         int limit = Aiode.get().getSpringPropertiesConfig().requireApplicationProperty(Integer.class, "aiode.preferences.youtube_api_daily_quota");
 
         EmbedBuilder embedBuilder = new EmbedBuilder();

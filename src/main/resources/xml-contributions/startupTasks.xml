@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <startupTasks xmlns="startupTaskSpace">
   <startupTask runForEachShard="true" implementation="net.robinfriedli.aiode.boot.tasks.MigrateGuildSpecificationsTask"/>
-  <startupTask runForEachShard="false" implementation="net.robinfriedli.aiode.boot.tasks.CreatePermissionAccessConfigurationTask"/>
+  <startupTask runForEachShard="false" mainInstanceOnly="true" implementation="net.robinfriedli.aiode.boot.tasks.CreatePermissionAccessConfigurationTask"/>
   <startupTask runForEachShard="false" implementation="net.robinfriedli.aiode.boot.tasks.SetRedirectedSpotifyTrackNameTask"/>
   <startupTask runForEachShard="true" implementation="net.robinfriedli.aiode.boot.tasks.MigratePlaylistsTask"/>
   <startupTask runForEachShard="true" implementation="net.robinfriedli.aiode.boot.tasks.VersionUpdateAlertTask"/>
-  <startupTask runForEachShard="false" implementation="net.robinfriedli.aiode.boot.tasks.SetPlaylistItemIndexTask"/>
-  <startupTask runForEachShard="false" implementation="net.robinfriedli.aiode.boot.tasks.ResetOutdatedYouTubeQuotaTask"/>
+  <startupTask runForEachShard="false" mainInstanceOnly="true" implementation="net.robinfriedli.aiode.boot.tasks.SetPlaylistItemIndexTask"/>
+  <startupTask runForEachShard="false" mainInstanceOnly="true" implementation="net.robinfriedli.aiode.boot.tasks.ResetOutdatedYouTubeQuotaTask"/>
   <startupTask runForEachShard="false" implementation="net.robinfriedli.aiode.boot.tasks.InitialiseCommandContributionsTask"/>
 </startupTasks>

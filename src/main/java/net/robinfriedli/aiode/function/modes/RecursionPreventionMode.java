@@ -1,9 +1,10 @@
 package net.robinfriedli.aiode.function.modes;
 
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
+import com.google.common.collect.Sets;
+import net.robinfriedli.aiode.concurrent.ThreadContext;
 import net.robinfriedli.exec.AbstractNestedModeWrapper;
 import org.jetbrains.annotations.NotNull;
 
@@ -12,8 +13,6 @@ import org.jetbrains.annotations.NotNull;
  * mode and the same recursion key running in the current thread.
  */
 public class RecursionPreventionMode extends AbstractNestedModeWrapper {
-
-    private static final ThreadLocal<Set<String>> RECURSION_KEYS = ThreadLocal.withInitial(HashSet::new);
 
     private final String key;
 
@@ -25,13 +24,21 @@ public class RecursionPreventionMode extends AbstractNestedModeWrapper {
     @Override
     public <T> Callable<T> wrap(@NotNull Callable<T> callable) {
         return () -> {
-            Set<String> usedKeys = RECURSION_KEYS.get();
-            if (usedKeys.contains(key)) {
-                // task was already running in this mode, this is a recursive call -> return
-                return null;
+            ThreadContext threadContext = ThreadContext.Current.get();
+            Set<String> usedKeys;
+            if (threadContext.isInstalled("recursion_prevention_keys")) {
+                //noinspection unchecked
+                usedKeys = threadContext.require("recursion_prevention_keys", Set.class);
+
+                if (!usedKeys.add(key)) {
+                    // task was already running in this mode, this is a recursive call -> return
+                    return null;
+                }
+            } else {
+                usedKeys = Sets.newHashSet(key);
+                threadContext.install("recursion_prevention_keys", usedKeys);
             }
 
-            usedKeys.add(key);
             try {
                 return callable.call();
             } finally {

@@ -53,7 +53,7 @@ public class PlaybackCleanupTask extends AbstractCronTask {
                     }
                 }
 
-                if (!activeGuilds.contains(playback.getGuild())) {
+                if (!activeGuilds.contains(playback.getGuild()) && !playback.isPlaying()) {
                     if (playback.clear()) {
                         ++playbacksCleared;
                     }

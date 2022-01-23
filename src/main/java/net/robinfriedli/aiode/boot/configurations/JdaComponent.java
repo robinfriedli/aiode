@@ -7,6 +7,7 @@ import javax.security.auth.login.LoginException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Strings;
 import com.sedmelluq.discord.lavaplayer.jdaudp.NativeAudioSendFactory;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.requests.GatewayIntent;
@@ -36,6 +37,10 @@ public class JdaComponent {
     private String discordToken;
     @Value("${aiode.preferences.native_audio_buffer}")
     private int nativeBufferDuration;
+    @Value("${aiode.preferences.shard_total:-1}")
+    private int shardTotal;
+    @Value("${aiode.preferences.shard_range:#{null}}")
+    private String shardRange;
 
     public JdaComponent(StartupListener startupListener) {
         this.startupListener = startupListener;
@@ -61,6 +66,7 @@ public class JdaComponent {
                 .setStatus(OnlineStatus.IDLE)
                 .setChunkingFilter(ChunkingFilter.NONE)
                 .setSessionController(new ConcurrentSessionController())
+                .setShardsTotal(shardTotal)
                 .addEventListeners(startupListener);
 
             if (nativeBufferDuration > 0) {
@@ -72,6 +78,17 @@ public class JdaComponent {
                 }
             } else {
                 logger.info("Native audio buffer disabled");
+            }
+
+            if (!Strings.isNullOrEmpty(shardRange)) {
+                String[] split = shardRange.split("\\s*-\\s*");
+                if (split.length != 2) {
+                    throw new IllegalArgumentException(String.format("Range '%s' is not formatted correctly", shardRange));
+                }
+
+                int minShard = Integer.parseInt(split[0].trim());
+                int maxShard = Integer.parseInt(split[1].trim());
+                shardManagerBuilder.setShards(minShard, maxShard);
             }
 
             return shardManagerBuilder.build();

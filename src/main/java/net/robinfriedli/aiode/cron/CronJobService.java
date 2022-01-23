@@ -28,10 +28,16 @@ import org.springframework.stereotype.Component;
 @Component
 public class CronJobService extends AbstractShutdownable {
 
+    private final boolean mainInstance;
     private final Context contributionContext;
     private final Scheduler scheduler;
 
-    public CronJobService(@Value("classpath:xml-contributions/cronJobs.xml") Resource commandResource, JxpBackend jxpBackend) throws SchedulerException {
+    public CronJobService(
+        @Value("${aiode.preferences.main_instance:true}") boolean mainInstance,
+        @Value("classpath:xml-contributions/cronJobs.xml") Resource commandResource,
+        JxpBackend jxpBackend
+    ) throws SchedulerException {
+        this.mainInstance = mainInstance;
         try {
             this.contributionContext = jxpBackend.createContext(commandResource.getInputStream());
         } catch (IOException e) {
@@ -45,6 +51,10 @@ public class CronJobService extends AbstractShutdownable {
     public void scheduleAll() throws SchedulerException {
         List<CronJobContribution> contributions = contributionContext.getInstancesOf(CronJobContribution.class);
         for (CronJobContribution contribution : contributions) {
+            if (!mainInstance && contribution.getAttribute("mainInstanceOnly").getBool()) {
+                continue;
+            }
+
             JobDetail jobDetail = JobBuilder.newJob(contribution.getImplementationClass())
                 .withIdentity(contribution.getId())
                 .build();

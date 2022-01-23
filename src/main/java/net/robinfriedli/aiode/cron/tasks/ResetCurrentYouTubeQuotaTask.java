@@ -1,5 +1,7 @@
 package net.robinfriedli.aiode.cron.tasks;
 
+import javax.persistence.LockModeType;
+
 import org.slf4j.LoggerFactory;
 
 import net.robinfriedli.aiode.Aiode;
@@ -20,7 +22,7 @@ public class ResetCurrentYouTubeQuotaTask extends AbstractCronTask {
     protected void run(JobExecutionContext jobExecutionContext) {
         YouTubeService youTubeService = Aiode.get().getAudioManager().getYouTubeService();
         StaticSessionProvider.consumeSession(session -> {
-            CurrentYouTubeQuotaUsage currentQuotaUsage = YouTubeService.getCurrentQuotaUsage(session);
+            CurrentYouTubeQuotaUsage currentQuotaUsage = YouTubeService.getCurrentQuotaUsage(session, LockModeType.PESSIMISTIC_WRITE);
             youTubeService.setAtomicQuotaUsage(0);
             currentQuotaUsage.setQuota(0);
         });
