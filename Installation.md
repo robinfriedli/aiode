@@ -4,7 +4,7 @@ Installation guide of botify 1 on local machine.
 You can make use of any IDE of your choice or simply use command prompt or terminal.
 
 
-Make sure to download and install the following dependenices.
+Make sure to download and install the following dependencies.
 
 ## Dependencies
 - [Oracle JDK 11](https://www.oracle.com/in/java/technologies/javase-jdk11-downloads.html)
@@ -82,7 +82,8 @@ Botify makes use of
 
     - Make sure to keep username and password as **postgres**.
     
-    - After install open PgAdmin 4 under Servers > PostgreSQL 13.Right click on Databases and create a database as `botify_playlists`.
+    - After install open PgAdmin 4 under Servers > PostgreSQL 
+    - Right click on Databases and create a database as `botify_playlists`.
 
 - Liquibase 
 
