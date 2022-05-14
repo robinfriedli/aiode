@@ -23,11 +23,12 @@ public class SpotifyUserAuthorizationMode extends AbstractNestedModeWrapper {
     @Override
     public <E> @NotNull Callable<E> wrap(@NotNull Callable<E> callable) {
         return () -> {
+            String prevAccessToken = spotifyApi.getAccessToken();
             try {
                 spotifyApi.setAccessToken(login.getAccessToken());
                 return callable.call();
             } finally {
-                spotifyApi.setAccessToken(null);
+                spotifyApi.setAccessToken(prevAccessToken);
             }
         };
     }

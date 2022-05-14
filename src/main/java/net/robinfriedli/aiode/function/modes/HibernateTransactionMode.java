@@ -48,7 +48,7 @@ public class HibernateTransactionMode extends AbstractNestedModeWrapper {
     public static Mode getMode(Session session, @Nullable Object synchronisationLock) {
         Mode mode = Mode.create();
         if (synchronisationLock != null) {
-            mode.with(new SynchronisationMode(synchronisationLock));
+            mode = mode.with(new SynchronisationMode(synchronisationLock));
         }
 
         return mode.with(new HibernateTransactionMode(session));

@@ -97,7 +97,7 @@ public class JdaComponent {
         }
     }
 
-    private static boolean platformSupportsJdaNas() {
+    public static boolean platformSupportsJdaNas() {
         String osName = System.getProperty("os.name").toLowerCase();
         String osArch = System.getProperty("os.arch").toLowerCase();
         return (osName.contains("linux") || osName.contains("windows"))

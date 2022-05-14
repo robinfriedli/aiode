@@ -52,7 +52,7 @@ public class HibernateInvoker extends BaseInvoker implements FunctionInvoker<Ses
     @Override
     public <E> E invoke(@NotNull Mode mode, @NotNull Callable<E> callable) {
         if (synchronisationLock != null) {
-            mode.with(new SynchronisationMode(synchronisationLock));
+            mode = mode.with(new SynchronisationMode(synchronisationLock));
         }
 
         try {

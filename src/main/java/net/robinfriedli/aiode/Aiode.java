@@ -18,6 +18,7 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.aiode.audio.AudioManager;
+import net.robinfriedli.aiode.audio.playables.PlayableContainerManager;
 import net.robinfriedli.aiode.boot.Shutdownable;
 import net.robinfriedli.aiode.boot.SpringPropertiesConfig;
 import net.robinfriedli.aiode.boot.VersionManager;
@@ -77,6 +78,7 @@ public class Aiode {
     private final ListenerAdapter[] registeredListeners;
     private final LoginManager loginManager;
     private final MessageService messageService;
+    private final PlayableContainerManager playableContainerManager;
     private final QueryBuilderFactory queryBuilderFactory;
     private final SecurityManager securityManager;
     private final ShardManager shardManager;
@@ -103,6 +105,7 @@ public class Aiode {
         JxpBackend jxpBackend,
         LoginManager loginManager,
         MessageService messageService,
+        PlayableContainerManager playableContainerManager,
         QueryBuilderFactory queryBuilderFactory,
         SecurityManager securityManager,
         ShardManager shardManager,
@@ -129,6 +132,7 @@ public class Aiode {
         this.jxpBackend = jxpBackend;
         this.loginManager = loginManager;
         this.messageService = messageService;
+        this.playableContainerManager = playableContainerManager;
         this.queryBuilderFactory = queryBuilderFactory;
         this.securityManager = securityManager;
         this.shardManager = shardManager;
@@ -314,6 +318,10 @@ public class Aiode {
 
     public MessageService getMessageService() {
         return messageService;
+    }
+
+    public PlayableContainerManager getPlayableContainerManager() {
+        return playableContainerManager;
     }
 
     public QueryBuilderFactory getQueryBuilderFactory() {

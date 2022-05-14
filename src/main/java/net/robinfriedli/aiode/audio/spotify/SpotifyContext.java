@@ -2,11 +2,11 @@ package net.robinfriedli.aiode.audio.spotify;
 
 import com.neovisionaries.i18n.CountryCode;
 import net.robinfriedli.aiode.login.Login;
-import se.michaelthelin.spotify.model_objects.credentials.ClientCredentials;
+import se.michaelthelin.spotify.SpotifyApi;
 
 public class SpotifyContext {
 
-    private ClientCredentials clientCredentials;
+    private SpotifyApi spotifyApi;
     private CountryCode market;
     private Login login;
 
@@ -26,11 +26,11 @@ public class SpotifyContext {
         this.login = login;
     }
 
-    public ClientCredentials getClientCredentials() {
-        return clientCredentials;
+    public SpotifyApi getSpotifyApi() {
+        return spotifyApi;
     }
 
-    public void setClientCredentials(ClientCredentials clientCredentials) {
-        this.clientCredentials = clientCredentials;
+    public void setSpotifyApi(SpotifyApi spotifyApi) {
+        this.spotifyApi = spotifyApi;
     }
 }

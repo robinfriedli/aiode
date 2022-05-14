@@ -720,6 +720,9 @@ command.run('play')"
     <argument identifier="nativeBuffer" requiresValue="true" valueType="java.lang.Integer" description="The buffer duration for jda-nas in milliseconds. If the argument is not set, jda-nas isn't used and the AudioPlayer is simply polled without doing anything with the returned frames.">
       <valueCheck errorMessage="nativeBuffer needs to be greater than 0" check="value &gt; 0"/>
     </argument>
+    <argument identifier="delay" requiresValue="true" valueType="java.lang.Integer" description="The delay between each player in seconds. If 0 all players start immediately, defaults to 3 seconds.">
+      <valueCheck errorMessage="delay needs to be equal to or greater than 0" check="value &gt;= 0"/>
+    </argument>
   </command>
 
   <!-- abstract super commands -->

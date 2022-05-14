@@ -16,8 +16,8 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.audio.Playable;
-import net.robinfriedli.aiode.audio.PlayableFactory;
 import net.robinfriedli.aiode.audio.exec.BlockingTrackLoadingExecutor;
+import net.robinfriedli.aiode.audio.playables.PlayableFactory;
 import net.robinfriedli.aiode.audio.spotify.PlayableTrackWrapper;
 import net.robinfriedli.aiode.audio.spotify.SpotifyService;
 import net.robinfriedli.aiode.audio.spotify.SpotifyTrack;
@@ -43,7 +43,7 @@ public class ChartsCommand extends AbstractCommand {
 
     public ChartsCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, boolean requiresInput, String identifier, String description, Category category) {
         super(commandContribution, context, commandManager, commandString, requiresInput, identifier, description, category);
-        playableFactory = Aiode.get().getAudioManager().createPlayableFactory(getSpotifyService(), new BlockingTrackLoadingExecutor());
+        playableFactory = Aiode.get().getAudioManager().createPlayableFactory(getSpotifyService(), new BlockingTrackLoadingExecutor(), false);
     }
 
     @Override
@@ -214,7 +214,7 @@ public class ChartsCommand extends AbstractCommand {
                     return null;
                 }
             case URL:
-                return playableFactory.createPlayable(id, getContext().getSpotifyApi(), false);
+                return playableFactory.createPlayableContainerForUrl(id).loadPlayable(playableFactory);
         }
 
         throw new UnsupportedOperationException("Unsupported source " + sourceEntity);

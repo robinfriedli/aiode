@@ -6,7 +6,7 @@ import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEve
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.audio.AudioManager;
 import net.robinfriedli.aiode.audio.AudioPlayback;
-import net.robinfriedli.aiode.audio.AudioQueue;
+import net.robinfriedli.aiode.audio.queue.AudioQueue;
 import net.robinfriedli.aiode.command.CommandContext;
 import net.robinfriedli.aiode.command.widget.AbstractWidget;
 import net.robinfriedli.aiode.command.widget.AbstractWidgetAction;
