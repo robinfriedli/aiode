@@ -25,8 +25,8 @@ class AudioQueue(val maxSize: Int?) {
     @Volatile
     var isShuffle: Boolean = false
         set(value) {
-            val readLock = lock.readLock()
-            readLock.lock()
+            val writeLock = lock.writeLock()
+            writeLock.lock()
             try {
                 if (!isEmpty()) {
                     if (value) {
@@ -37,7 +37,7 @@ class AudioQueue(val maxSize: Int?) {
                 }
                 field = value
             } finally {
-                readLock.unlock()
+                writeLock.unlock()
             }
         }
 
