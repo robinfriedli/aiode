@@ -87,11 +87,33 @@ public class ThreadContext {
 
     @SuppressWarnings("unchecked")
     public <T> T drop(Class<T> contextType) {
-        return (T) installedContexts.remove(contextType.getName());
+        T removed = (T) installedContexts.remove(contextType.getName());
+
+        if (removed == null) {
+            removed = installedContexts
+                .entrySet()
+                .stream()
+                .filter(entry -> contextType.isInstance(entry.getValue()))
+                .findAny()
+                .map(entry -> contextType.cast(installedContexts.remove(entry.getKey())))
+                .orElse(null);
+        }
+
+        if (removed instanceof CloseableThreadContext) {
+            ((CloseableThreadContext) removed).close();
+        }
+
+        return removed;
     }
 
     public Object drop(String key) {
-        return installedContexts.remove(key);
+        Object removed = installedContexts.remove(key);
+
+        if (removed instanceof CloseableThreadContext) {
+            ((CloseableThreadContext) removed).close();
+        }
+
+        return removed;
     }
 
     public void clear() {

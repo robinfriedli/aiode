@@ -38,7 +38,7 @@ public class SearchEngine {
 
     @Nullable
     public static Playlist searchLocalList(Session session, String searchTerm) {
-        String searchName = Util.normalizeWhiteSpace(searchTerm).replaceAll("'", "''").toLowerCase();
+        String searchName = Util.normalizeWhiteSpace(searchTerm).toLowerCase();
         QueryBuilderFactory queryBuilderFactory = Aiode.get().getQueryBuilderFactory();
         return queryBuilderFactory.find(Playlist.class)
             .where((cb, root, query) -> cb.equal(cb.lower(root.get("name")), searchName))
@@ -49,7 +49,7 @@ public class SearchEngine {
 
     @Nullable
     public static Playlist searchLocalList(Session session, String searchTerm, boolean isPartitioned, String guildId) {
-        String searchName = Util.normalizeWhiteSpace(searchTerm).replaceAll("'", "''").toLowerCase();
+        String searchName = Util.normalizeWhiteSpace(searchTerm).toLowerCase();
         QueryBuilderFactory queryBuilderFactory = Aiode.get().getQueryBuilderFactory();
         EntityQueryBuilder<Playlist> queryBuilder = queryBuilderFactory
             .find(Playlist.class)
