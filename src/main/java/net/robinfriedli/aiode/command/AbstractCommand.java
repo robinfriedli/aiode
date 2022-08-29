@@ -472,7 +472,7 @@ public abstract class AbstractCommand implements Command {
 
     @Override
     public String display() {
-        String contentDisplay = context.getMessage().getContentDisplay();
+        String contentDisplay = context.getMessage();
         return contentDisplay.length() > 150 ? contentDisplay.substring(0, 150) + "[...]" : contentDisplay;
     }
 

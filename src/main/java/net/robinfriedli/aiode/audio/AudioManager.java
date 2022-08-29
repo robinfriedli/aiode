@@ -27,6 +27,8 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.VoiceChannel;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.robinfriedli.aiode.audio.exec.TrackLoadingExecutor;
+import net.robinfriedli.aiode.audio.playables.PlayableFactory;
+import net.robinfriedli.aiode.audio.queue.AudioQueue;
 import net.robinfriedli.aiode.audio.spotify.SpotifyService;
 import net.robinfriedli.aiode.audio.youtube.YouTubeService;
 import net.robinfriedli.aiode.boot.AbstractShutdownable;
@@ -156,8 +158,8 @@ public class AudioManager extends AbstractShutdownable {
         return playerManager;
     }
 
-    public PlayableFactory createPlayableFactory(SpotifyService spotifyService, TrackLoadingExecutor trackLoadingExecutor) {
-        return new PlayableFactory(audioTrackLoader, spotifyService, trackLoadingExecutor, youTubeService);
+    public PlayableFactory createPlayableFactory(SpotifyService spotifyService, TrackLoadingExecutor trackLoadingExecutor, boolean shouldRedirectSpotify) {
+        return new PlayableFactory(audioTrackLoader, spotifyService, trackLoadingExecutor, youTubeService, shouldRedirectSpotify);
     }
 
     void createHistoryEntry(Playable playable, Guild guild, VoiceChannel voiceChannel) {

@@ -15,6 +15,7 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.VoiceChannel;
 import net.robinfriedli.aiode.Aiode;
+import net.robinfriedli.aiode.audio.queue.AudioQueue;
 import net.robinfriedli.aiode.boot.SpringPropertiesConfig;
 import net.robinfriedli.aiode.discord.DiscordEntity;
 import net.robinfriedli.aiode.function.RateLimitInvoker;
@@ -117,7 +118,7 @@ public class AudioPlayback {
     }
 
     public boolean isRepeatOne() {
-        return audioQueue.isRepeatOne();
+        return audioQueue.getRepeatOne();
     }
 
     public void setRepeatOne(boolean repeatOne) {
@@ -125,7 +126,7 @@ public class AudioPlayback {
     }
 
     public boolean isRepeatAll() {
-        return audioQueue.isRepeatAll();
+        return audioQueue.getRepeatAll();
     }
 
     public void setRepeatAll(boolean repeatAll) {

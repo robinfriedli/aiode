@@ -78,6 +78,10 @@ public class RateLimitInvoker extends BaseInvoker {
         });
     }
 
+    public void invokeLimited(@NotNull Runnable runnable) {
+        invokeLimited(Mode.getEmpty(), runnable);
+    }
+
     @Override
     public <T> T invoke(@NotNull Mode mode, @NotNull Callable<T> task) throws Exception {
         return super.invoke(mode, task);
@@ -92,6 +96,10 @@ public class RateLimitInvoker extends BaseInvoker {
         } else {
             throw new RateLimitException(false, "Rate limit exceeded for RateLimitInvoker " + rateLimiter.getName());
         }
+    }
+
+    public <T> Future<T> invokeLimited(@NotNull Callable<T> task) throws Exception {
+        return invokeLimited(Mode.getEmpty(), task);
     }
 
     @Override
@@ -110,6 +118,10 @@ public class RateLimitInvoker extends BaseInvoker {
         }
     }
 
+    public <T> Future<T> invokeLimited(@NotNull Callable<T> task, @NotNull Function<Exception, RuntimeException> exceptionMapper) {
+        return invokeLimited(Mode.getEmpty(), task, exceptionMapper);
+    }
+
     @Override
     public <T> T invokeChecked(@NotNull Mode mode, @NotNull Callable<T> task) {
         return super.invokeChecked(mode, task);
@@ -117,6 +129,10 @@ public class RateLimitInvoker extends BaseInvoker {
 
     public <T> Future<T> invokeCheckedLimited(@NotNull Mode mode, @NotNull Callable<T> task) {
         return invokeLimited(mode, task, RuntimeException::new);
+    }
+
+    public <T> Future<T> invokeCheckedLimited(@NotNull Callable<T> task) {
+        return invokeCheckedLimited(Mode.getEmpty(), task);
     }
 
     private <T> Future<T> submitExecution(

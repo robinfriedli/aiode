@@ -15,6 +15,7 @@
       <xs:element name="example" type="example"/>
     </xs:sequence>
     <xs:attribute name="identifier" type="xs:string" use="required"/>
+    <xs:attribute name="slashCommandIdentifier" type="xs:string"/>
     <xs:attribute name="implementation" type="xs:string" use="required"/>
     <xs:attribute name="requiresInput" type="xs:boolean"/>
     <xs:attribute name="category" type="xs:string" use="required"/>
@@ -35,7 +36,7 @@
       <xs:element name="rule" type="rule"/>
     </xs:sequence>
     <xs:attribute name="identifier" type="xs:string" use="required"/>
-    <xs:attribute name="valueType" type="xs:string" default="java.lang.String"/>
+    <xs:attribute name="valueType" type="xs:string" default="java.lang.Boolean"/>
     <xs:attribute name="requiresInput" type="xs:boolean"/>
     <xs:attribute name="requiresValue" type="xs:boolean"/>
     <xs:attribute name="description" type="xs:string"/>

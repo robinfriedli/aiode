@@ -13,11 +13,12 @@
     <interruptingException class="net.robinfriedli.aiode.exceptions.InvalidCommandException"/>
     <interruptingException class="net.robinfriedli.aiode.exceptions.UnexpectedCommandSetupException"/>
   </commandInterceptor>
-  <commandInterceptor order="4" implementation="net.robinfriedli.aiode.command.interceptor.interceptors.HistoryInterceptor"/>
-  <commandInterceptor order="5" implementation="net.robinfriedli.aiode.command.interceptor.interceptors.CommandMonitoringInterceptor"/>
-  <commandInterceptor order="6" implementation="net.robinfriedli.aiode.command.interceptor.interceptors.ScriptCommandInterceptor$ScriptCommandInterceptorPreExecution"/>
-  <commandInterceptor order="7" implementation="net.robinfriedli.aiode.command.interceptor.interceptors.CommandExecutionInterceptor">
+  <commandInterceptor order="4" implementation="net.robinfriedli.aiode.command.interceptor.interceptors.SpotifyContextInterceptor"/>
+  <commandInterceptor order="5" implementation="net.robinfriedli.aiode.command.interceptor.interceptors.HistoryInterceptor"/>
+  <commandInterceptor order="6" implementation="net.robinfriedli.aiode.command.interceptor.interceptors.CommandMonitoringInterceptor"/>
+  <commandInterceptor order="7" implementation="net.robinfriedli.aiode.command.interceptor.interceptors.ScriptCommandInterceptor$ScriptCommandInterceptorPreExecution"/>
+  <commandInterceptor order="8" implementation="net.robinfriedli.aiode.command.interceptor.interceptors.CommandExecutionInterceptor">
     <interruptingException class="java.lang.Exception"/>
   </commandInterceptor>
-  <commandInterceptor order="8" implementation="net.robinfriedli.aiode.command.interceptor.interceptors.ScriptCommandInterceptor$ScriptCommandInterceptorFinalizer"/>
+  <commandInterceptor order="9" implementation="net.robinfriedli.aiode.command.interceptor.interceptors.ScriptCommandInterceptor$ScriptCommandInterceptorFinalizer"/>
 </commandInterceptors>

@@ -1,20 +1,27 @@
 package net.robinfriedli.aiode.entities.xml;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
-import javax.annotation.Nullable;
-
+import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.robinfriedli.aiode.command.argument.ArgumentContributionDelegate;
 import net.robinfriedli.jxp.api.AbstractXmlElement;
 import net.robinfriedli.jxp.api.XmlElement;
 import net.robinfriedli.jxp.collections.NodeList;
 import net.robinfriedli.jxp.persist.Context;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.w3c.dom.Element;
 
-import static net.robinfriedli.jxp.queries.Conditions.*;
+import javax.annotation.Nullable;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static net.robinfriedli.jxp.queries.Conditions.tagName;
 
 public class ArgumentContribution extends AbstractXmlElement implements ArgumentContributionDelegate {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ArgumentContribution.class);
 
     @SuppressWarnings("unused")
     public ArgumentContribution(Element element, NodeList subElements, Context context) {
@@ -62,7 +69,28 @@ public class ArgumentContribution extends AbstractXmlElement implements Argument
             }
         }
 
-        return String.class;
+        return Boolean.class;
+    }
+
+    public OptionType getOptionType() {
+        Class<?> valueType = getValueType();
+
+        if (String.class.isAssignableFrom(valueType)) {
+            return OptionType.STRING;
+        } else if (Integer.class.isAssignableFrom(valueType)) {
+            return OptionType.INTEGER;
+        } else if (Boolean.class.isAssignableFrom(valueType)) {
+            return OptionType.BOOLEAN;
+        } else if (Number.class.isAssignableFrom(valueType)) {
+            return OptionType.NUMBER;
+        }
+
+        LOGGER.warn(String.format(
+            "Value type %s of argument %s cannot be converted to OptionType, falling back to OptionType.STRING",
+            valueType,
+            getId()
+        ));
+        return OptionType.STRING;
     }
 
     public boolean requiresValue() {

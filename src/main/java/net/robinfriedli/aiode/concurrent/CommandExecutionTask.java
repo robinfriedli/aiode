@@ -1,5 +1,9 @@
 package net.robinfriedli.aiode.concurrent;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.robinfriedli.aiode.command.Command;
 import net.robinfriedli.aiode.command.CommandContext;
 import net.robinfriedli.aiode.command.CommandManager;
@@ -11,6 +15,8 @@ import net.robinfriedli.aiode.exceptions.handler.ExceptionHandlerExecutor;
  * {@link QueuedTask} to be added to a {@link ThreadExecutionQueue}
  */
 public class CommandExecutionTask extends QueuedTask {
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final Command command;
 
@@ -27,6 +33,14 @@ public class CommandExecutionTask extends QueuedTask {
         try {
             super.run();
         } finally {
+            InteractionHook interactionHook = command.getContext().getInteractionHook();
+            if (interactionHook != null) {
+                try {
+                    interactionHook.deleteOriginal().queue();
+                } catch (Exception e) {
+                    logger.error("Failed to complete interaction hook", e);
+                }
+            }
             ThreadContext.Current.clear();
         }
     }

@@ -50,6 +50,7 @@ public class CommandMonitoringInterceptor extends AbstractChainableCommandInterc
             Thread thread = Thread.currentThread();
             String oldName = thread.getName();
             thread.setName("command-monitoring-" + context);
+            boolean slashCommand = context.isSlashCommand();
 
             CompletableFuture<Message> stillLoadingMessage = null;
             CompletableFuture<Message> warningMessage = null;
@@ -57,22 +58,26 @@ public class CommandMonitoringInterceptor extends AbstractChainableCommandInterc
                 task.await(MESSAGE_AFTER_THRESHOLD);
 
                 if (!task.isDone()) {
-                    EmbedBuilder embedBuilder = new EmbedBuilder();
-                    embedBuilder.setDescription("Still loading...");
-                    stillLoadingMessage = messageService.send(embedBuilder, context.getChannel());
+                    if (!slashCommand) {
+                        EmbedBuilder embedBuilder = new EmbedBuilder();
+                        embedBuilder.setDescription("Still loading...");
+                        stillLoadingMessage = messageService.send(embedBuilder, context.getChannel());
+                    }
 
                     task.await(LOGGER_WARNING_AFTER_THRESHOLD);
                     if (!task.isDone()) {
-                        EmbedBuilder warningEmbed = new EmbedBuilder();
-                        warningEmbed.setColor(Color.RED);
-                        warningEmbed.setTitle("Command timeout");
-                        warningEmbed.setDescription(
-                            String.format(
-                                "Your command '%s' is taking very long to execute. " +
-                                    "If the command is not responding, consider interrupting it using the abort command.",
-                                command.display())
-                        );
-                        warningMessage = messageService.send(warningEmbed.build(), context.getChannel());
+                        if (!slashCommand) {
+                            EmbedBuilder warningEmbed = new EmbedBuilder();
+                            warningEmbed.setColor(Color.RED);
+                            warningEmbed.setTitle("Command timeout");
+                            warningEmbed.setDescription(
+                                String.format(
+                                    "Your command '%s' is taking very long to execute. " +
+                                        "If the command is not responding, consider interrupting it using the abort command.",
+                                    command.display())
+                            );
+                            warningMessage = messageService.send(warningEmbed.build(), context.getChannel());
+                        }
 
                         logger.warn(String.format("Command [%s] on guild %s has exceeded the warn limit for execution duration of %d millis.",
                             command.display(), context.getGuild(), MESSAGE_AFTER_THRESHOLD + LOGGER_WARNING_AFTER_THRESHOLD));

@@ -2,7 +2,8 @@ package net.robinfriedli.aiode.command.commands.playback;
 
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.audio.AudioPlayback;
-import net.robinfriedli.aiode.audio.AudioQueue;
+import net.robinfriedli.aiode.audio.Playable;
+import net.robinfriedli.aiode.audio.queue.AudioQueue;
 import net.robinfriedli.aiode.command.AbstractCommand;
 import net.robinfriedli.aiode.command.CommandContext;
 import net.robinfriedli.aiode.command.CommandManager;
@@ -41,8 +42,9 @@ public class ShuffleCommand extends AbstractCommand {
         }
 
         AudioQueue queue = playback.getAudioQueue();
-        if (queue.hasNext()) {
-            messageBuilder.append(" New next track: ").append(queue.getNext().display());
+        Playable next = queue.peekNext();
+        if (next != null) {
+            messageBuilder.append(" New next track: ").append(next.display());
         }
 
         sendSuccess(messageBuilder.toString());

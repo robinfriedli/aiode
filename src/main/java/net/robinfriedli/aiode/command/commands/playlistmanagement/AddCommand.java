@@ -1,13 +1,17 @@
 package net.robinfriedli.aiode.command.commands.playlistmanagement;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import com.google.common.collect.Lists;
 import net.robinfriedli.aiode.Aiode;
-import net.robinfriedli.aiode.audio.AudioQueue;
 import net.robinfriedli.aiode.audio.Playable;
-import net.robinfriedli.aiode.audio.PlayableFactory;
 import net.robinfriedli.aiode.audio.exec.BlockingTrackLoadingExecutor;
+import net.robinfriedli.aiode.audio.playables.PlayableContainer;
+import net.robinfriedli.aiode.audio.playables.PlayableContainerManager;
+import net.robinfriedli.aiode.audio.playables.PlayableFactory;
+import net.robinfriedli.aiode.audio.queue.AudioQueue;
 import net.robinfriedli.aiode.audio.youtube.HollowYouTubeVideo;
 import net.robinfriedli.aiode.command.CommandContext;
 import net.robinfriedli.aiode.command.CommandManager;
@@ -30,7 +34,7 @@ public class AddCommand extends AbstractPlayableLoadingCommand {
     }
 
     public AddCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, boolean requiresInput, String identifier, String description, Category category, String definingArgument) {
-        super(commandContribution, context, commandManager, commandString, requiresInput, identifier, description, category, false, new BlockingTrackLoadingExecutor());
+        super(commandContribution, context, commandManager, commandString, requiresInput, identifier, description, category, new BlockingTrackLoadingExecutor());
         this.definingArgument = definingArgument;
     }
 
@@ -68,8 +72,8 @@ public class AddCommand extends AbstractPlayableLoadingCommand {
     }
 
     @Override
-    protected void handleResults(List<Playable> playables) {
-        addPlayables(playlist, playables);
+    protected void handleResult(PlayableContainer<?> playableContainer, PlayableFactory playableFactory) {
+        addPlayables(playlist, playableContainer.loadPlayables(playableFactory));
     }
 
     @Override
@@ -121,9 +125,21 @@ public class AddCommand extends AbstractPlayableLoadingCommand {
             throw new NoResultsFoundException(String.format("No local list found for '%s'", getToAddString()));
         }
 
-        PlayableFactory playableFactory = Aiode.get().getAudioManager().createPlayableFactory(getSpotifyService(), new BlockingTrackLoadingExecutor());
-        List<Playable> playables = playableFactory.createPlayables(false, option);
-        addPlayables(playlist, playables);
+        Aiode aiode = Aiode.get();
+        PlayableContainerManager playableContainerManager = aiode.getPlayableContainerManager();
+        PlayableFactory playableFactory = aiode.getAudioManager().createPlayableFactory(getSpotifyService(), new BlockingTrackLoadingExecutor(), false);
+
+        List<PlayableContainer<?>> playableContainers;
+        if (option instanceof Collection collection) {
+            playableContainers = Lists.newArrayList();
+            for (Object o : collection) {
+                playableContainers.add(playableContainerManager.requirePlayableContainer(o));
+            }
+        } else {
+            playableContainers = Collections.singletonList(playableContainerManager.requirePlayableContainer(option));
+        }
+
+        addPlayables(playlist, playableFactory.loadAll(playableContainers));
     }
 
     protected String getToAddString() {

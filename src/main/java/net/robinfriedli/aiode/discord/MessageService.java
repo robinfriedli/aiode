@@ -53,7 +53,6 @@ public class MessageService {
     private static final Invoker RECURSION_PREVENTION_INVOKER = Invoker.newInstance();
     private static final EnumSet<Permission> ESSENTIAL_PERMISSIONS = EnumSet.of(Permission.VIEW_CHANNEL, Permission.MESSAGE_WRITE, Permission.MESSAGE_READ);
     private static final RateLimitInvoker MESSAGE_DISPATCH_RATE_LIMITER = new RateLimitInvoker("message_service", 25, Duration.ofSeconds(10));
-    private static final Mode EMPTY_MODE = Mode.create();
 
     private final int limit = 1000;
     private final GuildManager guildManager;
@@ -289,13 +288,16 @@ public class MessageService {
         return futureMessages;
     }
 
-    public CompletableFuture<Message> executeMessageAction(MessageChannel channel, Function<MessageChannel, MessageAction> function, Permission... additionalPermissions) {
+    public CompletableFuture<Message> executeMessageAction(
+        MessageChannel channel,
+        Function<MessageChannel, MessageAction> function,
+        Permission... additionalPermissions
+    ) {
         CompletableFuture<Message> futureMessage = new CompletableFuture<>();
 
-        MESSAGE_DISPATCH_RATE_LIMITER.invokeLimited(EMPTY_MODE, () -> {
+        MESSAGE_DISPATCH_RATE_LIMITER.invokeLimited(() -> {
             try {
-                if (channel instanceof TextChannel) {
-                    TextChannel textChannel = (TextChannel) channel;
+                if (channel instanceof TextChannel textChannel) {
                     Guild guild = textChannel.getGuild();
                     Member selfMember = guild.getSelfMember();
                     if (!(selfMember.hasAccess(textChannel) && textChannel.canTalk(selfMember))) {
