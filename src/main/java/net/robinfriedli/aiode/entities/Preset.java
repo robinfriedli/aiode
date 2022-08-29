@@ -14,6 +14,7 @@ import javax.validation.constraints.Size;
 
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.robinfriedli.aiode.boot.SpringPropertiesConfig;
 import net.robinfriedli.aiode.command.AbstractCommand;
 import net.robinfriedli.aiode.command.CommandContext;
@@ -47,6 +48,8 @@ public class Preset implements Serializable, SanitizedEntity {
     private String user;
     @Column(name = "user_id")
     private String userId;
+    @Column(name = "command_id")
+    private Long commandId;
 
     public Preset() {
 
@@ -118,10 +121,7 @@ public class Preset implements Serializable, SanitizedEntity {
     }
 
     public AbstractCommand instantiateCommand(CommandManager commandManager, CommandContext context, String input) {
-        CommandContribution presetContribution = commandManager.getCommandContributionForInput(preset);
-        if (presetContribution == null) {
-            throw new InvalidCommandException("Invalid preset, no command found");
-        }
+        CommandContribution presetContribution = getCommandContribution(commandManager);
 
         String commandBody = preset.substring(presetContribution.getIdentifier().length()).trim();
         String var = input.substring(name.length()).trim();
@@ -132,6 +132,18 @@ public class Preset implements Serializable, SanitizedEntity {
         }
 
         return presetContribution.instantiate(commandManager, context, commandBody);
+    }
+
+    public CommandData buildSlashCommandData(CommandManager commandManager) {
+        return getCommandContribution(commandManager).buildSlashCommandData(getIdentifier());
+    }
+
+    public CommandContribution getCommandContribution(CommandManager commandManager) {
+        CommandContribution presetContribution = commandManager.getCommandContributionForInput(preset);
+        if (presetContribution == null) {
+            throw new InvalidCommandException("Invalid preset, no command found");
+        }
+        return presetContribution;
     }
 
     @Override
@@ -155,4 +167,11 @@ public class Preset implements Serializable, SanitizedEntity {
         setName(sanitizedIdentifier);
     }
 
+    public Long getCommandId() {
+        return commandId;
+    }
+
+    public void setCommandId(Long commandId) {
+        this.commandId = commandId;
+    }
 }

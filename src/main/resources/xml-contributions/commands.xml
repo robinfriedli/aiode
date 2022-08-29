@@ -5,7 +5,7 @@
            requiresInput="true"
            category="PLAYLIST_MANAGEMENT"
            description="Add a specific song from spotify, youtube, the current queue or any URL to the specified local playlist. Which source is used is decided by the used arguments or the default source and default list source properties. Spotify search queries support the Spotify query syntax (i.e. the &quot;artist:&quot;, &quot;album:&quot; and &quot;track:&quot; filters). To add tracks to the queue see the queue command.">
-    <argument identifier="to" description="Mandatory argument to define the playlist to which you want to add the tracks."/>
+    <argument identifier="to" valueType="java.lang.String" description="Mandatory argument to define the playlist to which you want to add the tracks."/>
     <argument identifier="queue" description="Add items from the current queue to the specified playlist. The to argument may be dropped when using this argument. E.g. add %2$squeue my list.">
       <excludes argument="youtube"/>
       <excludes argument="spotify"/>
@@ -97,8 +97,8 @@
            requiresInput="true"
            category="PLAYLIST_MANAGEMENT"
            description="Remove an item from a local playlist. Put either the full title of the YouTube video or the Spotify track name. If it was a track added by URL from a different source you can either remove it via its title or URL.">
-    <argument identifier="from" requiresValue="true" description="Mandatory argument to specify the playlist from which to remove the items."/>
-    <argument identifier="index" description="Remove items by their index. You can also provide an index range like %1$sremove 13-19 %2$sfrom list. This includes starting and end index."/>
+    <argument identifier="from" valueType="java.lang.String" requiresValue="true" description="Mandatory argument to specify the playlist from which to remove the items."/>
+    <argument identifier="index" valueType="java.lang.String" description="Remove items by their index. You can also provide an index range like %1$sremove 13-19 %2$sfrom list. This includes starting and end index."/>
     <example title="Remove a Spotify track from a playlist">%1$sremove numb %2$sfrom my list</example>
     <example title="Remove an item added by URL">%1$sremove http://someurl.com/video1 %2$sfrom my list</example>
     <example title="Remove the track at position 3 from a playlist">%1$sremove %2$sindex 3 %2$sfrom my list</example>
@@ -176,7 +176,7 @@
       <excludes argument="episode"/>
       <rule errorMessage="Argument 'podcast' may only be used with Spotify.">command.getSource().isSpotify()</rule>
     </argument>
-    <argument identifier="market" requiresValue="true" description="Specify the ISO 3166-1 country code of the target spotify market. Used to search a Spotify item in a specific country different from the default of this Aiode instance.">
+    <argument identifier="market" valueType="java.lang.String" requiresValue="true" description="Specify the ISO 3166-1 country code of the target spotify market. Used to search a Spotify item in a specific country different from the default of this Aiode instance.">
       <rule errorMessage="Argument 'market' may only be used with Spotify.">command.getSource().isSpotify()</rule>
       <rule errorMessage="'%3$s' is not a valid ISO 3166-1 country code">
         try {
@@ -225,20 +225,20 @@
            category="GENERAL"
            restrictedAccess="true"
            description="Add or remove a role required to run a certain command or list all commands and who they are available to. By default all commands are available to each user, except for this command and the commands in the scripting category which initially are only available to administrator roles. But as soon as a role has been added only those members with said role can use the command. If you add several roles to one command a member only requires one of those roles. The guild owner or members with administrator roles can always use any command.">
-    <argument identifier="to" description="Specify the roles to grant access for.">
+    <argument identifier="to" valueType="java.lang.String" description="Specify the roles to grant access for.">
       <requires argument="grant"/>
     </argument>
-    <argument identifier="for" description="Specify the roles to remove access privileges from when using the %2$sdeny argument.">
+    <argument identifier="for" valueType="java.lang.String" description="Specify the roles to remove access privileges from when using the %2$sdeny argument.">
       <excludes argument="to"/>
       <requires argument="deny"/>
     </argument>
-    <argument identifier="grant" description="Grant the selected commands or other permission targets to the selected roles. Limits the command to the selected roles if no roles were previously defined.">
+    <argument identifier="grant" valueType="java.lang.String" description="Grant the selected commands or other permission targets to the selected roles. Limits the command to the selected roles if no roles were previously defined.">
       <excludes argument="deny"/>
       <rule errorMessage="No commands selected! Either select commands (comma separated) or use the %2$sall or %2$scategory arguments">
         !command.getCommandInput().isBlank() || command.argumentSet("all") || command.argumentSet("category")
       </rule>
     </argument>
-    <argument identifier="deny" description="Denies a role from using a command or other permission target that has previously been added as a granted role">
+    <argument identifier="deny" valueType="java.lang.String" description="Denies a role from using a command or other permission target that has previously been added as a granted role">
       <excludes argument="grant"/>
       <rule errorMessage="No commands selected! Either select commands (comma separated) or use the %2$sall or %2$scategory arguments">
         !command.getCommandInput().isBlank() || command.argumentSet("all") || command.argumentSet("category")
@@ -259,7 +259,7 @@
         !command.getCommandInput().isBlank() || command.argumentSet("all") || command.argumentSet("category")
       </rule>
     </argument>
-    <argument identifier="category" description="Manage a category of commands. Use the help command to show all categories.">
+    <argument identifier="category" valueType="java.lang.String" description="Manage a category of commands. Use the help command to show all categories.">
       <rule errorMessage="Argument 'category' only applies when granting or denying permissions using the grant, deny, clear or lock arguments.">
         command.argumentSet("grant") ||
         command.argumentSet("deny") ||
@@ -291,7 +291,7 @@
       <excludes argument="lock"/>
       <excludes argument="create"/>
     </argument>
-    <argument identifier="argument" description="Manage permissions for a specific argument of a command or all selected commands. If no value is provided this manages all arguments of all selected commands.">
+    <argument identifier="argument" valueType="java.lang.String" description="Manage permissions for a specific argument of a command or all selected commands. If no value is provided this manages all arguments of all selected commands.">
       <excludes argument="create"/>
       <excludes argument="delete"/>
       <rule errorMessage="Argument 'argument' only applies when granting or denying permissions using the grant, deny, clear or lock arguments.">
@@ -340,8 +340,8 @@
            requiresInput="true"
            category="PLAYBACK"
            description="Skip the given amount of seconds or minutes in the current track.">
-    <argument identifier="minutes" description="Forward the given amount of minutes."/>
-    <argument identifier="seconds" description="Forward the given amount of seconds. This is default.">
+    <argument identifier="minutes" valueType="java.lang.Integer" description="Forward the given amount of minutes."/>
+    <argument identifier="seconds" valueType="java.lang.Integer" description="Forward the given amount of seconds. This is default.">
       <excludes argument="minutes"/>
     </argument>
     <example title="Forward 110 seconds">%1$sforward 110</example>
@@ -352,8 +352,8 @@
            requiresInput="true"
            category="PLAYBACK"
            description="Rewind the given amount of seconds or minutes in the current track.">
-    <argument identifier="minutes" description="Reverse the given amount of minutes."/>
-    <argument identifier="seconds" description="Reverse the given amount of seconds. This is default.">
+    <argument identifier="minutes" valueType="java.lang.Integer" description="Reverse the given amount of minutes."/>
+    <argument identifier="seconds" valueType="java.lang.Integer" description="Reverse the given amount of seconds. This is default.">
       <excludes argument="minutes"/>
     </argument>
     <example title="Rewind 110 seconds">%1$sreverse 110</example>
@@ -369,7 +369,7 @@
            requiresInput="false"
            category="CUSTOMISATION"
            description="Create or delete a command preset or show all saved presets. Command presets can be used as shortcuts for lengthy commands or creating an alias for a command. Presets han hold one variable marked by &quot;%%s&quot; that may be assigned a value when using the preset. Syntax to create a preset: [preset] %2$sas [name]. Mind that if your preset contains arguments you either need to put the preset in quotation marks or escape the argument prefixes using the escape character '\\'; see the examples for references.">
-    <argument identifier="as" requiresValue="true" description="Defines the name that will be used to call this preset. This argument is mandatory except when using the delete argument.">
+    <argument identifier="as" valueType="java.lang.String" requiresValue="true" description="Defines the name that will be used to call this preset. This argument is mandatory except when using the delete argument.">
       <excludes argument="delete"/>
     </argument>
     <argument identifier="delete" requiresInput="true" description="Delete an existing preset by its name."/>
@@ -393,8 +393,8 @@
            requiresInput="true"
            category="PLAYLIST_MANAGEMENT"
            description="Move one or several items in an aiode playlist to a different index. When moving items down the playlist the items will end up behind the track that is currently at the target index or before when moving items upwards. When entering an index range to move it includes the start and end index. Indices are human, meaning they start at 1. To view full playlists with all indices search the list (%1$ssearch %2$slist my list) and then click the view full list link.">
-    <argument identifier="to" requiresValue="true" description="Mandatory argument to specify the target index."/>
-    <argument identifier="on" requiresValue="true" description="Mandatory argument to define the playlist where you want to move the tracks."/>
+    <argument identifier="to" valueType="java.lang.String" requiresValue="true" description="Mandatory argument to specify the target index."/>
+    <argument identifier="on" valueType="java.lang.String" requiresValue="true" description="Mandatory argument to define the playlist where you want to move the tracks."/>
     <example title="Move the item that is currently at index 5 to index 10">%1$smove 5 %2$sto 10 %2$son my list</example>
     <example title="Move the items that are currently in range 4 - 6 (including start &amp; end) down between the items that are currently at index 10 and 11.">%1$smove 4-6 %2$sto 10 %2$son my list</example>
     <example title="Move the items that are currently in range 14 - 16 (including start &amp; end) up between the items that are currently at index 9 and 10.">%1$smove 14-16 %2$sto 10 %2$son my list</example>
@@ -404,7 +404,7 @@
            requiresInput="true"
            category="PLAYLIST_MANAGEMENT"
            description="Add a track to an aiode playlist. This command is an extension to the add command that inserts the tracks at a specific index within the playlist rather than adding them to the end of the list. This moves all items at and below the specified index down and inserts the new tracks starting at the provided index.">
-    <argument identifier="at" requiresValue="true" description="Mandatory argument to define the index at which to insert the tracks."/>
+    <argument identifier="at" valueType="java.lang.Integer" requiresValue="true" description="Mandatory argument to define the index at which to insert the tracks."/>
     <example title="Add tracks to the start of a playlist">%1$sinsert %2$sspotify %2$sown %2$slist goat %2$sto my list %2$sat 1</example>
     <example title="Insert tracks at index 10">%1$sinsert %2$syoutube %2$slist favs %2$sto my list %2$sat 10</example>
   </command>
@@ -415,7 +415,7 @@
            restrictedAccess="true"
            description="List all properties or change the value of a property. Properties are used to customize the bot. For example the &quot;color&quot; property changes the colour theme or &quot;playback notification&quot; changes whether you receive &quot;Now playing...&quot; messages.">
     <argument identifier="toggle" description="Toggles a property with a boolean value (e.g. &quot;playback notification&quot;) to its opposite value"/>
-    <argument identifier="set" requiresValue="true" description="Set a property to the specified value. E.g. property default source %2$sset youtube.">
+    <argument identifier="set" valueType="java.lang.String" requiresValue="true" description="Set a property to the specified value. E.g. property default source %2$sset youtube.">
       <excludes argument="toggle"/>
     </argument>
     <argument identifier="describe" requiresInput="true" description="Describe what a property does.">
@@ -449,7 +449,7 @@
            requiresInput="true"
            category="PLAYLIST_MANAGEMENT"
            description="Synchronise an aiode playlist with an external playlist. In practice this the same as the add command but empties the selected list first.">
-    <argument identifier="with" description="Specify the local aiode playlist to synchronise the remote playlist with."/>
+    <argument identifier="with" valueType="java.lang.String" description="Specify the local aiode playlist to synchronise the remote playlist with."/>
     <removeArgument identifier="to"/>
     <example title="Sync the contents of an aiode playlist with a YouTube playlist">%1$ssynchronise %2$syoutube %2$slist best of linkin park %2$swith mylist</example>
     <example title="Sync the contents of an aiode playlist with a Spotify playlist">%1$ssynchronise %2$sspotify %2$slist 00s Rock Anthems %2$swith mylist</example>
@@ -584,7 +584,7 @@ if (i %% 33 == 0) {
            category="SCRIPTING"
            restrictedAccess="true"
            description="This command manages persistent scripts for the groovy sandbox. In addition to the variables mentioned by the help page for the eval command, this command offers an 'input' variable to be used in scripts that represents additional user input. Note that scripts can be run directly like normal commands or presets, thus '%1$smyscript myinput' is equivalent to '%1$sscript %2$sinvoke=&quot;myscript&quot; myinput'.">
-    <argument identifier="invoke" requiresValue="true" description="Specify the identifier of the script you want to execute. Note that scripts can be run directly like normal commands or presets, thus '%1$smyscript myinput' is equivalent to '%1$sscript %2$sinvoke=&quot;myscript&quot;' myinput.">
+    <argument identifier="invoke" valueType="java.lang.String" requiresValue="true" description="Specify the identifier of the script you want to execute. Note that scripts can be run directly like normal commands or presets, thus '%1$smyscript myinput' is equivalent to '%1$sscript %2$sinvoke=&quot;myscript&quot;' myinput.">
       <excludes argument="delete"/>
       <excludes argument="identifier"/>
       <excludes argument="activate"/>
@@ -684,6 +684,7 @@ command.run('play')"
            category="ADMIN"
            description="Update the bot if the current branch needs to be rebased. Performs a rebase and maven clean install if necessary. A restart might be required if an update was pulled."/>
   <command identifier="load document"
+           slashCommandIdentifier="load-document"
            implementation="net.robinfriedli.aiode.command.commands.admin.LoadDocumentCommand"
            requiresInput="false"
            category="ADMIN"
@@ -696,16 +697,19 @@ command.run('play')"
     <argument identifier="silent" description="Disables alerting active guilds about the cleanup and associated suspension."/>
   </command>
   <command identifier="garbage collect"
+           slashCommandIdentifier="garbage-collect"
            implementation="net.robinfriedli.aiode.command.commands.admin.GarbageCollectCommand"
            requiresInput="false"
            category="ADMIN"
            description="Executes a Java garbage collection to manually clean up memory when convenient"/>
   <command identifier="youtube quota"
+           slashCommandIdentifier="youtube-quota"
            implementation="net.robinfriedli.aiode.command.commands.admin.YouTubeQuotaCommand"
            requiresInput="false"
            category="ADMIN"
            description="Displays the current calculated usage of the daily YouTube API quota."/>
   <command identifier="simulate audio traffic"
+           slashCommandIdentifier="simulate-audio-traffic"
            implementation="net.robinfriedli.aiode.command.commands.admin.AudioTrafficSimulationCommand"
            requiresInput="false"
            category="ADMIN"
@@ -716,7 +720,7 @@ command.run('play')"
     <argument identifier="duration" requiresValue="true" valueType="java.lang.Integer" description="Specify the amount of seconds the fake audio streams run for, defaults to 300.">
       <valueCheck errorMessage="Duration needs to be greater than 0" check="value &gt; 0"/>
     </argument>
-    <argument identifier="url" requiresValue="true" description="The URL of the track to use for all fake audio streams. Simply uses the first track if several tracks are found. The track is repeated until the duration limit is reached."/>
+    <argument identifier="url" requiresValue="true" valueType="java.lang.String" description="The URL of the track to use for all fake audio streams. Simply uses the first track if several tracks are found. The track is repeated until the duration limit is reached."/>
     <argument identifier="nativeBuffer" requiresValue="true" valueType="java.lang.Integer" description="The buffer duration for jda-nas in milliseconds. If the argument is not set, jda-nas isn't used and the AudioPlayer is simply polled without doing anything with the returned frames.">
       <valueCheck errorMessage="nativeBuffer needs to be greater than 0" check="value &gt; 0"/>
     </argument>
@@ -774,7 +778,7 @@ command.run('play')"
       <excludes argument="episode"/>
       <rule errorMessage="Argument 'podcast' may only be used with Spotify.">command.getSource().isSpotify()</rule>
     </argument>
-    <argument identifier="market" requiresValue="true" description="Specify the ISO 3166-1 country code of the target spotify market. Used to search a Spotify item in a specific country different from the default of this Aiode instance.">
+    <argument identifier="market" requiresValue="true" valueType="java.lang.String" description="Specify the ISO 3166-1 country code of the target spotify market. Used to search a Spotify item in a specific country different from the default of this Aiode instance.">
       <rule errorMessage="Argument 'market' may only be used with Spotify.">command.getSource().isSpotify()</rule>
       <rule errorMessage="'%3$s' must be a valid ISO 3166-1 country code">
         try {
@@ -802,7 +806,7 @@ command.run('play')"
     <argument identifier="delete" description="Specify a script / interceptor identifier to delete">
       <rule errorMessage="Target script to delete must be specified either as command input or using the identifier argument">!command.getCommandInput().isBlank() || command.argumentSet("identifier")</rule>
     </argument>
-    <argument identifier="identifier" requiresValue="true" description="Define the name of the script / interceptor when creating a new script. E.g. '%2$sidentifier=&quot;myscript&quot;'. Optionally can also be used to specify the target script instead of the command input when deleting / activating / deactivating a script."/>
+    <argument identifier="identifier" valueType="java.lang.String" requiresValue="true" description="Define the name of the script / interceptor when creating a new script. E.g. '%2$sidentifier=&quot;myscript&quot;'. Optionally can also be used to specify the target script instead of the command input when deleting / activating / deactivating a script."/>
     <argument identifier="activate" description="Active a deactivated script / interceptor / finalizer. Deactivated scripts can not be executed and deactivated interceptors / finalizers are ignored when running commands.">
       <excludes argument="delete"/>
       <excludes argument="deactivate"/>
@@ -816,5 +820,6 @@ command.run('play')"
   </abstractCommand>
   <abstractCommand class="net.robinfriedli.aiode.command.AbstractCommand">
     <argument identifier="skipInterceptors" description="Disable script interceptors and finalizers for the execution of this command."/>
+    <argument identifier="input" valueType="java.lang.String" description="The input for the command, e.g. the track name or other search query."/>
   </abstractCommand>
 </commands>

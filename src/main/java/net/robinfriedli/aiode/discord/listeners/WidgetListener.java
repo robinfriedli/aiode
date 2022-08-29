@@ -87,7 +87,7 @@ public class WidgetListener extends ListenerAdapter {
             CommandContext commandContext = new CommandContext(
                 event,
                 guildContext,
-                message,
+                message.getContentDisplay(),
                 hibernateComponent.getSessionFactory(),
                 spotifyApiBuilder,
                 emojiUnicode

@@ -23,6 +23,7 @@ import net.robinfriedli.aiode.persist.interceptors.EntityValidationInterceptor;
 import net.robinfriedli.aiode.persist.interceptors.GuildPropertyInterceptor;
 import net.robinfriedli.aiode.persist.interceptors.InterceptorChain;
 import net.robinfriedli.aiode.persist.interceptors.PlaylistItemTimestampInterceptor;
+import net.robinfriedli.aiode.persist.interceptors.PresetSlashCommandsInterceptor;
 import net.robinfriedli.aiode.persist.interceptors.SanitizingEntityInterceptor;
 import net.robinfriedli.aiode.persist.interceptors.VerifyPlaylistInterceptor;
 import org.hibernate.Session;
@@ -198,7 +199,8 @@ public class ExecutionContext implements CloseableThreadContext, ForkableThreadC
                     AlertScriptModificationInterceptor.class,
                     AlertPresetCreationInterceptor.class,
                     GuildPropertyInterceptor.class,
-                    EntityValidationInterceptor.class
+                    EntityValidationInterceptor.class,
+                    PresetSlashCommandsInterceptor.class
                 ))
                 .openSession();
             this.session = session;

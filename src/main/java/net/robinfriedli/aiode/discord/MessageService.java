@@ -288,13 +288,16 @@ public class MessageService {
         return futureMessages;
     }
 
-    public CompletableFuture<Message> executeMessageAction(MessageChannel channel, Function<MessageChannel, MessageAction> function, Permission... additionalPermissions) {
+    public CompletableFuture<Message> executeMessageAction(
+        MessageChannel channel,
+        Function<MessageChannel, MessageAction> function,
+        Permission... additionalPermissions
+    ) {
         CompletableFuture<Message> futureMessage = new CompletableFuture<>();
 
         MESSAGE_DISPATCH_RATE_LIMITER.invokeLimited(() -> {
             try {
-                if (channel instanceof TextChannel) {
-                    TextChannel textChannel = (TextChannel) channel;
+                if (channel instanceof TextChannel textChannel) {
                     Guild guild = textChannel.getGuild();
                     Member selfMember = guild.getSelfMember();
                     if (!(selfMember.hasAccess(textChannel) && textChannel.canTalk(selfMember))) {

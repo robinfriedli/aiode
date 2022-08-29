@@ -4,7 +4,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CompletableFutures {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(CompletableFutures.class);
 
     /**
      * Wrapper for {@link CompletableFuture#whenComplete(BiConsumer)} that handles exceptions thrown during execution of
@@ -30,7 +35,11 @@ public class CompletableFutures {
         ThreadContext forkedContext = ThreadContext.Current.get().fork();
         return completableFuture.thenAccept(result -> EventHandlerPool.execute(() -> {
             ThreadContext.Current.installExplicitly(forkedContext);
-            consumer.accept(result);
+            try {
+                consumer.accept(result);
+            } catch (Exception e) {
+                LOGGER.error("Error handling thenAccept consumer for completable future", e);
+            }
         }));
     }
 
