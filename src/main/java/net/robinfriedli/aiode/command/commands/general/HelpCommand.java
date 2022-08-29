@@ -2,6 +2,7 @@ package net.robinfriedli.aiode.command.commands.general;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import com.google.common.base.Strings;
@@ -11,6 +12,7 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.Role;
 import net.robinfriedli.aiode.Aiode;
+import net.robinfriedli.aiode.boot.SpringPropertiesConfig;
 import net.robinfriedli.aiode.command.AbstractCommand;
 import net.robinfriedli.aiode.command.CommandContext;
 import net.robinfriedli.aiode.command.CommandManager;
@@ -111,10 +113,33 @@ public class HelpCommand extends AbstractCommand {
     }
 
     private void listCommands() {
+        SpringPropertiesConfig springPropertiesConfig = Aiode.get().getSpringPropertiesConfig();
+        boolean messageContentEnabled = Objects.requireNonNullElse(springPropertiesConfig.getApplicationProperty(Boolean.class, "aiode.preferences.enable_message_content"), true);
+        boolean slashCommandsEnabled = Objects.requireNonNullElse(springPropertiesConfig.getApplicationProperty(Boolean.class, "aiode.preferences.enable_slash_commands"), true);
+
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle("**Commands:**");
         String prefix = PrefixProperty.getEffectiveCommandStartForCurrentContext();
         embedBuilder.appendDescription(String.format("To get help with a specific command just enter the name of the command. E.g. %shelp play.", prefix));
+        embedBuilder.addField(
+            "Text Commands",
+            messageContentEnabled ? "Enabled" : "Disabled",
+            true
+        );
+        embedBuilder.addField(
+            "Slash Commands",
+            slashCommandsEnabled ? "Enabled" : "Disabled",
+            true
+        );
+        embedBuilder.addField(
+            "Notice - Slash Commands",
+            "Slash commands work along the same principle as native text commands. " +
+                "However, slash command options (the counterpart to aiode arguments) do not support options without values. " +
+                "Also, slash commands do not accept input that isn't mapped to an option. " +
+                "That means arguments that are just a toggle (e.g. $spotify or $list) are slash command options that require an explicit boolean value (e.g. spotify:True or list:True) " +
+                "and command input is set via the 'input' option.\nFor example the command `play $spotify $list my list` translates to the following slash command: `/play spotify:True list:True input:my list`",
+            false
+        );
 
         List<MessageEmbed.Field> fields = Lists.newArrayList();
         for (Category category : Category.values()) {
