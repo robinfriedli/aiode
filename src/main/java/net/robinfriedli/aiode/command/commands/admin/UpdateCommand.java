@@ -11,7 +11,8 @@ import com.google.common.collect.Lists;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.MessageEmbed;
-import net.dv8tion.jda.api.requests.restaction.MessageAction;
+import net.dv8tion.jda.api.utils.FileUpload;
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.robinfriedli.aiode.command.AbstractAdminCommand;
 import net.robinfriedli.aiode.command.CommandContext;
 import net.robinfriedli.aiode.command.CommandManager;
@@ -40,15 +41,14 @@ public class UpdateCommand extends AbstractAdminCommand {
         MessageEmbed messageEmbed = embedBuilder.build();
 
         getMessageService().executeMessageAction(getContext().getChannel(), channel -> {
-            MessageAction messageAction = channel.sendMessage(messageEmbed);
+            MessageCreateBuilder messageCreateBuilder = new MessageCreateBuilder().addEmbeds(messageEmbed);
 
             for (OutputAttachment attachment : attachments) {
                 // #addFile simply returns the current MessageAction which is returned below
-                //noinspection ResultOfMethodCallIgnored
-                messageAction.addFile(attachment.getInputStream(), attachment.getName());
+                messageCreateBuilder = messageCreateBuilder.addFiles(FileUpload.fromData(attachment.getInputStream(), attachment.getName()));
             }
 
-            return messageAction;
+            return channel.sendMessage(messageCreateBuilder.build());
         }, Permission.MESSAGE_EMBED_LINKS, Permission.MESSAGE_ATTACH_FILES);
     }
 

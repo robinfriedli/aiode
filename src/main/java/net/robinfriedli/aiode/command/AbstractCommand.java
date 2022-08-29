@@ -18,11 +18,11 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import com.google.api.client.util.Sets;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.audio.spotify.SpotifyService;
 import net.robinfriedli.aiode.command.argument.ArgumentController;
@@ -373,7 +373,7 @@ public abstract class AbstractCommand implements Command {
         messageService.sendWrapped(message, wrapper, channel);
     }
 
-    protected CompletableFuture<Message> sendMessage(InputStream file, String fileName, MessageBuilder messageBuilder) {
+    protected CompletableFuture<Message> sendMessage(InputStream file, String fileName, MessageCreateBuilder messageBuilder) {
         return messageService.send(messageBuilder, file, fileName, getContext().getChannel());
     }
 

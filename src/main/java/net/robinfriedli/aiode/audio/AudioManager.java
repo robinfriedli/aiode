@@ -21,10 +21,10 @@ import com.sedmelluq.lava.extensions.youtuberotator.YoutubeIpRotatorSetup;
 import com.sedmelluq.lava.extensions.youtuberotator.planner.RotatingNanoIpRoutePlanner;
 import com.sedmelluq.lava.extensions.youtuberotator.tools.ip.IpBlock;
 import com.sedmelluq.lava.extensions.youtuberotator.tools.ip.Ipv6Block;
+import net.dv8tion.jda.api.entities.AudioChannel;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.VoiceChannel;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.robinfriedli.aiode.audio.exec.TrackLoadingExecutor;
 import net.robinfriedli.aiode.audio.playables.PlayableFactory;
@@ -107,15 +107,15 @@ public class AudioManager extends AbstractShutdownable {
         }
     }
 
-    public void startPlayback(Guild guild, @Nullable VoiceChannel channel) {
+    public void startPlayback(Guild guild, @Nullable AudioChannel channel) {
         playTrack(guild, channel, false);
     }
 
-    public void startOrResumePlayback(Guild guild, @Nullable VoiceChannel channel) {
+    public void startOrResumePlayback(Guild guild, @Nullable AudioChannel channel) {
         playTrack(guild, channel, true);
     }
 
-    public void playTrack(Guild guild, @Nullable VoiceChannel channel, boolean resumePaused) {
+    public void playTrack(Guild guild, @Nullable AudioChannel channel, boolean resumePaused) {
         AudioPlayback playback = getPlaybackForGuild(guild);
 
         if (!resumePaused && playback.isPaused()) {
@@ -125,7 +125,7 @@ public class AudioManager extends AbstractShutdownable {
 
         if (channel != null) {
             setChannel(playback, channel);
-        } else if (playback.getVoiceChannel() == null) {
+        } else if (playback.getAudioChannel() == null) {
             throw new InvalidCommandException("Not in a voice channel");
         }
 
@@ -162,16 +162,16 @@ public class AudioManager extends AbstractShutdownable {
         return new PlayableFactory(audioTrackLoader, spotifyService, trackLoadingExecutor, youTubeService, shouldRedirectSpotify);
     }
 
-    void createHistoryEntry(Playable playable, Guild guild, VoiceChannel voiceChannel) {
+    void createHistoryEntry(Playable playable, Guild guild, AudioChannel audioChannel) {
         HistoryPool.execute(() -> {
             try {
                 hibernateComponent.consumeSession(session -> {
                     PlaybackHistory playbackHistory = new PlaybackHistory(LocalDateTime.now(), playable, guild, session);
 
                     session.persist(playbackHistory);
-                    if (voiceChannel != null) {
+                    if (audioChannel != null) {
                         Member selfMember = guild.getSelfMember();
-                        for (Member member : voiceChannel.getMembers()) {
+                        for (Member member : audioChannel.getMembers()) {
                             if (!member.equals(selfMember)) {
                                 UserPlaybackHistory userPlaybackHistory = new UserPlaybackHistory(member.getUser(), playbackHistory);
                                 session.persist(userPlaybackHistory);
@@ -192,7 +192,7 @@ public class AudioManager extends AbstractShutdownable {
         CompletableFutures.thenAccept(futureMessage, message -> new NowPlayingWidget(widgetRegistry, guild, message).initialise());
     }
 
-    private void setChannel(AudioPlayback audioPlayback, VoiceChannel channel) {
+    private void setChannel(AudioPlayback audioPlayback, AudioChannel channel) {
         audioPlayback.setVoiceChannel(channel);
         Guild guild = audioPlayback.getGuild();
         guild.getAudioManager().setSendingHandler(new AudioPlayerSendHandler(audioPlayback.getAudioPlayer()));

@@ -83,7 +83,7 @@ public class WidgetManager {
 
     public Optional<WidgetActionDefinition> getWidgetActionDefinitionForReaction(Class<? extends AbstractWidget> widgetType, MessageReaction reaction) {
         Map<String, WidgetActionDefinition> reactionMap = requireReactionMapForWidgetType(widgetType);
-        return Optional.ofNullable(reactionMap.get(reaction.getReactionEmote().getName()));
+        return Optional.ofNullable(reactionMap.get(reaction.getEmoji().getName()));
     }
 
     /**

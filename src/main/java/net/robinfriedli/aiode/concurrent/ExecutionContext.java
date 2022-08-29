@@ -7,12 +7,12 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 
 import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.AudioChannel;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.GuildVoiceState;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.entities.User;
-import net.dv8tion.jda.api.entities.VoiceChannel;
+import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
 import net.robinfriedli.aiode.audio.spotify.SpotifyService;
 import net.robinfriedli.aiode.discord.GuildContext;
 import net.robinfriedli.aiode.persist.interceptors.AlertAccessConfigurationModificationInterceptor;
@@ -44,7 +44,7 @@ public class ExecutionContext implements CloseableThreadContext, ForkableThreadC
     protected final SpotifyApi spotifyApi;
     protected final SpotifyApi.Builder spotifyApiBuilder;
     protected final String id;
-    protected final TextChannel textChannel;
+    protected final MessageChannelUnion textChannel;
     protected final User user;
     protected Session session;
     protected SpotifyService spotifyService;
@@ -57,7 +57,7 @@ public class ExecutionContext implements CloseableThreadContext, ForkableThreadC
         Member member,
         SessionFactory sessionFactory,
         SpotifyApi.Builder spotifyApiBuilder,
-        TextChannel textChannel
+        MessageChannelUnion textChannel
     ) {
         this(
             guild,
@@ -83,7 +83,7 @@ public class ExecutionContext implements CloseableThreadContext, ForkableThreadC
         SessionFactory sessionFactory,
         SpotifyApi.Builder spotifyApiBuilder,
         String id,
-        TextChannel textChannel,
+        MessageChannelUnion textChannel,
         User user
     ) {
         this(
@@ -110,7 +110,7 @@ public class ExecutionContext implements CloseableThreadContext, ForkableThreadC
         SpotifyApi spotifyApi,
         SpotifyApi.Builder spotifyApiBuilder,
         String id,
-        TextChannel textChannel,
+        MessageChannelUnion textChannel,
         User user,
         SpotifyService spotifyService
     ) {
@@ -145,7 +145,7 @@ public class ExecutionContext implements CloseableThreadContext, ForkableThreadC
     }
 
     @Nullable
-    public VoiceChannel getVoiceChannel() {
+    public AudioChannel getAudioChannel() {
         GuildVoiceState voiceState = getMember().getVoiceState();
 
         if (voiceState != null) {
@@ -159,7 +159,7 @@ public class ExecutionContext implements CloseableThreadContext, ForkableThreadC
         return guild;
     }
 
-    public TextChannel getChannel() {
+    public MessageChannelUnion getChannel() {
         return textChannel;
     }
 

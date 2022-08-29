@@ -19,10 +19,12 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.ChannelType;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.entities.channel.unions.DefaultGuildChannelUnion;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.audio.AudioManager;
@@ -324,9 +326,9 @@ public class GuildManager {
         }
 
         // use guild default defined by discord
-        TextChannel defaultChannel = guild.getDefaultChannel();
-        if (defaultChannel != null && selfMember.hasAccess(defaultChannel) && defaultChannel.canTalk(selfMember)) {
-            return defaultChannel;
+        DefaultGuildChannelUnion defaultChannel = guild.getDefaultChannel();
+        if (defaultChannel != null && defaultChannel.getType() == ChannelType.TEXT && selfMember.hasAccess(defaultChannel)) {
+            return defaultChannel.asTextChannel();
         } else {
             TextChannel systemChannel = guild.getSystemChannel();
             if (systemChannel != null && selfMember.hasAccess(systemChannel) && systemChannel.canTalk()) {

@@ -39,7 +39,7 @@ dependencies {
 
     implementation 'io.github.resilience4j:resilience4j-ratelimiter:1.7.1'
 
-    implementation "net.dv8tion:JDA:4.4.0_352"
+    implementation "net.dv8tion:JDA:5.0.0-alpha.18"
     implementation "com.github.robinfriedli:exec:1.4"
     implementation "com.github.robinfriedli:JXP:2.0.5"
     implementation "com.github.robinfriedli:StringList:1.6.1"

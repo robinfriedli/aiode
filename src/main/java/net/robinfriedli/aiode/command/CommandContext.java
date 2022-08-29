@@ -8,11 +8,11 @@ import java.util.concurrent.Future;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.entities.User;
-import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
-import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
-import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
+import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.robinfriedli.aiode.concurrent.CommandExecutionTask;
 import net.robinfriedli.aiode.concurrent.ExecutionContext;
@@ -40,7 +40,7 @@ public class CommandContext extends ExecutionContext {
     private Future<?> monitoring;
 
     public CommandContext(
-        SlashCommandEvent event,
+        SlashCommandInteractionEvent event,
         GuildContext guildContext,
         SessionFactory sessionFactory,
         SpotifyApi.Builder spotifyApiBuilder,
@@ -55,14 +55,14 @@ public class CommandContext extends ExecutionContext {
             sessionFactory,
             spotifyApiBuilder,
             commandBody,
-            event.getTextChannel(),
+            event.getChannel(),
             true,
             event.getInteraction().getHook()
         );
     }
 
     public CommandContext(
-        GuildMessageReceivedEvent event,
+        MessageReceivedEvent event,
         GuildContext guildContext,
         SessionFactory sessionFactory,
         SpotifyApi.Builder spotifyApiBuilder,
@@ -84,7 +84,7 @@ public class CommandContext extends ExecutionContext {
     }
 
     public CommandContext(
-        GuildMessageReactionAddEvent event,
+        MessageReactionAddEvent event,
         GuildContext guildContext,
         String message,
         SessionFactory sessionFactory,
@@ -117,7 +117,7 @@ public class CommandContext extends ExecutionContext {
         SpotifyApi.Builder spotifyApiBuilder,
         String commandBody,
         String id,
-        TextChannel textChannel,
+        MessageChannelUnion textChannel,
         User user,
         boolean isSlashCommand,
         @Nullable InteractionHook interactionHook
@@ -148,7 +148,7 @@ public class CommandContext extends ExecutionContext {
         SessionFactory sessionFactory,
         SpotifyApi.Builder spotifyApiBuilder,
         String commandBody,
-        TextChannel textChannel,
+        MessageChannelUnion textChannel,
         boolean isSlashCommand,
         @Nullable InteractionHook interactionHook
     ) {

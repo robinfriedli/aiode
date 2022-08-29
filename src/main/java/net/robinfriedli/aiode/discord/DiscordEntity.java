@@ -257,7 +257,7 @@ public abstract class DiscordEntity<T extends ISnowflake> {
                 net.dv8tion.jda.api.entities.Guild guildCached = guild.getCached();
 
                 if (guildCached != null) {
-                    return guildCached.getTextChannelById(getId());
+                    return guildCached.getChannelById(net.dv8tion.jda.api.entities.MessageChannel.class, getId());
                 }
             }
             return null;
@@ -429,6 +429,41 @@ public abstract class DiscordEntity<T extends ISnowflake> {
                 return guildCached.getVoiceChannelById(getId());
             }
 
+            return null;
+        }
+    }
+
+    public static class StageChannel extends DiscordEntity<net.dv8tion.jda.api.entities.StageChannel> {
+
+        private final Guild guild;
+
+        public StageChannel(JDA jda, long id, Guild guild) {
+            super(jda, id);
+            this.guild = guild;
+        }
+
+        public StageChannel(net.dv8tion.jda.api.entities.StageChannel stageChannel) {
+            this(stageChannel.getJDA(), stageChannel.getIdLong(), new Guild(stageChannel.getGuild()));
+        }
+
+        @Override
+        public @Nullable RestAction<? extends net.dv8tion.jda.api.entities.StageChannel> fetch() throws UnsupportedOperationException {
+            throw new UnsupportedOperationException("Cannot create rest request to retrieve stage channels");
+        }
+
+        @Override
+        public boolean canFetch() {
+            return false;
+        }
+
+        @Nullable
+        @Override
+        public net.dv8tion.jda.api.entities.StageChannel getCached() {
+            net.dv8tion.jda.api.entities.Guild guildCached = guild.getCached();
+
+            if (guildCached != null) {
+                return guildCached.getStageChannelById(getId());
+            }
             return null;
         }
     }
