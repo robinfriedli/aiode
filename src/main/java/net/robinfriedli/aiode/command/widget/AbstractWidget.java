@@ -14,7 +14,8 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.TextChannel;
-import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
+import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.robinfriedli.aiode.Aiode;
@@ -139,7 +140,7 @@ public abstract class AbstractWidget {
                 }
 
                 int finalI = i;
-                message.addReaction(action.getEmojiUnicode()).queue(aVoid -> {
+                message.addReaction(Emoji.fromUnicode(action.getEmojiUnicode())).queue(aVoid -> {
                     if (finalI == actions.size() - 1 && !futureException.isDone()) {
                         futureException.cancel(false);
                     }
@@ -201,7 +202,7 @@ public abstract class AbstractWidget {
         }
     }
 
-    public void handleReaction(GuildMessageReactionAddEvent event, CommandContext context) {
+    public void handleReaction(MessageReactionAddEvent event, CommandContext context) {
         widgetManager
             .getWidgetActionDefinitionForReaction(getClass(), event.getReaction())
             .map(actionDefinition -> actionDefinition.getImplementation().instantiate(context, this, event, actionDefinition))

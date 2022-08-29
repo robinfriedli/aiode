@@ -6,9 +6,9 @@ import java.util.List;
 
 import com.google.common.collect.Lists;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
+import net.dv8tion.jda.api.entities.AudioChannel;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.MessageChannel;
-import net.dv8tion.jda.api.entities.VoiceChannel;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.audio.AudioManager;
 import net.robinfriedli.aiode.audio.AudioPlayback;
@@ -44,7 +44,7 @@ public class PlayCommand extends AbstractQueueLoadingCommand {
     public void doRun() throws Exception {
         CommandContext context = getContext();
         Guild guild = context.getGuild();
-        VoiceChannel channel = context.getVoiceChannel();
+        AudioChannel channel = context.getAudioChannel();
         AudioManager audioManager = Aiode.get().getAudioManager();
         MessageChannel messageChannel = getContext().getChannel();
         AudioPlayback playbackForGuild = audioManager.getPlaybackForGuild(guild);
@@ -64,7 +64,7 @@ public class PlayCommand extends AbstractQueueLoadingCommand {
     @Override
     protected void handleResult(PlayableContainer<?> playableContainer, PlayableFactory playableFactory) {
         Guild guild = getContext().getGuild();
-        VoiceChannel channel = getContext().getVoiceChannel();
+        AudioChannel channel = getContext().getAudioChannel();
         AudioManager audioManager = Aiode.get().getAudioManager();
 
         AudioPlayback playback = getContext().getGuildContext().getPlayback();
@@ -117,7 +117,7 @@ public class PlayCommand extends AbstractQueueLoadingCommand {
 
         queue.addContainers(playableContainers, playableFactory, true);
 
-        audioManager.startPlayback(guild, getContext().getVoiceChannel());
+        audioManager.startPlayback(guild, getContext().getAudioChannel());
     }
 
 }

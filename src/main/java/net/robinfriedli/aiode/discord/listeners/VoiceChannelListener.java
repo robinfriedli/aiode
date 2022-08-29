@@ -5,8 +5,8 @@ import java.time.LocalDateTime;
 import javax.annotation.Nonnull;
 
 import com.antkorwin.xsync.XSync;
+import net.dv8tion.jda.api.entities.AudioChannel;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.VoiceChannel;
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceJoinEvent;
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceLeaveEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -41,9 +41,9 @@ public class VoiceChannelListener extends ListenerAdapter {
         if (!event.getMember().getUser().isBot()) {
             Guild guild = event.getGuild();
             EventHandlerPool.execute(() -> xSync.execute(guild.getIdLong(), () -> {
-                VoiceChannel channel = event.getChannelLeft();
+                AudioChannel channel = event.getChannelLeft();
                 AudioPlayback playback = audioManager.getPlaybackForGuild(guild);
-                if (channel.equals(playback.getVoiceChannel())
+                if (channel.equals(playback.getAudioChannel())
                     && noOtherMembersLeft(channel, guild)) {
                     if (isAutoPauseEnabled(guild)) {
                         playback.pause();
@@ -62,14 +62,14 @@ public class VoiceChannelListener extends ListenerAdapter {
             Guild guild = event.getGuild();
             EventHandlerPool.execute(() -> xSync.execute(guild.getIdLong(), () -> {
                 AudioPlayback playback = audioManager.getPlaybackForGuild(guild);
-                if (event.getChannelJoined().equals(playback.getVoiceChannel())) {
+                if (event.getChannelJoined().equals(playback.getAudioChannel())) {
                     playback.setAloneSince(null);
                 }
             }));
         }
     }
 
-    private boolean noOtherMembersLeft(VoiceChannel channel, Guild guild) {
+    private boolean noOtherMembersLeft(AudioChannel channel, Guild guild) {
         return channel.getMembers().stream()
             .allMatch(member -> member.equals(guild.getSelfMember()) || member.getUser().isBot());
     }

@@ -5,7 +5,7 @@ import java.lang.reflect.InvocationTargetException;
 
 import javax.annotation.Nullable;
 
-import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
+import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.robinfriedli.aiode.command.CommandContext;
 import net.robinfriedli.aiode.command.widget.AbstractWidget;
 import net.robinfriedli.aiode.command.widget.AbstractWidgetAction;
@@ -54,7 +54,7 @@ public class WidgetContribution extends GenericClassContribution<AbstractWidget>
             return getAttribute("emojiUnicode").getValue();
         }
 
-        public AbstractWidgetAction instantiate(CommandContext context, AbstractWidget widget, GuildMessageReactionAddEvent event, WidgetManager.WidgetActionDefinition definition) {
+        public AbstractWidgetAction instantiate(CommandContext context, AbstractWidget widget, MessageReactionAddEvent event, WidgetManager.WidgetActionDefinition definition) {
             Class<? extends AbstractWidgetAction> implementationClass = getImplementationClass();
             Constructor<? extends AbstractWidgetAction> constructor;
             try {
@@ -64,7 +64,7 @@ public class WidgetContribution extends GenericClassContribution<AbstractWidget>
                     Boolean.TYPE,
                     CommandContext.class,
                     AbstractWidget.class,
-                    GuildMessageReactionAddEvent.class,
+                    MessageReactionAddEvent.class,
                     WidgetManager.WidgetActionDefinition.class
                 );
             } catch (NoSuchMethodException e) {

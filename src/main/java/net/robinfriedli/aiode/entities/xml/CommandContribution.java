@@ -9,6 +9,8 @@ import javax.annotation.Nullable;
 
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 import net.robinfriedli.aiode.command.AbstractCommand;
 import net.robinfriedli.aiode.command.CommandContext;
 import net.robinfriedli.aiode.command.CommandManager;
@@ -124,10 +126,7 @@ public class CommandContribution extends CommandHierarchyNode<CommandArgument> i
     }
 
     public CommandData buildSlashCommandData(String identifier) {
-        CommandData commandData = new CommandData(
-            sanitizeSlashCommandIdentifier(identifier),
-            trimDescription(getDescription())
-        );
+        SlashCommandData commandData = Commands.slash(sanitizeSlashCommandIdentifier(identifier), trimDescription(getDescription()));
 
         for (CommandArgument commandArgument : getArguments().values()) {
             ArgumentContribution argumentContribution = commandArgument.getArgumentContribution();

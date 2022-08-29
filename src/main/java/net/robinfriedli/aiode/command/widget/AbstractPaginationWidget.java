@@ -14,7 +14,8 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed;
-import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
+import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
+import net.dv8tion.jda.api.utils.messages.MessageEditData;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.boot.SpringPropertiesConfig;
 import net.robinfriedli.aiode.command.CommandContext;
@@ -56,7 +57,7 @@ public abstract class AbstractPaginationWidget<E> extends AbstractWidget {
         EmbedBuilder embedBuilder = prepareEmbedBuilderForPage();
         MessageEmbed messageEmbed = messageService.buildEmbed(embedBuilder);
 
-        messageService.executeMessageAction(channel, c -> c.editMessageById(messageId, messageEmbed));
+        messageService.executeMessageAction(channel, c -> c.editMessageById(messageId, MessageEditData.fromEmbeds(messageEmbed)));
     }
 
     public List<List<E>> getPages() {
@@ -87,7 +88,7 @@ public abstract class AbstractPaginationWidget<E> extends AbstractWidget {
     protected abstract String getDescription();
 
     @Override
-    public void handleReaction(GuildMessageReactionAddEvent event, CommandContext context) {
+    public void handleReaction(MessageReactionAddEvent event, CommandContext context) {
         synchronized (this) {
             super.handleReaction(event, context);
         }

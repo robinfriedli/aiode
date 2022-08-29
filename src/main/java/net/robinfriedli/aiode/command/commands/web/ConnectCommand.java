@@ -12,9 +12,10 @@ import java.util.concurrent.TimeoutException;
 import org.slf4j.LoggerFactory;
 
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.ChannelType;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.User;
-import net.dv8tion.jda.api.events.message.priv.PrivateMessageReceivedEvent;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.robinfriedli.aiode.command.AbstractCommand;
 import net.robinfriedli.aiode.command.CommandContext;
 import net.robinfriedli.aiode.command.CommandManager;
@@ -70,8 +71,8 @@ public class ConnectCommand extends AbstractCommand {
     }
 
     private void awaitPrivateMessage(ClientSession clientSession, long userId, Guild guild, User user, int attemptNumber) {
-        CompletableFuture<PrivateMessageReceivedEvent> futurePrivateMessage = getManager().getEventWaiter()
-            .awaitEvent(PrivateMessageReceivedEvent.class, event -> event.getAuthor().getIdLong() == userId)
+        CompletableFuture<MessageReceivedEvent> futurePrivateMessage = getManager().getEventWaiter()
+            .awaitEvent(MessageReceivedEvent.class, event -> event.getAuthor().getIdLong() == userId && event.isFromType(ChannelType.PRIVATE))
             .orTimeout(1, TimeUnit.MINUTES);
         CompletableFutures.handleWhenComplete(futurePrivateMessage, (event, error) -> {
             try {

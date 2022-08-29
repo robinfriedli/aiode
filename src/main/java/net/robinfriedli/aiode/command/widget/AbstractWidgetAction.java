@@ -1,7 +1,7 @@
 package net.robinfriedli.aiode.command.widget;
 
 import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
+import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.command.AbstractCommand;
@@ -22,7 +22,7 @@ public abstract class AbstractWidgetAction implements Command {
     private final CommandContext context;
     private final String identifier;
     private final String emojiUnicode;
-    private final GuildMessageReactionAddEvent event;
+    private final MessageReactionAddEvent event;
     private final WidgetManager.WidgetActionDefinition widgetActionDefinition;
 
     private boolean aborted;
@@ -50,7 +50,7 @@ public abstract class AbstractWidgetAction implements Command {
         boolean resetRequired,
         CommandContext context,
         AbstractWidget widget,
-        GuildMessageReactionAddEvent event,
+        MessageReactionAddEvent event,
         WidgetManager.WidgetActionDefinition widgetActionDefinition
     ) {
         this.widget = widget;

@@ -51,13 +51,13 @@ public class JdaComponent {
         // the gateway intent GUILD_MEMBERS normally required by the GuildMemberUpdateNicknameEvent (see GuildManagementListener)
         // is not needed since bots always receive member updates if the affected member is the bot itself which is all
         // this event is used for
-        EnumSet<GatewayIntent> gatewayIntents = EnumSet.of(GUILD_MESSAGES, GUILD_MESSAGE_REACTIONS, DIRECT_MESSAGES, GUILD_VOICE_STATES);
+        EnumSet<GatewayIntent> gatewayIntents = EnumSet.of(GUILD_MESSAGES, MESSAGE_CONTENT, GUILD_MESSAGE_REACTIONS, DIRECT_MESSAGES, GUILD_VOICE_STATES);
         try {
             DefaultShardManagerBuilder shardManagerBuilder = DefaultShardManagerBuilder.create(discordToken, gatewayIntents)
                 .disableCache(EnumSet.of(
                     ACTIVITY,
                     CLIENT_STATUS,
-                    EMOTE,
+                    EMOJI,
                     MEMBER_OVERRIDES,
                     ONLINE_STATUS,
                     ROLE_TAGS

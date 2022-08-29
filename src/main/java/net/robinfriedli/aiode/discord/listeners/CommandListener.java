@@ -10,8 +10,8 @@ import com.google.common.base.Strings;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
-import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
@@ -84,8 +84,8 @@ public class CommandListener extends ListenerAdapter {
     }
 
     @Override
-    public void onGuildMessageReceived(GuildMessageReceivedEvent event) {
-        if (event.getAuthor().isBot() || event.isWebhookMessage()) {
+    public void onMessageReceived(MessageReceivedEvent event) {
+        if (!event.isFromGuild() || event.getAuthor().isBot() || event.isWebhookMessage()) {
             return;
         }
 
@@ -126,7 +126,12 @@ public class CommandListener extends ListenerAdapter {
     }
 
     @Override
-    public void onSlashCommand(@NotNull SlashCommandEvent event) {
+    public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
+        if (!event.isFromGuild()) {
+            event.getInteraction().reply("Commands are not supported in private messages").queue();
+            return;
+        }
+
         EventHandlerPool.execute(() -> hibernateComponent.consumeSession(session -> {
             event.deferReply(false).queue();
             Guild guild = event.getGuild();
@@ -204,7 +209,7 @@ public class CommandListener extends ListenerAdapter {
         return Objects.requireNonNull(match);
     }
 
-    private void startCommandExecution(String namePrefix, Message message, Guild guild, GuildContext guildContext, Session session, GuildMessageReceivedEvent event) {
+    private void startCommandExecution(String namePrefix, Message message, Guild guild, GuildContext guildContext, Session session, MessageReceivedEvent event) {
         ThreadExecutionQueue queue = executionQueueManager.getForGuild(guild);
         String commandBody = message.getContentDisplay().substring(namePrefix.length()).trim();
         CommandContext commandContext = new CommandContext(event, guildContext, hibernateComponent.getSessionFactory(), spotifyApiBuilder, commandBody);

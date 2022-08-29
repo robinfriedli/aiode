@@ -8,9 +8,9 @@ import org.slf4j.LoggerFactory;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.TextChannel;
-import net.dv8tion.jda.api.events.message.guild.GuildMessageDeleteEvent;
-import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
+import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
+import net.dv8tion.jda.api.events.message.MessageDeleteEvent;
+import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.robinfriedli.aiode.Aiode;
@@ -18,6 +18,7 @@ import net.robinfriedli.aiode.boot.configurations.HibernateComponent;
 import net.robinfriedli.aiode.command.CommandContext;
 import net.robinfriedli.aiode.command.widget.AbstractWidget;
 import net.robinfriedli.aiode.command.widget.WidgetRegistry;
+import net.robinfriedli.aiode.concurrent.CompletableFutures;
 import net.robinfriedli.aiode.concurrent.EventHandlerPool;
 import net.robinfriedli.aiode.discord.GuildContext;
 import net.robinfriedli.aiode.discord.GuildManager;
@@ -46,20 +47,30 @@ public class WidgetListener extends ListenerAdapter {
     }
 
     @Override
-    public void onGuildMessageReactionAdd(GuildMessageReactionAddEvent event) {
-        if (!event.getUser().isBot()) {
-            EventHandlerPool.execute(() -> {
-                long messageId = event.getMessageIdLong();
-                WidgetRegistry widgetRegistry = guildManager.getContextForGuild(event.getGuild()).getWidgetRegistry();
-
-                Optional<AbstractWidget> activeWidget = widgetRegistry.getActiveWidget(messageId);
-                activeWidget.ifPresent(abstractWidget -> handleWidgetExecution(event, abstractWidget));
-            });
+    public void onMessageReactionAdd(MessageReactionAddEvent event) {
+        if (!event.isFromGuild()) {
+            return;
         }
+
+        CompletableFutures.thenAccept(event.retrieveUser().submit(), user -> {
+            if (!user.isBot()) {
+                EventHandlerPool.execute(() -> {
+                    long messageId = event.getMessageIdLong();
+                    WidgetRegistry widgetRegistry = guildManager.getContextForGuild(event.getGuild()).getWidgetRegistry();
+
+                    Optional<AbstractWidget> activeWidget = widgetRegistry.getActiveWidget(messageId);
+                    activeWidget.ifPresent(abstractWidget -> handleWidgetExecution(event, abstractWidget));
+                });
+            }
+        });
     }
 
     @Override
-    public void onGuildMessageDelete(@NotNull GuildMessageDeleteEvent event) {
+    public void onMessageDelete(@NotNull MessageDeleteEvent event) {
+        if (!event.isFromGuild()) {
+            return;
+        }
+
         EventHandlerPool.execute(() -> {
             WidgetRegistry widgetRegistry = guildManager.getContextForGuild(event.getGuild()).getWidgetRegistry();
             widgetRegistry.getActiveWidget(event.getMessageIdLong()).ifPresent(widget -> {
@@ -69,13 +80,13 @@ public class WidgetListener extends ListenerAdapter {
         });
     }
 
-    private void handleWidgetExecution(GuildMessageReactionAddEvent event, AbstractWidget activeWidget) {
-        TextChannel channel = event.getChannel();
+    private void handleWidgetExecution(MessageReactionAddEvent event, AbstractWidget activeWidget) {
+        MessageChannelUnion channel = event.getChannel();
         Guild guild = event.getGuild();
         Aiode aiode = Aiode.get();
         SpotifyApi.Builder spotifyApiBuilder = aiode.getSpotifyApiBuilder();
         GuildContext guildContext = aiode.getGuildManager().getContextForGuild(guild);
-        String emojiUnicode = event.getReaction().getReactionEmote().getName();
+        String emojiUnicode = event.getReaction().getEmoji().getName();
 
         try {
             Message message = activeWidget.getMessage().retrieve();
