@@ -37,6 +37,8 @@ public class UpsertSlashCommandsTask implements StartupTask {
     public static final RateLimitInvoker SLASH_COMMAND_UPDATE_INVOKER = new RateLimitInvoker("slash_command_update", 2, Duration.ofSeconds(1), Duration.ofMinutes(300));
     public static final Pattern SLASH_COMMAND_NAME_PATTERN = Pattern.compile("^[-_\\p{L}\\p{N}]{1,32}$");
 
+    private static boolean GLOBAL_LIST_UPDATED = false;
+
     private final HibernateInvoker hibernateInvoker = new HibernateInvoker();
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -67,80 +69,81 @@ public class UpsertSlashCommandsTask implements StartupTask {
         }
 
         Objects.requireNonNull(shard);
-        SLASH_COMMAND_UPDATE_INVOKER.invokeLimited(Mode.getEmpty(), () -> {
-            logger.info("Updating slash commands for shard " + shard);
+        logger.info("Updating slash commands for shard " + shard);
+        if (!GLOBAL_LIST_UPDATED) {
             List<CommandContribution> commandContributions = commandManager.getCommandContributions();
             List<CommandData> slashCommandData = commandContributions.stream().map(CommandContribution::buildSlashCommandData).collect(Collectors.toList());
             shard.updateCommands().addCommands(slashCommandData).queue();
+            GLOBAL_LIST_UPDATED = true;
+        }
 
-            hibernateInvoker.invokeConsumer(session -> {
-                for (Guild guild : shard.getGuilds()) {
-                    PredicateBuilder presetGuildIdCondition = (cb, root, subQueryFactory) -> cb.equal(root.get("guildId"), guild.getId());
-                    Long guildPresetCount = queryBuilderFactory
-                        .count(Preset.class)
+        hibernateInvoker.invokeConsumer(session -> {
+            for (Guild guild : shard.getGuilds()) {
+                PredicateBuilder presetGuildIdCondition = (cb, root, subQueryFactory) -> cb.equal(root.get("guildId"), guild.getId());
+                Long guildPresetCount = queryBuilderFactory
+                    .count(Preset.class)
+                    .where(presetGuildIdCondition)
+                    .build(session)
+                    .getSingleResult();
+
+                if (guildPresetCount == 0) {
+                    continue;
+                }
+
+                SLASH_COMMAND_UPDATE_INVOKER.invokeLimited(Mode.getEmpty(), () -> hibernateInvoker.invokeConsumer(guildSession -> {
+                    List<Preset> presets = queryBuilderFactory
+                        .find(Preset.class)
                         .where(presetGuildIdCondition)
-                        .build(session)
-                        .getSingleResult();
+                        .build(guildSession)
+                        .getResultList();
 
-                    if (guildPresetCount == 0) {
-                        continue;
+                    List<Tuple2<CommandData, Preset>> presetCommandData = presets
+                        .stream()
+                        .filter(p -> SLASH_COMMAND_NAME_PATTERN.matcher(p.getIdentifier()).matches())
+                        .map(p -> Tuple2.tuple(p.buildSlashCommandData(commandManager), p))
+                        .toList();
+
+                    List<CommandData> commandsToAdd = Lists.newArrayList();
+                    Map<String, Preset> mappedPresets = new HashMap<>();
+                    for (Tuple2<CommandData, Preset> presetCommandDatum : presetCommandData) {
+                        CommandData commandData = presetCommandDatum.getV1();
+                        Preset preset = presetCommandDatum.getV2();
+                        if (mappedPresets.putIfAbsent(commandData.getName(), preset) != null) {
+                            logger.warn(String.format(
+                                "Encountered presets with duplicate slash command identifier '%s' on guild '%s'. Going to delete preset pk %d",
+                                commandData.getName(),
+                                guild,
+                                preset.getPk()
+                            ));
+                            session.delete(preset);
+                        } else {
+                            commandsToAdd.add(commandData);
+                        }
                     }
 
-                    SLASH_COMMAND_UPDATE_INVOKER.invokeLimited(Mode.getEmpty(), () -> hibernateInvoker.invokeConsumer(guildSession -> {
-                        List<Preset> presets = queryBuilderFactory
-                            .find(Preset.class)
-                            .where(presetGuildIdCondition)
-                            .build(guildSession)
-                            .getResultList();
+                    CompletableFuture<List<Command>> future = guild.updateCommands().addCommands(commandsToAdd).submit();
 
-                        List<Tuple2<CommandData, Preset>> presetCommandData = presets
-                            .stream()
-                            .filter(p -> SLASH_COMMAND_NAME_PATTERN.matcher(p.getIdentifier()).matches())
-                            .map(p -> Tuple2.tuple(p.buildSlashCommandData(commandManager), p))
-                            .toList();
-
-                        List<CommandData> commandsToAdd = Lists.newArrayList();
-                        Map<String, Preset> mappedPresets = new HashMap<>();
-                        for (Tuple2<CommandData, Preset> presetCommandDatum : presetCommandData) {
-                            CommandData commandData = presetCommandDatum.getV1();
-                            Preset preset = presetCommandDatum.getV2();
-                            if (mappedPresets.putIfAbsent(commandData.getName(), preset) != null) {
+                    CompletableFutures.thenAccept(future, commands -> hibernateInvoker.invokeConsumer(futureSession -> {
+                        for (Command command : commands) {
+                            Preset preset = mappedPresets.get(command.getName());
+                            if (preset == null) {
                                 logger.warn(String.format(
-                                    "Encountered presets with duplicate slash command identifier '%s' on guild '%s'. Going to delete preset pk %d",
-                                    commandData.getName(),
-                                    guild,
-                                    preset.getPk()
+                                    "No preset found for name '%s' on guild %s to associate with",
+                                    command.getName(),
+                                    guild
                                 ));
-                                session.delete(preset);
-                            } else {
-                                commandsToAdd.add(commandData);
+                                continue;
                             }
+
+                            Preset reloadedPreset = futureSession.load(Preset.class, preset.getPk());
+                            reloadedPreset.setCommandId(command.getIdLong());
                         }
-
-                        CompletableFuture<List<Command>> future = guild.updateCommands().addCommands(commandsToAdd).submit();
-
-                        CompletableFutures.thenAccept(future, commands -> hibernateInvoker.invokeConsumer(futureSession -> {
-                            for (Command command : commands) {
-                                Preset preset = mappedPresets.get(command.getName());
-                                if (preset == null) {
-                                    logger.warn(String.format(
-                                        "No preset found for name '%s' on guild %s to associate with",
-                                        command.getName(),
-                                        guild
-                                    ));
-                                    continue;
-                                }
-
-                                Preset reloadedPreset = futureSession.load(Preset.class, preset.getPk());
-                                reloadedPreset.setCommandId(command.getIdLong());
-                            }
-                        }));
                     }));
-                }
-            });
-
-            logger.info("Done updating slash commands (except for queued operations) for shard " + shard);
+                }));
+            }
         });
+
+        logger.info("Done updating slash commands (except for queued operations) for shard " + shard);
     }
 
     @Override
