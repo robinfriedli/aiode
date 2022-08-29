@@ -34,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
 
 public class UpsertSlashCommandsTask implements StartupTask {
 
-    public static final RateLimitInvoker SLASH_COMMAND_UPDATE_INVOKER = new RateLimitInvoker("slash_command_update", 2, Duration.ofSeconds(1));
+    public static final RateLimitInvoker SLASH_COMMAND_UPDATE_INVOKER = new RateLimitInvoker("slash_command_update", 2, Duration.ofSeconds(1), Duration.ofMinutes(300));
     public static final Pattern SLASH_COMMAND_NAME_PATTERN = Pattern.compile("^[-_\\p{L}\\p{N}]{1,32}$");
 
     private final HibernateInvoker hibernateInvoker = new HibernateInvoker();
