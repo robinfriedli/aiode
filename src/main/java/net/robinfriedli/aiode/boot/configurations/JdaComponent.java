@@ -1,6 +1,7 @@
 package net.robinfriedli.aiode.boot.configurations;
 
 import java.util.EnumSet;
+import java.util.Objects;
 
 import javax.security.auth.login.LoginException;
 
@@ -16,6 +17,7 @@ import net.dv8tion.jda.api.sharding.ShardManager;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.ConcurrentSessionController;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
+import net.robinfriedli.aiode.boot.SpringPropertiesConfig;
 import net.robinfriedli.aiode.discord.listeners.StartupListener;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -33,6 +35,8 @@ public class JdaComponent {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final StartupListener startupListener;
+    private final SpringPropertiesConfig springPropertiesConfig;
+
     @Value("${aiode.tokens.discord_token}")
     private String discordToken;
     @Value("${aiode.preferences.native_audio_buffer}")
@@ -42,16 +46,28 @@ public class JdaComponent {
     @Value("${aiode.preferences.shard_range:#{null}}")
     private String shardRange;
 
-    public JdaComponent(StartupListener startupListener) {
+    public JdaComponent(StartupListener startupListener, SpringPropertiesConfig springPropertiesConfig) {
         this.startupListener = startupListener;
+        this.springPropertiesConfig = springPropertiesConfig;
     }
 
     @Bean
     public ShardManager getShardManager() {
+        boolean enableMessageContent = Objects.requireNonNullElse(
+            springPropertiesConfig.getApplicationProperty(Boolean.class, "aiode.preferences.enable_message_content"),
+            true
+        );
+
         // the gateway intent GUILD_MEMBERS normally required by the GuildMemberUpdateNicknameEvent (see GuildManagementListener)
         // is not needed since bots always receive member updates if the affected member is the bot itself which is all
         // this event is used for
-        EnumSet<GatewayIntent> gatewayIntents = EnumSet.of(GUILD_MESSAGES, MESSAGE_CONTENT, GUILD_MESSAGE_REACTIONS, DIRECT_MESSAGES, GUILD_VOICE_STATES);
+        EnumSet<GatewayIntent> gatewayIntents;
+        if (enableMessageContent) {
+            gatewayIntents = EnumSet.of(GUILD_MESSAGES, MESSAGE_CONTENT, GUILD_MESSAGE_REACTIONS, DIRECT_MESSAGES, GUILD_VOICE_STATES);
+        } else {
+            gatewayIntents = EnumSet.of(GUILD_MESSAGES, GUILD_MESSAGE_REACTIONS, DIRECT_MESSAGES, GUILD_VOICE_STATES);
+        }
+
         try {
             DefaultShardManagerBuilder shardManagerBuilder = DefaultShardManagerBuilder.create(discordToken, gatewayIntents)
                 .disableCache(EnumSet.of(
@@ -60,7 +76,8 @@ public class JdaComponent {
                     EMOJI,
                     MEMBER_OVERRIDES,
                     ONLINE_STATUS,
-                    ROLE_TAGS
+                    ROLE_TAGS,
+                    STICKER
                 ))
                 .setMemberCachePolicy(MemberCachePolicy.DEFAULT)
                 .setStatus(OnlineStatus.IDLE)

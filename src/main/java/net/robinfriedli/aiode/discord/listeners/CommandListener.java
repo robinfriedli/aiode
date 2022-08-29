@@ -15,6 +15,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.robinfriedli.aiode.boot.SpringPropertiesConfig;
 import net.robinfriedli.aiode.boot.configurations.HibernateComponent;
 import net.robinfriedli.aiode.command.AbstractCommand;
 import net.robinfriedli.aiode.command.CommandContext;
@@ -54,22 +55,32 @@ public class CommandListener extends ListenerAdapter {
     private final MessageService messageService;
     private final SpotifyApi.Builder spotifyApiBuilder;
 
+    private final boolean enableMessageContent;
+
     private final String defaultBotName;
     private final String defaultPrefix;
 
-    public CommandListener(CommandExecutionQueueManager executionQueueManager,
-                           CommandManager commandManager,
-                           GuildManager guildManager,
-                           GuildPropertyManager guildPropertyManager,
-                           HibernateComponent hibernateComponent,
-                           MessageService messageService,
-                           SpotifyApi.Builder spotifyApiBuilder) {
+    public CommandListener(
+        CommandExecutionQueueManager executionQueueManager,
+        CommandManager commandManager,
+        GuildManager guildManager,
+        GuildPropertyManager guildPropertyManager,
+        HibernateComponent hibernateComponent,
+        MessageService messageService,
+        SpotifyApi.Builder spotifyApiBuilder,
+        SpringPropertiesConfig springPropertiesConfig
+    ) {
         this.executionQueueManager = executionQueueManager;
         this.commandManager = commandManager;
         this.guildManager = guildManager;
         this.hibernateComponent = hibernateComponent;
         this.messageService = messageService;
         this.spotifyApiBuilder = spotifyApiBuilder;
+
+        enableMessageContent = Objects.requireNonNullElse(
+            springPropertiesConfig.getApplicationProperty(Boolean.class, "aiode.preferences.enable_message_content"),
+            true
+        );
 
         defaultBotName = guildPropertyManager
             .getPropertyOptional("botName")
@@ -84,8 +95,8 @@ public class CommandListener extends ListenerAdapter {
     }
 
     @Override
-    public void onMessageReceived(MessageReceivedEvent event) {
-        if (!event.isFromGuild() || event.getAuthor().isBot() || event.isWebhookMessage()) {
+    public void onMessageReceived(@NotNull MessageReceivedEvent event) {
+        if (!enableMessageContent || !event.isFromGuild() || event.getAuthor().isBot() || event.isWebhookMessage()) {
             return;
         }
 
