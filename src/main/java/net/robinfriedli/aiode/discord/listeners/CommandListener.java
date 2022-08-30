@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Strings;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -96,7 +97,10 @@ public class CommandListener extends ListenerAdapter {
 
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
-        if (!enableMessageContent || !event.isFromGuild() || event.getAuthor().isBot() || event.isWebhookMessage()) {
+        if (!event.isFromGuild()
+            || !(enableMessageContent || event.getMessage().getMentions().isMentioned(event.getGuild().getSelfMember(), Message.MentionType.USER))
+            || event.getAuthor().isBot()
+            || event.isWebhookMessage()) {
             return;
         }
 
@@ -108,6 +112,8 @@ public class CommandListener extends ListenerAdapter {
             GuildSpecification specification = guildContext.getSpecification(session);
             String botName = specification.getBotName();
             String prefix = specification.getPrefix();
+            Member selfMember = guild.getSelfMember();
+            String selfMention = selfMember.getAsMention();
 
             String lowerCaseMsg = msg.toLowerCase();
             boolean startsWithPrefix = !Strings.isNullOrEmpty(prefix) && lowerCaseMsg.startsWith(prefix.toLowerCase());
@@ -115,6 +121,7 @@ public class CommandListener extends ListenerAdapter {
             boolean startsWithDefaultPrefix = !Strings.isNullOrEmpty(defaultPrefix) && lowerCaseMsg.startsWith(defaultPrefix);
             boolean startsWithDefaultName = !Strings.isNullOrEmpty(defaultBotName) && lowerCaseMsg.startsWith(defaultBotName);
             boolean startsWithLegacyPrefix = lowerCaseMsg.startsWith("$botify");
+            boolean startsWithMention = message.getContentRaw().startsWith(selfMention);
 
             if (startsWithPrefix
                 || startsWithName
@@ -132,6 +139,8 @@ public class CommandListener extends ListenerAdapter {
                     startsWithLegacyPrefix
                 );
                 startCommandExecution(usedPrefix, message, guild, guildContext, session, event);
+            } else if (startsWithMention) {
+                startCommandExecution("@" + selfMember.getEffectiveName(), message, guild, guildContext, session, event);
             }
         }));
     }
