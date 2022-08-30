@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <versions xmlns="versionSpace">
+  <version launched="false" version="2.1">
+    <feature title="Slash command migration">As message content is now becoming a privileged intent, bots can only read message content when mentioned directly. This means prefixes will no longer work, at least until the bot is authorized for the intent. Using commands now only works via slash commands or when mentioning the bot as a prefix (e.g. `@aiode play numb`).</feature>
+    <feature title="Queue system rework">The queue system received a substantial backend rework, enabling support for future features, such as inserting / removing items everywhere in the queue.</feature>
+  </version>
+  <version launched="true" version="2.0">
+    <feature title="Scripting sandbox">Implement groovy script command sandbox.</feature>
+    <feature title="Backend rework">Rework codebase with spring boot and gradle.</feature>
+  </version>
   <version launched="true" version="1.6.LTS.4">
     <feature title="YouTube API quota usage adjustments">Tired of botify reaching the YouTube API quota limit and breaking all YouTube requests? So am I. Botify now calculates the approximate quota usage and stops using the YouTube API wherever possible in exchange for parsing the html response of YouTube pages using lavaplayer when the quota gets low.</feature>
     <feature title="Embed message formatting adjustments">Adjusted the layout of some embed messages to the new discord update.</feature>
