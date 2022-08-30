@@ -35,7 +35,7 @@ import static net.robinfriedli.jxp.queries.Conditions.*;
 public class VersionUpdateAlertTask implements StartupTask {
 
     private static final Object DISPATCH_LOCK = new Object();
-    private static final int MESSAGES_PER_SECOND = 3;
+    private static final int MESSAGES_PER_SECOND = 2;
     private static final ScheduledExecutorService MESSAGE_DISPATCH = Executors.newScheduledThreadPool(
         0,
         new LoggingThreadFactory("version-update-dispatch")
