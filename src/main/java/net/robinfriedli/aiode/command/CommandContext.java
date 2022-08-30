@@ -36,8 +36,10 @@ public class CommandContext extends ExecutionContext {
     private final boolean isSlashCommand;
     @Nullable
     private final InteractionHook interactionHook;
+
     private CommandHistory commandHistory;
     private Future<?> monitoring;
+    private boolean interactionResponseSent;
 
     public CommandContext(
         SlashCommandInteractionEvent event,
@@ -244,4 +246,11 @@ public class CommandContext extends ExecutionContext {
         );
     }
 
+    public boolean isInteractionResponseSent() {
+        return interactionResponseSent;
+    }
+
+    public void setInteractionResponseSent(boolean interactionResponseSent) {
+        this.interactionResponseSent = interactionResponseSent;
+    }
 }

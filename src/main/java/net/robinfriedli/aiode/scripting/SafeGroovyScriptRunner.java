@@ -160,7 +160,7 @@ public class SafeGroovyScriptRunner {
                     }
 
                     ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
-                    messageService.executeMessageAction(channel, c -> {
+                    messageService.executeMessageDispatchAction(channel, c -> {
                         MessageCreateBuilder messageCreateBuilder = new MessageCreateBuilder()
                             .addEmbeds(embedBuilder.build())
                             .addFiles(FileUpload.fromData(inputStream, "output.txt"));

@@ -57,7 +57,7 @@ public abstract class AbstractPaginationWidget<E> extends AbstractWidget {
         EmbedBuilder embedBuilder = prepareEmbedBuilderForPage();
         MessageEmbed messageEmbed = messageService.buildEmbed(embedBuilder);
 
-        messageService.executeMessageAction(channel, c -> c.editMessageById(messageId, MessageEditData.fromEmbeds(messageEmbed)));
+        messageService.executeMessageChannelAction(channel, c -> c.editMessageById(messageId, MessageEditData.fromEmbeds(messageEmbed)));
     }
 
     public List<List<E>> getPages() {

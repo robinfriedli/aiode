@@ -32,7 +32,7 @@ public class QueueWidget extends AbstractDecoratingWidget {
 
         EmbedBuilder embedBuilder = audioPlayback.getAudioQueue().buildMessageEmbed(audioPlayback, guild);
         MessageEmbed messageEmbed = messageService.buildEmbed(embedBuilder);
-        messageService.executeMessageAction(channel, c -> c.editMessageById(message.getId(), MessageEditData.fromEmbeds(messageEmbed)), Permission.MESSAGE_EMBED_LINKS);
+        messageService.executeMessageChannelAction(channel, c -> c.editMessageById(message.getId(), MessageEditData.fromEmbeds(messageEmbed)), Permission.MESSAGE_EMBED_LINKS);
     }
 
 }

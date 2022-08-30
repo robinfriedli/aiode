@@ -33,8 +33,9 @@ public class CommandExecutionTask extends QueuedTask {
         try {
             super.run();
         } finally {
-            InteractionHook interactionHook = command.getContext().getInteractionHook();
-            if (interactionHook != null) {
+            CommandContext context = command.getContext();
+            InteractionHook interactionHook = context.getInteractionHook();
+            if (!context.isInteractionResponseSent() && interactionHook != null) {
                 try {
                     interactionHook.deleteOriginal().queue();
                 } catch (Exception e) {
