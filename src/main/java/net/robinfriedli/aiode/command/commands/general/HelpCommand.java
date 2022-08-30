@@ -123,7 +123,7 @@ public class HelpCommand extends AbstractCommand {
         embedBuilder.appendDescription(String.format("To get help with a specific command just enter the name of the command. E.g. %shelp play.", prefix));
         embedBuilder.addField(
             "Text Commands",
-            messageContentEnabled ? "Enabled" : "Disabled",
+            messageContentEnabled ? "Enabled" : "Disabled (must use @aiode mention as prefix)",
             true
         );
         embedBuilder.addField(
