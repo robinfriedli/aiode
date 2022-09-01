@@ -140,6 +140,13 @@ public class HelpCommand extends AbstractCommand {
                 "and command input is set via the 'input' option.\nFor example the command `play $spotify $list my list` translates to the following slash command: `/play spotify:True list:True input:my list`",
             false
         );
+        embedBuilder.addField(
+          "Privacy Notice",
+          "Aiode does not store any user or message data that isn't directly related to command usage. " +
+              "Messages are analyzed to check if they are directed to the bot as commands (either through prefix or mention) " +
+              "and are only further processed and logged if a command usage has been identified.",
+          false
+        );
 
         List<MessageEmbed.Field> fields = Lists.newArrayList();
         for (Category category : Category.values()) {
