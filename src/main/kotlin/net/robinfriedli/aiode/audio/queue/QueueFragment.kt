@@ -80,6 +80,11 @@ interface QueueFragment {
     fun getPlayablesInCurrentOrder(): List<Playable>
 
     /**
+     * @return the Playable at the given index within the given fracture
+     */
+    fun getPlayableInFracture(fractureIdx: Int, idx: Int): Playable
+
+    /**
      * @return the Playables within the given fracture, each fragment at least has one fracture at index 0
      */
     fun getPlayablesInFracture(fractureIdx: Int): List<Playable>

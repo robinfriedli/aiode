@@ -114,6 +114,17 @@ class PlayableContainerQueueFragment(
         }
     }
 
+    override fun getPlayableInFracture(fractureIdx: Int, idx: Int): Playable {
+        val (start, end) = getFractureRange(fractureIdx)
+        val absoluteIdx = start + idx
+
+        if (absoluteIdx >= end) {
+            throw IndexOutOfBoundsException("Index $idx out of bounds for fracture of size ${end - start}")
+        }
+
+        return getPlayablesInCurrentOrder()[absoluteIdx]
+    }
+
     override fun getPlayablesInFracture(fractureIdx: Int): List<Playable> {
         val (start, end) = getFractureRange(fractureIdx)
         return getPlayablesInCurrentOrder().subList(start, end)
@@ -194,7 +205,7 @@ class PlayableContainerQueueFragment(
         for (i in 0 until randomFractureCount) {
             // values returned by the same generator are likely unique, occasional duplicate values are not a problem,
             // just means fewer fractures than randomFractureCount
-            fractures.add(random.nextInt(size))
+            fractures.add((random.nextInt(size) + 1).coerceAtMost(size - 1))
         }
 
         return fractures.size
@@ -212,7 +223,11 @@ class PlayableContainerQueueFragment(
     }
 
     override fun reduceToCurrentPlayable(): SinglePlayableQueueFragment {
-        return SinglePlayableQueueFragment(queue, playables[currentIndex], SinglePlayableContainer(playables[currentIndex]))
+        return if (randomOrder != null) {
+            SinglePlayableQueueFragment(queue, playables[randomOrder!![currentIndex]], SinglePlayableContainer(playables[randomOrder!![currentIndex]]))
+        } else {
+            SinglePlayableQueueFragment(queue, playables[currentIndex], SinglePlayableContainer(playables[currentIndex]))
+        }
     }
 
     private fun getFractureRange(fractureIdx: Int): Pair<Int, Int> {
