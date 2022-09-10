@@ -11,22 +11,11 @@ class SinglePlayableQueueFragment(
     private val playableContainer: AbstractSinglePlayableContainer<*>
 ) : QueueFragment {
 
-    private var played: Boolean = false
-
     override fun currentIndex(): Int {
-        return if (played) {
-            0
-        } else {
-            -1
-        }
+        return 0
     }
 
     override fun next(): Playable {
-        if (played) {
-            throw IllegalStateException("${javaClass.simpleName} has no next element")
-        }
-
-        played = true
         return playable
     }
 
@@ -38,7 +27,7 @@ class SinglePlayableQueueFragment(
         return if (fractureIdx > 0) {
             throw IndexOutOfBoundsException("Fracture index $fractureIdx out of bounds for ${javaClass.simpleName}")
         } else {
-            !played
+            false
         }
     }
 
@@ -46,25 +35,16 @@ class SinglePlayableQueueFragment(
         return if (fractureIdx > 0) {
             throw IndexOutOfBoundsException("Fracture index $fractureIdx out of bounds for ${javaClass.simpleName}")
         } else {
-            played
+            false
         }
     }
 
     override fun previous(): Playable {
-        if (!played) {
-            throw IllegalStateException("${javaClass.simpleName} has no previous element")
-        }
-
-        played = false
         return playable
     }
 
-    override fun peekNext(): Playable? {
-        return if (played) {
-            null
-        } else {
-            playable
-        }
+    override fun peekNext(): Playable {
+        return playable
     }
 
     override fun size(): Int {
@@ -95,6 +75,16 @@ class SinglePlayableQueueFragment(
         return getPlayables()
     }
 
+    override fun getPlayableInFracture(fractureIdx: Int, idx: Int): Playable {
+        return if (fractureIdx > 0) {
+            throw IndexOutOfBoundsException("Fracture index $fractureIdx out of bounds for ${javaClass.simpleName}")
+        } else if (idx > 0) {
+            throw IndexOutOfBoundsException("Playable index $idx out of bounds for ${javaClass.simpleName}")
+        } else {
+            playable
+        }
+    }
+
     override fun getPlayablesInFracture(fractureIdx: Int): List<Playable> {
         return if (fractureIdx > 0) {
             throw IndexOutOfBoundsException("Fracture index $fractureIdx out of bounds for ${javaClass.simpleName}")
@@ -107,11 +97,7 @@ class SinglePlayableQueueFragment(
         return if (fractureIdx > 0) {
             throw IndexOutOfBoundsException("Fracture index $fractureIdx out of bounds for ${javaClass.simpleName}")
         } else {
-            if (played) {
-                Collections.emptyList()
-            } else {
-                getPlayables()
-            }
+            Collections.emptyList()
         }
     }
 
@@ -119,11 +105,7 @@ class SinglePlayableQueueFragment(
         return if (fractureIdx > 0) {
             throw IndexOutOfBoundsException("Fracture index $fractureIdx out of bounds for ${javaClass.simpleName}")
         } else {
-            if (!played) {
-                Collections.emptyList()
-            } else {
-                getPlayables()
-            }
+            Collections.emptyList()
         }
     }
 
@@ -144,21 +126,17 @@ class SinglePlayableQueueFragment(
     }
 
     override fun setPosition(fractureIdx: Int, offset: Int) {
-        return if (fractureIdx > 0) {
+        if (fractureIdx > 0) {
             throw IndexOutOfBoundsException("Fracture index $fractureIdx out of bounds for ${javaClass.simpleName}")
         } else if (offset > 0) {
             throw IndexOutOfBoundsException("Offset $offset out of bounds for ${javaClass.simpleName}")
-        } else {
-            played = true
         }
     }
 
     override fun resetPositionToStart() {
-        played = false
     }
 
     override fun resetPositionToEnd() {
-        played = true
     }
 
     override fun enableShuffle(protectCurrent: Boolean): Int {

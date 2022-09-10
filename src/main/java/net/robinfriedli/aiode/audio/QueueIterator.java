@@ -204,9 +204,6 @@ public class QueueIterator extends AudioEventAdapter {
         if (!queue.getRepeatOne() || ignoreRepeat) {
             if (queue.hasNext(ignoreRepeat)) {
                 queue.iterate();
-                if (!queue.hasNext(true) && queue.getRepeatAll() && queue.isShuffle()) {
-                    queue.randomize();
-                }
                 playNext();
             } else {
                 queue.reset();
