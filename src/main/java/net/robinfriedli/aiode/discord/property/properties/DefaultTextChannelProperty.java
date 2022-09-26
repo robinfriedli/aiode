@@ -3,7 +3,7 @@ package net.robinfriedli.aiode.discord.property.properties;
 import java.util.List;
 
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.discord.property.AbstractGuildProperty;

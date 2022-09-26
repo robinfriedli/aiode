@@ -3,7 +3,6 @@ package net.robinfriedli.aiode.exceptions;
 import java.awt.Color;
 
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.MessageChannel;
 import net.robinfriedli.aiode.discord.MessageService;
 
 /**

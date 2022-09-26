@@ -13,7 +13,7 @@ import org.apache.groovy.io.StringBuilderWriter;
 
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.command.Command;
 import net.robinfriedli.aiode.command.CommandContext;

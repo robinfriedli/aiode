@@ -12,8 +12,8 @@ import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageChannel;
-import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
@@ -112,8 +112,7 @@ public abstract class AbstractWidget {
         predicateEvaluationShell.setVariable("widget", this);
 
         MessageChannel channel = message.getChannel();
-        if (channel instanceof TextChannel) {
-            TextChannel textChannel = (TextChannel) channel;
+        if (channel instanceof TextChannel textChannel) {
             Guild guild = textChannel.getGuild();
             Member selfMember = guild.getSelfMember();
             if (!selfMember.hasPermission((TextChannel) channel, Permission.MESSAGE_ADD_REACTION)) {

@@ -1,8 +1,12 @@
 package net.robinfriedli.aiode.command.commands.customisation;
 
+import java.util.Objects;
+
 import com.antkorwin.xsync.XSync;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
+import net.robinfriedli.aiode.Aiode;
+import net.robinfriedli.aiode.boot.SpringPropertiesConfig;
 import net.robinfriedli.aiode.command.AbstractCommand;
 import net.robinfriedli.aiode.command.CommandContext;
 import net.robinfriedli.aiode.command.CommandManager;
@@ -24,6 +28,14 @@ public class RenameCommand extends AbstractCommand {
         String name = getCommandInput();
         CommandContext context = getContext();
         Guild guild = context.getGuild();
+
+        SpringPropertiesConfig springPropertiesConfig = Aiode.get().getSpringPropertiesConfig();
+        boolean messageContentEnabled = Objects.requireNonNullElse(springPropertiesConfig.getApplicationProperty(Boolean.class, "aiode.preferences.enable_message_content"), true);
+
+        if (!messageContentEnabled) {
+            String ping = guild.getSelfMember().getAsMention();
+            throw new InvalidCommandException(String.format("Message content has been disabled, custom names do not work. Ping the bot with %s as prefix instead.", ping));
+        }
 
         if (name.length() < 1 || name.length() > 32) {
             throw new InvalidCommandException("Length should be 1 - 32 characters");

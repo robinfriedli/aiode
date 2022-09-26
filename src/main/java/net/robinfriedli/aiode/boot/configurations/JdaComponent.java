@@ -3,8 +3,6 @@ package net.robinfriedli.aiode.boot.configurations;
 import java.util.EnumSet;
 import java.util.Objects;
 
-import javax.security.auth.login.LoginException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,50 +66,46 @@ public class JdaComponent {
             gatewayIntents = EnumSet.of(GUILD_MESSAGES, GUILD_MESSAGE_REACTIONS, DIRECT_MESSAGES, GUILD_VOICE_STATES);
         }
 
-        try {
-            DefaultShardManagerBuilder shardManagerBuilder = DefaultShardManagerBuilder.create(discordToken, gatewayIntents)
-                .disableCache(EnumSet.of(
-                    ACTIVITY,
-                    CLIENT_STATUS,
-                    EMOJI,
-                    MEMBER_OVERRIDES,
-                    ONLINE_STATUS,
-                    ROLE_TAGS,
-                    STICKER
-                ))
-                .setMemberCachePolicy(MemberCachePolicy.DEFAULT)
-                .setStatus(OnlineStatus.IDLE)
-                .setChunkingFilter(ChunkingFilter.NONE)
-                .setSessionController(new ConcurrentSessionController())
-                .setShardsTotal(shardTotal)
-                .addEventListeners(startupListener);
+        DefaultShardManagerBuilder shardManagerBuilder = DefaultShardManagerBuilder.create(discordToken, gatewayIntents)
+            .disableCache(EnumSet.of(
+                ACTIVITY,
+                CLIENT_STATUS,
+                EMOJI,
+                MEMBER_OVERRIDES,
+                ONLINE_STATUS,
+                ROLE_TAGS,
+                STICKER
+            ))
+            .setMemberCachePolicy(MemberCachePolicy.DEFAULT)
+            .setStatus(OnlineStatus.IDLE)
+            .setChunkingFilter(ChunkingFilter.NONE)
+            .setSessionController(new ConcurrentSessionController())
+            .setShardsTotal(shardTotal)
+            .addEventListeners(startupListener);
 
-            if (nativeBufferDuration > 0) {
-                if (platformSupportsJdaNas()) {
-                    logger.info("Using NativeAudioSendFactory as AudioSendFactory with a buffer duration of " + nativeBufferDuration + "ms");
-                    shardManagerBuilder = shardManagerBuilder.setAudioSendFactory(new NativeAudioSendFactory(nativeBufferDuration));
-                } else {
-                    logger.info("NativeAudioSendFactory not supported on this platform");
-                }
+        if (nativeBufferDuration > 0) {
+            if (platformSupportsJdaNas()) {
+                logger.info("Using NativeAudioSendFactory as AudioSendFactory with a buffer duration of " + nativeBufferDuration + "ms");
+                shardManagerBuilder = shardManagerBuilder.setAudioSendFactory(new NativeAudioSendFactory(nativeBufferDuration));
             } else {
-                logger.info("Native audio buffer disabled");
+                logger.info("NativeAudioSendFactory not supported on this platform");
             }
-
-            if (!Strings.isNullOrEmpty(shardRange)) {
-                String[] split = shardRange.split("\\s*-\\s*");
-                if (split.length != 2) {
-                    throw new IllegalArgumentException(String.format("Range '%s' is not formatted correctly", shardRange));
-                }
-
-                int minShard = Integer.parseInt(split[0].trim());
-                int maxShard = Integer.parseInt(split[1].trim());
-                shardManagerBuilder.setShards(minShard, maxShard);
-            }
-
-            return shardManagerBuilder.build();
-        } catch (LoginException e) {
-            throw new RuntimeException("Failed to log in to discord", e);
+        } else {
+            logger.info("Native audio buffer disabled");
         }
+
+        if (!Strings.isNullOrEmpty(shardRange)) {
+            String[] split = shardRange.split("\\s*-\\s*");
+            if (split.length != 2) {
+                throw new IllegalArgumentException(String.format("Range '%s' is not formatted correctly", shardRange));
+            }
+
+            int minShard = Integer.parseInt(split[0].trim());
+            int maxShard = Integer.parseInt(split[1].trim());
+            shardManagerBuilder.setShards(minShard, maxShard);
+        }
+
+        return shardManagerBuilder.build();
     }
 
     public static boolean platformSupportsJdaNas() {

@@ -12,19 +12,25 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
+import com.sedmelluq.discord.lavaplayer.container.MediaContainerRegistry;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
-import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
+import com.sedmelluq.discord.lavaplayer.source.bandcamp.BandcampAudioSourceManager;
+import com.sedmelluq.discord.lavaplayer.source.beam.BeamAudioSourceManager;
+import com.sedmelluq.discord.lavaplayer.source.getyarn.GetyarnAudioSourceManager;
+import com.sedmelluq.discord.lavaplayer.source.http.HttpAudioSourceManager;
+import com.sedmelluq.discord.lavaplayer.source.soundcloud.SoundCloudAudioSourceManager;
+import com.sedmelluq.discord.lavaplayer.source.twitch.TwitchStreamAudioSourceManager;
+import com.sedmelluq.discord.lavaplayer.source.vimeo.VimeoAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager;
-import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeHttpContextFilter;
 import com.sedmelluq.lava.extensions.youtuberotator.YoutubeIpRotatorSetup;
 import com.sedmelluq.lava.extensions.youtuberotator.planner.RotatingNanoIpRoutePlanner;
 import com.sedmelluq.lava.extensions.youtuberotator.tools.ip.IpBlock;
 import com.sedmelluq.lava.extensions.youtuberotator.tools.ip.Ipv6Block;
-import net.dv8tion.jda.api.entities.AudioChannel;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.channel.middleman.AudioChannel;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.robinfriedli.aiode.audio.exec.TrackLoadingExecutor;
 import net.robinfriedli.aiode.audio.playables.PlayableFactory;
@@ -66,8 +72,8 @@ public class AudioManager extends AbstractShutdownable {
         HibernateComponent hibernateComponent,
         YouTubeService youTubeService,
         @Value("${aiode.preferences.ipv6_blocks:#{null}}") String ipv6Blocks,
-        @Value("${aiode.tokens.yt-3PSID:#{null}}") String yt3Psid,
-        @Value("${aiode.tokens.yt-3PAPISID:#{null}}") String yt3Papisid
+        @Value("${aiode.tokens.yt-email:#{null}}") String ytEmail,
+        @Value("${aiode.tokens.yt-password:#{null}}") String ytPassword
     ) {
         playerManager = new DefaultAudioPlayerManager();
         audioTrackLoader = new AudioTrackLoader(playerManager);
@@ -77,7 +83,14 @@ public class AudioManager extends AbstractShutdownable {
         this.logger = LoggerFactory.getLogger(getClass());
         this.youTubeService = youTubeService;
 
-        AudioSourceManagers.registerRemoteSources(playerManager);
+        playerManager.registerSourceManager(new YoutubeAudioSourceManager(true, ytEmail, ytPassword));
+        playerManager.registerSourceManager(SoundCloudAudioSourceManager.createDefault());
+        playerManager.registerSourceManager(new BandcampAudioSourceManager());
+        playerManager.registerSourceManager(new VimeoAudioSourceManager());
+        playerManager.registerSourceManager(new TwitchStreamAudioSourceManager());
+        playerManager.registerSourceManager(new BeamAudioSourceManager());
+        playerManager.registerSourceManager(new GetyarnAudioSourceManager());
+        playerManager.registerSourceManager(new HttpAudioSourceManager(MediaContainerRegistry.DEFAULT_REGISTRY));
         guildManager.setAudioManager(this);
         YoutubeAudioSourceManager youtubeAudioSourceManager = playerManager.source(YoutubeAudioSourceManager.class);
         // there is 100 videos per page and the maximum playlist size is 5000
@@ -97,13 +110,6 @@ public class AudioManager extends AbstractShutdownable {
             YoutubeIpRotatorSetup youtubeIpRotatorSetup = new YoutubeIpRotatorSetup(new RotatingNanoIpRoutePlanner(ipv6BlockList, ip -> true, true));
             youtubeIpRotatorSetup.forSource(youtubeAudioSourceManager).setup();
             logger.info("YouTubeIpRotator set up with block: " + ipv6Blocks);
-        }
-
-        if (!Strings.isNullOrEmpty(yt3Psid)) {
-            YoutubeHttpContextFilter.setPSID(yt3Psid);
-        }
-        if (!Strings.isNullOrEmpty(yt3Papisid)) {
-            YoutubeHttpContextFilter.setPAPISID(yt3Papisid);
         }
     }
 

@@ -12,7 +12,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.aiode.boot.configurations.HibernateComponent;
 import net.robinfriedli.aiode.discord.GuildManager;
