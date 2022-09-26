@@ -46,11 +46,18 @@ public class HelpCommand extends AbstractCommand {
 
     private void showCommandHelp() {
         getManager().getCommand(getContext(), getCommandInput()).ifPresentOrElse(command -> {
-            String prefix;
+            SpringPropertiesConfig springPropertiesConfig = Aiode.get().getSpringPropertiesConfig();
+            boolean messageContentEnabled = Objects.requireNonNullElse(springPropertiesConfig.getApplicationProperty(Boolean.class, "aiode.preferences.enable_message_content"), true);
+
             GuildSpecification specification = getContext().getGuildContext().getSpecification();
+            Guild guild = getContext().getGuild();
             String setPrefix = specification.getPrefix();
             String botName = specification.getBotName();
-            if (!Strings.isNullOrEmpty(setPrefix)) {
+
+            String prefix;
+            if (!messageContentEnabled) {
+                prefix = guild.getSelfMember().getAsMention() + " ";
+            } else if (!Strings.isNullOrEmpty(setPrefix)) {
                 prefix = setPrefix;
             } else if (!Strings.isNullOrEmpty(botName)) {
                 prefix = botName + " ";
@@ -64,7 +71,6 @@ public class HelpCommand extends AbstractCommand {
             String descriptionFormat = command.getDescription();
             String descriptionText = String.format(descriptionFormat, prefix, argumentPrefix);
             embedBuilder.setDescription(descriptionText);
-            Guild guild = getContext().getGuild();
             Optional<AccessConfiguration> accessConfiguration = Aiode.get().getSecurityManager().getAccessConfiguration(command.getPermissionTarget(), guild);
             if (accessConfiguration.isPresent()) {
                 String title = "Available to roles: ";
@@ -141,11 +147,11 @@ public class HelpCommand extends AbstractCommand {
             false
         );
         embedBuilder.addField(
-          "Privacy Notice",
-          "Aiode does not store any user or message data that isn't directly related to command usage. " +
-              "Messages are analyzed to check if they are directed to the bot as commands (either through prefix or mention) " +
-              "and are only further processed and logged if a command usage has been identified.",
-          false
+            "Privacy Notice",
+            "Aiode does not store any user or message data that isn't directly related to command usage. " +
+                "Messages are analyzed to check if they are directed to the bot as commands (either through prefix or mention) " +
+                "and are only further processed and logged if a command usage has been identified.",
+            false
         );
 
         List<MessageEmbed.Field> fields = Lists.newArrayList();
