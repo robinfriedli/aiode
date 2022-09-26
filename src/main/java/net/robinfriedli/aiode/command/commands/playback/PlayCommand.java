@@ -6,9 +6,9 @@ import java.util.List;
 
 import com.google.common.collect.Lists;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
-import net.dv8tion.jda.api.entities.AudioChannel;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.AudioChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.audio.AudioManager;
 import net.robinfriedli.aiode.audio.AudioPlayback;

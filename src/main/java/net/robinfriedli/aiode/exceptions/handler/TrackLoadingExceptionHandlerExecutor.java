@@ -5,7 +5,7 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.robinfriedli.aiode.concurrent.ExecutionContext;
 import net.robinfriedli.aiode.exceptions.ExceptionUtils;
 

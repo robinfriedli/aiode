@@ -4,7 +4,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.robinfriedli.aiode.concurrent.ExecutionContext;
 import net.robinfriedli.aiode.concurrent.ThreadContext;
 import net.robinfriedli.aiode.discord.GuildContext;

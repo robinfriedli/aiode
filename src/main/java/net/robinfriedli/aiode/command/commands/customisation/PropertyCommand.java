@@ -4,7 +4,7 @@ import java.util.Collection;
 import java.util.List;
 
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.command.AbstractCommand;
 import net.robinfriedli.aiode.command.CommandContext;

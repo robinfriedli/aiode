@@ -12,9 +12,9 @@ import java.util.concurrent.TimeoutException;
 import org.slf4j.LoggerFactory;
 
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.ChannelType;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.robinfriedli.aiode.command.AbstractCommand;
 import net.robinfriedli.aiode.command.CommandContext;

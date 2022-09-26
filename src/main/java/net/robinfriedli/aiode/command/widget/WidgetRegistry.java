@@ -7,7 +7,7 @@ import java.util.Optional;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.google.api.client.util.Lists;
-import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.discord.DiscordEntity;
 import net.robinfriedli.aiode.discord.GuildContext;

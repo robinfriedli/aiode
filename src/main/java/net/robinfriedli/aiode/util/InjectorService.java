@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
 import com.google.api.client.util.Sets;
-import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.audio.AudioManager;

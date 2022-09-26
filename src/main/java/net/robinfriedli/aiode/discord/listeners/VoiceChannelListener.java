@@ -5,8 +5,8 @@ import java.time.LocalDateTime;
 import javax.annotation.Nonnull;
 
 import com.antkorwin.xsync.XSync;
-import net.dv8tion.jda.api.entities.AudioChannel;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.channel.middleman.AudioChannel;
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceJoinEvent;
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceLeaveEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;

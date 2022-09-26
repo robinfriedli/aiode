@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.Optional;
 
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.robinfriedli.aiode.command.PermissionTarget;
 import net.robinfriedli.aiode.command.SecurityManager;
 import net.robinfriedli.aiode.command.widget.AbstractPaginationWidget;

@@ -660,7 +660,7 @@
     <method name="isOwner"/>
     <method name="getDefaultChannel"/>
   </whitelistMethods>
-  <whitelistMethods class="net.dv8tion.jda.api.entities.MessageChannel">
+  <whitelistMethods class="net.dv8tion.jda.api.entities.channel.middleman.MessageChannel">
     <method name="getName"/>
     <method name="getType"/>
     <method name="sendMessage"/>

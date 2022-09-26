@@ -7,11 +7,11 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.AudioChannel;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.GuildVoiceState;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.channel.middleman.AudioChannel;
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
 import net.robinfriedli.aiode.audio.spotify.SpotifyService;
 import net.robinfriedli.aiode.discord.GuildContext;

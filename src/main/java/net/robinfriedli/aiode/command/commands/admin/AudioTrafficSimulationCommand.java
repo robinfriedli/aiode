@@ -24,7 +24,7 @@ import net.dv8tion.jda.api.audio.factory.IAudioSendSystem;
 import net.dv8tion.jda.api.audio.factory.IPacketProvider;
 import net.dv8tion.jda.api.audio.hooks.ConnectionStatus;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.VoiceChannel;
+import net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.audio.AudioManager;
 import net.robinfriedli.aiode.audio.AudioTrackLoader;

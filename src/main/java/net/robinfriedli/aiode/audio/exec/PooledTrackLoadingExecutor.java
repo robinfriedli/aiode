@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.LoggerFactory;
 
-import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.boot.ShutdownableExecutorService;
 import net.robinfriedli.aiode.concurrent.ExecutionContext;
