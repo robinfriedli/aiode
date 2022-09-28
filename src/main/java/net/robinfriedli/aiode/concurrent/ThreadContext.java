@@ -220,6 +220,12 @@ public class ThreadContext {
             get().clear();
         }
 
+        /**
+         * Should be called to free the ThreadLocal variable since the thread may be reused later. Since the thread is
+         * kept in a thread pool, the garbage collector cannot determine that the variable should be freed.
+         */
+        public static void remove() { THREAD_CONTEXT.remove(); }
+
         public static boolean isInstalled(Class<?> contextType) {
             return get().isInstalled(contextType);
         }

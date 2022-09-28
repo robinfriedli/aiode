@@ -24,6 +24,7 @@ public class ForkTaskThreadPool extends AbstractExecutorService {
                 command.run();
             } finally {
                 forkedThreadContext.clear();
+                ThreadContext.Current.remove();
             }
         });
     }
