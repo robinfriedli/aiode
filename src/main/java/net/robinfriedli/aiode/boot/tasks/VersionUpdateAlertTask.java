@@ -100,7 +100,7 @@ public class VersionUpdateAlertTask implements StartupTask {
             }
 
             List<Guild> guilds = shard.getGuilds();
-            long delaySecs = OFFSET++ * (guilds.size() / MESSAGES_PER_SECOND);
+            long delaySecs = (long) OFFSET++ * ( (long) guilds.size() / MESSAGES_PER_SECOND);
             if (delaySecs > 0) {
                 delaySecs += 10;
             }
