@@ -35,8 +35,7 @@ public class SpotifyTrackResultHandler {
         this.session = session;
     }
 
-    @SuppressWarnings("OptionalGetWithoutIsPresent")
-    public Track getBestResult(String searchTerm, Collection<Track> tracks) {
+    public Track getBestResult(String searchTerm, Collection<Track> tracks) throws NoSpotifyResultsFoundException {
         Map<String, Long> playbackCountWithArtistId = getPlaybackCountForArtists(tracks);
         String trackName = extractSearchedTrackName(searchTerm, tracks).toLowerCase();
         LevenshteinDistance levenshteinDistance = LevenshteinDistance.getDefaultInstance();
@@ -69,11 +68,19 @@ public class SpotifyTrackResultHandler {
         }
 
         int bestScore = tracksByScore.keySet().stream().mapToInt(k -> k).max().getAsInt();
-        return tracksByScore
+        Track bestScoringTrack = null;
+
+        tracksByScore
             .get(bestScore)
             .stream()
             .max(Comparator.comparing(Track::getPopularity))
-            .get();
+            .ifPresent(bestTrack -> { bestScoringTrack = bestTrack; });
+
+        if (bestScoringTrack == null) {
+            throw new NoSpotifyResultsFoundException(String.format("No Spotify track found when looking for best scoring track with score '%d'", bestScore));
+        }
+
+        return bestScoringTrack;
     }
 
     /**
