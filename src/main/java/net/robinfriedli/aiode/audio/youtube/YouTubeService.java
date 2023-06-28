@@ -471,6 +471,9 @@ public class YouTubeService extends AbstractShutdownable {
      * @param playlist the playlist for which to load the data of the individual videos
      */
     public void populateList(YouTubePlaylist playlist) throws IOException {
+        if (playlist.isPreLoaded()) {
+            return;
+        }
         if (currentQuota.get() < quotaThreshold) {
             YouTube.PlaylistItems.List itemSearch = youTube.playlistItems().list(List.of("snippet"));
             itemSearch.setKey(apiKey);
@@ -650,9 +653,7 @@ public class YouTubeService extends AbstractShutdownable {
                 return null;
             }
 
-            if (result instanceof AudioTrack) {
-                AudioTrack track = (AudioTrack) result;
-
+            if (result instanceof AudioTrack track) {
                 YouTubeVideo youTubeVideo = new YouTubeVideoImpl(track.getInfo().title, track.getIdentifier(), track.getDuration());
                 youTubeVideo.setCached(track);
                 return youTubeVideo;
@@ -673,24 +674,52 @@ public class YouTubeService extends AbstractShutdownable {
      * @throws IOException             if the YouTube API request fails
      */
     public YouTubePlaylist playlistForId(String id) throws IOException {
-        YouTube.Playlists.List playlistRequest = youTube.playlists().list(List.of("snippet", "contentDetails"));
-        playlistRequest.setId(List.of(id));
-        playlistRequest.setFields("items(contentDetails/itemCount,snippet/title,snippet/channelTitle)");
-        playlistRequest.setKey(apiKey);
-        List<Playlist> items = doWithQuota(QUOTA_COST_LIST, () -> playlistRequest.execute().getItems());
+        if (currentQuota.get() < quotaThreshold) {
+            YouTube.Playlists.List playlistRequest = youTube.playlists().list(List.of("snippet", "contentDetails"));
+            playlistRequest.setId(List.of(id));
+            playlistRequest.setFields("items(contentDetails/itemCount,snippet/title,snippet/channelTitle)");
+            playlistRequest.setKey(apiKey);
+            List<Playlist> items = doWithQuota(QUOTA_COST_LIST, () -> playlistRequest.execute().getItems());
 
-        if (items.isEmpty()) {
-            throw new NoResultsFoundException(String.format("No YouTube playlist found for id '%s'", id));
+            if (items.isEmpty()) {
+                throw new NoResultsFoundException(String.format("No YouTube playlist found for id '%s'", id));
+            }
+
+            Playlist playlist = items.get(0);
+            List<HollowYouTubeVideo> videoPlaceholders = Lists.newArrayList();
+            for (int i = 0; i < playlist.getContentDetails().getItemCount(); i++) {
+                videoPlaceholders.add(new HollowYouTubeVideo(this));
+            }
+
+            return new YouTubePlaylist(playlist.getSnippet().getTitle(), id, playlist.getSnippet().getChannelTitle(), videoPlaceholders);
+        } else {
+            AudioTrackLoader audioTrackLoader = new AudioTrackLoader(Aiode.get().getAudioManager().getPlayerManager());
+            AudioItem result;
+            try {
+                result = audioTrackLoader.loadByIdentifier(String.format("https://www.youtube.com/playlist?list=%s", id));
+            } catch (FriendlyException e) {
+                throw new NoResultsFoundException(String.format("No YouTube playlist found for id '%s'", id));
+            }
+
+            if (result instanceof AudioPlaylist audioPlaylist) {
+                List<HollowYouTubeVideo> videos = Lists.newArrayList();
+                List<AudioTrack> tracks = audioPlaylist.getTracks();
+
+                for (AudioTrack track : tracks) {
+                    HollowYouTubeVideo video = new HollowYouTubeVideo(this);
+
+                    video.setTitle(track.getInfo().title);
+                    video.setId(track.getIdentifier());
+                    video.setDuration(track.getDuration());
+                    video.setCached(track);
+                    videos.add(video);
+                }
+
+                return new YouTubePlaylist(audioPlaylist.getName(), id, "", videos, true);
+            } else {
+                throw new NoResultsFoundException(String.format("No YouTube playlist found for id '%s'", id));
+            }
         }
-
-        Playlist playlist = items.get(0);
-
-        List<HollowYouTubeVideo> videoPlaceholders = Lists.newArrayList();
-        for (int i = 0; i < playlist.getContentDetails().getItemCount(); i++) {
-            videoPlaceholders.add(new HollowYouTubeVideo(this));
-        }
-
-        return new YouTubePlaylist(playlist.getSnippet().getTitle(), id, playlist.getSnippet().getChannelTitle(), videoPlaceholders);
     }
 
     private YouTubeVideoSearchResult getBestMatch(List<? extends YouTubeVideoSearchResult> videos, SpotifyTrack spotifyTrack, StringList artists) {
