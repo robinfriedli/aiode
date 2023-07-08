@@ -6,6 +6,7 @@ import javax.persistence.ForeignKey;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
@@ -19,7 +20,10 @@ import net.robinfriedli.aiode.exceptions.UnavailableResourceException;
 import org.hibernate.Session;
 
 @Entity
-@Table(name = "video")
+@Table(name = "video", indexes = {
+    @Index(name = "video_id_idx", columnList = "id"),
+    @Index(name = "video_playlist_pk_idx", columnList = "playlist_pk")
+})
 public class Video extends PlaylistItem {
 
     @Id

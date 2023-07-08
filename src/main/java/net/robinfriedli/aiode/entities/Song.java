@@ -8,6 +8,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
@@ -25,7 +26,10 @@ import se.michaelthelin.spotify.model_objects.specification.ArtistSimplified;
 import se.michaelthelin.spotify.model_objects.specification.Track;
 
 @Entity
-@Table(name = "song")
+@Table(name = "song", indexes = {
+    @Index(name = "song_id_idx", columnList = "id"),
+    @Index(name = "song_playlist_pk_idx", columnList = "playlist_pk")
+})
 public class Song extends PlaylistItem {
 
     @Id

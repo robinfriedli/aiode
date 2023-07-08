@@ -7,6 +7,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.Table;
 
 import org.apache.hc.core5.http.ParseException;
@@ -22,7 +23,10 @@ import se.michaelthelin.spotify.model_objects.specification.Track;
  * Entity representing Spotify Podcast episodes
  */
 @Entity
-@Table(name = "episode")
+@Table(name = "episode", indexes = {
+    @Index(name = "episode_id_idx", columnList = "id"),
+    @Index(name = "episode_playlist_pk_idx", columnList = "playlist_pk")
+})
 public class Episode extends PlaylistItem {
 
     @Id

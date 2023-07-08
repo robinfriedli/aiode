@@ -10,6 +10,7 @@ import javax.persistence.ForeignKey;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
@@ -29,7 +30,10 @@ import org.hibernate.Session;
 import se.michaelthelin.spotify.model_objects.specification.ArtistSimplified;
 
 @Entity
-@Table(name = "playback_history")
+@Table(name = "playback_history", indexes = {
+    @Index(name = "playback_history_guild_id_idx", columnList = "guild_id"),
+    @Index(name = "playback_history_track_id_idx", columnList = "track_id")
+})
 public class PlaybackHistory implements Serializable {
 
     @Id
