@@ -2,6 +2,7 @@ package net.robinfriedli.aiode.command.commands.general;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
+import java.math.BigInteger;
 import java.util.List;
 
 import com.google.common.base.Strings;
@@ -16,12 +17,6 @@ import net.robinfriedli.aiode.command.AbstractCommand;
 import net.robinfriedli.aiode.command.CommandContext;
 import net.robinfriedli.aiode.command.CommandManager;
 import net.robinfriedli.aiode.discord.GuildManager;
-import net.robinfriedli.aiode.entities.CommandHistory;
-import net.robinfriedli.aiode.entities.PlaybackHistory;
-import net.robinfriedli.aiode.entities.Playlist;
-import net.robinfriedli.aiode.entities.Song;
-import net.robinfriedli.aiode.entities.UrlTrack;
-import net.robinfriedli.aiode.entities.Video;
 import net.robinfriedli.aiode.entities.xml.CommandContribution;
 import org.hibernate.Session;
 
@@ -44,12 +39,12 @@ public class AnalyticsCommand extends AbstractCommand {
 
         int guildCount = guilds.size();
         long playingCount = guilds.stream().map(audioManager::getPlaybackForGuild).filter(AudioPlayback::isPlaying).count();
-        long commandCount = session.createQuery("select count(*) from " + CommandHistory.class.getName(), Long.class).uniqueResult();
-        long playlistCount = session.createQuery("select count(*) from " + Playlist.class.getName(), Long.class).uniqueResult();
-        long trackCount = session.createQuery("select count(*) from " + Song.class.getName(), Long.class).uniqueResult()
-            + session.createQuery("select count(*) from " + Video.class.getName(), Long.class).uniqueResult()
-            + session.createQuery("select count(*) from " + UrlTrack.class.getName(), Long.class).uniqueResult();
-        long playedCount = session.createQuery("select count(*) from " + PlaybackHistory.class.getName(), Long.class).uniqueResult();
+        long commandCount = ((BigInteger) session.createSQLQuery("SELECT cast(reltuples AS bigint) FROM pg_class where relname = 'command_history'").uniqueResult()).longValue();
+        long playlistCount = ((BigInteger) session.createSQLQuery("SELECT cast(reltuples AS bigint) FROM pg_class where relname = 'playlist'").uniqueResult()).longValue();
+        long trackCount = ((BigInteger) session.createSQLQuery("SELECT cast(reltuples AS bigint) FROM pg_class where relname = 'song'").uniqueResult()).longValue()
+            + ((BigInteger) session.createSQLQuery("SELECT cast(reltuples AS bigint) FROM pg_class where relname = 'video'").uniqueResult()).longValue()
+            + ((BigInteger) session.createSQLQuery("SELECT cast(reltuples AS bigint) FROM pg_class where relname = 'url_track'").uniqueResult()).longValue();
+        long playedCount = ((BigInteger) session.createSQLQuery("SELECT cast(reltuples AS bigint) FROM pg_class where relname = 'playback_history'").uniqueResult()).longValue();
         // convert to MB by right shifting by 20 bytes (same as dividing by 2^20)
         long maxMemory = runtime.maxMemory() >> 20;
         long allocatedMemory = runtime.totalMemory() >> 20;

@@ -1013,4 +1013,24 @@ See application.properties -> spring.liquibase.contexts
   <changeSet author="robinfriedli (generated)" id="1688838093355-5">
     <addForeignKeyConstraint baseColumnNames="fk_spotify_item_kind" baseTableName="global_track_chart" constraintName="global_track_chart_fk_spotify_item_kind_fkey" deferrable="false" initiallyDeferred="false" referencedColumnNames="pk" referencedTableName="spotify_item_kind" validate="true"/>
   </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688850825715-1">
+    <createIndex indexName="command_history_guild_id_idx" tableName="command_history">
+      <column name="guild_id"/>
+    </createIndex>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688850825715-2">
+    <createIndex indexName="command_history_start_millis_idx" tableName="command_history">
+      <column name="start_millis"/>
+    </createIndex>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688850825715-3">
+    <createIndex indexName="command_history_user_id_idx" tableName="command_history">
+      <column name="user_id"/>
+    </createIndex>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688852021628-1">
+    <createIndex indexName="playback_history_timestamp_idx" tableName="playback_history">
+      <column name="timestamp"/>
+    </createIndex>
+  </changeSet>
 </databaseChangeLog>
