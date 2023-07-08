@@ -972,4 +972,45 @@ See application.properties -> spring.liquibase.contexts
       <column name="playlist_pk"/>
     </createIndex>
   </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688838093355-1">
+    <createTable tableName="global_artist_chart">
+      <column autoIncrement="true" name="pk" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="global_artist_chartPK"/>
+      </column>
+      <column name="count" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="is_monthly" type="BOOLEAN"/>
+      <column name="artist_pk" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688838093355-2">
+    <createTable tableName="global_track_chart">
+      <column autoIncrement="true" name="pk" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="global_track_chartPK"/>
+      </column>
+      <column name="count" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="is_monthly" type="BOOLEAN"/>
+      <column name="track_id" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="fk_source" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="fk_spotify_item_kind" type="BIGINT"/>
+    </createTable>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688838093355-3">
+    <addForeignKeyConstraint baseColumnNames="artist_pk" baseTableName="global_artist_chart" constraintName="global_artist_chart_artist_pk_fkey" deferrable="false" initiallyDeferred="false" referencedColumnNames="pk" referencedTableName="artist" validate="true"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688838093355-4">
+    <addForeignKeyConstraint baseColumnNames="fk_source" baseTableName="global_track_chart" constraintName="global_track_chart_fk_source_fkey" deferrable="false" initiallyDeferred="false" referencedColumnNames="pk" referencedTableName="playback_history_source" validate="true"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688838093355-5">
+    <addForeignKeyConstraint baseColumnNames="fk_spotify_item_kind" baseTableName="global_track_chart" constraintName="global_track_chart_fk_spotify_item_kind_fkey" deferrable="false" initiallyDeferred="false" referencedColumnNames="pk" referencedTableName="spotify_item_kind" validate="true"/>
+  </changeSet>
 </databaseChangeLog>

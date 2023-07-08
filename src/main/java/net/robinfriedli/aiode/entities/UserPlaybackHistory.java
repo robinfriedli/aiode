@@ -35,6 +35,8 @@ public class UserPlaybackHistory implements Serializable {
     @ManyToOne
     @JoinColumn(name = "playback_history_pk", referencedColumnName = "pk", foreignKey = @ForeignKey(name = "fk_playback_history"))
     private PlaybackHistory playbackHistory;
+    @Column(name = "playback_history_pk", insertable = false, updatable = false)
+    private long playbackHistoryPk;
 
     public UserPlaybackHistory() {
     }
@@ -72,5 +74,13 @@ public class UserPlaybackHistory implements Serializable {
 
     public void setPlaybackHistory(PlaybackHistory playbackHistory) {
         this.playbackHistory = playbackHistory;
+    }
+
+    public long getPlaybackHistoryPk() {
+        return playbackHistoryPk;
+    }
+
+    public void setPlaybackHistoryPk(long playbackHistoryPk) {
+        this.playbackHistoryPk = playbackHistoryPk;
     }
 }

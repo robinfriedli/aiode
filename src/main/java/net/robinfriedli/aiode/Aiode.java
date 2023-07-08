@@ -18,6 +18,7 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.aiode.audio.AudioManager;
+import net.robinfriedli.aiode.audio.ChartService;
 import net.robinfriedli.aiode.audio.playables.PlayableContainerManager;
 import net.robinfriedli.aiode.boot.Shutdownable;
 import net.robinfriedli.aiode.boot.SpringPropertiesConfig;
@@ -63,6 +64,7 @@ public class Aiode {
     private final boolean mainInstance;
 
     private final AudioManager audioManager;
+    private final ChartService chartService;
     private final CommandExecutionQueueManager executionQueueManager;
     private final CommandManager commandManager;
     private final ConfigurableApplicationContext springBootContext;
@@ -91,6 +93,7 @@ public class Aiode {
     public Aiode(
         @Value("${aiode.preferences.main_instance:true}") boolean mainInstance,
         AudioManager audioManager,
+        ChartService chartService,
         CommandExecutionQueueManager executionQueueManager,
         CommandManager commandManager,
         ConfigurableApplicationContext springBootContext,
@@ -118,6 +121,7 @@ public class Aiode {
     ) {
         this.mainInstance = mainInstance;
         this.audioManager = audioManager;
+        this.chartService = chartService;
         this.executionQueueManager = executionQueueManager;
         this.commandManager = commandManager;
         this.springBootContext = springBootContext;
@@ -258,6 +262,10 @@ public class Aiode {
 
     public AudioManager getAudioManager() {
         return audioManager;
+    }
+
+    public ChartService getChartService() {
+        return chartService;
     }
 
     public CommandExecutionQueueManager getExecutionQueueManager() {
