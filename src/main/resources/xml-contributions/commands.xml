@@ -438,7 +438,19 @@
            implementation="net.robinfriedli.aiode.command.commands.general.ChartsCommand"
            requiresInput="false"
            category="GENERAL"
-           description="Shows the most popular tracks and artists for this guild and globally"/>
+           description="Shows the most popular tracks and artists globally, for this guild or for this user">
+    <argument identifier="global" description="Show the global charts"/>
+    <argument identifier="guild" description="Show the charts for this guild">
+      <excludes argument="global"/>
+    </argument>
+    <argument identifier="user" description="Show the charts for this user">
+      <excludes argument="global"/>
+      <excludes argument="guild"/>
+    </argument>
+    <example title="Get global charts">%1$scharts</example>
+    <example title="Get current guild charts">%1$scharts %2$sguild</example>
+    <example title="Get current user charts">%1$scharts %2$suser</example>
+  </command>
   <command identifier="abort"
            implementation="net.robinfriedli.aiode.command.commands.general.AbortCommand"
            requiresInput="false"

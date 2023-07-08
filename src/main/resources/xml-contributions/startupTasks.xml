@@ -9,4 +9,5 @@
   <startupTask runForEachShard="false" mainInstanceOnly="true" implementation="net.robinfriedli.aiode.boot.tasks.ResetOutdatedYouTubeQuotaTask"/>
   <startupTask runForEachShard="false" implementation="net.robinfriedli.aiode.boot.tasks.InitialiseCommandContributionsTask"/>
   <startupTask runForEachShard="true" implementation="net.robinfriedli.aiode.boot.tasks.UpsertSlashCommandsTask"/>
+  <startupTask runForEachShard="false" mainInstanceOnly="true" implementation="net.robinfriedli.aiode.boot.tasks.RefreshPersistentGlobalChartsStartupTask"/>
 </startupTasks>
