@@ -15,6 +15,7 @@ import javax.persistence.ForeignKey;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
@@ -31,7 +32,9 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 @Entity
-@Table(name = "access_configuration")
+@Table(name = "access_configuration", indexes = {
+    @Index(name = "access_configuration_fk_guild_specification_idx", columnList = "fk_guild_specification")
+})
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class AccessConfiguration implements Serializable {

@@ -9,6 +9,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.Table;
 import javax.validation.constraints.Size;
 
@@ -25,7 +26,10 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 @Entity
-@Table(name = "preset")
+@Table(name = "preset", indexes = {
+    @Index(name = "preset_guild_id_idx", columnList = "guild_id"),
+    @Index(name = "preset_guild_id_idx", columnList = "guild_id"),
+})
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class Preset implements Serializable, SanitizedEntity {

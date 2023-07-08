@@ -16,6 +16,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.validation.constraints.Size;
@@ -37,7 +38,9 @@ import static net.robinfriedli.aiode.audio.spotify.SpotifyTrackBulkLoadingServic
 import static net.robinfriedli.aiode.audio.spotify.SpotifyTrackKind.*;
 
 @Entity
-@Table(name = "playlist")
+@Table(name = "playlist", indexes = {
+    @Index(name = "playlist_guild_id_idx", columnList = "guild_id")
+})
 public class Playlist implements Serializable, SanitizedEntity {
 
     @Id
