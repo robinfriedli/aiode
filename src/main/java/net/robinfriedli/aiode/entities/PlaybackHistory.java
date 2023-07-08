@@ -32,7 +32,8 @@ import se.michaelthelin.spotify.model_objects.specification.ArtistSimplified;
 @Entity
 @Table(name = "playback_history", indexes = {
     @Index(name = "playback_history_guild_id_idx", columnList = "guild_id"),
-    @Index(name = "playback_history_track_id_idx", columnList = "track_id")
+    @Index(name = "playback_history_track_id_idx", columnList = "track_id"),
+    @Index(name = "playback_history_timestamp_idx", columnList = "timestamp"),
 })
 public class PlaybackHistory implements Serializable {
 

@@ -38,7 +38,7 @@ public class GlobalTrackChart implements Serializable {
     @Column(name = "is_monthly")
     private boolean isMonthly = false;
 
-    @Column(name = "fk_source", insertable = false, updatable = false)
+    @Column(name = "fk_source", nullable = false, insertable = false, updatable = false)
     private long fkSource;
     @Column(name = "fk_spotify_item_kind", insertable = false, updatable = false)
     private long fkSpotifyItemKind;
