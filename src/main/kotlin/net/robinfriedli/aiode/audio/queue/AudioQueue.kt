@@ -1,5 +1,6 @@
 package net.robinfriedli.aiode.audio.queue
 
+import com.google.common.collect.Lists
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.Guild
 import net.robinfriedli.aiode.Aiode
@@ -7,6 +8,7 @@ import net.robinfriedli.aiode.audio.AudioPlayback
 import net.robinfriedli.aiode.audio.Playable
 import net.robinfriedli.aiode.audio.playables.PlayableContainer
 import net.robinfriedli.aiode.audio.playables.PlayableFactory
+import net.robinfriedli.aiode.audio.playables.containers.SinglePlayableContainer
 import net.robinfriedli.aiode.discord.property.properties.ColorSchemeProperty
 import net.robinfriedli.aiode.entities.GuildSpecification
 import net.robinfriedli.aiode.exceptions.NoResultsFoundException
@@ -19,6 +21,10 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReadWriteLock
 import java.util.concurrent.locks.ReentrantReadWriteLock
+import java.util.stream.Collectors
+import java.util.stream.IntStream
+import kotlin.streams.toList
+
 
 class AudioQueue(val maxSize: Int?) {
 
@@ -54,7 +60,10 @@ class AudioQueue(val maxSize: Int?) {
     var size: Int = 0
 
     private val nodeList: QueueNodeList = QueueNodeList()
-    private val shuffledNodeList: QueueNodeList = QueueNodeList()
+    private val shuffledOrder = ArrayList<Int>()
+
+    @Volatile
+    private var flattenedQueue: List<Playable>? = null
 
     val lock: ReadWriteLock = ReentrantReadWriteLock()
 
@@ -63,14 +72,18 @@ class AudioQueue(val maxSize: Int?) {
         readLock.lock()
         try {
             val trackList: MutableList<Playable> = ArrayList(size)
-            val nodeList = if (isShuffle) {
-                this.shuffledNodeList
+            if (isShuffle) {
+                for (pos in shuffledOrder) {
+                    trackList.add(getPlayableAtIndexLocked(pos))
+                }
             } else {
-                this.nodeList
-            }
-
-            for (node in nodeList) {
-                trackList.addAll(node.getPlayables())
+                val flattenedQueue = flattenedQueue
+                if (flattenedQueue != null) {
+                    return flattenedQueue
+                }
+                for (node in nodeList) {
+                    trackList.addAll(node.getPlayables())
+                }
             }
 
             return trackList
@@ -88,15 +101,6 @@ class AudioQueue(val maxSize: Int?) {
         writeLock.lock()
         try {
             currIdx = idx
-            val nodeList = if (isShuffle) {
-                this.shuffledNodeList
-            } else {
-                this.nodeList
-            }
-
-            val (offset, queueNode) = nodeList.getNodeAtIndex(idx)
-            nodeList.currentNode = queueNode
-            queueNode.setPosition(offset)
         } finally {
             writeLock.unlock()
         }
@@ -116,50 +120,51 @@ class AudioQueue(val maxSize: Int?) {
     }
 
     fun getCurrentLocked(): Playable {
-        val nodeList = if (isShuffle) {
-            this.shuffledNodeList
+        return if (isShuffle) {
+            getPlayableAtIndexLocked(shuffledOrder[currIdx])
         } else {
-            this.nodeList
-        }
-
-        return if (nodeList.currentNode != null) {
-            nodeList.currentNode!!.fragment.current()
-        } else {
-            throw IllegalStateException("Queue does not have a current track")
+            getPlayableAtIndexLocked(currIdx)
         }
     }
 
-    fun iterate(): Playable {
+    fun getPlayableAtIndex(idx: Int): Playable {
+        val readLock = lock.readLock()
+        readLock.lock()
+        return try {
+            getPlayableAtIndexLocked(idx)
+        } finally {
+            readLock.unlock()
+        }
+    }
+
+    private fun getPlayableAtIndexLocked(idx: Int): Playable {
+        val flattenedQueue = this.flattenedQueue
+        return if (flattenedQueue != null) {
+            flattenedQueue[idx]
+        } else {
+            nodeList.getPlayableAtIndex(idx)
+        }
+    }
+
+    fun iterate() {
         val writeLock = lock.writeLock()
         writeLock.lock()
-        return try {
+        try {
             iterateLocked()
         } finally {
             writeLock.unlock()
         }
     }
 
-    fun iterateLocked(): Playable {
-        val nodeList = if (isShuffle) {
-            this.shuffledNodeList
-        } else {
-            this.nodeList
-        }
-
-        return nodeList.iterate()
+    fun iterateLocked() {
+        currIdx = nextPosition()
     }
 
-    fun reverse(): Playable {
+    fun reverse() {
         val writeLock = lock.writeLock()
         writeLock.lock()
-        return try {
-            val nodeList = if (isShuffle) {
-                this.shuffledNodeList
-            } else {
-                this.nodeList
-            }
-
-            nodeList.reverse()
+        try {
+            currIdx = previousPosition()
         } finally {
             writeLock.unlock()
         }
@@ -168,14 +173,14 @@ class AudioQueue(val maxSize: Int?) {
     fun peekNext(): Playable? {
         val readLock = lock.readLock()
         readLock.lock()
-        return try {
-            val nodeList = if (isShuffle) {
-                this.shuffledNodeList
+        try {
+            return if (isShuffle && currIdx < shuffledOrder.size - 1) {
+                getPlayableAtIndexLocked(shuffledOrder[currIdx + 1])
+            } else if (!isShuffle && currIdx < size - 1) {
+                getPlayableAtIndexLocked(currIdx + 1)
             } else {
-                this.nodeList
+                null
             }
-
-            nodeList.peekNext()
         } finally {
             readLock.unlock()
         }
@@ -253,6 +258,26 @@ class AudioQueue(val maxSize: Int?) {
         }
     }
 
+    fun insertNext(fragment: QueueFragment) {
+        val writeLock = lock.writeLock()
+        writeLock.lock()
+        try {
+            doInsert(currIdx + 1, fragment)
+        } finally {
+            writeLock.unlock()
+        }
+    }
+
+    fun insertRelative(relativeIdx: Int, fragment: QueueFragment) {
+        val writeLock = lock.writeLock()
+        writeLock.lock()
+        try {
+            doInsert(currIdx + relativeIdx + 1, fragment)
+        } finally {
+            writeLock.unlock()
+        }
+    }
+
     fun set(fragment: QueueFragment) {
         val writeLock = lock.writeLock()
         writeLock.lock()
@@ -264,28 +289,69 @@ class AudioQueue(val maxSize: Int?) {
         }
     }
 
-    fun addContainers(containers: List<PlayableContainer<*>>, playableFactory: PlayableFactory, clear: Boolean) {
+    fun addContainers(containers: List<PlayableContainer<*>>, playableFactory: PlayableFactory, clear: Boolean, insertionIdx: Int? = null) {
         val writeLock = lock.writeLock()
         writeLock.lock()
         try {
-            val queueFragments: MutableList<QueueFragment> = ArrayList()
-            for (playableContainer in containers) {
-                val queueFragment = playableContainer.createQueueFragment(playableFactory, this)
-                if (queueFragment != null) {
-                    queueFragments.add(queueFragment)
-                }
-            }
+            addContainersLocked(containers, playableFactory, clear, insertionIdx)
+        } finally {
+            writeLock.unlock()
+        }
+    }
 
-            if (queueFragments.isNotEmpty()) {
-                if (clear) {
-                    doClear(false)
-                }
-                for (queueFragment in queueFragments) {
-                    doInsert(size, queueFragment)
-                }
-            } else {
-                throw NoResultsFoundException("No results found")
+    fun addContainersLocked(containers: List<PlayableContainer<*>>, playableFactory: PlayableFactory, clear: Boolean, insertionIdx: Int? = null) {
+        val queueFragments: MutableList<QueueFragment> = ArrayList()
+        for (playableContainer in containers) {
+            val queueFragment = playableContainer.createQueueFragment(playableFactory, this)
+            if (queueFragment != null) {
+                queueFragments.add(queueFragment)
             }
+        }
+
+        if (queueFragments.isNotEmpty()) {
+            if (clear) {
+                doClear(false)
+            }
+            for (queueFragment in queueFragments) {
+                doInsert(if (insertionIdx != null) {
+                    currIdx + insertionIdx + 1
+                } else {
+                    size
+                }, queueFragment)
+            }
+        } else {
+            throw NoResultsFoundException("No results found")
+        }
+    }
+
+    fun remove(fromIdx: Int, toIdx: Int): Int {
+        val writeLock = lock.writeLock()
+        writeLock.lock()
+        try {
+            if (toIdx <= fromIdx) {
+                throw IllegalArgumentException("Invalid range $fromIdx - $toIdx")
+            } else if (fromIdx < 0 || toIdx > size) {
+                throw IndexOutOfBoundsException("Range $fromIdx - $toIdx out of bounds for size $size")
+            }
+            return doRemove(fromIdx, toIdx)
+        } finally {
+            writeLock.unlock()
+        }
+    }
+
+    fun removeRelative(fromIdx: Int, toIdx: Int): Int {
+        val writeLock = lock.writeLock()
+        writeLock.lock()
+        try {
+            val relativeStart = currIdx + 1
+            val from = relativeStart + fromIdx
+            val to = relativeStart + toIdx
+            if (to <= from) {
+                throw IllegalArgumentException("Invalid range $from - $to")
+            } else if (from < 0 || to > size) {
+                throw IndexOutOfBoundsException("Range $from - $to out of bounds for size $size")
+            }
+            return doRemove(from, to)
         } finally {
             writeLock.unlock()
         }
@@ -320,7 +386,7 @@ class AudioQueue(val maxSize: Int?) {
             embedBuilder.addField("", "[Full list]($url)", false)
 
             if (isEmpty()) {
-                embedBuilder.addField("", "(emtpy)", false)
+                embedBuilder.addField("", "(empty)", false)
             } else {
                 val prevBuilder = StringBuilder()
                 val nextBuilder = StringBuilder()
@@ -382,21 +448,20 @@ class AudioQueue(val maxSize: Int?) {
 
     fun listNextLocked(limit: Int): List<Playable> {
         val trackList: MutableList<Playable> = ArrayList(limit)
+        var idx = currIdx
 
-        val nodeList = if (isShuffle) {
-            this.shuffledNodeList
-        } else {
-            this.nodeList
-        }
+        while (trackList.size < limit && (repeatAll || idx < size - 1)) {
+            if (idx < size - 1) {
+                idx += 1
+            } else {
+                idx = 0
+            }
 
-        var node = nodeList.currentNode
-        if (node != null) {
-            trackList.addAll(node.getNextPlayables(limit))
-            node = node.next
-        }
-        while (node != null && trackList.size < limit) {
-            trackList.addAll(node.getPlayables(limit - trackList.size))
-            node = node.next
+            if (isShuffle) {
+                trackList.add(getPlayableAtIndexLocked(shuffledOrder[idx]))
+            } else {
+                trackList.add(getPlayableAtIndexLocked(idx))
+            }
         }
 
         return trackList
@@ -415,21 +480,16 @@ class AudioQueue(val maxSize: Int?) {
     fun listPrevLocked(limit: Int): List<Playable> {
         // use linked list as items are always inserted at head
         val trackList: MutableList<Playable> = LinkedList()
+        var idx = currIdx
 
-        val nodeList = if (isShuffle) {
-            this.shuffledNodeList
-        } else {
-            this.nodeList
-        }
+        while (trackList.size < limit && idx > 0) {
+            idx -= 1
 
-        var node = nodeList.currentNode
-        if (node != null) {
-            trackList.addAll(node.getPreviousPlayables(limit))
-            node = node.prev
-        }
-        while (node != null && trackList.size < limit) {
-            trackList.addAll(0, node.getLastPlayables(limit - trackList.size))
-            node = node.prev
+            if (isShuffle) {
+                trackList.add(0, getPlayableAtIndexLocked(shuffledOrder[idx]))
+            } else {
+                trackList.add(0, getPlayableAtIndexLocked(idx))
+            }
         }
 
         return trackList
@@ -439,12 +499,10 @@ class AudioQueue(val maxSize: Int?) {
         val writeLock = lock.writeLock()
         writeLock.lock()
         try {
-            currIdx = -1
-            nodeList.currentNode = null
-            shuffledNodeList.currentNode = null
-
             if (!isEmpty()) {
                 iterateLocked()
+            } else {
+                currIdx = -1
             }
         } finally {
             writeLock.unlock()
@@ -455,154 +513,66 @@ class AudioQueue(val maxSize: Int?) {
         val writeLock = lock.writeLock()
         writeLock.lock()
         try {
-            doRandomize(false)
+            doRandomize(true)
         } finally {
             writeLock.unlock()
         }
     }
 
     private fun doRandomize(protectCurrent: Boolean) {
-        val handledFragments = HashSet<QueueFragment>()
-        val shuffledQueueNodes = LinkedList<QueueNode>()
-
-        val random = Random()
-        fun insertRandomFractures(fragment: QueueFragment, protectCurrent: Boolean, initialIdx: Int) {
-            val insertIndices: MutableList<Int> = ArrayList()
-            insertIndices.add(initialIdx)
-            for (i in 0 until fragment.enableShuffle(protectCurrent)) {
-                insertIndices.add(random.nextInt(Math.min(1, shuffledQueueNodes.size), shuffledQueueNodes.size + 1))
-            }
-
-            var currNodeIdx = insertIndices.size
-            insertIndices
-                .stream()
-                .sorted(Comparator.reverseOrder())
-                .forEach { insertIndex -> shuffledQueueNodes.add(insertIndex, QueueNode(fragment, --currNodeIdx)) }
-        }
-
-        if (protectCurrent) {
-            for (node in nodeList) {
-                if (node == nodeList.currentNode) {
-                    val fragment = node.fragment
-                    handledFragments.add(fragment)
-                    insertRandomFractures(fragment, true, 0)
-                }
-            }
-        }
-
-        for (node in nodeList) {
-            val fragment = node.fragment
-
-            if (handledFragments.add(fragment)) {
-                insertRandomFractures(
-                    fragment,
-                    false,
-                    random.nextInt(Math.min(1, shuffledQueueNodes.size), shuffledQueueNodes.size + 1)
-                )
-            }
-        }
-
-        if (shuffledQueueNodes.isNotEmpty()) {
-            var prev: QueueNode? = null
-            for (shuffledQueueNode in shuffledQueueNodes) {
-                if (prev == null) {
-                    shuffledNodeList.head = shuffledQueueNode
-                } else {
-                    prev.next = shuffledQueueNode
-                    shuffledQueueNode.prev = prev
-                }
-
-                prev = shuffledQueueNode
-            }
-            shuffledNodeList.tail = prev
-            shuffledNodeList.currentNode = shuffledQueueNodes[0]
-            currIdx = 0
+        shuffledOrder.clear()
+        val indices: MutableList<Int> = IntStream.range(0, size).boxed().collect(Collectors.toList())
+        val retainedIdx = if (protectCurrent && currIdx >= 0) {
+            indices.removeAt(currIdx)
         } else {
-            shuffledNodeList.clear(false)
-            currIdx = -1
+            null
+        }
+        indices.shuffle()
+        if (retainedIdx != null) {
+            indices.add(0, retainedIdx)
+        }
+        shuffledOrder.addAll(indices)
+        currIdx = if (!isEmpty()) {
+            0
+        } else {
+            -1
         }
     }
 
     private fun disableShuffle() {
-        val handledFragments = HashSet<QueueFragment>()
-
-        val currentFragment = shuffledNodeList.currentNode?.fragment
-        // index of the QueueNode corresponding to the fragment's fracture containing the current track
-        // e.g. if the current fragment has a fracture at index 3 and 5 and the fragment's current index is 7,
-        // the third QueueNode for the fragment (so currentNodeOfFragmentIdx = 2) will contain the current track
-        var currentFractureIdx: Int? = null
-        if (currentFragment != null) {
-            currentFragment.disableShuffle()
-            val idxWithinFragment = currentFragment.currentIndex()
-            if (idxWithinFragment >= 0) {
-                val orderedFractures = currentFragment.getOrderedFractures()
-                for (i in 0..orderedFractures.size) {
-                    if (i == orderedFractures.size) {
-                        currentFractureIdx = i
-                    } else if (orderedFractures[i] > idxWithinFragment) {
-                        currentFractureIdx = i
-                        break
-                    }
-                }
-            } else {
-                throw IllegalStateException("Exception disabling shuffle: Current index of current fragment is negative, indicating it wasn't iterated.")
-            }
-            handledFragments.add(currentFragment)
-        }
-
-        if (currentFractureIdx == null) {
-            throw IllegalStateException("Could not find index of current fragment fracture")
-        }
-
-        var currSize = 0
-        for (node in nodeList) {
-            val fragment = node.fragment
-
-            if (fragment == currentFragment && currentFractureIdx == node.fractureIdx) {
-                nodeList.currentNode = node
-
-                val currentIndex = node.currentIndex()
-                if (currentIndex >= 0) {
-                    this.currIdx = currSize + currentIndex
-                }
-            } else if (handledFragments.add(fragment)) {
-                fragment.disableShuffle()
-            }
-
-            currSize += node.size()
-        }
+        // when setting the queue from shuffle back to normal the current track index has to be adjusted since
+        // currentTrack acts as cursor rather than actual queue position in shuffle mode
+        currIdx = shuffledOrder[currIdx];
+        shuffledOrder.clear()
     }
 
     private fun doInsert(idx: Int, fragment: QueueFragment) {
         if (isShuffle) {
-            val random = Random()
-            // when appending to the end of the queue use a random index instead, when inserting at a specific index,
-            // use that index for the first node
-            val targetIdx = if (idx == size) {
-                random.nextInt(size + 1)
-            } else {
-                idx
-            }
-
-            val insertIndices: MutableList<Int> = ArrayList()
-            insertIndices.add(targetIdx)
-            for (i in 0 until fragment.enableShuffle(false)) {
-                insertIndices.add(random.nextInt(size + 1))
-            }
-
-            // iterating in descending order ensures both that the targetIdx is not invalidated by inserting elements
-            // before that index first and that subsequent insertions at the same index will have a lower node index
-            var currNodeIdx = insertIndices.size
-            insertIndices
-                .stream()
-                .sorted(Comparator.reverseOrder())
-                .forEach { insertIndex -> shuffledNodeList.insert(insertIndex, QueueNode(fragment, --currNodeIdx)) }
-
-            // simply insert added elements to the end of the regular queue while in shuffled mode
             nodeList.insert(size, QueueNode(fragment, 0), false)
+            val random = Random()
+            val end = size + fragment.size()
+            val indices = IntStream.range(size, end).boxed().collect(Collectors.toCollection { ArrayList() })
+
+            if (idx == size) {
+                indices.shuffle()
+                // when appending items to the end of the queue, randomise them by inserting them at random indices after the current position
+                for (index in indices) {
+                    val insertionIndex = random.nextInt(currIdx + 1, end)
+                    if (insertionIndex < shuffledOrder.size) {
+                        shuffledOrder.add(insertionIndex, index)
+                    } else {
+                        shuffledOrder.add(index)
+                    }
+                }
+            } else {
+                // when inserting tracks into the queue at a specific position, keep them in order
+                shuffledOrder.addAll(idx, indices)
+            }
         } else {
             nodeList.insert(idx, QueueNode(fragment, 0))
         }
+
+        rebuildFlattenedQueue()
 
         if (size == 0) {
             size += fragment.size()
@@ -612,21 +582,77 @@ class AudioQueue(val maxSize: Int?) {
         }
     }
 
-    private fun doClear(retainCurrent: Boolean) {
-        val retainedCurrent = if (isShuffle) {
-            nodeList.clear(retainCurrent)
-            shuffledNodeList.clear(retainCurrent)
-        } else {
-            shuffledNodeList.clear(retainCurrent)
-            nodeList.clear(retainCurrent)
-        }
+    private fun doRemove(fromIdx: Int, toIdx: Int): Int {
+        return if (isShuffle) {
+            // instead of removing each index one by one gather adjacent indices and remove each range
+            val indices = IntStream.range(fromIdx, toIdx).map { i -> shuffledOrder[i] }.sorted().toList()
+            if (indices.isEmpty()) {
+                return 0
+            }
+            shuffledOrder.removeIf { i -> indices.contains(i) }
+            val indexRanges = Lists.newArrayList<Pair<Int, Int>>()
+            var currStart: Int? = null
+            for (i in 1 until indices.size) {
+                val curr = indices[i]
+                val prev = indices[i - 1]
+                if (curr > prev + 1) {
+                    indexRanges.add(Pair(currStart ?: indices[0], prev + 1))
+                    currStart = curr
+                }
+            }
+            indexRanges.add(Pair(currStart ?: indices[0], indices.last() + 1))
 
-        if (retainedCurrent) {
+            var removed = 0
+            // remove highest indexes first to avoid removal of lower index invalidating higher indexes
+            for ((from, to) in indexRanges.reversed()) {
+                val removedRange = nodeList.remove(from, to)
+                for (i in 0 until shuffledOrder.size) {
+                    if (shuffledOrder[i] > from) {
+                        shuffledOrder[i] = shuffledOrder[i] - removedRange
+                    }
+                }
+                removed += removedRange
+            }
+
+            rebuildFlattenedQueue()
+            removed
+        } else {
+            val removed = nodeList.remove(fromIdx, toIdx)
+            rebuildFlattenedQueue()
+            removed
+        }
+    }
+
+    private fun doClear(retainCurrent: Boolean) {
+        if (retainCurrent && currIdx >= 0) {
+            val current = getCurrentLocked()
+            nodeList.clear(SinglePlayableQueueFragment(this, current, SinglePlayableContainer(current)))
             size = 1
             currIdx = 0
+            doRandomize(true)
+            rebuildFlattenedQueue()
         } else {
+            nodeList.clear()
+            flattenedQueue = null
+            shuffledOrder.clear()
             size = 0
             currIdx = -1
+        }
+    }
+
+    private fun nextPosition(): Int {
+        return if (currIdx < size - 1) {
+            currIdx + 1
+        } else {
+            0
+        }
+    }
+
+    private fun previousPosition(): Int {
+        return if (currIdx > 0) {
+            currIdx - 1
+        } else {
+            if (repeatAll) getTracks().size - 1 else 0
         }
     }
 
@@ -646,15 +672,20 @@ class AudioQueue(val maxSize: Int?) {
         trackListBuilder.append("| ").append(display).append(" - ").append(Util.normalizeMillis(durationMs)).append(System.lineSeparator())
     }
 
+    private fun rebuildFlattenedQueue() {
+        val flattenedQueue: MutableList<Playable> = ArrayList(size)
+        for (queueNode in nodeList) {
+            flattenedQueue.addAll(queueNode.getPlayables())
+        }
+        this.flattenedQueue = flattenedQueue
+    }
+
     private inner class QueueNodeList : Iterable<QueueNode> {
         @Volatile
         var head: QueueNode? = null
 
         @Volatile
         var tail: QueueNode? = null
-
-        @Volatile
-        var currentNode: QueueNode? = null
 
         override fun iterator(): Iterator<QueueNode> {
             return object : Iterator<QueueNode> {
@@ -674,105 +705,15 @@ class AudioQueue(val maxSize: Int?) {
             }
         }
 
-        fun iterate(): Playable {
-            if (!hasNext()) {
-                throw NoResultsFoundException("No next item in queue")
-            }
-
-            return if (currentNode != null) {
-                if (currentNode!!.hasNextTrack()) {
-                    currIdx++
-                    return currentNode!!.fragment.next()
-                }
-
-                currentNode = if (currentNode!!.next != null) {
-                    currIdx++
-                    currentNode!!.next
-                } else {
-                    currIdx = 0
-                    head
-                }
-
-                currentNode!!.setFragmentPositionToStartOfFracture()
-                currentNode!!.fragment.current()
-            } else {
-                currentNode = head
-                currentNode!!.fragment.resetPositionToStart()
-                currIdx++
-                currentNode!!.fragment.next()
-            }
-        }
-
-        fun reverse(): Playable {
-            if (!hasPrevious()) {
-                throw NoResultsFoundException("No previous item in queue")
-            }
-
-            return if (currentNode != null) {
-                if (currentNode!!.hasPreviousTrack()) {
-                    currIdx--
-                    return currentNode!!.fragment.previous()
-                }
-
-                currentNode = if (currentNode!!.prev != null) {
-                    currIdx--
-                    currentNode!!.prev
-                } else {
-                    currIdx = size - 1
-                    tail
-                }
-
-                currentNode!!.setFragmentPositionToEndOfFracture()
-                currentNode!!.fragment.current()
-            } else {
-                currentNode = tail
-                currentNode!!.fragment.resetPositionToEnd()
-                currIdx--
-                currentNode!!.fragment.previous()
-            }
-        }
-
-        fun peekNext(): Playable? {
-            if (!hasNext()) {
-                return null
-            }
-
-            return if (currentNode != null) {
-                if (currentNode!!.hasNextTrack()) {
-                    return currentNode!!.fragment.peekNext()
-                }
-
-                return if (currentNode!!.next != null) {
-                    currentNode!!.next!!.getPlayable(0)
-                } else if (repeatAll && this.head != null) {
-                    this.head!!.getPlayable(0)
-                } else if (repeatOne) {
-                    return getCurrentLocked()
-                } else {
-                    return null
-                }
-            } else {
-                if (head != null) {
-                    head!!.getPlayable(0)
-                } else {
-                    return null
-                }
-            }
-        }
-
-        fun clear(retainCurrent: Boolean): Boolean {
-            if (retainCurrent && currentNode != null) {
-                val node = QueueNode(currentNode!!.fragment.reduceToCurrentPlayable(), 0)
+        fun clear(retainCurrent: QueueFragment? = null) {
+            if (retainCurrent != null) {
+                val node = QueueNode(retainCurrent, 0)
                 head = node
                 tail = node
-                currentNode = node
             } else {
                 head = null
                 tail = null
-                currentNode = null
             }
-
-            return currentNode != null
         }
 
         fun insert(idx: Int, node: QueueNode, updateQueueIndex: Boolean = true) {
@@ -799,23 +740,13 @@ class AudioQueue(val maxSize: Int?) {
                 val (offset, foundNode) = getNodeAtIndex(idx)
                 if (offset == 0) {
                     // index points to first item in node, can just insert new node ahead of the found node
-                    node.next = foundNode
-                    node.prev = foundNode.prev
-                    foundNode.prev?.next = node
-                    foundNode.prev = node
+                    linkBefore(node, foundNode)
                 } else {
                     // new node is inserted within the found node, fracture the found node and place new node between the two fractures
-                    val fractureIdx = foundNode.fragment.addFracture(offset)
+                    val fractureIdx = foundNode.fracture(offset)
                     val fracturedNode = QueueNode(foundNode.fragment, fractureIdx)
-
-                    node.prev = foundNode
-                    node.next = fracturedNode
-
-                    fracturedNode.prev = node
-                    fracturedNode.next = foundNode.next
-                    foundNode.next?.prev = fracturedNode
-
-                    foundNode.next = node
+                    linkAfter(node, foundNode)
+                    linkAfter(fracturedNode, node)
                 }
             }
 
@@ -824,11 +755,106 @@ class AudioQueue(val maxSize: Int?) {
             }
         }
 
+        fun remove(fromIdx: Int, toIdx: Int): Int {
+            if (fromIdx < 0) {
+                throw IndexOutOfBoundsException("Index $fromIdx out of bounds for queue of size $size")
+            }
+            if (toIdx > size) {
+                throw IndexOutOfBoundsException("Index $toIdx out of bounds for queue of size $size")
+            }
+            if (fromIdx >= toIdx) {
+                throw IllegalArgumentException("toIdx must be greater than fromIdx")
+            }
+
+            var toRemove = toIdx - fromIdx
+            var (offset, node) = getNodeAtIndex(fromIdx)
+            do {
+                val next = node.next
+                if (offset > 0) {
+                    val fractureIdx = node.fracture(offset)
+                    val fracturedNode = QueueNode(node.fragment, fractureIdx)
+                    val fracturedSize = fracturedNode.size()
+                    if (fracturedSize > toRemove) {
+                        val nextNodeFracture = node.fracture(offset + toRemove)
+                        // e.g. given remove index 3 - 8 (excluding) from node:
+                        // 0 1 2 | 3 4 5 6 7 | 8 9
+                        // create fracture at 3 and 8
+                        // dismiss the first fracture that points to the range of removed items
+                        // insert second fracture after the original node
+                        // creates the following state: {QueueNode(fracture 0: [0, 1, 2]), (unlinked) QueueNode(fracture 1: [3, 4, 5, 6, 7]), QueueNode(fracture 2: [8, 9])}
+                        linkAfter(QueueNode(node.fragment, nextNodeFracture), node)
+                        size -= fracturedNode.size()
+                        toRemove = 0
+                    } else {
+                        toRemove -= fracturedSize
+                        size -= fracturedSize
+                    }
+                } else if (toRemove >= node.size()) {
+                    toRemove -= node.size()
+                    removeNode(node)
+                } else {
+                    val nextFracture = node.fracture(toRemove)
+                    val nextNode = QueueNode(node.fragment, nextFracture)
+                    val prevNode = node.prev
+                    toRemove -= node.size()
+                    removeNode(node)
+                    if (prevNode != null) {
+                        linkAfter(nextNode, prevNode)
+                    } else {
+                        val currHead = head
+                        nextNode.next = currHead
+                        head = nextNode
+                        if (currHead == null) {
+                            tail = nextNode
+                        } else {
+                            currHead.prev = nextNode
+                        }
+                    }
+                }
+
+                if (next != null) {
+                    node = next
+                } else if (toRemove > 0) {
+                    throw IllegalStateException("Reached end of list")
+                }
+                offset = 0
+            } while (toRemove > 0)
+
+            return toIdx - fromIdx
+        }
+
+        fun removeNode(node: QueueNode) {
+            val next = node.next
+            val prev = node.prev
+            if (prev == null) {
+                head = next
+            } else {
+                prev.next = next
+                next?.prev = null
+            }
+            if (next == null) {
+                tail = prev
+            } else {
+                next.prev = prev
+                node.next = null
+            }
+            size -= node.size()
+        }
+
+        fun getPlayableAtIndex(idx: Int): Playable {
+            val (offset, node) = getNodeAtIndex(idx)
+            return node.getPlayable(offset)
+        }
+
         /**
          * Find the QueueNode where the provided index lies within the node's QueueFragment and return the offset within that
          * QueueFragment (0 if the index points to the start of the QueueFragment / the QueueFragment is a [SinglePlayableQueueFragment])
          */
         fun getNodeAtIndex(idx: Int): Pair<Int, QueueNode> {
+            if (idx < 0 || size <= idx) {
+                throw IllegalArgumentException("Index $idx out of bounds for size $size")
+            }
+
             if (idx <= size / 2) {
                 var currentNode = head!!
                 var startIdx = 0
@@ -854,6 +880,29 @@ class AudioQueue(val maxSize: Int?) {
             }
         }
 
+        private fun linkAfter(node: QueueNode, predecessor: QueueNode) {
+            val successor = predecessor.next
+            node.prev = predecessor
+            node.next = successor
+            predecessor.next = node
+            if (successor == null) {
+                tail = node
+            } else {
+                successor.prev = node
+            }
+        }
+
+        private fun linkBefore(node: QueueNode, successor: QueueNode) {
+            val predecessor = successor.prev
+            node.prev = predecessor
+            node.next = successor
+            successor.prev = node
+            if (predecessor == null) {
+                head = node
+            } else {
+                predecessor.next = node
+            }
+        }
     }
 
     class QueueNode(val fragment: QueueFragment, val fractureIdx: Int) {
@@ -864,58 +913,16 @@ class AudioQueue(val maxSize: Int?) {
             return fragment.getPlayablesInFracture(fractureIdx)
         }
 
-        fun getPlayables(limit: Int): List<Playable> {
-            val playables = getPlayables()
-            return if (playables.size > limit) {
-                playables.subList(0, limit)
-            } else {
-                playables
-            }
-        }
-
-        fun getLastPlayables(limit: Int): List<Playable> {
-            val playables = getPlayables()
-            return playables.subList(0.coerceAtLeast(playables.size - limit), playables.size)
-        }
-
         fun getPlayable(idx: Int): Playable {
             return fragment.getPlayableInFracture(fractureIdx, idx)
-        }
-
-        fun getNextPlayables(limit: Int): List<Playable> {
-            return fragment.getNextPlayablesInFracture(fractureIdx, limit)
-        }
-
-        fun getPreviousPlayables(limit: Int): List<Playable> {
-            return fragment.getPreviousPlayablesInFracture(fractureIdx, limit)
         }
 
         fun size(): Int {
             return fragment.sizeOfFracture(fractureIdx)
         }
 
-        fun currentIndex(): Int {
-            return fragment.currentIndexWithinFracture(fractureIdx)
-        }
-
-        fun setPosition(idx: Int) {
-            fragment.setPosition(fractureIdx, idx)
-        }
-
-        fun hasNextTrack(): Boolean {
-            return fragment.hasNext(fractureIdx)
-        }
-
-        fun hasPreviousTrack(): Boolean {
-            return fragment.hasPrevious(fractureIdx)
-        }
-
-        fun setFragmentPositionToStartOfFracture() {
-            setPosition(0)
-        }
-
-        fun setFragmentPositionToEndOfFracture() {
-            setPosition(size() - 1)
+        fun fracture(idx: Int): Int {
+            return fragment.addFracture(fractureIdx, idx)
         }
     }
 

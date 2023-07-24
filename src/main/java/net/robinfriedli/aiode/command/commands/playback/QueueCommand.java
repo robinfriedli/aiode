@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.locks.Lock;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
@@ -24,9 +25,12 @@ import net.robinfriedli.aiode.command.widget.WidgetRegistry;
 import net.robinfriedli.aiode.command.widget.widgets.QueueWidget;
 import net.robinfriedli.aiode.concurrent.CompletableFutures;
 import net.robinfriedli.aiode.entities.xml.CommandContribution;
+import net.robinfriedli.aiode.exceptions.InvalidCommandException;
 import net.robinfriedli.aiode.exceptions.NoResultsFoundException;
 
 public class QueueCommand extends AbstractQueueLoadingCommand {
+
+    private int removedTracks;
 
     public QueueCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, boolean requiresInput, String identifier, String description, Category category) {
         super(
@@ -46,6 +50,35 @@ public class QueueCommand extends AbstractQueueLoadingCommand {
     public void doRun() throws Exception {
         if (getCommandInput().isBlank()) {
             listQueue();
+        } else if (argumentSet("remove")) {
+            AudioQueue audioQueue = getContext().getGuildContext().getPlayback().getAudioQueue();
+            String commandInput = getCommandInput();
+            int fromIdx;
+            int endIdx;
+            try {
+                if (commandInput.contains("-")) {
+                    String[] split = commandInput.split("\\s*-\\s*");
+                    if (split.length != 2) {
+                        throw new InvalidCommandException("Index range is invalid");
+                    }
+                    fromIdx = Integer.parseInt(split[0]);
+                    endIdx = Integer.parseInt(split[1]);
+                } else {
+                    fromIdx = Integer.parseInt(commandInput);
+                    endIdx = fromIdx;
+                }
+            } catch (NumberFormatException e) {
+                throw new InvalidCommandException("Index range is invalid");
+            }
+            if (endIdx < fromIdx) {
+                throw new InvalidCommandException("End index must be greater than or equal to from index");
+            }
+            try {
+                // convert from 1 to 0 based indexing, endIdx can be left as is because it is converted from an including to excluding index
+                removedTracks = audioQueue.removeRelative(fromIdx - 1, endIdx);
+            } catch (IndexOutOfBoundsException e) {
+                throw new InvalidCommandException(e.getMessage(), e);
+            }
         } else {
             super.doRun();
         }
@@ -59,7 +92,20 @@ public class QueueCommand extends AbstractQueueLoadingCommand {
             throw new NoResultsFoundException("Result is empty!");
         }
 
-        audioQueue.add(queueFragment);
+        if (argumentSet("insert")) {
+            Integer idx = getArgumentValueWithTypeOrElse("at", Integer.class, null);
+            try {
+                if (idx == null || argumentSet("next")) {
+                    audioQueue.insertNext(queueFragment);
+                } else {
+                    audioQueue.insertRelative(idx - 1, queueFragment);
+                }
+            } catch (IndexOutOfBoundsException e) {
+                throw new InvalidCommandException(e.getMessage(), e);
+            }
+        } else {
+            audioQueue.add(queueFragment);
+        }
     }
 
     private void listQueue() {
@@ -109,6 +155,9 @@ public class QueueCommand extends AbstractQueueLoadingCommand {
             String name = loadedShow.getName();
             sendSuccess("Queued podcast " + name);
         }
+        if (removedTracks > 0) {
+            sendSuccess(String.format("Removed %d tracks from queue", removedTracks));
+        }
     }
 
     @Override
@@ -129,9 +178,31 @@ public class QueueCommand extends AbstractQueueLoadingCommand {
             playableContainers = Collections.singletonList(playableContainerManager.requirePlayableContainer(chosenOption));
         }
 
-        int prevSize = queue.getSize();
-        queue.addContainers(playableContainers, playableFactory, false);
-        loadedAmount = queue.getSize() - prevSize;
+        Lock writeLock = queue.getLock().writeLock();
+        writeLock.lock();
+        try {
+            int insertionIdx;
+            if (argumentSet("insert")) {
+                Integer idx = getArgumentValueWithTypeOrElse("at", Integer.class, null);
+                try {
+                    if (idx == null || argumentSet("next")) {
+                        insertionIdx = queue.getCurrIdx();
+                    } else {
+                        insertionIdx = queue.getCurrIdx() + idx - 1;
+                    }
+                } catch (IndexOutOfBoundsException e) {
+                    throw new InvalidCommandException(e.getMessage(), e);
+                }
+            } else {
+                insertionIdx = queue.getSize();
+            }
+
+            int prevSize = queue.getSize();
+            queue.addContainersLocked(playableContainers, playableFactory, false, insertionIdx);
+            loadedAmount = queue.getSize() - prevSize;
+        } finally {
+            writeLock.unlock();
+        }
     }
 
 }

@@ -51,7 +51,7 @@ public class QueueViewHandler implements HttpHandler {
                         try {
                             int position = queue.getPosition();
                             List<Playable> previous = queue.listPrevLocked(position);
-                            List<Playable> next = queue.listNextLocked(queue.getTracks().size() - position);
+                            List<Playable> next = queue.listNextLocked(queue.getSize() - position);
 
                             StringBuilder listBuilder = new StringBuilder();
                             if (!previous.isEmpty()) {
