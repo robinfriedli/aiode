@@ -217,13 +217,19 @@ public class GuildManager {
         GuildContext createdContext = hibernateComponent.invokeWithSession(session -> {
             AudioPlayer player = audioManager.getPlayerManager().createPlayer();
 
-            Optional<Long> existingSpecification = queryBuilderFactory.select(GuildSpecification.class, "pk", Long.class)
+            Optional<GuildSpecification> existingSpecification = queryBuilderFactory.find(GuildSpecification.class)
                 .where((cb, root) -> cb.equal(root.get("guildId"), guild.getId()))
                 .build(session)
                 .uniqueResultOptional();
 
             if (existingSpecification.isPresent()) {
-                return new GuildContext(guild, new AudioPlayback(player, guild), existingSpecification.get());
+                AudioPlayback playback = new AudioPlayback(player, guild);
+                GuildSpecification guildSpecification = existingSpecification.get();
+                GuildContext guildContext = new GuildContext(guild, playback, guildSpecification.getPk());
+                if (guildSpecification.getDefaultVolume() != null) {
+                    playback.setDefaultVolume(guildSpecification.getDefaultVolume());
+                }
+                return guildContext;
             } else {
                 GuildSpecification newSpecification = new GuildSpecification(guild);
                 session.persist(newSpecification);

@@ -1036,4 +1036,9 @@ See application.properties -> spring.liquibase.contexts
   <changeSet author="robinfriedli (generated)" id="1690204479952-1">
     <addUniqueConstraint columnNames="command_context_id" constraintName="UC_COMMAND_HISTORYCOMMAND_CONTEXT_ID_COL" tableName="command_history"/>
   </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1690234117689-1">
+    <addColumn tableName="guild_specification">
+      <column name="default_volume" type="int4"/>
+    </addColumn>
+  </changeSet>
 </databaseChangeLog>
