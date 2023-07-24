@@ -35,10 +35,12 @@ public class AudioPlayback {
     private final AudioPlayer audioPlayer;
     private final AudioQueue audioQueue;
     private final Logger logger;
+
     private DiscordEntity<? extends AudioChannel> audioChannel;
     private DiscordEntity.MessageChannel communicationChannel;
     private DiscordEntity.Message lastPlaybackNotification;
     private QueueIterator currentQueueIterator;
+    private int defaultVolume = 100;
 
     // time the bot has been alone in the voice channel since
     @Nullable
@@ -184,8 +186,8 @@ public class AudioPlayback {
             audioPlayer.stopTrack();
             changedAnything = true;
         }
-        if (getVolume() != 100) {
-            setVolume(100);
+        if (getVolume() != defaultVolume) {
+            setVolume(defaultVolume);
             changedAnything = true;
         }
         if (isShuffle()) {
@@ -264,5 +266,17 @@ public class AudioPlayback {
 
     public void setAloneSince(@Nullable LocalDateTime aloneSince) {
         this.aloneSince = aloneSince;
+    }
+
+    public int getDefaultVolume() {
+        return defaultVolume;
+    }
+
+    public void setDefaultVolume(int defaultVolume) {
+        // if the current volume matches the default, change current volume as well
+        if (this.defaultVolume == getVolume()) {
+            setVolume(defaultVolume);
+        }
+        this.defaultVolume = defaultVolume;
     }
 }

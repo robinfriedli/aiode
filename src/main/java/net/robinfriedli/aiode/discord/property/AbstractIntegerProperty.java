@@ -2,9 +2,10 @@ package net.robinfriedli.aiode.discord.property;
 
 import net.robinfriedli.aiode.entities.GuildSpecification;
 import net.robinfriedli.aiode.entities.xml.GuildPropertyContribution;
+import net.robinfriedli.aiode.exceptions.InvalidPropertyValueException;
 
 /**
- * Property extension for properties that have a boolean value.
+ * Property extension for properties that have an integer value.
  */
 public abstract class AbstractIntegerProperty extends AbstractGuildProperty {
 
@@ -13,12 +14,12 @@ public abstract class AbstractIntegerProperty extends AbstractGuildProperty {
     }
 
     @Override
-    public void validate(Object state) {
-    }
-
-    @Override
     public Object process(String input) {
-        return Integer.parseInt(input);
+        try {
+            return Integer.parseInt(input);
+        } catch (NumberFormatException e) {
+            throw new InvalidPropertyValueException(String.format("'%s' is not an integer", input));
+        }
     }
 
     @Override
