@@ -10,6 +10,7 @@ import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
@@ -23,7 +24,9 @@ import net.robinfriedli.aiode.entities.xml.CommandContribution;
 import net.robinfriedli.aiode.persist.qb.QueryBuilderFactory;
 
 @Entity
-@Table(name = "stored_script")
+@Table(name = "stored_script", indexes = {
+    @Index(name = "stored_script_guild_id_idx", columnList = "guild_id")
+})
 public class StoredScript implements Serializable, SanitizedEntity {
 
     @Id

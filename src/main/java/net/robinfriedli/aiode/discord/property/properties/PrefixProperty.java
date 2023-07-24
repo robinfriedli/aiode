@@ -1,6 +1,11 @@
 package net.robinfriedli.aiode.discord.property.properties;
 
+import java.util.Objects;
+
+import net.dv8tion.jda.api.entities.Guild;
 import net.robinfriedli.aiode.Aiode;
+import net.robinfriedli.aiode.boot.SpringPropertiesConfig;
+import net.robinfriedli.aiode.concurrent.ExecutionContext;
 import net.robinfriedli.aiode.discord.GuildContext;
 import net.robinfriedli.aiode.discord.property.AbstractGuildProperty;
 import net.robinfriedli.aiode.discord.property.GuildPropertyManager;
@@ -25,6 +30,14 @@ public class PrefixProperty extends AbstractGuildProperty {
      * bot name plus a trailing whitespace if present or else "$aiode " / the default fallback. This is meant to be used to format example commands.
      */
     public static String getEffectiveCommandStartForCurrentContext() {
+        SpringPropertiesConfig springPropertiesConfig = Aiode.get().getSpringPropertiesConfig();
+        boolean messageContentEnabled = Objects.requireNonNullElse(springPropertiesConfig.getApplicationProperty(Boolean.class, "aiode.preferences.enable_message_content"), true);
+
+        if (!messageContentEnabled) {
+            Guild guild = ExecutionContext.Current.require().getGuild();
+            return guild.getSelfMember().getAsMention() + " ";
+        }
+
         GuildPropertyManager guildPropertyManager = Aiode.get().getGuildPropertyManager();
         return guildPropertyManager.getPropertyOptional("prefix")
             .flatMap(property -> property.getSetValue(String.class))

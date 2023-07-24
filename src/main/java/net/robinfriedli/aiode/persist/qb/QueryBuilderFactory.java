@@ -9,6 +9,7 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.From;
 import javax.persistence.criteria.Selection;
 
+import net.robinfriedli.aiode.persist.qb.builders.CountQueryBuilder;
 import net.robinfriedli.aiode.persist.qb.builders.EntityQueryBuilder;
 import net.robinfriedli.aiode.persist.qb.builders.SelectQueryBuilder;
 import net.robinfriedli.aiode.persist.qb.builders.SingleSelectQueryBuilder;
@@ -113,6 +114,10 @@ public final class QueryBuilderFactory {
      */
     public final <E> SelectQueryBuilder<E> select(Class<E> entityClass, List<BiFunction<From<?, ?>, CriteriaBuilder, Selection<?>>> selectionFuncs) {
         return new SelectQueryBuilder<>(entityClass, interceptors, selectionFuncs);
+    }
+
+    public <E> CountQueryBuilder<E> count(Class<E> entityClass) {
+        return new CountQueryBuilder<>(entityClass, interceptors);
     }
 
 }

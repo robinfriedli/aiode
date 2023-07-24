@@ -1,22 +1,40 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <widgets xmlns="widgetSpace">
   <widget implementation="net.robinfriedli.aiode.command.widget.widgets.NowPlayingWidget">
-    <widgetAction identifier="rewind" emojiUnicode="⏮" resetRequired="true" implementation="net.robinfriedli.aiode.command.widget.actions.RewindAction"/>
-    <widgetAction identifier="play" emojiUnicode="⏯" resetRequired="false" implementation="net.robinfriedli.aiode.command.widget.actions.PlayPauseAction"/>
-    <widgetAction identifier="skip" emojiUnicode="⏭" resetRequired="true" implementation="net.robinfriedli.aiode.command.widget.actions.SkipAction"/>
+    <action-row>
+      <widgetAction identifier="rewind" emojiUnicode="⏮" resetRequired="true" implementation="net.robinfriedli.aiode.command.widget.actions.RewindAction"/>
+      <widgetAction identifier="play" emojiUnicode="⏯" resetRequired="false" implementation="net.robinfriedli.aiode.command.widget.actions.PlayPauseAction"/>
+      <widgetAction identifier="skip" emojiUnicode="⏭" resetRequired="true" implementation="net.robinfriedli.aiode.command.widget.actions.SkipAction"/>
+    </action-row>
   </widget>
-  <widget clearReactionOnReset="true" implementation="net.robinfriedli.aiode.command.widget.widgets.QueueWidget">
-    <widgetAction identifier="shuffle" emojiUnicode="🔀" resetRequired="true" implementation="net.robinfriedli.aiode.command.widget.actions.ShuffleAction"/>
-    <widgetAction identifier="rewind" emojiUnicode="⏮" resetRequired="true" implementation="net.robinfriedli.aiode.command.widget.actions.RewindAction"/>
-    <widgetAction identifier="play" emojiUnicode="⏯" resetRequired="true" implementation="net.robinfriedli.aiode.command.widget.actions.PlayPauseAction"/>
-    <widgetAction identifier="skip" emojiUnicode="⏭" resetRequired="true" implementation="net.robinfriedli.aiode.command.widget.actions.SkipAction"/>
-    <widgetAction identifier="repeat" emojiUnicode="🔁" resetRequired="true" implementation="net.robinfriedli.aiode.command.widget.actions.RepeatAllAction"/>
-    <widgetAction identifier="repeat" emojiUnicode="🔂" resetRequired="true" implementation="net.robinfriedli.aiode.command.widget.actions.RepeatOneAction"/>
+  <widget implementation="net.robinfriedli.aiode.command.widget.widgets.QueueWidget">
+    <action-row>
+      <widgetAction identifier="shuffle" emojiUnicode="🔀" resetRequired="true" implementation="net.robinfriedli.aiode.command.widget.actions.ShuffleAction"/>
+      <widgetAction identifier="rewind" emojiUnicode="⏮" resetRequired="true" implementation="net.robinfriedli.aiode.command.widget.actions.RewindAction"/>
+      <widgetAction identifier="play" emojiUnicode="⏯" resetRequired="true" implementation="net.robinfriedli.aiode.command.widget.actions.PlayPauseAction"/>
+      <widgetAction identifier="skip" emojiUnicode="⏭" resetRequired="true" implementation="net.robinfriedli.aiode.command.widget.actions.SkipAction"/>
+    </action-row>
+    <action-row>
+      <widgetAction identifier="repeat-all" emojiUnicode="🔁" resetRequired="true" implementation="net.robinfriedli.aiode.command.widget.actions.RepeatAllAction"/>
+      <widgetAction identifier="repeat-one" emojiUnicode="🔂" resetRequired="true" implementation="net.robinfriedli.aiode.command.widget.actions.RepeatOneAction"/>
+      <widgetAction identifier="volume-down" emojiUnicode="🔉" resetRequired="true" implementation="net.robinfriedli.aiode.command.widget.actions.VolumeDownAction"/>
+      <widgetAction identifier="volume-up" emojiUnicode="🔊" resetRequired="true" implementation="net.robinfriedli.aiode.command.widget.actions.VolumeUpAction"/>
+    </action-row>
   </widget>
-  <widget clearReactionOnReset="true" implementation="net.robinfriedli.aiode.command.widget.widgets.PermissionListPaginationWidget">
-    <widgetAction identifier="firstPage" emojiUnicode="⏮" resetRequired="true" displayPredicate="widget.getPages().size() > 1" implementation="net.robinfriedli.aiode.command.widget.actions.FirstPageAction"/>
-    <widgetAction identifier="prevPage" emojiUnicode="⏪" resetRequired="true" displayPredicate="widget.getPages().size() > 1" implementation="net.robinfriedli.aiode.command.widget.actions.PrevPageAction"/>
-    <widgetAction identifier="nextPage" emojiUnicode="⏩" resetRequired="true" displayPredicate="widget.getPages().size() > 1" implementation="net.robinfriedli.aiode.command.widget.actions.NextPageAction"/>
-    <widgetAction identifier="lastPage" emojiUnicode="⏭" resetRequired="true" displayPredicate="widget.getPages().size() > 1" implementation="net.robinfriedli.aiode.command.widget.actions.LastPageAction"/>
+  <widget implementation="net.robinfriedli.aiode.command.widget.widgets.PermissionListPaginationWidget">
+    <action-row>
+      <widgetAction identifier="firstPage" emojiUnicode="⏮" resetRequired="true" displayPredicate="widget.getPages().size() > 1" implementation="net.robinfriedli.aiode.command.widget.actions.FirstPageAction"/>
+      <widgetAction identifier="prevPage" emojiUnicode="⏪" resetRequired="true" displayPredicate="widget.getPages().size() > 1" implementation="net.robinfriedli.aiode.command.widget.actions.PrevPageAction"/>
+      <widgetAction identifier="nextPage" emojiUnicode="⏩" resetRequired="true" displayPredicate="widget.getPages().size() > 1" implementation="net.robinfriedli.aiode.command.widget.actions.NextPageAction"/>
+      <widgetAction identifier="lastPage" emojiUnicode="⏭" resetRequired="true" displayPredicate="widget.getPages().size() > 1" implementation="net.robinfriedli.aiode.command.widget.actions.LastPageAction"/>
+    </action-row>
+  </widget>
+  <widget allowMultipleActive="true" keepMessageOnDestroy="true" implementation="net.robinfriedli.aiode.command.widget.widgets.PaginatedMessageEmbedWidget">
+    <action-row>
+      <widgetAction identifier="firstPage" emojiUnicode="⏮" resetRequired="true" displayPredicate="widget.getPages().size() > 1" implementation="net.robinfriedli.aiode.command.widget.actions.FirstPageAction"/>
+      <widgetAction identifier="prevPage" emojiUnicode="⏪" resetRequired="true" displayPredicate="widget.getPages().size() > 1" implementation="net.robinfriedli.aiode.command.widget.actions.PrevPageAction"/>
+      <widgetAction identifier="nextPage" emojiUnicode="⏩" resetRequired="true" displayPredicate="widget.getPages().size() > 1" implementation="net.robinfriedli.aiode.command.widget.actions.NextPageAction"/>
+      <widgetAction identifier="lastPage" emojiUnicode="⏭" resetRequired="true" displayPredicate="widget.getPages().size() > 1" implementation="net.robinfriedli.aiode.command.widget.actions.LastPageAction"/>
+    </action-row>
   </widget>
 </widgets>

@@ -15,13 +15,15 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.Event;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent;
 import net.dv8tion.jda.api.events.guild.member.update.GuildMemberUpdateNicknameEvent;
 import net.dv8tion.jda.api.events.role.RoleDeleteEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.robinfriedli.aiode.Aiode;
+import net.robinfriedli.aiode.boot.SpringPropertiesConfig;
 import net.robinfriedli.aiode.boot.configurations.HibernateComponent;
 import net.robinfriedli.aiode.command.commands.customisation.RenameCommand;
 import net.robinfriedli.aiode.concurrent.CommandExecutionQueueManager;
@@ -126,13 +128,18 @@ public class GuildManagementListener extends ListenerAdapter {
                         hibernateComponent.consumeSession(session -> {
                             guildContext.setBotName(name);
 
-                            EmbedBuilder embedBuilder = new EmbedBuilder();
-                            embedBuilder.setTitle("Renamed");
-                            embedBuilder.setDescription(String.format("Aiode has been renamed to '%s'. This new name can be used as command prefix.", name));
-                            embedBuilder.setColor(ColorSchemeProperty.getColor(guildContext.getSpecification(session)));
-                            TextChannel textChannel = guildManager.getDefaultTextChannelForGuild(guild);
-                            if (textChannel != null) {
-                                messageService.sendTemporary(embedBuilder.build(), textChannel);
+                            SpringPropertiesConfig springPropertiesConfig = Aiode.get().getSpringPropertiesConfig();
+                            boolean messageContentEnabled = Objects.requireNonNullElse(springPropertiesConfig.getApplicationProperty(Boolean.class, "aiode.preferences.enable_message_content"), true);
+
+                            if (messageContentEnabled) {
+                                EmbedBuilder embedBuilder = new EmbedBuilder();
+                                embedBuilder.setTitle("Renamed");
+                                embedBuilder.setDescription(String.format("Aiode has been renamed to '%s'. This new name can be used as command prefix.", name));
+                                embedBuilder.setColor(ColorSchemeProperty.getColor(guildContext.getSpecification(session)));
+                                TextChannel textChannel = guildManager.getDefaultTextChannelForGuild(guild);
+                                if (textChannel != null) {
+                                    messageService.sendTemporary(embedBuilder.build(), textChannel);
+                                }
                             }
                         });
                     }

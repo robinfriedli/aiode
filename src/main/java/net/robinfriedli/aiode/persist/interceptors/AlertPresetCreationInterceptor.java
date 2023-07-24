@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.slf4j.Logger;
 
-import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.robinfriedli.aiode.concurrent.ExecutionContext;
 import net.robinfriedli.aiode.discord.MessageService;
 import net.robinfriedli.aiode.entities.Preset;

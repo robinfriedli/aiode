@@ -8,9 +8,11 @@ import org.slf4j.LoggerFactory;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.TextChannel;
-import net.dv8tion.jda.api.events.message.guild.GuildMessageDeleteEvent;
-import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
+import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
+import net.dv8tion.jda.api.entities.emoji.EmojiUnion;
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
+import net.dv8tion.jda.api.events.message.MessageDeleteEvent;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.robinfriedli.aiode.Aiode;
@@ -46,8 +48,9 @@ public class WidgetListener extends ListenerAdapter {
     }
 
     @Override
-    public void onGuildMessageReactionAdd(GuildMessageReactionAddEvent event) {
-        if (!event.getUser().isBot()) {
+    public void onButtonInteraction(@NotNull ButtonInteractionEvent event) {
+        User user = event.getUser();
+        if (!user.isBot()) {
             EventHandlerPool.execute(() -> {
                 long messageId = event.getMessageIdLong();
                 WidgetRegistry widgetRegistry = guildManager.getContextForGuild(event.getGuild()).getWidgetRegistry();
@@ -59,7 +62,11 @@ public class WidgetListener extends ListenerAdapter {
     }
 
     @Override
-    public void onGuildMessageDelete(@NotNull GuildMessageDeleteEvent event) {
+    public void onMessageDelete(@NotNull MessageDeleteEvent event) {
+        if (!event.isFromGuild()) {
+            return;
+        }
+
         EventHandlerPool.execute(() -> {
             WidgetRegistry widgetRegistry = guildManager.getContextForGuild(event.getGuild()).getWidgetRegistry();
             widgetRegistry.getActiveWidget(event.getMessageIdLong()).ifPresent(widget -> {
@@ -69,13 +76,12 @@ public class WidgetListener extends ListenerAdapter {
         });
     }
 
-    private void handleWidgetExecution(GuildMessageReactionAddEvent event, AbstractWidget activeWidget) {
-        TextChannel channel = event.getChannel();
+    private void handleWidgetExecution(ButtonInteractionEvent event, AbstractWidget activeWidget) {
+        MessageChannelUnion channel = event.getChannel();
         Guild guild = event.getGuild();
         Aiode aiode = Aiode.get();
         SpotifyApi.Builder spotifyApiBuilder = aiode.getSpotifyApiBuilder();
         GuildContext guildContext = aiode.getGuildManager().getContextForGuild(guild);
-        String emojiUnicode = event.getReaction().getReactionEmote().getName();
 
         try {
             Message message = activeWidget.getMessage().retrieve();
@@ -84,16 +90,17 @@ public class WidgetListener extends ListenerAdapter {
                 throw new IllegalStateException("Message of widget could not be retrieved.");
             }
 
+            EmojiUnion emoji = event.getButton().getEmoji();
             CommandContext commandContext = new CommandContext(
                 event,
                 guildContext,
-                message,
+                message.getContentDisplay(),
                 hibernateComponent.getSessionFactory(),
                 spotifyApiBuilder,
-                emojiUnicode
+                emoji != null ? emoji.getAsReactionCode() : event.getButton().getLabel()
             );
 
-            activeWidget.handleReaction(event, commandContext);
+            activeWidget.handleButtonInteraction(event, commandContext);
         } catch (UserException e) {
             messageService.sendError(e.getMessage(), channel);
         } catch (InsufficientPermissionException e) {

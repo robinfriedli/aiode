@@ -8,10 +8,15 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "command_history")
+@Table(name = "command_history", indexes = {
+    @Index(name = "command_history_guild_id_idx", columnList = "guild_id"),
+    @Index(name = "command_history_user_id_idx", columnList = "user_id"),
+    @Index(name = "command_history_start_millis_idx", columnList = "start_millis")
+})
 public class CommandHistory implements Serializable {
 
     @Id
@@ -26,7 +31,7 @@ public class CommandHistory implements Serializable {
     private String commandIdentifier;
     @Column(name = "is_widget", nullable = false)
     private boolean isWidget;
-    @Column(name = "command_context_id")
+    @Column(name = "command_context_id", unique = true)
     private String commandContextId;
     @Column(name = "command_body", length = 2000)
     private String commandBody;

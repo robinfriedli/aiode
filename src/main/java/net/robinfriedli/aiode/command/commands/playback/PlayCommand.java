@@ -1,17 +1,22 @@
 package net.robinfriedli.aiode.command.commands.playback;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
+import com.google.common.collect.Lists;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.MessageChannel;
-import net.dv8tion.jda.api.entities.VoiceChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.AudioChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.audio.AudioManager;
 import net.robinfriedli.aiode.audio.AudioPlayback;
-import net.robinfriedli.aiode.audio.AudioQueue;
-import net.robinfriedli.aiode.audio.Playable;
-import net.robinfriedli.aiode.audio.PlayableFactory;
+import net.robinfriedli.aiode.audio.playables.PlayableContainer;
+import net.robinfriedli.aiode.audio.playables.PlayableContainerManager;
+import net.robinfriedli.aiode.audio.playables.PlayableFactory;
+import net.robinfriedli.aiode.audio.queue.AudioQueue;
+import net.robinfriedli.aiode.audio.queue.QueueFragment;
 import net.robinfriedli.aiode.command.CommandContext;
 import net.robinfriedli.aiode.command.CommandManager;
 import net.robinfriedli.aiode.command.commands.AbstractQueueLoadingCommand;
@@ -22,7 +27,8 @@ import net.robinfriedli.aiode.exceptions.NoResultsFoundException;
 public class PlayCommand extends AbstractQueueLoadingCommand {
 
     public PlayCommand(CommandContribution commandContribution, CommandContext context, CommandManager commandManager, String commandString, boolean requiresInput, String identifier, String description, Category category) {
-        super(commandContribution,
+        super(
+            commandContribution,
             context,
             commandManager,
             commandString,
@@ -30,15 +36,15 @@ public class PlayCommand extends AbstractQueueLoadingCommand {
             identifier,
             description,
             category,
-            true,
-            context.getGuildContext().getReplaceableTrackLoadingExecutor());
+            context.getGuildContext().getReplaceableTrackLoadingExecutor()
+        );
     }
 
     @Override
     public void doRun() throws Exception {
         CommandContext context = getContext();
         Guild guild = context.getGuild();
-        VoiceChannel channel = context.getVoiceChannel();
+        AudioChannel channel = context.getAudioChannel();
         AudioManager audioManager = Aiode.get().getAudioManager();
         MessageChannel messageChannel = getContext().getChannel();
         AudioPlayback playbackForGuild = audioManager.getPlaybackForGuild(guild);
@@ -56,12 +62,9 @@ public class PlayCommand extends AbstractQueueLoadingCommand {
     }
 
     @Override
-    protected void handleResults(List<Playable> playables) {
-        if (playables.isEmpty()) {
-            throw new NoResultsFoundException("Result is empty!");
-        }
+    protected void handleResult(PlayableContainer<?> playableContainer, PlayableFactory playableFactory) {
         Guild guild = getContext().getGuild();
-        VoiceChannel channel = getContext().getVoiceChannel();
+        AudioChannel channel = getContext().getAudioChannel();
         AudioManager audioManager = Aiode.get().getAudioManager();
 
         AudioPlayback playback = getContext().getGuildContext().getPlayback();
@@ -69,7 +72,15 @@ public class PlayCommand extends AbstractQueueLoadingCommand {
         if (audioPlayer.getPlayingTrack() != null) {
             audioPlayer.stopTrack();
         }
-        playback.getAudioQueue().set(playables);
+
+        AudioQueue audioQueue = playback.getAudioQueue();
+
+        QueueFragment queueFragment = playableContainer.createQueueFragment(playableFactory, audioQueue);
+        if (queueFragment == null) {
+            throw new NoResultsFoundException("Result is empty!");
+        }
+
+        audioQueue.set(queueFragment);
         audioManager.startPlayback(guild, channel);
     }
 
@@ -80,20 +91,33 @@ public class PlayCommand extends AbstractQueueLoadingCommand {
 
     @Override
     public void withUserResponse(Object option) {
-        AudioManager audioManager = Aiode.get().getAudioManager();
+        Aiode aiode = Aiode.get();
+        AudioManager audioManager = aiode.getAudioManager();
+        PlayableContainerManager playableContainerManager = aiode.getPlayableContainerManager();
         Guild guild = getContext().getGuild();
-        PlayableFactory playableFactory = audioManager.createPlayableFactory(getSpotifyService(), getTrackLoadingExecutor());
+        PlayableFactory playableFactory = audioManager.createPlayableFactory(getSpotifyService(), getTrackLoadingExecutor(), shouldRedirectSpotify());
         AudioPlayback playback = audioManager.getPlaybackForGuild(guild);
         AudioQueue queue = playback.getAudioQueue();
 
-        List<Playable> playables = playableFactory.createPlayables(shouldRedirectSpotify(), option);
+        List<PlayableContainer<?>> playableContainers;
+
+        if (option instanceof Collection collection) {
+            playableContainers = Lists.newArrayList();
+            for (Object o : collection) {
+                playableContainers.add(playableContainerManager.requirePlayableContainer(o));
+            }
+        } else {
+            playableContainers = Collections.singletonList(playableContainerManager.requirePlayableContainer(option));
+        }
+
         AudioPlayer audioPlayer = playback.getAudioPlayer();
         if (audioPlayer.getPlayingTrack() != null) {
             audioPlayer.stopTrack();
         }
-        queue.set(playables);
 
-        audioManager.startPlayback(guild, getContext().getVoiceChannel());
+        queue.addContainers(playableContainers, playableFactory, true, null);
+
+        audioManager.startPlayback(guild, getContext().getAudioChannel());
     }
 
 }

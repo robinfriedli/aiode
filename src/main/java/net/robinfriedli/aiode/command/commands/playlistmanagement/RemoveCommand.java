@@ -92,15 +92,17 @@ public class RemoveCommand extends AbstractCommand {
 
     @Override
     public void withUserResponse(Object option) {
-        Session session = getContext().getSession();
-
-        invoke(() -> {
-            if (option instanceof Collection) {
-                for (Object o : ((Collection) option)) {
-                    session.delete(o);
+        consumeSession(session -> {
+            if (option instanceof Collection playlistItems) {
+                for (Object o : playlistItems) {
+                    PlaylistItem playlistItem = (PlaylistItem) o;
+                    PlaylistItem reloadedItem = session.load(playlistItem.getClass(), playlistItem.getPk());
+                    session.delete(reloadedItem);
                 }
             } else {
-                session.delete(option);
+                PlaylistItem playlistItem = (PlaylistItem) option;
+                PlaylistItem reloadedItem = session.load(playlistItem.getClass(), playlistItem.getPk());
+                session.delete(reloadedItem);
             }
         });
 

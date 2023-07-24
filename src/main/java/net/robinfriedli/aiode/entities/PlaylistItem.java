@@ -42,6 +42,8 @@ public abstract class PlaylistItem implements Serializable {
         this.playlist = playlist;
     }
 
+    public abstract long getPk();
+
     public abstract PlaylistItem copy(Playlist playlist);
 
     public abstract boolean matches(String searchTerm);

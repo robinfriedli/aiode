@@ -660,7 +660,7 @@
     <method name="isOwner"/>
     <method name="getDefaultChannel"/>
   </whitelistMethods>
-  <whitelistMethods class="net.dv8tion.jda.api.entities.MessageChannel">
+  <whitelistMethods class="net.dv8tion.jda.api.entities.channel.middleman.MessageChannel">
     <method name="getName"/>
     <method name="getType"/>
     <method name="sendMessage"/>
@@ -740,7 +740,7 @@
   <whitelistClass class="java.util.stream.Collectors"/>
   <whitelistClass class="java.util.Random"/>
   <whitelistClass class="net.dv8tion.jda.api.EmbedBuilder"/>
-  <whitelistClass class="net.robinfriedli.aiode.audio.AudioQueue"/>
+  <whitelistClass class="net.robinfriedli.aiode.audio.queue.AudioQueue"/>
   <whitelistClass onlyGenerated="true" class="net.robinfriedli.aiode.scripting.GroovyCompilationCustomizer$RuntimeInvocationCountChecker"/>
   <whitelistClass onlyGenerated="true" class="org.codehaus.groovy.runtime.InvokerHelper"/>
 </whitelistConfiguration>

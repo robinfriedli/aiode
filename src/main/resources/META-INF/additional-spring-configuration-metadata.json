@@ -94,6 +94,16 @@
       "name": "aiode.preferences.main_instance",
       "type": "java.lang.Boolean",
       "description": "Determines if this bot instance is the main instance and will not run certain startup tasks or cron jobs otherwise. Should only be false in a multi instance environment, there should be exactly one main_instance."
+    },
+    {
+      "name": "aiode.preferences.enable_slash_commands",
+      "type": "java.lang.Boolean",
+      "description": "Enable support for slash commands by uploading configured commands.xml CommandContributions as slash commands."
+    },
+    {
+      "name": "aiode.preferences.enable_message_content",
+      "type": "java.lang.Boolean",
+      "description": "Enable the privileged MESSAGE_CONTENT intent, requires special privileges from Discord for bots in more than 100 guilds. Required for commands that aren't slash-commands."
     }
   ]
 }

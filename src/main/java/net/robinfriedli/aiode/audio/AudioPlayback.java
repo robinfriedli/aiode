@@ -12,9 +12,12 @@ import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageChannel;
-import net.dv8tion.jda.api.entities.VoiceChannel;
+import net.dv8tion.jda.api.entities.channel.concrete.StageChannel;
+import net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.AudioChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.robinfriedli.aiode.Aiode;
+import net.robinfriedli.aiode.audio.queue.AudioQueue;
 import net.robinfriedli.aiode.boot.SpringPropertiesConfig;
 import net.robinfriedli.aiode.discord.DiscordEntity;
 import net.robinfriedli.aiode.function.RateLimitInvoker;
@@ -32,7 +35,7 @@ public class AudioPlayback {
     private final AudioPlayer audioPlayer;
     private final AudioQueue audioQueue;
     private final Logger logger;
-    private DiscordEntity.VoiceChannel voiceChannel;
+    private DiscordEntity<? extends AudioChannel> audioChannel;
     private DiscordEntity.MessageChannel communicationChannel;
     private DiscordEntity.Message lastPlaybackNotification;
     private QueueIterator currentQueueIterator;
@@ -84,19 +87,23 @@ public class AudioPlayback {
         return audioQueue;
     }
 
-    public VoiceChannel getVoiceChannel() {
-        if (voiceChannel != null) {
-            return voiceChannel.get();
+    public AudioChannel getAudioChannel() {
+        if (audioChannel != null) {
+            return audioChannel.get();
         } else {
             return null;
         }
     }
 
-    public void setVoiceChannel(VoiceChannel voiceChannel) {
-        if (voiceChannel != null) {
-            this.voiceChannel = new DiscordEntity.VoiceChannel(voiceChannel);
+    public void setVoiceChannel(AudioChannel audioChannel) {
+        if (audioChannel instanceof VoiceChannel voiceChannel) {
+            this.audioChannel = new DiscordEntity.VoiceChannel(voiceChannel);
+        } else if (audioChannel instanceof StageChannel stageChannel) {
+            this.audioChannel = new DiscordEntity.StageChannel(stageChannel);
+        } else if (audioChannel != null) {
+            throw new IllegalArgumentException("Illegal audioChannel type " + audioChannel.getClass());
         } else {
-            this.voiceChannel = null;
+            this.audioChannel = null;
         }
     }
 
@@ -117,7 +124,7 @@ public class AudioPlayback {
     }
 
     public boolean isRepeatOne() {
-        return audioQueue.isRepeatOne();
+        return audioQueue.getRepeatOne();
     }
 
     public void setRepeatOne(boolean repeatOne) {
@@ -125,7 +132,7 @@ public class AudioPlayback {
     }
 
     public boolean isRepeatAll() {
-        return audioQueue.isRepeatAll();
+        return audioQueue.getRepeatAll();
     }
 
     public void setRepeatAll(boolean repeatAll) {
@@ -159,7 +166,7 @@ public class AudioPlayback {
 
     public void leaveChannel() {
         guild.get().getAudioManager().closeAudioConnection();
-        voiceChannel = null;
+        audioChannel = null;
     }
 
     /**
@@ -193,9 +200,9 @@ public class AudioPlayback {
             setRepeatOne(false);
             changedAnything = true;
         }
-        if (voiceChannel != null) {
+        if (audioChannel != null) {
             guild.get().getAudioManager().closeAudioConnection();
-            voiceChannel = null;
+            audioChannel = null;
             changedAnything = true;
         }
         if (communicationChannel != null) {

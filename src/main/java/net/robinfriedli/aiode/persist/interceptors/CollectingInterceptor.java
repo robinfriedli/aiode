@@ -102,13 +102,28 @@ public abstract class CollectingInterceptor extends ChainableInterceptor {
         return updatedEntities.stream().filter(type::isInstance).map(type::cast).collect(Collectors.toList());
     }
 
-    public List<Object> getAffectedEntites() {
-        Iterable<Object> concat = Iterables.concat(createdEntities, deletedEntities, updatedEntities);
+    public List<Object> getAffectedEntities() {
+        Iterable<java.lang.Object> concat = Iterables.concat(createdEntities, updatedEntities);
 
         return StreamSupport.stream(concat.spliterator(), false).collect(Collectors.toList());
     }
 
     public <E> List<E> getAffectedEntities(Class<E> type) {
+        Iterable<Object> concat = Iterables.concat(createdEntities, updatedEntities);
+
+        return StreamSupport.stream(concat.spliterator(), false)
+            .filter(type::isInstance)
+            .map(type::cast)
+            .collect(Collectors.toList());
+    }
+
+    public List<Object> getAllAffectedEntities() {
+        Iterable<Object> concat = Iterables.concat(createdEntities, deletedEntities, updatedEntities);
+
+        return StreamSupport.stream(concat.spliterator(), false).collect(Collectors.toList());
+    }
+
+    public <E> List<E> getAllAffectedEntities(Class<E> type) {
         Iterable<Object> concat = Iterables.concat(createdEntities, deletedEntities, updatedEntities);
 
         return StreamSupport.stream(concat.spliterator(), false)

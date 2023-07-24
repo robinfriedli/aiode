@@ -1,15 +1,21 @@
 package net.robinfriedli.aiode.audio.spotify;
 
-import java.util.List;
 import java.util.regex.Pattern;
 
-import com.google.common.collect.Lists;
-import net.robinfriedli.aiode.audio.Playable;
-import net.robinfriedli.aiode.audio.PlayableFactory;
+import net.robinfriedli.aiode.audio.playables.PlayableContainer;
+import net.robinfriedli.aiode.audio.playables.PlayableFactory;
+import net.robinfriedli.aiode.audio.playables.containers.EpisodePlayableContainer;
+import net.robinfriedli.aiode.audio.playables.containers.SpotifyAlbumPlayableContainer;
+import net.robinfriedli.aiode.audio.playables.containers.SpotifyPlaylistPlayableContainer;
+import net.robinfriedli.aiode.audio.playables.containers.SpotifyShowPlayableContainer;
+import net.robinfriedli.aiode.audio.playables.containers.TrackPlayableContainer;
 import net.robinfriedli.aiode.exceptions.InvalidCommandException;
 import net.robinfriedli.aiode.function.SpotifyInvoker;
 import se.michaelthelin.spotify.exceptions.detailed.NotFoundException;
+import se.michaelthelin.spotify.model_objects.specification.Album;
 import se.michaelthelin.spotify.model_objects.specification.Episode;
+import se.michaelthelin.spotify.model_objects.specification.Playlist;
+import se.michaelthelin.spotify.model_objects.specification.Show;
 import se.michaelthelin.spotify.model_objects.specification.Track;
 
 /**
@@ -61,22 +67,22 @@ public class SpotifyUri {
         return type;
     }
 
-    public List<Playable> loadPlayables(PlayableFactory playableFactory,
-                                        SpotifyService spotifyService,
-                                        boolean redirect,
-                                        boolean mayInterrupt) throws Exception {
-        return type.loadPlayables(playableFactory, spotifyService, this, redirect, mayInterrupt);
+    public PlayableContainer<?> createPlayableContainer(
+        PlayableFactory playableFactory,
+        SpotifyService spotifyService
+    ) throws Exception {
+        return type.createPlayableContainer(playableFactory, spotifyService, this);
     }
 
     public enum Type {
 
         TRACK(Pattern.compile("spotify:track:[a-zA-Z0-9]{22}")) {
             @Override
-            public List<Playable> loadPlayables(PlayableFactory playableFactory,
-                                                SpotifyService spotifyService,
-                                                SpotifyUri uri,
-                                                boolean redirect,
-                                                boolean mayInterrupt) throws Exception {
+            public PlayableContainer<?> createPlayableContainer(
+                PlayableFactory playableFactory,
+                SpotifyService spotifyService,
+                SpotifyUri uri
+            ) throws Exception {
                 SpotifyInvoker invoker = SpotifyInvoker.create(spotifyService.getSpotifyApi());
                 Track track;
                 try {
@@ -84,50 +90,50 @@ public class SpotifyUri {
                 } catch (NotFoundException e) {
                     throw new InvalidCommandException("No results found for id " + uri.getId());
                 }
-                return Lists.newArrayList(playableFactory.createPlayable(redirect, track));
+                return new TrackPlayableContainer(track);
             }
         },
         ALBUM(Pattern.compile("spotify:album:[a-zA-Z0-9]{22}")) {
             @Override
-            public List<Playable> loadPlayables(PlayableFactory playableFactory,
-                                                SpotifyService spotifyService,
-                                                SpotifyUri uri,
-                                                boolean redirect,
-                                                boolean mayInterrupt) throws Exception {
+            public PlayableContainer<?> createPlayableContainer(
+                PlayableFactory playableFactory,
+                SpotifyService spotifyService,
+                SpotifyUri uri
+            ) throws Exception {
                 SpotifyInvoker invoker = SpotifyInvoker.create(spotifyService.getSpotifyApi());
-                List<Track> tracks;
+                Album album;
                 try {
-                    tracks = invoker.invoke(() -> spotifyService.getAlbumTracks(uri.getId()));
+                    album = invoker.invoke(() -> spotifyService.getAlbum(uri.getId()));
                 } catch (NotFoundException e) {
                     throw new InvalidCommandException("No results found for id " + uri.getId());
                 }
-                return playableFactory.createPlayables(redirect, tracks);
+                return new SpotifyAlbumPlayableContainer(album);
             }
         },
         PLAYLIST(Pattern.compile("spotify:playlist:[a-zA-Z0-9]{22}")) {
             @Override
-            public List<Playable> loadPlayables(PlayableFactory playableFactory,
-                                                SpotifyService spotifyService,
-                                                SpotifyUri uri,
-                                                boolean redirect,
-                                                boolean mayInterrupt) throws Exception {
+            public PlayableContainer<?> createPlayableContainer(
+                PlayableFactory playableFactory,
+                SpotifyService spotifyService,
+                SpotifyUri uri
+            ) throws Exception {
                 SpotifyInvoker invoker = SpotifyInvoker.create(spotifyService.getSpotifyApi());
-                List<SpotifyTrack> tracks;
+                Playlist playlist;
                 try {
-                    tracks = invoker.invoke(() -> spotifyService.getPlaylistTracks(uri.getId()));
+                    playlist = invoker.invoke(() -> spotifyService.getPlaylist(uri.getId()));
                 } catch (NotFoundException e) {
                     throw new InvalidCommandException("No results found for id " + uri.getId());
                 }
-                return playableFactory.createPlayables(redirect, tracks);
+                return new SpotifyPlaylistPlayableContainer(playlist);
             }
         },
         EPISODE(Pattern.compile("spotify:episode:[a-zA-Z0-9]{22}")) {
             @Override
-            public List<Playable> loadPlayables(PlayableFactory playableFactory,
-                                                SpotifyService spotifyService,
-                                                SpotifyUri uri,
-                                                boolean redirect,
-                                                boolean mayInterrupt) throws Exception {
+            public PlayableContainer<?> createPlayableContainer(
+                PlayableFactory playableFactory,
+                SpotifyService spotifyService,
+                SpotifyUri uri
+            ) throws Exception {
                 SpotifyInvoker invoker = SpotifyInvoker.create(spotifyService.getSpotifyApi());
                 Episode episode;
                 try {
@@ -135,24 +141,24 @@ public class SpotifyUri {
                 } catch (NotFoundException e) {
                     throw new InvalidCommandException("No results found for id " + uri.getId());
                 }
-                return Lists.newArrayList(playableFactory.createPlayable(redirect, episode));
+                return new EpisodePlayableContainer(episode);
             }
         },
         SHOW(Pattern.compile("spotify:show:[a-zA-Z0-9]{22}")) {
             @Override
-            public List<Playable> loadPlayables(PlayableFactory playableFactory,
-                                                SpotifyService spotifyService,
-                                                SpotifyUri uri,
-                                                boolean redirect,
-                                                boolean mayInterrupt) throws Exception {
+            public PlayableContainer<?> createPlayableContainer(
+                PlayableFactory playableFactory,
+                SpotifyService spotifyService,
+                SpotifyUri uri
+            ) throws Exception {
                 SpotifyInvoker invoker = SpotifyInvoker.create(spotifyService.getSpotifyApi());
-                List<Episode> episodes;
+                Show show;
                 try {
-                    episodes = invoker.invoke(() -> spotifyService.getShowEpisodes(uri.getId()));
+                    show = invoker.invoke(() -> spotifyService.getShow(uri.getId()));
                 } catch (NotFoundException e) {
                     throw new InvalidCommandException("No results found for id " + uri.getId());
                 }
-                return playableFactory.createPlayables(redirect, episodes);
+                return new SpotifyShowPlayableContainer(show);
             }
         };
 
@@ -166,11 +172,11 @@ public class SpotifyUri {
             return pattern;
         }
 
-        public abstract List<Playable> loadPlayables(PlayableFactory playableFactory,
-                                                     SpotifyService spotifyService,
-                                                     SpotifyUri uri,
-                                                     boolean redirect,
-                                                     boolean mayInterrupt) throws Exception;
+        public abstract PlayableContainer<?> createPlayableContainer(
+            PlayableFactory playableFactory,
+            SpotifyService spotifyService,
+            SpotifyUri uri
+        ) throws Exception;
 
     }
 

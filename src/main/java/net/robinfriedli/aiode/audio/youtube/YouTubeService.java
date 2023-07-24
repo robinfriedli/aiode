@@ -42,7 +42,6 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.audio.AudioTrackLoader;
-import net.robinfriedli.aiode.audio.PlayableFactory;
 import net.robinfriedli.aiode.audio.spotify.SpotifyTrack;
 import net.robinfriedli.aiode.boot.AbstractShutdownable;
 import net.robinfriedli.aiode.boot.configurations.HibernateComponent;
@@ -139,9 +138,8 @@ public class YouTubeService extends AbstractShutdownable {
      * directly is by using the $preview argument with the {@link PlayCommand} or {@link QueueCommand} which plays the
      * provided mp3 preview.
      * <p>
-     * However Spotify MIGHT release an SDK supporting full playback of songs across all devices, not just browsers in
-     * which case this method and the corresponding block in {@link PlayableFactory#createPlayable(boolean, Object)} should
-     * be removed.
+     * However, Spotify MIGHT release an SDK supporting full playback of songs across all devices, not just browsers in
+     * which case this method and the corresponding spotify track redirection logic should be removed.
      * For reference, see <a href="https://github.com/spotify/web-api/issues/57">Web playback of Full Tracks - Github</a>
      * <p>
      * This method searches 5 youtube videos using the Spotify track name + artist and then uses a combination of

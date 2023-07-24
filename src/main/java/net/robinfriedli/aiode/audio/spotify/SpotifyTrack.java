@@ -28,6 +28,11 @@ public class SpotifyTrack {
         this.wrapped = wrapped;
     }
 
+    @Override
+    public String toString() {
+        return String.format("%s(%s):%s", getClass().getSimpleName(), getKind().name(), getId());
+    }
+
     public static SpotifyTrack wrap(IPlaylistItem playlistItem) {
         return new SpotifyTrack(playlistItem);
     }

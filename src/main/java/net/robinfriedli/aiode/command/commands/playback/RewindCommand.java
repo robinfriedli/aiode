@@ -1,11 +1,11 @@
 package net.robinfriedli.aiode.command.commands.playback;
 
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.VoiceChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.AudioChannel;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.audio.AudioManager;
 import net.robinfriedli.aiode.audio.AudioPlayback;
-import net.robinfriedli.aiode.audio.AudioQueue;
+import net.robinfriedli.aiode.audio.queue.AudioQueue;
 import net.robinfriedli.aiode.command.AbstractCommand;
 import net.robinfriedli.aiode.command.CommandContext;
 import net.robinfriedli.aiode.command.CommandManager;
@@ -24,13 +24,13 @@ public class RewindCommand extends AbstractCommand {
         Guild guild = getContext().getGuild();
         AudioPlayback playback = audioManager.getPlaybackForGuild(guild);
         AudioQueue queue = playback.getAudioQueue();
-        VoiceChannel channel = getContext().getVoiceChannel();
+        AudioChannel channel = getContext().getAudioChannel();
 
         if (!queue.hasPrevious()) {
             throw new InvalidCommandException("No previous item in queue");
         }
 
-        int queueSize = queue.getTracks().size();
+        int queueSize = queue.getSize();
         if (getCommandInput().isBlank()) {
             queue.reverse();
         } else {

@@ -21,8 +21,7 @@ public class CommandParserInterceptor extends AbstractChainableCommandIntercepto
 
     @Override
     public void performChained(Command command) {
-        if (command instanceof AbstractCommand) {
-            AbstractCommand textBasedCommand = (AbstractCommand) command;
+        if (command instanceof AbstractCommand textBasedCommand && !textBasedCommand.getContext().isSlashCommand()) {
             CommandParser commandParser = new CommandParser(textBasedCommand, ArgumentPrefixProperty.getForCurrentContext());
 
             try {

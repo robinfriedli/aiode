@@ -7,6 +7,10 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.CommandData;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 import net.robinfriedli.aiode.command.AbstractCommand;
 import net.robinfriedli.aiode.command.CommandContext;
 import net.robinfriedli.aiode.command.CommandManager;
@@ -38,6 +42,10 @@ public class CommandContribution extends CommandHierarchyNode<CommandArgument> i
 
     public String getIdentifier() {
         return getAttribute("identifier").getValue();
+    }
+
+    public String getDescription() {
+        return getAttribute("description").getValue();
     }
 
     @Override
@@ -105,6 +113,44 @@ public class CommandContribution extends CommandHierarchyNode<CommandArgument> i
         } catch (IllegalAccessException e) {
             throw new RuntimeException("Cannot access constructor of " + commandClass.getSimpleName(), e);
         }
+    }
+
+    public CommandData buildSlashCommandData() {
+        String slashCommandIdentifier;
+        if (hasAttribute("slashCommandIdentifier")) {
+            slashCommandIdentifier = getAttribute("slashCommandIdentifier").getValue();
+        } else {
+            slashCommandIdentifier = getIdentifier();
+        }
+        return buildSlashCommandData(slashCommandIdentifier);
+    }
+
+    public CommandData buildSlashCommandData(String identifier) {
+        SlashCommandData commandData = Commands.slash(sanitizeSlashCommandIdentifier(identifier), trimDescription(getDescription()));
+
+        for (CommandArgument commandArgument : getArguments().values()) {
+            ArgumentContribution argumentContribution = commandArgument.getArgumentContribution();
+            OptionType optionType = argumentContribution.getOptionType();
+
+            commandData.addOption(
+                optionType,
+                sanitizeSlashCommandIdentifier(argumentContribution.getIdentifier()),
+                trimDescription(argumentContribution.getDescription())
+            );
+        }
+
+        return commandData;
+    }
+
+    private static String sanitizeSlashCommandIdentifier(String s) {
+        return s.toLowerCase();
+    }
+
+    private static String trimDescription(String description) {
+        if (description.length() > 100) {
+            return description.substring(0, 97) + "...";
+        }
+        return description;
     }
 
     public static class AbstractCommandContribution extends CommandHierarchyNode<ArgumentContribution> {

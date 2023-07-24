@@ -871,9 +871,169 @@ See application.properties -> spring.liquibase.contexts
   <changeSet author="robinfriedli (generated)" id="1609015555077-7">
     <addNotNullConstraint columnDataType="boolean" columnName="unexpected_exception" tableName="command_history" validate="true"/>
   </changeSet>
-    <changeSet author="esieb (generated)" id="1637093581219-1">
-        <addColumn tableName="guild_specification">
-            <column name="default_volume" type="int4"/>
-        </addColumn>
-    </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1661614857691-1">
+    <addColumn tableName="preset">
+      <column name="command_id" type="int8"/>
+    </addColumn>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688821654137-1">
+    <addPrimaryKey columnNames="playback_history_pk, artist_pk" tableName="playback_history_artist"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688821654137-2">
+    <addPrimaryKey columnNames="song_pk, artist_pk" tableName="song_artist"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688821880733-1">
+    <createIndex indexName="playback_history_guild_id_idx" tableName="playback_history">
+      <column name="guild_id"/>
+    </createIndex>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688823606961-1">
+    <createIndex indexName="access_configuration_fk_guild_specification_idx" tableName="access_configuration">
+      <column name="fk_guild_specification"/>
+    </createIndex>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688823606961-2">
+    <createIndex indexName="custom_permission_target_guild_id_idx" tableName="custom_permission_target">
+      <column name="guild_id"/>
+    </createIndex>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688823606961-3">
+    <createIndex indexName="custom_permission_target_user_id_idx" tableName="custom_permission_target">
+      <column name="user_id"/>
+    </createIndex>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688823606961-4">
+    <createIndex indexName="episode_id_idx" tableName="episode">
+      <column name="id"/>
+    </createIndex>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688823606961-5">
+    <createIndex indexName="episode_playlist_pk_idx" tableName="episode">
+      <column name="playlist_pk"/>
+    </createIndex>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688823606961-6">
+    <createIndex indexName="granted_role_id_idx" tableName="granted_role">
+      <column name="id"/>
+    </createIndex>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688823606961-7">
+    <createIndex indexName="playback_history_track_id_idx" tableName="playback_history">
+      <column name="track_id"/>
+    </createIndex>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688823606961-8">
+    <createIndex indexName="playlist_guild_id_idx" tableName="playlist">
+      <column name="guild_id"/>
+    </createIndex>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688823606961-9">
+    <createIndex indexName="preset_guild_id_idx" tableName="preset">
+      <column name="guild_id"/>
+    </createIndex>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688823606961-10">
+    <createIndex indexName="song_id_idx" tableName="song">
+      <column name="id"/>
+    </createIndex>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688823606961-11">
+    <createIndex indexName="song_playlist_pk_idx" tableName="song">
+      <column name="playlist_pk"/>
+    </createIndex>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688823606961-12">
+    <createIndex indexName="stored_script_guild_id_idx" tableName="stored_script">
+      <column name="guild_id"/>
+    </createIndex>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688823606961-13">
+    <createIndex indexName="url_track_playlist_pk_idx" tableName="url_track">
+      <column name="playlist_pk"/>
+    </createIndex>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688823606961-14">
+    <createIndex indexName="url_track_url_idx" tableName="url_track">
+      <column name="url"/>
+    </createIndex>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688823606961-15">
+    <createIndex indexName="user_playback_history_user_id_idx" tableName="user_playback_history">
+      <column name="user_id"/>
+    </createIndex>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688823606961-16">
+    <createIndex indexName="video_id_idx" tableName="video">
+      <column name="id"/>
+    </createIndex>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688823606961-17">
+    <createIndex indexName="video_playlist_pk_idx" tableName="video">
+      <column name="playlist_pk"/>
+    </createIndex>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688838093355-1">
+    <createTable tableName="global_artist_chart">
+      <column autoIncrement="true" name="pk" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="global_artist_chartPK"/>
+      </column>
+      <column name="count" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="is_monthly" type="BOOLEAN"/>
+      <column name="artist_pk" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688838093355-2">
+    <createTable tableName="global_track_chart">
+      <column autoIncrement="true" name="pk" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="global_track_chartPK"/>
+      </column>
+      <column name="count" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="is_monthly" type="BOOLEAN"/>
+      <column name="track_id" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="fk_source" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="fk_spotify_item_kind" type="BIGINT"/>
+    </createTable>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688838093355-3">
+    <addForeignKeyConstraint baseColumnNames="artist_pk" baseTableName="global_artist_chart" constraintName="global_artist_chart_artist_pk_fkey" deferrable="false" initiallyDeferred="false" referencedColumnNames="pk" referencedTableName="artist" validate="true"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688838093355-4">
+    <addForeignKeyConstraint baseColumnNames="fk_source" baseTableName="global_track_chart" constraintName="global_track_chart_fk_source_fkey" deferrable="false" initiallyDeferred="false" referencedColumnNames="pk" referencedTableName="playback_history_source" validate="true"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688838093355-5">
+    <addForeignKeyConstraint baseColumnNames="fk_spotify_item_kind" baseTableName="global_track_chart" constraintName="global_track_chart_fk_spotify_item_kind_fkey" deferrable="false" initiallyDeferred="false" referencedColumnNames="pk" referencedTableName="spotify_item_kind" validate="true"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688850825715-1">
+    <createIndex indexName="command_history_guild_id_idx" tableName="command_history">
+      <column name="guild_id"/>
+    </createIndex>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688850825715-2">
+    <createIndex indexName="command_history_start_millis_idx" tableName="command_history">
+      <column name="start_millis"/>
+    </createIndex>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688850825715-3">
+    <createIndex indexName="command_history_user_id_idx" tableName="command_history">
+      <column name="user_id"/>
+    </createIndex>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1688852021628-1">
+    <createIndex indexName="playback_history_timestamp_idx" tableName="playback_history">
+      <column name="timestamp"/>
+    </createIndex>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1690204479952-1">
+    <addUniqueConstraint columnNames="command_context_id" constraintName="UC_COMMAND_HISTORYCOMMAND_CONTEXT_ID_COL" tableName="command_history"/>
+  </changeSet>
 </databaseChangeLog>

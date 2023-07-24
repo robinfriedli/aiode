@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.Lock;
 
 import org.slf4j.LoggerFactory;
 
@@ -16,8 +17,8 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.aiode.audio.AudioManager;
 import net.robinfriedli.aiode.audio.AudioPlayback;
-import net.robinfriedli.aiode.audio.AudioQueue;
 import net.robinfriedli.aiode.audio.Playable;
+import net.robinfriedli.aiode.audio.queue.AudioQueue;
 import net.robinfriedli.aiode.exceptions.InvalidRequestException;
 import net.robinfriedli.aiode.util.Util;
 
@@ -45,25 +46,31 @@ public class QueueViewHandler implements HttpHandler {
                     AudioQueue queue = playback.getAudioQueue();
                     String content;
                     if (!queue.isEmpty()) {
-                        int position = queue.getPosition();
-                        List<Playable> previous = queue.listPrevious(position);
-                        List<Playable> next = queue.listNext(queue.getTracks().size() - position);
+                        Lock readLock = queue.getLock().readLock();
+                        readLock.lock();
+                        try {
+                            int position = queue.getPosition();
+                            List<Playable> previous = queue.listPrevLocked(position);
+                            List<Playable> next = queue.listNextLocked(queue.getSize() - position);
 
-                        StringBuilder listBuilder = new StringBuilder();
-                        if (!previous.isEmpty()) {
-                            if (previous.size() > 20) {
-                                listBuilder.append("<a href=\"#current\">Jump to current track</a>").append(System.lineSeparator());
+                            StringBuilder listBuilder = new StringBuilder();
+                            if (!previous.isEmpty()) {
+                                if (previous.size() > 20) {
+                                    listBuilder.append("<a href=\"#current\">Jump to current track</a>").append(System.lineSeparator());
+                                }
+                                appendList(listBuilder, previous, "Previous");
                             }
-                            appendList(listBuilder, previous, "Previous");
-                        }
-                        listBuilder.append("<div id=\"current\">").append(System.lineSeparator());
-                        appendList(listBuilder, Collections.singletonList(queue.getCurrent()), "Current");
-                        listBuilder.append("</div>").append(System.lineSeparator());
-                        if (!next.isEmpty()) {
-                            appendList(listBuilder, next, "Next");
-                        }
+                            listBuilder.append("<div id=\"current\">").append(System.lineSeparator());
+                            appendList(listBuilder, Collections.singletonList(queue.getCurrentLocked()), "Current");
+                            listBuilder.append("</div>").append(System.lineSeparator());
+                            if (!next.isEmpty()) {
+                                appendList(listBuilder, next, "Next");
+                            }
 
-                        content = listBuilder.toString();
+                            content = listBuilder.toString();
+                        } finally {
+                            readLock.unlock();
+                        }
                     } else {
                         content = "Queue is empty";
                     }

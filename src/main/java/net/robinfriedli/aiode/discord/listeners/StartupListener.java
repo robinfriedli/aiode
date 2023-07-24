@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.events.ReadyEvent;
+import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.concurrent.CommandExecutionQueueManager;

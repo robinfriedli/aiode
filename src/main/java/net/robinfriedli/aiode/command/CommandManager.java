@@ -14,6 +14,7 @@ import com.google.common.collect.Lists;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.command.interceptor.CommandInterceptorChain;
 import net.robinfriedli.aiode.command.interceptor.interceptors.ScriptCommandInterceptor;
+import net.robinfriedli.aiode.command.parser.CommandParser;
 import net.robinfriedli.aiode.concurrent.CommandExecutionTask;
 import net.robinfriedli.aiode.concurrent.ExecutionContext;
 import net.robinfriedli.aiode.concurrent.ThreadContext;
@@ -21,6 +22,7 @@ import net.robinfriedli.aiode.concurrent.ThreadExecutionQueue;
 import net.robinfriedli.aiode.discord.MessageService;
 import net.robinfriedli.aiode.discord.listeners.CommandListener;
 import net.robinfriedli.aiode.discord.listeners.EventWaiter;
+import net.robinfriedli.aiode.discord.property.properties.ArgumentPrefixProperty;
 import net.robinfriedli.aiode.entities.Preset;
 import net.robinfriedli.aiode.entities.StoredScript;
 import net.robinfriedli.aiode.entities.xml.CommandContribution;
@@ -143,6 +145,30 @@ public class CommandManager {
 
     public Optional<AbstractCommand> instantiateCommandForContext(CommandContext context, Session session) {
         return instantiateCommandForContext(context, session, true);
+    }
+
+    public Optional<AbstractCommand> instantiateCommandForIdentifier(String identifier, CommandContext context, Session session) {
+        CommandContribution commandContribution = getCommandContribution(identifier);
+        if (commandContribution != null) {
+            return Optional.of(commandContribution.instantiate(this, context, context.getCommandBody()));
+        }
+
+        Optional<Preset> preset = queryBuilderFactory.find(Preset.class)
+            .where(((cb, root) -> cb.equal(
+                cb.lower(root.get("name")),
+                identifier.toLowerCase()
+            )))
+            .build(session)
+            .setMaxResults(1)
+            .setCacheable(true)
+            .uniqueResultOptional();
+
+        return preset.map(p -> {
+            AbstractCommand command = p.instantiateCommand(this, context, context.getCommandBody());
+            CommandParser commandParser = new CommandParser(command, ArgumentPrefixProperty.getForCurrentContext());
+            commandParser.parse();
+            return command;
+        });
     }
 
     public Optional<AbstractCommand> instantiateCommandForContext(CommandContext context, Session session, boolean includeScripts) {
@@ -291,7 +317,10 @@ public class CommandManager {
     public CommandContribution getCommandContribution(String name) {
         return commandContributionContext.query(and(
             instanceOf(CommandContribution.class),
-            attribute("identifier").fuzzyIs(name)
+            or(
+                attribute("identifier").fuzzyIs(name),
+                attribute("slashCommandIdentifier").fuzzyIs(name)
+            )
         ), CommandContribution.class).getOnlyResult();
     }
 

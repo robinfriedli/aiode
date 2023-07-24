@@ -2,7 +2,7 @@ package net.robinfriedli.aiode.command.commands.playback;
 
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.audio.AudioPlayback;
-import net.robinfriedli.aiode.audio.AudioQueue;
+import net.robinfriedli.aiode.audio.queue.AudioQueue;
 import net.robinfriedli.aiode.command.AbstractCommand;
 import net.robinfriedli.aiode.command.CommandContext;
 import net.robinfriedli.aiode.command.CommandManager;

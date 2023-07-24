@@ -18,23 +18,29 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.entities.ChannelType;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed;
-import net.dv8tion.jda.api.entities.PrivateChannel;
-import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.WebhookClient;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
+import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
-import net.dv8tion.jda.api.requests.restaction.MessageAction;
+import net.dv8tion.jda.api.interactions.InteractionHook;
+import net.dv8tion.jda.api.requests.FluentRestAction;
+import net.dv8tion.jda.api.utils.FileUpload;
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
+import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.boot.SpringPropertiesConfig;
 import net.robinfriedli.aiode.boot.configurations.HibernateComponent;
+import net.robinfriedli.aiode.command.CommandContext;
+import net.robinfriedli.aiode.concurrent.ExecutionContext;
 import net.robinfriedli.aiode.discord.property.GuildPropertyManager;
 import net.robinfriedli.aiode.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.aiode.discord.property.properties.TempMessageTimeoutProperty;
@@ -51,9 +57,8 @@ import org.springframework.stereotype.Component;
 public class MessageService {
 
     private static final Invoker RECURSION_PREVENTION_INVOKER = Invoker.newInstance();
-    private static final EnumSet<Permission> ESSENTIAL_PERMISSIONS = EnumSet.of(Permission.VIEW_CHANNEL, Permission.MESSAGE_WRITE, Permission.MESSAGE_READ);
+    private static final EnumSet<Permission> ESSENTIAL_PERMISSIONS = EnumSet.of(Permission.VIEW_CHANNEL, Permission.MESSAGE_SEND);
     private static final RateLimitInvoker MESSAGE_DISPATCH_RATE_LIMITER = new RateLimitInvoker("message_service", 25, Duration.ofSeconds(10));
-    private static final Mode EMPTY_MODE = Mode.create();
 
     private final int limit = 1000;
     private final GuildManager guildManager;
@@ -84,13 +89,13 @@ public class MessageService {
 
     public CompletableFuture<Message> send(String message, User user) {
         if (message.length() < limit) {
-            return executeMessageAction(user, messageChannel -> messageChannel.sendMessage(message));
+            return executeMessageDispatchAction(user, messageChannel -> messageChannel.sendMessage(message));
         } else {
             List<String> outputParts = separateMessage(message);
 
             List<CompletableFuture<Message>> futureMessages = outputParts.stream()
-                .map(part -> executeMessageAction(user, messageChannel -> messageChannel.sendMessage(part)))
-                .collect(Collectors.toList());
+                .map(part -> executeMessageDispatchAction(user, messageChannel -> messageChannel.sendMessage(part)))
+                .toList();
 
 
             return futureMessages.get(futureMessages.size() - 1);
@@ -98,7 +103,7 @@ public class MessageService {
     }
 
     public CompletableFuture<Message> send(String message, Guild guild) {
-        return executeMessageAction(guild, messageChannel -> messageChannel.sendMessage(message));
+        return executeMessageDispatchAction(guild, messageChannel -> messageChannel.sendMessage(message));
     }
 
     public CompletableFuture<Message> send(MessageEmbed messageEmbed, MessageChannel messageChannel) {
@@ -106,11 +111,11 @@ public class MessageService {
     }
 
     public CompletableFuture<Message> send(MessageEmbed messageEmbed, User user) {
-        return executeMessageAction(user, messageChannel -> messageChannel.sendMessage(messageEmbed));
+        return executeMessageDispatchAction(user, messageChannel -> messageChannel.sendMessage(MessageCreateData.fromEmbeds(messageEmbed)));
     }
 
     public CompletableFuture<Message> send(MessageEmbed messageEmbed, Guild guild) {
-        return executeMessageAction(guild, channel -> channel.sendMessage(messageEmbed), Permission.MESSAGE_EMBED_LINKS);
+        return executeMessageDispatchAction(guild, channel -> channel.sendMessage(MessageCreateData.fromEmbeds(messageEmbed)), Permission.MESSAGE_EMBED_LINKS);
     }
 
     public CompletableFuture<Message> send(EmbedBuilder embedBuilder, MessageChannel channel) {
@@ -133,17 +138,17 @@ public class MessageService {
         return send(buildEmbed(embedBuilder), guild);
     }
 
-    public CompletableFuture<Message> send(MessageBuilder messageBuilder, InputStream file, String fileName, MessageChannel messageChannel) {
-        return executeMessageAction(messageChannel, c -> {
-            MessageAction messageAction = c.sendMessage(messageBuilder.build());
-            return messageAction.addFile(file, fileName);
+    public CompletableFuture<Message> send(MessageCreateBuilder messageBuilder, InputStream file, String fileName, MessageChannel messageChannel) {
+        return executeMessageDispatchAction(messageChannel, c -> {
+            messageBuilder.addFiles(FileUpload.fromData(file, fileName));
+            return c.sendMessage(messageBuilder.build());
         });
     }
 
-    public CompletableFuture<Message> send(MessageBuilder messageBuilder, InputStream file, String fileName, Guild guild) {
-        return executeMessageAction(guild, c -> {
-            MessageAction messageAction = c.sendMessage(messageBuilder.build());
-            return messageAction.addFile(file, fileName);
+    public CompletableFuture<Message> send(MessageCreateBuilder messageBuilder, InputStream file, String fileName, Guild guild) {
+        return executeMessageDispatchAction(guild, c -> {
+            messageBuilder.addFiles(FileUpload.fromData(file, fileName));
+            return c.sendMessage(messageBuilder.build());
         });
     }
 
@@ -289,13 +294,43 @@ public class MessageService {
         return futureMessages;
     }
 
-    public CompletableFuture<Message> executeMessageAction(MessageChannel channel, Function<MessageChannel, MessageAction> function, Permission... additionalPermissions) {
+    public <M extends FluentRestAction<Message, ?>> CompletableFuture<Message> executeMessageChannelAction(
+        MessageChannel channel,
+        Function<MessageChannel, M> function,
+        Permission... additionalPermissions
+    ) {
+        return executeMessageAction(
+            channel,
+            null,
+            function,
+            additionalPermissions
+        );
+    }
+
+    public <M extends FluentRestAction<Message, ?>> CompletableFuture<Message> executeMessageDispatchAction(
+        MessageChannel channel,
+        Function<MessageDispatchDelegate, M> function,
+        Permission... additionalPermissions
+    ) {
+        return executeMessageAction(
+            channel,
+            function,
+            null,
+            additionalPermissions
+        );
+    }
+
+    private <M extends FluentRestAction<Message, ?>> CompletableFuture<Message> executeMessageAction(
+        MessageChannel channel,
+        Function<MessageDispatchDelegate, M> dispatchFunction,
+        Function<MessageChannel, M> channelFunction,
+        Permission... additionalPermissions
+    ) {
         CompletableFuture<Message> futureMessage = new CompletableFuture<>();
 
-        MESSAGE_DISPATCH_RATE_LIMITER.invokeLimited(EMPTY_MODE, () -> {
+        MESSAGE_DISPATCH_RATE_LIMITER.invokeLimited(() -> {
             try {
-                if (channel instanceof TextChannel) {
-                    TextChannel textChannel = (TextChannel) channel;
+                if (channel instanceof TextChannel textChannel) {
                     Guild guild = textChannel.getGuild();
                     Member selfMember = guild.getSelfMember();
                     if (!(selfMember.hasAccess(textChannel) && textChannel.canTalk(selfMember))) {
@@ -328,14 +363,49 @@ public class MessageService {
                     }
                 }
 
-                MessageAction messageAction = function.apply(channel);
+                CommandContext commandContext = ExecutionContext.Current.getUnwrap(CommandContext.class);
+                M messageAction;
+
+                InteractionHook interactionHook;
+                if (dispatchFunction != null) {
+                    MessageDispatchDelegate dispatchDelegate;
+                    if (commandContext != null) {
+                        interactionHook = commandContext.getInteractionHook();
+                        if (interactionHook != null && channel.equals(commandContext.getChannel())) {
+                            commandContext.setInteractionResponseSent(true);
+                            dispatchDelegate = new WebhookClientDispatchDelegate(interactionHook);
+                        } else {
+                            dispatchDelegate = new MessageChannelDispatchDelegate(channel);
+                        }
+                    } else {
+                        interactionHook = null;
+                        dispatchDelegate = new MessageChannelDispatchDelegate(channel);
+                    }
+
+                    messageAction = dispatchFunction.apply(dispatchDelegate);
+                } else if (channelFunction != null) {
+                    interactionHook = null;
+                    messageAction = channelFunction.apply(channel);
+                } else {
+                    throw new IllegalArgumentException("No dispatch function defined");
+                }
+
+
                 messageAction.timeout(10, TimeUnit.SECONDS).queue(futureMessage::complete, e -> {
                     handleError(e, channel);
                     futureMessage.completeExceptionally(e);
+                    if (interactionHook != null && commandContext.isSlashCommand()) {
+                        try {
+                            // clear message sent as deferReply for slash commands
+                            interactionHook.deleteOriginal().queue();
+                        } catch (Exception e1) {
+                            logger.error("Exception deleting original interaction on message error", e);
+                        }
+                    }
                 });
             } catch (InsufficientPermissionException e) {
                 Permission permission = e.getPermission();
-                if (permission == Permission.MESSAGE_WRITE || permission == Permission.MESSAGE_READ) {
+                if (permission == Permission.MESSAGE_SEND) {
                     String msg = "Unable to send messages to channel " + channel;
                     if (channel instanceof TextChannel) {
                         msg = msg + " on guild " + ((TextChannel) channel).getGuild();
@@ -366,18 +436,18 @@ public class MessageService {
         return futureMessage;
     }
 
-    public CompletableFuture<Message> executeMessageAction(User user, Function<MessageChannel, MessageAction> function) {
-        return executeForUser(user, privateChannel -> executeMessageAction(privateChannel, function));
+    public CompletableFuture<Message> executeMessageDispatchAction(User user, Function<MessageDispatchDelegate, FluentRestAction<Message, ?>> function) {
+        return executeForUser(user, privateChannel -> executeMessageDispatchAction(privateChannel, function));
     }
 
-    public CompletableFuture<Message> executeMessageAction(Guild guild, Function<MessageChannel, MessageAction> function, Permission... additionalPermissions) {
+    public CompletableFuture<Message> executeMessageDispatchAction(Guild guild, Function<MessageDispatchDelegate, FluentRestAction<Message, ?>> function, Permission... additionalPermissions) {
         TextChannel textChannel = guildManager.getDefaultTextChannelForGuild(guild);
 
         if (textChannel == null) {
             logger.warn("Unable to send any messages to guild " + guild.getName() + " (" + guild.getId() + ")");
             return CompletableFuture.failedFuture(new CancellationException());
         } else {
-            return executeMessageAction(textChannel, function, additionalPermissions);
+            return executeMessageDispatchAction(textChannel, function, additionalPermissions);
         }
     }
 
@@ -403,11 +473,11 @@ public class MessageService {
     }
 
     private CompletableFuture<Message> sendInternal(MessageChannel channel, String text) {
-        return executeMessageAction(channel, c -> c.sendMessage(text));
+        return executeMessageDispatchAction(channel, c -> c.sendMessage(text));
     }
 
     private CompletableFuture<Message> sendInternal(MessageChannel channel, MessageEmbed messageEmbed) {
-        return executeMessageAction(channel, c -> c.sendMessage(messageEmbed), Permission.MESSAGE_EMBED_LINKS);
+        return executeMessageDispatchAction(channel, c -> c.sendMessage(MessageCreateData.fromEmbeds(messageEmbed)), Permission.MESSAGE_EMBED_LINKS);
     }
 
     private void handleError(Throwable e, MessageChannel channel) {
@@ -494,6 +564,42 @@ public class MessageService {
             outputParts.set(currentPart, outputParts.get(currentPart) + s);
         } else {
             outputParts.add(s);
+        }
+    }
+
+    public interface MessageDispatchDelegate {
+        FluentRestAction<Message, ?> sendMessage(MessageCreateData messageCreateData);
+
+        default FluentRestAction<Message, ?> sendMessage(String content) {
+            return sendMessage(MessageCreateData.fromContent(content));
+        }
+    }
+
+    public static class MessageChannelDispatchDelegate implements MessageDispatchDelegate {
+
+        private final MessageChannel messageChannel;
+
+        public MessageChannelDispatchDelegate(MessageChannel messageChannel) {
+            this.messageChannel = messageChannel;
+        }
+
+        @Override
+        public FluentRestAction<Message, ?> sendMessage(MessageCreateData messageCreateData) {
+            return messageChannel.sendMessage(messageCreateData);
+        }
+    }
+
+    public static class WebhookClientDispatchDelegate implements MessageDispatchDelegate {
+
+        private final WebhookClient<Message> webhookClient;
+
+        public WebhookClientDispatchDelegate(WebhookClient<Message> webhookClient) {
+            this.webhookClient = webhookClient;
+        }
+
+        @Override
+        public FluentRestAction<Message, ?> sendMessage(MessageCreateData messageCreateData) {
+            return webhookClient.sendMessage(messageCreateData);
         }
     }
 

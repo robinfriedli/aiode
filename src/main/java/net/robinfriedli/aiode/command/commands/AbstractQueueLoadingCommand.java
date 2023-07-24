@@ -15,9 +15,8 @@ public abstract class AbstractQueueLoadingCommand extends AbstractPlayableLoadin
                                        String identifier,
                                        String description,
                                        Category category,
-                                       boolean mayInterrupt,
                                        TrackLoadingExecutor trackLoadingExecutor) {
-        super(commandContribution, context, commandManager, commandString, requiresInput, identifier, description, category, mayInterrupt, trackLoadingExecutor);
+        super(commandContribution, context, commandManager, commandString, requiresInput, identifier, description, category, trackLoadingExecutor);
     }
 
     @Override

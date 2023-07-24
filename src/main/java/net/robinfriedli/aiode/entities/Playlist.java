@@ -16,6 +16,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.validation.constraints.Size;
@@ -25,7 +26,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.User;
-import net.robinfriedli.aiode.audio.PlayableFactory;
+import net.robinfriedli.aiode.audio.playables.PlayableFactory;
 import net.robinfriedli.aiode.audio.spotify.SpotifyTrack;
 import net.robinfriedli.aiode.audio.spotify.SpotifyTrackBulkLoadingService;
 import net.robinfriedli.aiode.audio.spotify.SpotifyTrackKind;
@@ -37,7 +38,9 @@ import static net.robinfriedli.aiode.audio.spotify.SpotifyTrackBulkLoadingServic
 import static net.robinfriedli.aiode.audio.spotify.SpotifyTrackKind.*;
 
 @Entity
-@Table(name = "playlist")
+@Table(name = "playlist", indexes = {
+    @Index(name = "playlist_guild_id_idx", columnList = "guild_id")
+})
 public class Playlist implements Serializable, SanitizedEntity {
 
     @Id
@@ -178,8 +181,7 @@ public class Playlist implements Serializable, SanitizedEntity {
                 String id = ((Episode) item).getId();
                 int finalI = i;
                 service.add(createItem(id, EPISODE), track -> itemsWithIndex.put(track, finalI));
-            } else if (item instanceof Video) {
-                Video video = (Video) item;
+            } else if (item instanceof Video video) {
                 YouTubeVideo youtubeVideo = video.asYouTubeVideo();
                 itemsWithIndex.put(youtubeVideo, i);
                 String spotifyId = video.getRedirectedSpotifyId();

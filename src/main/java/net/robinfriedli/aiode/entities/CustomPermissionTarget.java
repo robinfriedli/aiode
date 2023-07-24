@@ -10,6 +10,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.Table;
 import javax.validation.constraints.Size;
 
@@ -21,7 +22,10 @@ import net.robinfriedli.aiode.persist.qb.QueryBuilderFactory;
 import org.jetbrains.annotations.Nullable;
 
 @Entity
-@Table(name = "custom_permission_target")
+@Table(name = "custom_permission_target", indexes = {
+    @Index(name = "custom_permission_target_guild_id_idx", columnList = "guild_id"),
+    @Index(name = "custom_permission_target_user_id_idx", columnList = "user_id")
+})
 public class CustomPermissionTarget implements PermissionTarget, SanitizedEntity, Serializable {
 
     @Id

@@ -157,7 +157,7 @@ public class HollowYouTubeVideo extends AbstractSoftCachedPlayable implements Yo
     private <E> E getCompleted(CompletableFuture<E> future) throws UnavailableResourceException {
         try {
             try {
-                return future.get(2, TimeUnit.SECONDS);
+                return future.get(100, TimeUnit.MILLISECONDS);
             } catch (TimeoutException e) {
                 fetch();
 

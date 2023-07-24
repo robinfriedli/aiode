@@ -2,7 +2,7 @@ package net.robinfriedli.aiode.exceptions.handler.handlers;
 
 import org.slf4j.Logger;
 
-import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.robinfriedli.aiode.concurrent.ExecutionContext;
 import net.robinfriedli.aiode.concurrent.ThreadContext;
 import net.robinfriedli.aiode.exceptions.ExceptionUtils;

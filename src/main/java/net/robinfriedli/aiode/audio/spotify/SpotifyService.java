@@ -20,6 +20,7 @@ import net.robinfriedli.aiode.function.SpotifyInvoker;
 import se.michaelthelin.spotify.SpotifyApi;
 import se.michaelthelin.spotify.exceptions.SpotifyWebApiException;
 import se.michaelthelin.spotify.model_objects.IPlaylistItem;
+import se.michaelthelin.spotify.model_objects.specification.Album;
 import se.michaelthelin.spotify.model_objects.specification.AlbumSimplified;
 import se.michaelthelin.spotify.model_objects.specification.Artist;
 import se.michaelthelin.spotify.model_objects.specification.Episode;
@@ -28,6 +29,7 @@ import se.michaelthelin.spotify.model_objects.specification.Paging;
 import se.michaelthelin.spotify.model_objects.specification.Playlist;
 import se.michaelthelin.spotify.model_objects.specification.PlaylistSimplified;
 import se.michaelthelin.spotify.model_objects.specification.PlaylistTrack;
+import se.michaelthelin.spotify.model_objects.specification.Show;
 import se.michaelthelin.spotify.model_objects.specification.ShowSimplified;
 import se.michaelthelin.spotify.model_objects.specification.Track;
 import se.michaelthelin.spotify.model_objects.specification.TrackSimplified;
@@ -114,6 +116,14 @@ public class SpotifyService {
 
     public Playlist getPlaylist(String id) throws IOException, SpotifyWebApiException, ParseException {
         return spotifyApi.getPlaylist(id).market(getCurrentMarket()).build().execute();
+    }
+
+    public Album getAlbum(String id) throws ParseException, SpotifyWebApiException, IOException {
+        return spotifyApi.getAlbum(id).market(getCurrentMarket()).build().execute();
+    }
+
+    public Show getShow(String id) throws ParseException, SpotifyWebApiException, IOException {
+        return spotifyApi.getShow(id).market(getCurrentMarket()).build().execute();
     }
 
     public List<PlaylistSimplified> searchPlaylist(String searchTerm) throws IOException, SpotifyWebApiException, ParseException {
@@ -329,7 +339,7 @@ public class SpotifyService {
         return (results, batch) -> {
             String[] ids = Arrays.stream(batch).filter(Objects::nonNull).map(idExtractor).toArray(String[]::new);
             T[] result = requestProducer.apply(ids).build().execute();
-            results.addAll(Arrays.asList(result));
+            results.addAll(Arrays.stream(result).filter(Objects::nonNull).toList());
         };
     }
 

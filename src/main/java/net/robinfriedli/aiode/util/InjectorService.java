@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
 import com.google.api.client.util.Sets;
-import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.audio.AudioManager;
@@ -23,6 +23,7 @@ import net.robinfriedli.aiode.discord.GuildContext;
 import net.robinfriedli.aiode.discord.GuildManager;
 import net.robinfriedli.aiode.discord.MessageService;
 import net.robinfriedli.aiode.discord.property.GuildPropertyManager;
+import net.robinfriedli.aiode.function.HibernateInvoker;
 import net.robinfriedli.aiode.login.LoginManager;
 import net.robinfriedli.jxp.api.JxpBackend;
 import org.hibernate.SessionFactory;
@@ -49,6 +50,7 @@ public class InjectorService {
         EXTRACTORS.add(new Extractor<>(GuildContext.class, () -> ExecutionContext.Current.optional().map(ExecutionContext::getGuildContext).orElse(null)));
         EXTRACTORS.add(new Extractor<>(GuildManager.class, () -> Aiode.get().getGuildManager()));
         EXTRACTORS.add(new Extractor<>(GuildPropertyManager.class, () -> Aiode.get().getGuildPropertyManager()));
+        EXTRACTORS.add(new Extractor<>(HibernateInvoker.class, HibernateInvoker::new));
         EXTRACTORS.add(new Extractor<>(ShardManager.class, () -> Aiode.get().getShardManager()));
         EXTRACTORS.add(new Extractor<>(JxpBackend.class, () -> Aiode.get().getJxpBackend()));
         EXTRACTORS.add(new Extractor<>(Logger.class, () -> Aiode.LOGGER));

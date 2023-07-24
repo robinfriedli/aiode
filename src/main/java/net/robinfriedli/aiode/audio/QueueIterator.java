@@ -15,8 +15,9 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.robinfriedli.aiode.Aiode;
+import net.robinfriedli.aiode.audio.queue.AudioQueue;
 import net.robinfriedli.aiode.boot.SpringPropertiesConfig;
 import net.robinfriedli.aiode.discord.MessageService;
 import net.robinfriedli.aiode.discord.property.GuildPropertyManager;
@@ -88,7 +89,7 @@ public class QueueIterator extends AudioEventAdapter {
 
             Playable current = track.getUserData(Playable.class);
             if (current != null) {
-                audioManager.createHistoryEntry(current, playback.getGuild(), playback.getVoiceChannel());
+                audioManager.createHistoryEntry(current, playback.getGuild(), playback.getAudioChannel());
                 if (shouldSendPlaybackNotification()) {
                     sendCurrentTrackNotification(current);
                 }
@@ -176,8 +177,7 @@ public class QueueIterator extends AudioEventAdapter {
             }
         }
         if (result != null) {
-            if (result instanceof AudioTrack) {
-                AudioTrack audioTrack = (AudioTrack) result;
+            if (result instanceof AudioTrack audioTrack) {
                 track.setCached(audioTrack);
                 audioTrack.setUserData(track);
                 playback.getAudioPlayer().playTrack(audioTrack);
@@ -201,12 +201,9 @@ public class QueueIterator extends AudioEventAdapter {
             return;
         }
 
-        if (!queue.isRepeatOne() || ignoreRepeat) {
+        if (!queue.getRepeatOne() || ignoreRepeat) {
             if (queue.hasNext(ignoreRepeat)) {
                 queue.iterate();
-                if (!queue.hasNext(true) && queue.isRepeatAll() && queue.isShuffle()) {
-                    queue.randomize();
-                }
                 playNext();
             } else {
                 queue.reset();
@@ -256,8 +253,9 @@ public class QueueIterator extends AudioEventAdapter {
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.addField("Now playing", currentTrack.display(), false);
 
-        if (queue.hasNext()) {
-            embedBuilder.addField("Next", queue.getNext().display(), false);
+        Playable next = queue.peekNext();
+        if (next != null) {
+            embedBuilder.addField("Next", next.display(), false);
         }
 
         StringBuilder footerBuilder = new StringBuilder();

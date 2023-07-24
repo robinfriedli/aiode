@@ -8,6 +8,7 @@ import javax.persistence.ForeignKey;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
@@ -18,7 +19,9 @@ import net.dv8tion.jda.api.entities.User;
  * Entity that is created for each user currently in the voice channel when creating the {@link PlaybackHistory}
  */
 @Entity
-@Table(name = "user_playback_history")
+@Table(name = "user_playback_history", indexes = {
+    @Index(name = "user_playback_history_user_id_idx", columnList = "user_id")
+})
 public class UserPlaybackHistory implements Serializable {
 
     @Id
@@ -32,6 +35,8 @@ public class UserPlaybackHistory implements Serializable {
     @ManyToOne
     @JoinColumn(name = "playback_history_pk", referencedColumnName = "pk", foreignKey = @ForeignKey(name = "fk_playback_history"))
     private PlaybackHistory playbackHistory;
+    @Column(name = "playback_history_pk", insertable = false, updatable = false)
+    private long playbackHistoryPk;
 
     public UserPlaybackHistory() {
     }
@@ -69,5 +74,13 @@ public class UserPlaybackHistory implements Serializable {
 
     public void setPlaybackHistory(PlaybackHistory playbackHistory) {
         this.playbackHistory = playbackHistory;
+    }
+
+    public long getPlaybackHistoryPk() {
+        return playbackHistoryPk;
+    }
+
+    public void setPlaybackHistoryPk(long playbackHistoryPk) {
+        this.playbackHistoryPk = playbackHistoryPk;
     }
 }

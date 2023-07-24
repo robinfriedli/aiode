@@ -4,9 +4,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.ChannelType;
-import net.dv8tion.jda.api.entities.GuildChannel;
 import net.dv8tion.jda.api.entities.ISnowflake;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
+import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.requests.RestAction;
@@ -202,7 +202,7 @@ public abstract class DiscordEntity<T extends ISnowflake> {
         }
     }
 
-    public static class MessageChannel extends DiscordEntity<net.dv8tion.jda.api.entities.MessageChannel> {
+    public static class MessageChannel extends DiscordEntity<net.dv8tion.jda.api.entities.channel.middleman.MessageChannel> {
 
         private final User user;
         private final Guild guild;
@@ -223,12 +223,12 @@ public abstract class DiscordEntity<T extends ISnowflake> {
             return createForMessageChannel(message.getChannel());
         }
 
-        public static MessageChannel createForMessageChannel(net.dv8tion.jda.api.entities.MessageChannel channel) {
+        public static MessageChannel createForMessageChannel(net.dv8tion.jda.api.entities.channel.middleman.MessageChannel channel) {
             ChannelType type = channel.getType();
             if (type.isGuild()) {
                 return new MessageChannel(channel.getJDA(), channel.getIdLong(), new Guild(((GuildChannel) channel).getGuild()));
             } else if (type == ChannelType.PRIVATE) {
-                net.dv8tion.jda.api.entities.User user = ((net.dv8tion.jda.api.entities.PrivateChannel) channel).getUser();
+                net.dv8tion.jda.api.entities.User user = ((net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel) channel).getUser();
                 return new MessageChannel(channel.getJDA(), channel.getIdLong(), new User(user));
             }
 
@@ -236,7 +236,7 @@ public abstract class DiscordEntity<T extends ISnowflake> {
         }
 
         @Override
-        public @Nullable RestAction<? extends net.dv8tion.jda.api.entities.MessageChannel> fetch() throws UnsupportedOperationException {
+        public @Nullable RestAction<? extends net.dv8tion.jda.api.entities.channel.middleman.MessageChannel> fetch() throws UnsupportedOperationException {
             if (user != null) {
                 // fetch() never returns null for users
                 //noinspection ConstantConditions
@@ -252,12 +252,12 @@ public abstract class DiscordEntity<T extends ISnowflake> {
 
         @Nullable
         @Override
-        public net.dv8tion.jda.api.entities.MessageChannel getCached() {
+        public net.dv8tion.jda.api.entities.channel.middleman.MessageChannel getCached() {
             if (guild != null) {
                 net.dv8tion.jda.api.entities.Guild guildCached = guild.getCached();
 
                 if (guildCached != null) {
-                    return guildCached.getTextChannelById(getId());
+                    return guildCached.getChannelById(net.dv8tion.jda.api.entities.channel.middleman.MessageChannel.class, getId());
                 }
             }
             return null;
@@ -274,7 +274,7 @@ public abstract class DiscordEntity<T extends ISnowflake> {
         }
     }
 
-    public static class TextChannel extends DiscordEntity<net.dv8tion.jda.api.entities.TextChannel> {
+    public static class TextChannel extends DiscordEntity<net.dv8tion.jda.api.entities.channel.concrete.TextChannel> {
 
         private final Guild guild;
 
@@ -283,12 +283,12 @@ public abstract class DiscordEntity<T extends ISnowflake> {
             this.guild = guild;
         }
 
-        public TextChannel(net.dv8tion.jda.api.entities.TextChannel textChannel) {
+        public TextChannel(net.dv8tion.jda.api.entities.channel.concrete.TextChannel textChannel) {
             this(textChannel.getJDA(), textChannel.getIdLong(), new Guild(textChannel.getGuild()));
         }
 
         @Override
-        public @Nullable RestAction<? extends net.dv8tion.jda.api.entities.TextChannel> fetch() throws UnsupportedOperationException {
+        public @Nullable RestAction<? extends net.dv8tion.jda.api.entities.channel.concrete.TextChannel> fetch() throws UnsupportedOperationException {
             throw new UnsupportedOperationException("Cannot create rest request to retrieve text channels");
         }
 
@@ -299,7 +299,7 @@ public abstract class DiscordEntity<T extends ISnowflake> {
 
         @Nullable
         @Override
-        public net.dv8tion.jda.api.entities.TextChannel getCached() {
+        public net.dv8tion.jda.api.entities.channel.concrete.TextChannel getCached() {
             net.dv8tion.jda.api.entities.Guild guildCached = guild.getCached();
 
             if (guildCached != null) {
@@ -314,7 +314,7 @@ public abstract class DiscordEntity<T extends ISnowflake> {
         }
     }
 
-    public static class PrivateChannel extends DiscordEntity<net.dv8tion.jda.api.entities.PrivateChannel> {
+    public static class PrivateChannel extends DiscordEntity<net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel> {
 
         private final User user;
 
@@ -323,12 +323,12 @@ public abstract class DiscordEntity<T extends ISnowflake> {
             this.user = user;
         }
 
-        public PrivateChannel(net.dv8tion.jda.api.entities.PrivateChannel privateChannel) {
+        public PrivateChannel(net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel privateChannel) {
             this(privateChannel.getJDA(), privateChannel.getIdLong(), new User(privateChannel.getUser()));
         }
 
         @Override
-        public @Nullable RestAction<? extends net.dv8tion.jda.api.entities.PrivateChannel> fetch() throws UnsupportedOperationException {
+        public @Nullable RestAction<? extends net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel> fetch() throws UnsupportedOperationException {
             // fetch() does not return null for users
             //noinspection ConstantConditions
             return user.fetch().flatMap(net.dv8tion.jda.api.entities.User::openPrivateChannel);
@@ -341,7 +341,7 @@ public abstract class DiscordEntity<T extends ISnowflake> {
 
         @Nullable
         @Override
-        public net.dv8tion.jda.api.entities.PrivateChannel getCached() {
+        public net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel getCached() {
             return null;
         }
 
@@ -366,14 +366,14 @@ public abstract class DiscordEntity<T extends ISnowflake> {
         @Override
         public @Nullable RestAction<? extends net.dv8tion.jda.api.entities.Message> fetch() throws UnsupportedOperationException {
             if (channel.canFetch()) {
-                RestAction<? extends net.dv8tion.jda.api.entities.MessageChannel> channelFetch = channel.fetch();
+                RestAction<? extends net.dv8tion.jda.api.entities.channel.middleman.MessageChannel> channelFetch = channel.fetch();
 
                 if (channelFetch != null) {
                     return channelFetch.flatMap(c -> c.retrieveMessageById(getId()));
                 }
             }
 
-            net.dv8tion.jda.api.entities.MessageChannel retrievedChannel = channel.retrieve();
+            net.dv8tion.jda.api.entities.channel.middleman.MessageChannel retrievedChannel = channel.retrieve();
             if (retrievedChannel != null) {
                 return retrievedChannel.retrieveMessageById(getId());
             }
@@ -397,7 +397,7 @@ public abstract class DiscordEntity<T extends ISnowflake> {
         }
     }
 
-    public static class VoiceChannel extends DiscordEntity<net.dv8tion.jda.api.entities.VoiceChannel> {
+    public static class VoiceChannel extends DiscordEntity<net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel> {
 
         private final Guild guild;
 
@@ -406,12 +406,12 @@ public abstract class DiscordEntity<T extends ISnowflake> {
             this.guild = guild;
         }
 
-        public VoiceChannel(net.dv8tion.jda.api.entities.VoiceChannel voiceChannel) {
+        public VoiceChannel(net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel voiceChannel) {
             this(voiceChannel.getJDA(), voiceChannel.getIdLong(), new Guild(voiceChannel.getGuild()));
         }
 
         @Override
-        public @Nullable RestAction<? extends net.dv8tion.jda.api.entities.VoiceChannel> fetch() throws UnsupportedOperationException {
+        public @Nullable RestAction<? extends net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel> fetch() throws UnsupportedOperationException {
             throw new UnsupportedOperationException("Cannot create rest request to retrieve voice channels");
         }
 
@@ -422,13 +422,48 @@ public abstract class DiscordEntity<T extends ISnowflake> {
 
         @Nullable
         @Override
-        public net.dv8tion.jda.api.entities.VoiceChannel getCached() {
+        public net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel getCached() {
             net.dv8tion.jda.api.entities.Guild guildCached = guild.getCached();
 
             if (guildCached != null) {
                 return guildCached.getVoiceChannelById(getId());
             }
 
+            return null;
+        }
+    }
+
+    public static class StageChannel extends DiscordEntity<net.dv8tion.jda.api.entities.channel.concrete.StageChannel> {
+
+        private final Guild guild;
+
+        public StageChannel(JDA jda, long id, Guild guild) {
+            super(jda, id);
+            this.guild = guild;
+        }
+
+        public StageChannel(net.dv8tion.jda.api.entities.channel.concrete.StageChannel stageChannel) {
+            this(stageChannel.getJDA(), stageChannel.getIdLong(), new Guild(stageChannel.getGuild()));
+        }
+
+        @Override
+        public @Nullable RestAction<? extends net.dv8tion.jda.api.entities.channel.concrete.StageChannel> fetch() throws UnsupportedOperationException {
+            throw new UnsupportedOperationException("Cannot create rest request to retrieve stage channels");
+        }
+
+        @Override
+        public boolean canFetch() {
+            return false;
+        }
+
+        @Nullable
+        @Override
+        public net.dv8tion.jda.api.entities.channel.concrete.StageChannel getCached() {
+            net.dv8tion.jda.api.entities.Guild guildCached = guild.getCached();
+
+            if (guildCached != null) {
+                return guildCached.getStageChannelById(getId());
+            }
             return null;
         }
     }

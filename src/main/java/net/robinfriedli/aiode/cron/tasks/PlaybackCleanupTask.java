@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.VoiceChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.AudioChannel;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.audio.AudioPlayback;
 import net.robinfriedli.aiode.cron.AbstractCronTask;
@@ -70,7 +70,7 @@ public class PlaybackCleanupTask extends AbstractCronTask {
     }
 
     private boolean clearLonePlayback(GuildContext guildContext, AudioPlayback playback) {
-        VoiceChannel voiceChannel = playback.getVoiceChannel();
+        AudioChannel voiceChannel = playback.getAudioChannel();
         Guild guild = guildContext.getGuild();
 
         if (voiceChannel == null) {

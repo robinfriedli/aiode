@@ -14,8 +14,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import groovy.lang.GroovyShell;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
+import net.dv8tion.jda.api.utils.FileUpload;
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.boot.ShutdownableExecutorService;
 import net.robinfriedli.aiode.boot.configurations.GroovySandboxComponent;
@@ -158,7 +160,13 @@ public class SafeGroovyScriptRunner {
                     }
 
                     ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
-                    messageService.executeMessageAction(channel, c -> c.sendMessage(embedBuilder.build()).addFile(inputStream, "output.txt"));
+                    messageService.executeMessageDispatchAction(channel, c -> {
+                        MessageCreateBuilder messageCreateBuilder = new MessageCreateBuilder()
+                            .addEmbeds(embedBuilder.build())
+                            .addFiles(FileUpload.fromData(inputStream, "output.txt"));
+
+                        return c.sendMessage(messageCreateBuilder.build());
+                    });
                 }
             }
         } catch (TimeoutException e) {

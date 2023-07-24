@@ -8,6 +8,7 @@ import javax.persistence.ForeignKey;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
@@ -16,7 +17,9 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
 
 @Entity
-@Table(name = "granted_role")
+@Table(name = "granted_role", indexes = {
+    @Index(name = "granted_role_id_idx", columnList = "id")
+})
 public class GrantedRole implements Serializable {
 
     @Id

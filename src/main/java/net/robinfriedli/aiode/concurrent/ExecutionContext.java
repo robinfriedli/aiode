@@ -10,9 +10,9 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.GuildVoiceState;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.entities.User;
-import net.dv8tion.jda.api.entities.VoiceChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.AudioChannel;
+import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
 import net.robinfriedli.aiode.audio.spotify.SpotifyService;
 import net.robinfriedli.aiode.discord.GuildContext;
 import net.robinfriedli.aiode.persist.interceptors.AlertAccessConfigurationModificationInterceptor;
@@ -23,6 +23,7 @@ import net.robinfriedli.aiode.persist.interceptors.EntityValidationInterceptor;
 import net.robinfriedli.aiode.persist.interceptors.GuildPropertyInterceptor;
 import net.robinfriedli.aiode.persist.interceptors.InterceptorChain;
 import net.robinfriedli.aiode.persist.interceptors.PlaylistItemTimestampInterceptor;
+import net.robinfriedli.aiode.persist.interceptors.PresetSlashCommandsInterceptor;
 import net.robinfriedli.aiode.persist.interceptors.SanitizingEntityInterceptor;
 import net.robinfriedli.aiode.persist.interceptors.VerifyPlaylistInterceptor;
 import org.hibernate.Session;
@@ -43,7 +44,7 @@ public class ExecutionContext implements CloseableThreadContext, ForkableThreadC
     protected final SpotifyApi spotifyApi;
     protected final SpotifyApi.Builder spotifyApiBuilder;
     protected final String id;
-    protected final TextChannel textChannel;
+    protected final MessageChannelUnion textChannel;
     protected final User user;
     protected Session session;
     protected SpotifyService spotifyService;
@@ -56,7 +57,7 @@ public class ExecutionContext implements CloseableThreadContext, ForkableThreadC
         Member member,
         SessionFactory sessionFactory,
         SpotifyApi.Builder spotifyApiBuilder,
-        TextChannel textChannel
+        MessageChannelUnion textChannel
     ) {
         this(
             guild,
@@ -82,7 +83,7 @@ public class ExecutionContext implements CloseableThreadContext, ForkableThreadC
         SessionFactory sessionFactory,
         SpotifyApi.Builder spotifyApiBuilder,
         String id,
-        TextChannel textChannel,
+        MessageChannelUnion textChannel,
         User user
     ) {
         this(
@@ -109,7 +110,7 @@ public class ExecutionContext implements CloseableThreadContext, ForkableThreadC
         SpotifyApi spotifyApi,
         SpotifyApi.Builder spotifyApiBuilder,
         String id,
-        TextChannel textChannel,
+        MessageChannelUnion textChannel,
         User user,
         SpotifyService spotifyService
     ) {
@@ -144,7 +145,7 @@ public class ExecutionContext implements CloseableThreadContext, ForkableThreadC
     }
 
     @Nullable
-    public VoiceChannel getVoiceChannel() {
+    public AudioChannel getAudioChannel() {
         GuildVoiceState voiceState = getMember().getVoiceState();
 
         if (voiceState != null) {
@@ -158,7 +159,7 @@ public class ExecutionContext implements CloseableThreadContext, ForkableThreadC
         return guild;
     }
 
-    public TextChannel getChannel() {
+    public MessageChannelUnion getChannel() {
         return textChannel;
     }
 
@@ -198,7 +199,8 @@ public class ExecutionContext implements CloseableThreadContext, ForkableThreadC
                     AlertScriptModificationInterceptor.class,
                     AlertPresetCreationInterceptor.class,
                     GuildPropertyInterceptor.class,
-                    EntityValidationInterceptor.class
+                    EntityValidationInterceptor.class,
+                    PresetSlashCommandsInterceptor.class
                 ))
                 .openSession();
             this.session = session;

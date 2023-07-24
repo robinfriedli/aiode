@@ -5,4 +5,6 @@
   <cronJob id="clearAbandonedGuildContexts" cron="0 */3 * * * ? *" implementation="net.robinfriedli.aiode.cron.tasks.ClearAbandonedGuildContextsTask"/>
   <cronJob id="deleteGrantedRolesForDeletedRoles" cron="0 0 */1 * * ? *" implementation="net.robinfriedli.aiode.cron.tasks.DeleteGrantedRolesForDeletedRolesTask"/>
   <cronJob id="resetCurrentYouTubeQuota" cron="0 0 0 * * ? *" timeZone="PST" mainInstanceOnly="true" implementation="net.robinfriedli.aiode.cron.tasks.ResetCurrentYouTubeQuotaTask"/>
+  <cronJob id="refreshPersistentGlobalCharts" cron="0 0 6 * * ? *" mainInstanceOnly="true" implementation="net.robinfriedli.aiode.cron.tasks.RefreshPersistentGlobalChartsTask"/>
+  <cronJob id="inactiveWidgetsCleanup" cron="0 */10 * * * ? *" implementation="net.robinfriedli.aiode.cron.tasks.DestroyInactiveWidgetsTask"/>
 </cronJobs>
