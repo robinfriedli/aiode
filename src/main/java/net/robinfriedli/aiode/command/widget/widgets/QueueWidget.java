@@ -1,17 +1,13 @@
 package net.robinfriedli.aiode.command.widget.widgets;
 
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
-import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
-import net.dv8tion.jda.api.utils.messages.MessageEditData;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.audio.AudioPlayback;
 import net.robinfriedli.aiode.command.widget.AbstractDecoratingWidget;
 import net.robinfriedli.aiode.command.widget.WidgetRegistry;
-import net.robinfriedli.aiode.discord.DiscordEntity;
 import net.robinfriedli.aiode.discord.MessageService;
 
 public class QueueWidget extends AbstractDecoratingWidget {
@@ -24,15 +20,12 @@ public class QueueWidget extends AbstractDecoratingWidget {
     }
 
     @Override
-    public void reset() {
+    public MessageEmbed reset() {
         MessageService messageService = Aiode.get().getMessageService();
         Guild guild = getGuild().get();
-        MessageChannel channel = getChannel().get();
-        DiscordEntity.Message message = getMessage();
 
         EmbedBuilder embedBuilder = audioPlayback.getAudioQueue().buildMessageEmbed(audioPlayback, guild);
-        MessageEmbed messageEmbed = messageService.buildEmbed(embedBuilder);
-        messageService.executeMessageChannelAction(channel, c -> c.editMessageById(message.getId(), MessageEditData.fromEmbeds(messageEmbed)), Permission.MESSAGE_EMBED_LINKS);
+        return messageService.buildEmbed(embedBuilder);
     }
 
 }

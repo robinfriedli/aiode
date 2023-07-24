@@ -1,15 +1,13 @@
 package net.robinfriedli.aiode.command.widget;
 
-import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
-import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
-import net.robinfriedli.aiode.Aiode;
+import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
+import net.dv8tion.jda.api.utils.messages.MessageEditData;
 import net.robinfriedli.aiode.command.AbstractCommand;
 import net.robinfriedli.aiode.command.Command;
 import net.robinfriedli.aiode.command.CommandContext;
 import net.robinfriedli.aiode.command.PermissionTarget;
 import net.robinfriedli.aiode.concurrent.CommandExecutionTask;
-import net.robinfriedli.aiode.discord.MessageService;
 import net.robinfriedli.aiode.entities.xml.WidgetContribution;
 
 /**
@@ -22,7 +20,7 @@ public abstract class AbstractWidgetAction implements Command {
     private final CommandContext context;
     private final String identifier;
     private final String emojiUnicode;
-    private final MessageReactionAddEvent event;
+    private final ButtonInteractionEvent event;
     private final WidgetManager.WidgetActionDefinition widgetActionDefinition;
 
     private boolean aborted;
@@ -50,7 +48,7 @@ public abstract class AbstractWidgetAction implements Command {
         boolean resetRequired,
         CommandContext context,
         AbstractWidget widget,
-        MessageReactionAddEvent event,
+        ButtonInteractionEvent event,
         WidgetManager.WidgetActionDefinition widgetActionDefinition
     ) {
         this.widget = widget;
@@ -64,20 +62,20 @@ public abstract class AbstractWidgetAction implements Command {
 
     @Override
     public void onSuccess() {
+        event.deferEdit().queue();
         if (resetRequired) {
-            widget.reset();
-
-            if (widget.getWidgetContribution().shouldClearReactionOnReset()) {
-                removeReaction();
+            MessageEmbed newEmbed = widget.reset();
+            if (newEmbed != null) {
+                event.getHook().editMessageById(widget.getMessage().getId(), MessageEditData.fromEmbeds(newEmbed)).queue();
+            } else if (!getWidget().isMessageDeleted()) {
+                event.getHook().deleteMessageById(widget.getMessage().getId()).queue();
             }
-        } else {
-            removeReaction();
         }
     }
 
     @Override
     public void onFailure() {
-        removeReaction();
+        event.deferEdit().queue();
     }
 
     @Override
@@ -160,18 +158,6 @@ public abstract class AbstractWidgetAction implements Command {
 
     public WidgetManager.WidgetActionDefinition getWidgetActionDefinition() {
         return widgetActionDefinition;
-    }
-
-    private void removeReaction() {
-        if (!widget.isMessageDeleted()) {
-            try {
-                event.getReaction().removeReaction(getContext().getUser()).queue();
-            } catch (InsufficientPermissionException e) {
-                MessageService messageService = Aiode.get().getMessageService();
-                Permission permission = e.getPermission();
-                messageService.sendTemporary(String.format("Bot is missing permission '%s' to remove reactions.", permission.getName()), context.getChannel());
-            }
-        }
     }
 
 }

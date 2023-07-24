@@ -11,8 +11,8 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
-import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.robinfriedli.aiode.concurrent.CommandExecutionTask;
 import net.robinfriedli.aiode.concurrent.ExecutionContext;
@@ -86,7 +86,7 @@ public class CommandContext extends ExecutionContext {
     }
 
     public CommandContext(
-        MessageReactionAddEvent event,
+        ButtonInteractionEvent event,
         GuildContext guildContext,
         String message,
         SessionFactory sessionFactory,
@@ -104,7 +104,7 @@ public class CommandContext extends ExecutionContext {
             commandBody,
             event.getChannel(),
             false,
-            null
+            event.getHook()
         );
     }
 

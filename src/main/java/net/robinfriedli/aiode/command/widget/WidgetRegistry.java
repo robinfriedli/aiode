@@ -1,10 +1,12 @@
 package net.robinfriedli.aiode.command.widget;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Consumer;
 
 import com.google.api.client.util.Lists;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
@@ -31,9 +33,11 @@ public class WidgetRegistry {
         try {
             List<AbstractWidget> toRemove = Lists.newArrayList();
 
-            activeWidgets.values().stream()
-                .filter(w -> w.getClass().equals(widget.getClass()))
-                .forEach(toRemove::add);
+            if (!widget.getWidgetContribution().allowMultipleActive()) {
+                activeWidgets.values().stream()
+                    .filter(w -> w.getClass().equals(widget.getClass()))
+                    .forEach(toRemove::add);
+            }
 
             try {
                 DiscordEntity.Message message = widget.getMessage();
@@ -81,6 +85,16 @@ public class WidgetRegistry {
             activeWidgets.values().remove(widget);
         } finally {
             writeLock.unlock();
+        }
+    }
+
+    public void withActiveWidgets(Consumer<Collection<AbstractWidget>> c) {
+        ReentrantReadWriteLock.ReadLock readLock = lock.readLock();
+        readLock.lock();
+        try {
+            c.accept(activeWidgets.values());
+        } finally {
+            readLock.unlock();
         }
     }
 

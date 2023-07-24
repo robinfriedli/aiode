@@ -18,7 +18,9 @@ import net.robinfriedli.aiode.command.CommandContext;
 import net.robinfriedli.aiode.command.CommandManager;
 import net.robinfriedli.aiode.command.argument.ArgumentController;
 import net.robinfriedli.aiode.command.argument.CommandArgument;
+import net.robinfriedli.aiode.command.widget.widgets.PaginatedMessageEmbedWidget;
 import net.robinfriedli.aiode.discord.property.properties.ArgumentPrefixProperty;
+import net.robinfriedli.aiode.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.aiode.discord.property.properties.PrefixProperty;
 import net.robinfriedli.aiode.entities.AccessConfiguration;
 import net.robinfriedli.aiode.entities.GuildSpecification;
@@ -112,7 +114,15 @@ public class HelpCommand extends AbstractCommand {
                 }
             }
 
-            sendMessage(embedBuilder);
+            embedBuilder.setColor(ColorSchemeProperty.getColor());
+            PaginatedMessageEmbedWidget paginatedMessageEmbedWidget = new PaginatedMessageEmbedWidget(
+                getContext().getGuildContext().getWidgetRegistry(),
+                guild,
+                getContext().getChannel(),
+                embedBuilder.build()
+            );
+
+            paginatedMessageEmbedWidget.initialise();
         }, () -> {
             throw new InvalidCommandException(String.format("No command found for '%s'", getCommandInput()));
         });

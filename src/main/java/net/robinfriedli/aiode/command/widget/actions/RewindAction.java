@@ -2,7 +2,7 @@ package net.robinfriedli.aiode.command.widget.actions;
 
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.GuildVoiceState;
-import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.audio.AudioManager;
 import net.robinfriedli.aiode.audio.AudioPlayback;
@@ -17,7 +17,7 @@ public class RewindAction extends AbstractWidgetAction {
     private final AudioPlayback audioPlayback;
     private final AudioManager audioManager;
 
-    public RewindAction(String identifier, String emojiUnicode, boolean resetRequired, CommandContext context, AbstractWidget widget, MessageReactionAddEvent event, WidgetManager.WidgetActionDefinition widgetActionDefinition) {
+    public RewindAction(String identifier, String emojiUnicode, boolean resetRequired, CommandContext context, AbstractWidget widget, ButtonInteractionEvent event, WidgetManager.WidgetActionDefinition widgetActionDefinition) {
         super(identifier, emojiUnicode, resetRequired, context, widget, event, widgetActionDefinition);
         audioPlayback = getContext().getGuildContext().getPlayback();
         audioManager = Aiode.get().getAudioManager();
