@@ -31,7 +31,7 @@ public class CommandHistory implements Serializable {
     private String commandIdentifier;
     @Column(name = "is_widget", nullable = false)
     private boolean isWidget;
-    @Column(name = "command_context_id")
+    @Column(name = "command_context_id", unique = true)
     private String commandContextId;
     @Column(name = "command_body", length = 2000)
     private String commandBody;

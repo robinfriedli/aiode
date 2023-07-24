@@ -1033,4 +1033,7 @@ See application.properties -> spring.liquibase.contexts
       <column name="timestamp"/>
     </createIndex>
   </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1690204479952-1">
+    <addUniqueConstraint columnNames="command_context_id" constraintName="UC_COMMAND_HISTORYCOMMAND_CONTEXT_ID_COL" tableName="command_history"/>
+  </changeSet>
 </databaseChangeLog>
