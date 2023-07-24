@@ -11,6 +11,7 @@
     <acceptedValue>true</acceptedValue>
     <acceptedValue>false</acceptedValue>
   </guildProperty>
+  <guildProperty property="defaultVolume" name="default volume" defaultValue="100" implementation="net.robinfriedli.aiode.discord.property.properties.DefaultVolumeProperty" updateMessage="Default volume set to %s." description="Change the default volume of the bot." />
   <guildProperty property="defaultSource" name="default source" defaultValue="SPOTIFY" implementation="net.robinfriedli.aiode.discord.property.properties.DefaultSourceProperty" updateMessage="Set the default search source to %s" description="The default source to search for tracks when no source was explicitly specified.">
     <acceptedValue>spotify</acceptedValue>
     <acceptedValue>youtube</acceptedValue>
