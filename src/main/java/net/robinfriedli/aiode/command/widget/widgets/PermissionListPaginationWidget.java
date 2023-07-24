@@ -15,7 +15,7 @@ import net.robinfriedli.aiode.util.EmbedTable;
 import net.robinfriedli.stringlist.StringList;
 import org.jetbrains.annotations.Nullable;
 
-public class PermissionListPaginationWidget extends AbstractPaginationWidget<PermissionTarget> {
+public class PermissionListPaginationWidget extends AbstractPaginationWidget.EmbedTablePaginationWidget<PermissionTarget> {
 
     private final SecurityManager securityManager;
 
@@ -26,8 +26,8 @@ public class PermissionListPaginationWidget extends AbstractPaginationWidget<Per
 
     @SuppressWarnings("unchecked")
     @Override
-    protected AbstractPaginationWidget.Column<PermissionTarget>[] getColumns() {
-        return new AbstractPaginationWidget.Column[]{
+    protected EmbedTablePaginationWidget.Column<PermissionTarget>[] getColumns() {
+        return new EmbedTablePaginationWidget.Column[]{
             new Column<PermissionTarget>("Permission", permissionTarget -> {
                 int childTargetLevel = 0;
                 PermissionTarget currentParent = permissionTarget.getParentTarget();

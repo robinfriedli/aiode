@@ -10,7 +10,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import com.google.common.collect.Lists;
-import net.dv8tion.jda.api.entities.MessageReaction;
 import net.robinfriedli.aiode.command.CommandManager;
 import net.robinfriedli.aiode.command.PermissionTarget;
 import net.robinfriedli.aiode.entities.xml.CommandContribution;
@@ -30,6 +29,7 @@ public class WidgetManager {
 
     private final Map<Class<? extends AbstractWidget>, WidgetContribution> widgetContributionMap = new HashMap<>();
     private final Map<Class<? extends AbstractWidget>, Map<String, WidgetActionDefinition>> widgetReactionMap = new HashMap<>();
+    private final Map<Class<? extends AbstractWidget>, List<List<WidgetActionDefinition>>> widgetActionRowMap = new HashMap<>();
     private final Map<String, WidgetActionId> widgetActionSingletonMap = new HashMap<>();
 
     private final Context widgetConfigurationContext;
@@ -46,20 +46,25 @@ public class WidgetManager {
         }
 
         for (WidgetContribution widgetContribution : widgetConfigurationContext.getInstancesOf(WidgetContribution.class)) {
-            for (WidgetContribution.WidgetActionContribution widgetActionContribution : widgetContribution.getSubElementsWithType(WidgetContribution.WidgetActionContribution.class)) {
-                String identifier = widgetActionContribution.getIdentifier();
-                WidgetActionId widgetActionId = widgetActionSingletonMap.computeIfAbsent(identifier, id -> {
-                    CommandContribution referencedCommand = commandManager.getCommandContribution(id);
-                    return new WidgetActionId(id, referencedCommand);
-                });
+            Map<String, WidgetActionDefinition> reactionMap = widgetReactionMap.computeIfAbsent(widgetContribution.getImplementationClass(), widgetType -> new LinkedHashMap<>());
+            List<List<WidgetActionDefinition>> actionRows = widgetActionRowMap.computeIfAbsent(widgetContribution.getImplementationClass(), widgetType -> Lists.newArrayList());
+            for (WidgetContribution.WidgetActionRow actionRow : widgetContribution.getSubElementsWithType(WidgetContribution.WidgetActionRow.class)) {
+                List<WidgetActionDefinition> widgetActionDefinitions = Lists.newArrayList();
+                for (WidgetContribution.WidgetActionContribution widgetActionContribution : actionRow.getSubElementsWithType(WidgetContribution.WidgetActionContribution.class)) {
+                    String identifier = widgetActionContribution.getIdentifier();
+                    WidgetActionId widgetActionId = widgetActionSingletonMap.computeIfAbsent(identifier, id -> {
+                        CommandContribution referencedCommand = commandManager.getCommandContribution(id);
+                        return new WidgetActionId(id, referencedCommand);
+                    });
 
-                Map<String, WidgetActionDefinition> reactionMap = widgetReactionMap.computeIfAbsent(widgetContribution.getImplementationClass(), widgetType -> new LinkedHashMap<>());
+                    WidgetActionDefinition widgetActionDefinition = new WidgetActionDefinition(widgetActionId, widgetActionContribution);
+                    reactionMap.put(widgetActionContribution.getIdentifier(), widgetActionDefinition);
+                    widgetActionDefinitions.add(widgetActionDefinition);
+                }
 
-                WidgetActionDefinition widgetActionDefinition = new WidgetActionDefinition(widgetActionId, widgetActionContribution);
-                reactionMap.put(widgetActionContribution.getEmojiUnicode(), widgetActionDefinition);
+                widgetContributionMap.put(widgetContribution.getImplementationClass(), widgetContribution);
+                actionRows.add(widgetActionDefinitions);
             }
-
-            widgetContributionMap.put(widgetContribution.getImplementationClass(), widgetContribution);
         }
     }
 
@@ -81,9 +86,9 @@ public class WidgetManager {
         return widgetContribution;
     }
 
-    public Optional<WidgetActionDefinition> getWidgetActionDefinitionForReaction(Class<? extends AbstractWidget> widgetType, MessageReaction reaction) {
+    public Optional<WidgetActionDefinition> getWidgetActionDefinitionForComponentId(Class<? extends AbstractWidget> widgetType, String componentId) {
         Map<String, WidgetActionDefinition> reactionMap = requireReactionMapForWidgetType(widgetType);
-        return Optional.ofNullable(reactionMap.get(reaction.getEmoji().getName()));
+        return Optional.ofNullable(reactionMap.get(componentId));
     }
 
     /**
@@ -93,9 +98,10 @@ public class WidgetManager {
      * @param widgetType the class of the widget
      * @return a collection containing a view of all mapped actions, ordered
      */
-    public List<WidgetActionDefinition> getActionsForWidget(Class<? extends AbstractWidget> widgetType) {
-        Map<String, WidgetActionDefinition> reactionMap = requireReactionMapForWidgetType(widgetType);
-        return Lists.newArrayList(reactionMap.values());
+    public List<List<WidgetActionDefinition>> getActionsForWidget(Class<? extends AbstractWidget> widgetType) {
+        return Optional
+            .ofNullable(widgetActionRowMap.get(widgetType))
+            .orElseThrow(() -> new IllegalStateException("No configuration mapped for widget class " + widgetType.getName()));
     }
 
     public Context getWidgetConfigurationContext() {

@@ -14,8 +14,7 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
-import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
-import net.dv8tion.jda.api.utils.messages.MessageEditData;
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.boot.SpringPropertiesConfig;
 import net.robinfriedli.aiode.command.CommandContext;
@@ -48,16 +47,12 @@ public abstract class AbstractPaginationWidget<E> extends AbstractWidget {
     }
 
     @Override
-    public void reset() {
-        long messageId = getMessage().getId();
-        MessageChannel channel = getChannel().get();
-
+    public MessageEmbed reset() {
         MessageService messageService = Aiode.get().getMessageService();
 
         EmbedBuilder embedBuilder = prepareEmbedBuilderForPage();
-        MessageEmbed messageEmbed = messageService.buildEmbed(embedBuilder);
 
-        messageService.executeMessageChannelAction(channel, c -> c.editMessageById(messageId, MessageEditData.fromEmbeds(messageEmbed)));
+        return messageService.buildEmbed(embedBuilder);
     }
 
     public List<List<E>> getPages() {
@@ -80,17 +75,20 @@ public abstract class AbstractPaginationWidget<E> extends AbstractWidget {
         return --currentPage;
     }
 
-    protected abstract Column<E>[] getColumns();
-
     protected abstract String getTitle();
 
     @Nullable
     protected abstract String getDescription();
 
+    /**
+     * Defines the implementation of how the elements from the current page are added to the embed message
+     */
+    protected abstract void handlePage(EmbedBuilder embedBuilder, List<E> page);
+
     @Override
-    public void handleReaction(MessageReactionAddEvent event, CommandContext context) {
+    public void handleButtonInteraction(ButtonInteractionEvent event, CommandContext context) {
         synchronized (this) {
-            super.handleReaction(event, context);
+            super.handleButtonInteraction(event, context);
         }
     }
 
@@ -115,50 +113,62 @@ public abstract class AbstractPaginationWidget<E> extends AbstractWidget {
 
         embedBuilder.setFooter(String.format("Page %d of %d", currentPage + 1, Math.max(pageCount, 1)), logoUrl);
 
-        EmbedTable embedTable = new EmbedTable(embedBuilder);
-
         List<E> page = pages.isEmpty() ? Collections.emptyList() : pages.get(currentPage);
-        for (Column<E> column : getColumns()) {
-            Function<E, EmbedTable.Group> groupFunction = column.getGroupFunction();
-            if (groupFunction != null) {
-                embedTable.addColumn(column.getTitle(), page, column.getDisplayFunc(), groupFunction);
-            } else {
-                embedTable.addColumn(column.getTitle(), page, column.getDisplayFunc());
-            }
-        }
-
-        embedTable.build();
+        handlePage(embedBuilder, page);
         return embedBuilder;
     }
 
-    protected static class Column<E> {
+    public abstract static class EmbedTablePaginationWidget<E> extends AbstractPaginationWidget<E> {
 
-        private final String title;
-        private final Function<E, String> displayFunc;
-        @Nullable
-        private final Function<E, EmbedTable.Group> groupFunction;
-
-        public Column(String title, Function<E, String> displayFunc) {
-            this(title, displayFunc, null);
+        public EmbedTablePaginationWidget(WidgetRegistry widgetRegistry, Guild guild, MessageChannel channel, List<E> elements, int pageSize) {
+            super(widgetRegistry, guild, channel, elements, pageSize);
         }
 
-        public Column(String title, Function<E, String> displayFunc, @Nullable Function<E, EmbedTable.Group> groupFunction) {
-            this.title = title;
-            this.displayFunc = displayFunc;
-            this.groupFunction = groupFunction;
+        protected abstract Column<E>[] getColumns();
+
+        @Override
+        protected void handlePage(EmbedBuilder embedBuilder, List<E> page) {
+            EmbedTable embedTable = new EmbedTable(embedBuilder);
+            for (Column<E> column : getColumns()) {
+                Function<E, EmbedTable.Group> groupFunction = column.getGroupFunction();
+                if (groupFunction != null) {
+                    embedTable.addColumn(column.getTitle(), page, column.getDisplayFunc(), groupFunction);
+                } else {
+                    embedTable.addColumn(column.getTitle(), page, column.getDisplayFunc());
+                }
+            }
+            embedTable.build();
         }
 
-        public String getTitle() {
-            return title;
-        }
+        public static class Column<E> {
 
-        public Function<E, String> getDisplayFunc() {
-            return displayFunc;
-        }
+            private final String title;
+            private final Function<E, String> displayFunc;
+            @Nullable
+            private final Function<E, EmbedTable.Group> groupFunction;
 
-        @Nullable
-        public Function<E, EmbedTable.Group> getGroupFunction() {
-            return groupFunction;
+            public Column(String title, Function<E, String> displayFunc) {
+                this(title, displayFunc, null);
+            }
+
+            public Column(String title, Function<E, String> displayFunc, @Nullable Function<E, EmbedTable.Group> groupFunction) {
+                this.title = title;
+                this.displayFunc = displayFunc;
+                this.groupFunction = groupFunction;
+            }
+
+            public String getTitle() {
+                return title;
+            }
+
+            public Function<E, String> getDisplayFunc() {
+                return displayFunc;
+            }
+
+            @Nullable
+            public Function<E, EmbedTable.Group> getGroupFunction() {
+                return groupFunction;
+            }
         }
     }
 

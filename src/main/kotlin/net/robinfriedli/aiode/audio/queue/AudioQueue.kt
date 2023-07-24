@@ -664,8 +664,8 @@ class AudioQueue(val maxSize: Int?) {
 
     private fun appendPlayable(trackListBuilder: StringBuilder, playable: Playable) {
         playable.fetch()
-        var display = playable.display(2, TimeUnit.SECONDS)
-        val durationMs = playable.durationMs(2, TimeUnit.SECONDS)
+        var display = playable.display(100, TimeUnit.MILLISECONDS)
+        val durationMs = playable.durationMs(100, TimeUnit.MILLISECONDS)
         if (display.length > 100) {
             display = display.substring(0, 95) + "[...]"
         }

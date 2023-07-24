@@ -36,6 +36,7 @@ public class JxpComponent {
             .mapClass("version", Version.class)
             .mapClass("feature", Version.Feature.class)
             .mapClass("groovyVariableProvider", GroovyVariableProviderContribution.class)
+            .mapClass("action-row", WidgetContribution.WidgetActionRow.class)
             .build();
     }
 
