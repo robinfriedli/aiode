@@ -115,7 +115,7 @@ public class PlayCommand extends AbstractQueueLoadingCommand {
             audioPlayer.stopTrack();
         }
 
-        queue.addContainers(playableContainers, playableFactory, true);
+        queue.addContainers(playableContainers, playableFactory, true, null);
 
         audioManager.startPlayback(guild, getContext().getAudioChannel());
     }

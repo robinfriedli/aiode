@@ -91,6 +91,35 @@
     <example title="Add tracks from a Spotify playlist in the current user's library to the queue">%1$squeue %2$slist %2$sspotify %2$sown favs</example>
     <example title="Add a YouTube playlist to the queue">%1$squeue %2$syoutube %2$slist memes</example>
     <example title="Add a YouTube playlist to the queue, showing a selection of 5 results">%1$squeue %2$syoutube %2$slist %2$slimit=5 memes</example>
+    <example title="Remove the next 3 tracks from the queue">%1$squeue %2$sremove 1 - 3</example>
+    <example title="Insert track Numb after the current track">%1$squeue %2$sinsert Numb</example>
+    <example title="Insert album Meteora after the 4th to next in the queue">%1$squeue %2$sinsert %2$sat=4 %2$salbum Meteora</example>
+    <argument identifier="remove" requiresInput="true" description="Remove the provided index range (relative to the current position) from the queue. Indexing starts at 1 (so 1 is the next track in the queue) and the range includes the end index (so 1-3 removes the next 3 tracks in the queue).">
+      <excludes argument="album"/>
+      <excludes argument="episode"/>
+      <excludes argument="list"/>
+      <excludes argument="local"/>
+      <excludes argument="market"/>
+      <excludes argument="own"/>
+      <excludes argument="podcast"/>
+      <excludes argument="preview"/>
+      <excludes argument="select"/>
+      <excludes argument="soundcloud"/>
+      <excludes argument="spotify"/>
+      <excludes argument="spotify"/>
+      <excludes argument="youtube"/>
+    </argument>
+    <argument identifier="insert" requiresInput="true" description="Insert items into the queue at a given position. By default or if the 'next' argument is set the items are inserted after the current track, the 'at' argument may be used to insert items at the specified index relative to the current position.">
+      <excludes argument="remove"/>
+    </argument>
+    <argument identifier="next" description="Inserts items after the current position in the queue when used in combination with the 'insert' argument.">
+      <requires argument="insert"/>
+    </argument>
+    <argument identifier="at" valueType="java.lang.Integer" requiresValue="true" description="Inserts items at the given index relative to the current position in the queue when used in combination with the 'insert' argument. Indexing starts at 1, so index 2 inserts the items after the next track in the queue and index 1 inserts the items after the current track (though in that case the 'next' argument should be used instead).">
+      <excludes argument="next"/>
+      <requires argument="insert"/>
+      <rule errorMessage="Index must be 1 or greater">value > 0</rule>
+    </argument>
   </command>
   <command identifier="remove"
            implementation="net.robinfriedli.aiode.command.commands.playlistmanagement.RemoveCommand"

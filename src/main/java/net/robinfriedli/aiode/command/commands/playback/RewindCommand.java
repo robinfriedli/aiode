@@ -30,7 +30,7 @@ public class RewindCommand extends AbstractCommand {
             throw new InvalidCommandException("No previous item in queue");
         }
 
-        int queueSize = queue.getTracks().size();
+        int queueSize = queue.getSize();
         if (getCommandInput().isBlank()) {
             queue.reverse();
         } else {

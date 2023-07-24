@@ -45,7 +45,7 @@ public class SkipCommand extends AbstractCommand {
             }
 
             int newIndex;
-            int queueSize = queue.getTracks().size();
+            int queueSize = queue.getSize();
             boolean overflow = queue.getPosition() + offset >= queueSize;
             if (!playback.isRepeatAll() && overflow) {
                 newIndex = queueSize - 1;
