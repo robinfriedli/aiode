@@ -363,15 +363,15 @@ public class MessageService {
                     }
                 }
 
+                CommandContext commandContext = ExecutionContext.Current.getUnwrap(CommandContext.class);
                 M messageAction;
 
                 InteractionHook interactionHook;
                 if (dispatchFunction != null) {
                     MessageDispatchDelegate dispatchDelegate;
-                    CommandContext commandContext = ExecutionContext.Current.getUnwrap(CommandContext.class);
                     if (commandContext != null) {
                         interactionHook = commandContext.getInteractionHook();
-                        if (interactionHook != null) {
+                        if (interactionHook != null && channel.equals(commandContext.getChannel())) {
                             commandContext.setInteractionResponseSent(true);
                             dispatchDelegate = new WebhookClientDispatchDelegate(interactionHook);
                         } else {
@@ -394,8 +394,9 @@ public class MessageService {
                 messageAction.timeout(10, TimeUnit.SECONDS).queue(futureMessage::complete, e -> {
                     handleError(e, channel);
                     futureMessage.completeExceptionally(e);
-                    if (interactionHook != null) {
+                    if (interactionHook != null && commandContext.isSlashCommand()) {
                         try {
+                            // clear message sent as deferReply for slash commands
                             interactionHook.deleteOriginal().queue();
                         } catch (Exception e1) {
                             logger.error("Exception deleting original interaction on message error", e);
