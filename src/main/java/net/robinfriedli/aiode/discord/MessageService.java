@@ -58,7 +58,7 @@ public class MessageService {
 
     private static final Invoker RECURSION_PREVENTION_INVOKER = Invoker.newInstance();
     private static final EnumSet<Permission> ESSENTIAL_PERMISSIONS = EnumSet.of(Permission.VIEW_CHANNEL, Permission.MESSAGE_SEND);
-    private static final RateLimitInvoker MESSAGE_DISPATCH_RATE_LIMITER = new RateLimitInvoker("message_service", 25, Duration.ofSeconds(10));
+    private static final RateLimitInvoker MESSAGE_DISPATCH_RATE_LIMITER = new RateLimitInvoker("message_service", 50, Duration.ofSeconds(10));
 
     private final int limit = 1000;
     private final GuildManager guildManager;
