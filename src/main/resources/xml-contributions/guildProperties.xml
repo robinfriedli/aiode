@@ -29,4 +29,9 @@
     <acceptedValue>true</acceptedValue>
     <acceptedValue>false</acceptedValue>
   </guildProperty>
+  <guildProperty property="autoQueueMode" name="auto queue" defaultValue="queue next" implementation="net.robinfriedli.aiode.discord.property.properties.AutoQueueModeProperty" updateMessageScript="def strValue; if (value == 0) { strValue = 'off' } else if (value == 1) { strValue = 'queue next' } else if (value == 2) { strValue = 'queue last' } else { value.toString() }; return String.format(&quot;Set auto queue mode to '%s'&quot;, strValue)" description="Change the auto queue behaviour when using a play command while the bot is already playing. 'queue next' means the tracks are inserted after the current track (this is the default), 'queue last' means the tracks are appended to the end of the queue, 'off' means auto queue is disabled and the tracks are played immediately, replacing the current queue.">
+    <acceptedValue>off</acceptedValue>
+    <acceptedValue>queue next</acceptedValue>
+    <acceptedValue>queue last</acceptedValue>
+  </guildProperty>
 </guildProperties>

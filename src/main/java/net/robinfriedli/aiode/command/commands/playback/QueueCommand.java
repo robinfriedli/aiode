@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.Lock;
 
-import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
@@ -121,42 +120,14 @@ public class QueueCommand extends AbstractQueueLoadingCommand {
 
     @Override
     public void onSuccess() {
-        if (loadedTrack != null) {
-            sendSuccess("Queued " + loadedTrack.display());
-        }
-        if (loadedLocalList != null) {
-            sendSuccess(String.format("Queued playlist '%s'", loadedLocalList.getName()));
-        }
-        if (loadedSpotifyPlaylist != null) {
-            sendSuccess(String.format("Queued playlist '%s'", loadedSpotifyPlaylist.getName()));
-        }
-        if (loadedYouTubePlaylist != null) {
-            sendSuccess(String.format("Queued playlist '%s'", loadedYouTubePlaylist.getTitle()));
-        }
-        if (loadedAlbum != null) {
-            sendSuccess(String.format("Queued album '%s'", loadedAlbum.getName()));
-        }
-        if (loadedAmount > 0) {
-            sendSuccess(String.format("Queued %d item%s", loadedAmount, loadedAmount == 1 ? "" : "s"));
-        }
-        if (loadedAudioTrack != null) {
-            sendSuccess("Queued track " + loadedAudioTrack.getInfo().title);
-        }
-        if (loadedAudioPlaylist != null) {
-            String name = loadedAudioPlaylist.getName();
-            if (!Strings.isNullOrEmpty(name)) {
-                sendSuccess("Queued playlist " + name);
-            } else {
-                int size = loadedAudioPlaylist.getTracks().size();
-                sendSuccess(String.format("Queued %d item%s", size, size == 1 ? "" : "s"));
-            }
-        }
-        if (loadedShow != null) {
-            String name = loadedShow.getName();
-            sendSuccess("Queued podcast " + name);
-        }
+        sendSuccessMessage(false);
+    }
+
+    @Override
+    protected void sendSuccessMessage(boolean playingNext) {
+        super.sendSuccessMessage(playingNext);
         if (removedTracks > 0) {
-            sendSuccess(String.format("Removed %d tracks from queue", removedTracks));
+            sendSuccess(String.format("Removed %d tracks from queue%s", removedTracks, (playingNext ? " to play next" : "")));
         }
     }
 
@@ -181,25 +152,24 @@ public class QueueCommand extends AbstractQueueLoadingCommand {
         Lock writeLock = queue.getLock().writeLock();
         writeLock.lock();
         try {
-            int insertionIdx;
+            Integer insertionIdx;
             if (argumentSet("insert")) {
                 Integer idx = getArgumentValueWithTypeOrElse("at", Integer.class, null);
                 try {
                     if (idx == null || argumentSet("next")) {
-                        insertionIdx = queue.getCurrIdx();
+                        insertionIdx = 0;
                     } else {
-                        insertionIdx = queue.getCurrIdx() + idx - 1;
+                        insertionIdx = idx - 1;
                     }
                 } catch (IndexOutOfBoundsException e) {
                     throw new InvalidCommandException(e.getMessage(), e);
                 }
             } else {
-                insertionIdx = queue.getSize();
+                insertionIdx = null;
             }
 
             int prevSize = queue.getSize();
-            queue.addContainersLocked(playableContainers, playableFactory, false, insertionIdx);
-            loadedAmount = queue.getSize() - prevSize;
+            loadedAmount = queue.addContainersLocked(playableContainers, playableFactory, false, insertionIdx);
         } finally {
             writeLock.unlock();
         }

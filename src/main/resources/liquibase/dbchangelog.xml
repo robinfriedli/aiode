@@ -1041,4 +1041,9 @@ See application.properties -> spring.liquibase.contexts
       <column name="default_volume" type="int4"/>
     </addColumn>
   </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1690297557464-1">
+    <addColumn tableName="guild_specification">
+      <column name="auto_queue_mode" type="int4"/>
+    </addColumn>
+  </changeSet>
 </databaseChangeLog>

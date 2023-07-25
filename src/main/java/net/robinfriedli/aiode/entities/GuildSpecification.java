@@ -58,6 +58,8 @@ public class GuildSpecification implements Serializable {
     private String defaultTextChannelId;
     @Column(name = "default_volume")
     private Integer defaultVolume;
+    @Column(name = "auto_queue_mode")
+    private Integer autoQueueMode;
     @Column(name = "enable_scripting")
     private Boolean enableScripting;
     @OneToMany(mappedBy = "guildSpecification")
@@ -203,6 +205,14 @@ public class GuildSpecification implements Serializable {
 
     public void setDefaultVolume(Integer volume) {
         this.defaultVolume = volume;
+    }
+
+    public Integer getAutoQueueMode() {
+        return autoQueueMode;
+    }
+
+    public void setAutoQueueMode(Integer autoQueueMode) {
+        this.autoQueueMode = autoQueueMode;
     }
 
     public Boolean isEnableScripting() {
