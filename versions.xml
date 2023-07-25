@@ -1,4 +1,13 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?><versions xmlns="versionSpace">
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<versions xmlns="versionSpace">
+  <version launched="false" version="2.2">
+    <feature title="Queue insertion and removal">Added the $insert and $remove arguments to the queue command to remove the tracks at the given index range from the queue or insert tracks at the given position. The $insert argument inserts the tracks right after the current track by default (or if the $next argument is used), you can add the $at argument to insert the tracks at any position relative to the current position in the queue (e.g. `queue $insert $at=2 numb` inserts the track 'numb' after the next track in the queue).</feature>
+    <feature title="auto queue">Added the 'auto queue' guild property to control the behaviour of the bot when using the play command while already playing something else. This is accessible via the property command with the following options: 'queue next' -> insert the tracks into the queue after the current track, this is now the default / 'queue last' -> append the tracks to the end of the queue / 'off' -> enables the original behaviour the play command replaces the current queue</feature>
+    <feature title="New widget interactions">Using Discord's button interaction system rather than reactions for widgets, enabling them to be displayed a lot faster (instead of adding reactions one by one) and adding multiple rows. The queue widget has been extended with volume controls.</feature>
+    <feature title="Default volume property">The default volume of 100 can now be changed using the 'default volume' property of the property command.</feature>
+    <feature title="Improved charts command">The charts command has been overhauled, much improving performance and adding user specific charts. Global charts are now only refreshed once per day instead of on demand.</feature>
+    <feature title="Improved performance">Performance of many database queries has been improved significantly with additional indexes.</feature>
+  </version>
   <version launched="true" version="2.1">
     <feature title="Slash command migration">As message content is now becoming a privileged intent, bots can only read message content when mentioned directly. This means prefixes will no longer work, at least until the bot is authorized for the intent. Using commands now only works via slash commands or when mentioning the bot as a prefix (e.g. `@aiode play numb`).</feature>
     <feature title="Queue system rework">The queue system received a substantial backend rework, enabling support for future features, such as inserting / removing items everywhere in the queue.</feature>
