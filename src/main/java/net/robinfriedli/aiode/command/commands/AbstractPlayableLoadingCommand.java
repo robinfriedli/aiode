@@ -6,6 +6,7 @@ import java.util.concurrent.Callable;
 
 import org.apache.commons.validator.routines.UrlValidator;
 
+import com.google.common.base.Strings;
 import com.sedmelluq.discord.lavaplayer.track.AudioItem;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
@@ -118,6 +119,43 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
         return trackLoadingExecutor;
     }
 
+    protected void sendSuccessMessage(boolean playingNext) {
+        if (loadedTrack != null) {
+            sendSuccess("Queued " + loadedTrack.display() + (playingNext ? " to play next" : ""));
+        }
+        if (loadedLocalList != null) {
+            sendSuccess(String.format("Queued playlist '%s'%s", loadedLocalList.getName(), (playingNext ? " to play next" : "")));
+        }
+        if (loadedSpotifyPlaylist != null) {
+            sendSuccess(String.format("Queued playlist '%s'%s", loadedSpotifyPlaylist.getName(), (playingNext ? " to play next" : "")));
+        }
+        if (loadedYouTubePlaylist != null) {
+            sendSuccess(String.format("Queued playlist '%s'%s", loadedYouTubePlaylist.getTitle(), (playingNext ? " to play next" : "")));
+        }
+        if (loadedAlbum != null) {
+            sendSuccess(String.format("Queued album '%s'%s", loadedAlbum.getName(), (playingNext ? " to play next" : "")));
+        }
+        if (loadedAmount > 0) {
+            sendSuccess(String.format("Queued %d item%s%s", loadedAmount, loadedAmount == 1 ? "" : "s", (playingNext ? " to play next" : "")));
+        }
+        if (loadedAudioTrack != null) {
+            sendSuccess("Queued track " + loadedAudioTrack.getInfo().title + (playingNext ? " to play next" : ""));
+        }
+        if (loadedAudioPlaylist != null) {
+            String name = loadedAudioPlaylist.getName();
+            if (!Strings.isNullOrEmpty(name)) {
+                sendSuccess("Queued playlist " + name + (playingNext ? " to play next" : ""));
+            } else {
+                int size = loadedAudioPlaylist.getTracks().size();
+                sendSuccess(String.format("Queued %d item%s%s", size, size == 1 ? "" : "s", (playingNext ? " to play next" : "")));
+            }
+        }
+        if (loadedShow != null) {
+            String name = loadedShow.getName();
+            sendSuccess("Queued podcast " + name + (playingNext ? " to play next" : ""));
+        }
+    }
+
     private void loadUrlItems(AudioManager audioManager) throws IOException {
         net.robinfriedli.aiode.audio.playables.PlayableFactory playableFactory = audioManager.createPlayableFactory(getSpotifyService(), trackLoadingExecutor, shouldRedirectSpotify());
         PlayableContainer<?> playableContainerForUrl = playableFactory.createPlayableContainerForUrl(getCommandInput());
@@ -125,8 +163,8 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
         if (playables.isEmpty()) {
             throw new NoResultsFoundException("Result is empty!");
         }
-        handleResult(playableContainerForUrl, playableFactory);
         loadedAmount = playables.size();
+        handleResult(playableContainerForUrl, playableFactory);
     }
 
     private void loadSpotifyUri(AudioManager audioManager) throws Exception {
@@ -135,8 +173,8 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
         PlayableFactory playableFactory = audioManager.createPlayableFactory(getSpotifyService(), trackLoadingExecutor, shouldRedirectSpotify());
         PlayableContainer<?> playableContainer = spotifyUri.createPlayableContainer(playableFactory, spotifyService);
         List<Playable> playables = playableContainer.loadPlayables(playableFactory);
-        handleResult(playableContainer, playableFactory);
         loadedAmount = playables.size();
+        handleResult(playableContainer, playableFactory);
     }
 
     private void loadLocalList(AudioManager audioManager) throws Exception {
@@ -154,8 +192,8 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
         PlayableFactory playableFactory = audioManager.createPlayableFactory(getSpotifyService(), trackLoadingExecutor, shouldRedirectSpotify());
         PlayableContainerManager playableContainerManager = Aiode.get().getPlayableContainerManager();
         PlaylistPlayableContainer playlistPlayableContainer = new PlaylistPlayableContainer(playlist, playableContainerManager);
-        handleResult(playlistPlayableContainer, playableFactory);
         loadedLocalList = playlist;
+        handleResult(playlistPlayableContainer, playableFactory);
     }
 
     private void loadYouTubeList(AudioManager audioManager) throws IOException {
@@ -168,8 +206,8 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
             List<YouTubePlaylist> playlists = youTubeService.searchSeveralPlaylists(limit, getCommandInput());
             if (playlists.size() == 1) {
                 YouTubePlaylist playlist = playlists.get(0);
-                handleResult(new YouTubePlaylistPlayableContainer(playlist), playableFactory);
                 loadedYouTubePlaylist = playlist;
+                handleResult(new YouTubePlaylistPlayableContainer(playlist), playableFactory);
             } else if (playlists.isEmpty()) {
                 throw new NoResultsFoundException(String.format("No YouTube playlist found for '%s'", getCommandInput()));
             } else {
@@ -177,8 +215,8 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
             }
         } else {
             YouTubePlaylist youTubePlaylist = youTubeService.searchPlaylist(getCommandInput());
-            handleResult(new YouTubePlaylistPlayableContainer(youTubePlaylist), playableFactory);
             loadedYouTubePlaylist = youTubePlaylist;
+            handleResult(new YouTubePlaylistPlayableContainer(youTubePlaylist), playableFactory);
         }
     }
 
@@ -195,8 +233,8 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
             if (found.size() == 1) {
                 PlaylistSimplified playlist = found.get(0);
                 PlayableFactory playableFactory = audioManager.createPlayableFactory(getSpotifyService(), trackLoadingExecutor, shouldRedirectSpotify());
-                handleResult(new SpotifyPlaylistSimplifiedPlayableContainer(playlist), playableFactory);
                 loadedSpotifyPlaylist = playlist;
+                handleResult(new SpotifyPlaylistSimplifiedPlayableContainer(playlist), playableFactory);
             } else if (found.isEmpty()) {
                 throw new NoSpotifyResultsFoundException(String.format("No Spotify playlist found for '%s'", getCommandInput()));
             } else {
@@ -226,8 +264,8 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
         if (albums.size() == 1) {
             AlbumSimplified album = albums.get(0);
             PlayableFactory playableFactory = audioManager.createPlayableFactory(getSpotifyService(), trackLoadingExecutor, shouldRedirectSpotify());
-            handleResult(new SpotifyAlbumSimplifiedPlayableContainer(album), playableFactory);
             loadedAlbum = album;
+            handleResult(new SpotifyAlbumSimplifiedPlayableContainer(album), playableFactory);
         } else if (albums.isEmpty()) {
             throw new NoSpotifyResultsFoundException(String.format("No albums found for '%s'", getCommandInput()));
         } else {
@@ -268,8 +306,8 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
         String commandInput = getCommandInput();
         AudioItem audioItem = audioTrackLoader.loadByIdentifier("scsearch:" + commandInput);
         if (audioItem instanceof AudioTrack audioTrack) {
-            handleResult(new AudioTrackPlayableContainer(audioTrack), playableFactory);
             this.loadedAudioTrack = audioTrack;
+            handleResult(new AudioTrackPlayableContainer(audioTrack), playableFactory);
         } else if (audioItem == null) {
             throw new NoResultsFoundException(String.format("No soundcloud track found for '%s'", commandInput));
         } else if (audioItem instanceof AudioPlaylist) {
@@ -320,8 +358,8 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
         if (shows.size() == 1) {
             ShowSimplified show = shows.get(0);
             PlayableFactory playableFactory = audioManager.createPlayableFactory(getSpotifyService(), trackLoadingExecutor, shouldRedirectSpotify());
-            handleResult(new SpotifyShowSimplifiedPlayableContainer(show), playableFactory);
             loadedShow = show;
+            handleResult(new SpotifyShowSimplifiedPlayableContainer(show), playableFactory);
         } else if (shows.isEmpty()) {
             throw new NoSpotifyResultsFoundException(String.format("No shows found for '%s'", getCommandInput()));
         } else {
@@ -332,15 +370,15 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
     private void createPlayableForTrack(Track track, AudioManager audioManager) {
         PlayableFactory playableFactory = audioManager.createPlayableFactory(getSpotifyService(), trackLoadingExecutor, shouldRedirectSpotify());
         TrackPlayableContainer playableContainer = new TrackPlayableContainer(track);
-        handleResult(playableContainer, playableFactory);
         loadedTrack = playableContainer.loadPlayable(playableFactory);
+        handleResult(playableContainer, playableFactory);
     }
 
     private void createPlayableForEpisode(Episode episode, AudioManager audioManager) {
         PlayableFactory playableFactory = audioManager.createPlayableFactory(getSpotifyService(), trackLoadingExecutor, shouldRedirectSpotify());
         EpisodePlayableContainer episodePlayableContainer = new EpisodePlayableContainer(episode);
-        handleResult(episodePlayableContainer, playableFactory);
         loadedTrack = episodePlayableContainer.loadPlayable(playableFactory);
+        handleResult(episodePlayableContainer, playableFactory);
     }
 
     private void loadYouTubeVideo(AudioManager audioManager) throws IOException {
@@ -353,8 +391,8 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
             List<YouTubeVideo> youTubeVideos = youTubeService.searchSeveralVideos(limit, getCommandInput());
             if (youTubeVideos.size() == 1) {
                 Playable playable = youTubeVideos.get(0);
-                handleResult(new SinglePlayableContainer(playable), playableFactory);
                 loadedTrack = playable;
+                handleResult(new SinglePlayableContainer(playable), playableFactory);
             } else if (youTubeVideos.isEmpty()) {
                 throw new NoResultsFoundException(String.format("No YouTube video found for '%s'", getCommandInput()));
             } else {
@@ -369,8 +407,8 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
             }
         } else {
             YouTubeVideo youTubeVideo = youTubeService.searchVideo(getCommandInput());
-            handleResult(new SinglePlayableContainer(youTubeVideo), playableFactory);
             loadedTrack = youTubeVideo;
+            handleResult(new SinglePlayableContainer(youTubeVideo), playableFactory);
         }
     }
 

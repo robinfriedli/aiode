@@ -289,17 +289,17 @@ class AudioQueue(val maxSize: Int?) {
         }
     }
 
-    fun addContainers(containers: List<PlayableContainer<*>>, playableFactory: PlayableFactory, clear: Boolean, insertionIdx: Int? = null) {
+    fun addContainers(containers: List<PlayableContainer<*>>, playableFactory: PlayableFactory, clear: Boolean, insertionIdx: Int? = null): Int {
         val writeLock = lock.writeLock()
         writeLock.lock()
         try {
-            addContainersLocked(containers, playableFactory, clear, insertionIdx)
+            return addContainersLocked(containers, playableFactory, clear, insertionIdx)
         } finally {
             writeLock.unlock()
         }
     }
 
-    fun addContainersLocked(containers: List<PlayableContainer<*>>, playableFactory: PlayableFactory, clear: Boolean, insertionIdx: Int? = null) {
+    fun addContainersLocked(containers: List<PlayableContainer<*>>, playableFactory: PlayableFactory, clear: Boolean, insertionIdx: Int? = null): Int {
         val queueFragments: MutableList<QueueFragment> = ArrayList()
         for (playableContainer in containers) {
             val queueFragment = playableContainer.createQueueFragment(playableFactory, this)
@@ -308,6 +308,7 @@ class AudioQueue(val maxSize: Int?) {
             }
         }
 
+        var loadedAmount = 0
         if (queueFragments.isNotEmpty()) {
             if (clear) {
                 doClear(false)
@@ -318,10 +319,13 @@ class AudioQueue(val maxSize: Int?) {
                 } else {
                     size
                 }, queueFragment)
+                loadedAmount += queueFragment.size()
             }
         } else {
             throw NoResultsFoundException("No results found")
         }
+
+        return loadedAmount
     }
 
     fun remove(fromIdx: Int, toIdx: Int): Int {

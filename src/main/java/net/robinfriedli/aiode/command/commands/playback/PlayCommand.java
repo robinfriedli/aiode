@@ -20,6 +20,8 @@ import net.robinfriedli.aiode.audio.queue.QueueFragment;
 import net.robinfriedli.aiode.command.CommandContext;
 import net.robinfriedli.aiode.command.CommandManager;
 import net.robinfriedli.aiode.command.commands.AbstractQueueLoadingCommand;
+import net.robinfriedli.aiode.discord.property.GuildPropertyManager;
+import net.robinfriedli.aiode.entities.GuildSpecification;
 import net.robinfriedli.aiode.entities.xml.CommandContribution;
 import net.robinfriedli.aiode.exceptions.InvalidCommandException;
 import net.robinfriedli.aiode.exceptions.NoResultsFoundException;
@@ -65,13 +67,11 @@ public class PlayCommand extends AbstractQueueLoadingCommand {
     protected void handleResult(PlayableContainer<?> playableContainer, PlayableFactory playableFactory) {
         Guild guild = getContext().getGuild();
         AudioChannel channel = getContext().getAudioChannel();
-        AudioManager audioManager = Aiode.get().getAudioManager();
+        Aiode aiode = Aiode.get();
+        AudioManager audioManager = aiode.getAudioManager();
 
         AudioPlayback playback = getContext().getGuildContext().getPlayback();
         AudioPlayer audioPlayer = playback.getAudioPlayer();
-        if (audioPlayer.getPlayingTrack() != null) {
-            audioPlayer.stopTrack();
-        }
 
         AudioQueue audioQueue = playback.getAudioQueue();
 
@@ -80,8 +80,40 @@ public class PlayCommand extends AbstractQueueLoadingCommand {
             throw new NoResultsFoundException("Result is empty!");
         }
 
-        audioQueue.set(queueFragment);
-        audioManager.startPlayback(guild, channel);
+        GuildPropertyManager guildPropertyManager = aiode.getGuildPropertyManager();
+        GuildSpecification specification = getContext().getGuildContext().getSpecification();
+        int autoQueueMode = guildPropertyManager.getPropertyValueOptional("autoQueueMode", Integer.class, specification).orElse(1);
+
+        if (autoQueueMode == 1 && !audioQueue.isEmpty() && !playback.isShuffle()) {
+            if (!playback.isPlaying()) {
+                int position = audioQueue.getPosition();
+                if (playback.isPaused()) {
+                    audioQueue.insertNext(queueFragment);
+                    audioQueue.iterate();
+                } else {
+                    audioQueue.insertRelative(-1, queueFragment);
+                    // inserting over the current index increments it, reset back to the original index to play the inserted tracks instead
+                    audioQueue.setPosition(position);
+                }
+                audioManager.startPlayback(guild, channel);
+            } else {
+                audioQueue.insertNext(queueFragment);
+            }
+            sendSuccessMessage(true);
+        } else if ((autoQueueMode == 2 || autoQueueMode == 1) && !audioQueue.isEmpty()) {
+            audioQueue.add(queueFragment);
+            if (!playback.isPlaying()) {
+                audioQueue.iterate();
+                audioManager.startPlayback(guild, channel);
+            }
+            sendSuccessMessage(false);
+        } else {
+            if (audioPlayer.getPlayingTrack() != null) {
+                audioPlayer.stopTrack();
+            }
+            audioQueue.set(queueFragment);
+            audioManager.startPlayback(guild, channel);
+        }
     }
 
     @Override
@@ -98,6 +130,7 @@ public class PlayCommand extends AbstractQueueLoadingCommand {
         PlayableFactory playableFactory = audioManager.createPlayableFactory(getSpotifyService(), getTrackLoadingExecutor(), shouldRedirectSpotify());
         AudioPlayback playback = audioManager.getPlaybackForGuild(guild);
         AudioQueue queue = playback.getAudioQueue();
+        AudioChannel channel = getContext().getAudioChannel();
 
         List<PlayableContainer<?>> playableContainers;
 
@@ -111,13 +144,41 @@ public class PlayCommand extends AbstractQueueLoadingCommand {
         }
 
         AudioPlayer audioPlayer = playback.getAudioPlayer();
-        if (audioPlayer.getPlayingTrack() != null) {
-            audioPlayer.stopTrack();
+
+        GuildPropertyManager guildPropertyManager = aiode.getGuildPropertyManager();
+        GuildSpecification specification = getContext().getGuildContext().getSpecification();
+        int autoQueueMode = guildPropertyManager.getPropertyValueOptional("autoQueueMode", Integer.class, specification).orElse(1);
+
+        if (autoQueueMode == 1 && !queue.isEmpty() && !playback.isShuffle()) {
+            if (!playback.isPlaying()) {
+                int position = queue.getPosition();
+                if (playback.isPaused()) {
+                    loadedAmount = queue.addContainers(playableContainers, playableFactory, false, 0);
+                    queue.iterate();
+                } else {
+                    loadedAmount = queue.addContainers(playableContainers, playableFactory, false, -1);
+                    // inserting over the current index increments it, reset back to the original index to play the inserted tracks instead
+                    queue.setPosition(position);
+                }
+                audioManager.startPlayback(guild, channel);
+            } else {
+                loadedAmount = queue.addContainers(playableContainers, playableFactory, false, 0);
+            }
+            sendSuccessMessage(true);
+        } else if ((autoQueueMode == 2 || autoQueueMode == 1) && !queue.isEmpty()) {
+            loadedAmount = queue.addContainers(playableContainers, playableFactory, false, null);
+            if (!playback.isPlaying()) {
+                queue.iterate();
+                audioManager.startPlayback(guild, channel);
+            }
+            sendSuccessMessage(false);
+        } else {
+            if (audioPlayer.getPlayingTrack() != null) {
+                audioPlayer.stopTrack();
+            }
+            loadedAmount = queue.addContainers(playableContainers, playableFactory, true, null);
+            audioManager.startPlayback(guild, getContext().getAudioChannel());
         }
-
-        queue.addContainers(playableContainers, playableFactory, true, null);
-
-        audioManager.startPlayback(guild, getContext().getAudioChannel());
     }
 
 }
