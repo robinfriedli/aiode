@@ -3,7 +3,6 @@ package net.robinfriedli.aiode.discord.listeners;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaDelete;
 import javax.persistence.criteria.Root;
@@ -12,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
@@ -25,6 +23,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.boot.SpringPropertiesConfig;
 import net.robinfriedli.aiode.boot.configurations.HibernateComponent;
+import net.robinfriedli.aiode.boot.configurations.TopGGComponent;
 import net.robinfriedli.aiode.command.commands.customisation.RenameCommand;
 import net.robinfriedli.aiode.concurrent.CommandExecutionQueueManager;
 import net.robinfriedli.aiode.concurrent.EventHandlerPool;
@@ -33,7 +32,6 @@ import net.robinfriedli.aiode.discord.GuildManager;
 import net.robinfriedli.aiode.discord.MessageService;
 import net.robinfriedli.aiode.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.aiode.entities.GrantedRole;
-import org.discordbots.api.client.DiscordBotListAPI;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 
@@ -44,20 +42,19 @@ import org.springframework.stereotype.Component;
 public class GuildManagementListener extends ListenerAdapter {
 
     private final CommandExecutionQueueManager executionQueueManager;
-    @Nullable
-    private final DiscordBotListAPI discordBotListAPI;
     private final GuildManager guildManager;
     private final HibernateComponent hibernateComponent;
     private final Logger logger;
     private final MessageService messageService;
+    private final TopGGComponent topGGComponent;
 
     public GuildManagementListener(CommandExecutionQueueManager executionQueueManager,
-                                   @Nullable DiscordBotListAPI discordBotListAPI,
                                    GuildManager guildManager,
                                    HibernateComponent hibernateComponent,
-                                   MessageService messageService) {
+                                   MessageService messageService,
+                                   TopGGComponent topGGComponent) {
         this.executionQueueManager = executionQueueManager;
-        this.discordBotListAPI = discordBotListAPI;
+        this.topGGComponent = topGGComponent;
         this.guildManager = guildManager;
         this.hibernateComponent = hibernateComponent;
         logger = LoggerFactory.getLogger(getClass());
@@ -149,15 +146,7 @@ public class GuildManagementListener extends ListenerAdapter {
     }
 
     private void updateDiscordBotsApiStats(Event event) {
-        if (discordBotListAPI != null) {
-            try {
-                JDA jda = event.getJDA();
-                JDA.ShardInfo shardInfo = jda.getShardInfo();
-                discordBotListAPI.setStats(shardInfo.getShardId(), shardInfo.getShardTotal(), (int) jda.getGuildCache().size());
-            } catch (Exception e) {
-                logger.error("Exception setting discordBotListAPI stats", e);
-            }
-        }
+        topGGComponent.updateStatsForShard(event.getJDA());
     }
 
 }
