@@ -877,9 +877,19 @@ See application.properties -> spring.liquibase.contexts
     </addColumn>
   </changeSet>
   <changeSet author="robinfriedli (generated)" id="1688821654137-1">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <primaryKeyExists primaryKeyName="playback_history_artist_pkey"/>
+      </not>
+    </preConditions>
     <addPrimaryKey columnNames="playback_history_pk, artist_pk" tableName="playback_history_artist"/>
   </changeSet>
   <changeSet author="robinfriedli (generated)" id="1688821654137-2">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <primaryKeyExists primaryKeyName="song_artist_pkey"/>
+      </not>
+    </preConditions>
     <addPrimaryKey columnNames="song_pk, artist_pk" tableName="song_artist"/>
   </changeSet>
   <changeSet author="robinfriedli (generated)" id="1688821880733-1">
