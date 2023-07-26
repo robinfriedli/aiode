@@ -28,7 +28,8 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 @Entity
 @Table(name = "preset", indexes = {
     @Index(name = "preset_guild_id_idx", columnList = "guild_id"),
-    @Index(name = "preset_guild_id_idx", columnList = "guild_id"),
+    @Index(name = "preset_user_id_idx", columnList = "user_id"),
+    @Index(name = "preset_name_idx", columnList = "name"),
 })
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)

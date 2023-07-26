@@ -1046,4 +1046,24 @@ See application.properties -> spring.liquibase.contexts
       <column name="auto_queue_mode" type="int4"/>
     </addColumn>
   </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1690369452498-1">
+    <createIndex indexName="preset_name_idx" tableName="preset">
+      <column name="name"/>
+    </createIndex>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1690369452498-2">
+    <createIndex indexName="preset_user_id_idx" tableName="preset">
+      <column name="user_id"/>
+    </createIndex>
+  </changeSet>
+  <changeSet id="add_preset_preset_name_case_insensitive_idx" author="robinfriedli">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="preset_name_case_insensitive_idx"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="preset" indexName="preset_name_case_insensitive_idx">
+      <column name="LOWER(name)"/>
+    </createIndex>
+  </changeSet>
 </databaseChangeLog>
