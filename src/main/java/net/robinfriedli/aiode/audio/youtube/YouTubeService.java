@@ -132,6 +132,95 @@ public class YouTubeService extends AbstractShutdownable {
         currentQuota.set(quota);
     }
 
+    interface YouTubeVideoSearchResult {
+        String getId();
+
+        String getTitle();
+
+        long getDuration();
+
+        @Nullable
+        String getChannelTitle();
+
+        long getViewCount();
+    }
+
+    class VideoDelegate implements YouTubeVideoSearchResult {
+        private final Video video;
+
+        VideoDelegate(Video video) {
+            this.video = video;
+        }
+
+        @Override
+        public String getId() {
+            return video.getId();
+        }
+
+        @Override
+        public String getTitle() {
+            return video.getSnippet().getTitle();
+        }
+
+        @Override
+        public long getDuration() {
+            return parseDuration(video);
+        }
+
+        @Nullable
+        @Override
+        public String getChannelTitle() {
+            VideoSnippet snippet = getVideo().getSnippet();
+            if (snippet != null) {
+                return snippet.getChannelTitle();
+            }
+            return null;
+        }
+
+        @Override
+        public long getViewCount() {
+            return YouTubeService.this.getViewCount(video);
+        }
+
+        public Video getVideo() {
+            return video;
+        }
+    }
+
+    static class AudioTrackSearchResult implements YouTubeVideoSearchResult {
+        private final AudioTrack audioTrack;
+
+        AudioTrackSearchResult(AudioTrack audioTrack) {
+            this.audioTrack = audioTrack;
+        }
+
+        @Override
+        public String getId() {
+            return audioTrack.getIdentifier();
+        }
+
+        @Override
+        public String getTitle() {
+            return audioTrack.getInfo().title;
+        }
+
+        @Override
+        public long getDuration() {
+            return audioTrack.getDuration();
+        }
+
+        @Nullable
+        @Override
+        public String getChannelTitle() {
+            return audioTrack.getInfo().author;
+        }
+
+        @Override
+        public long getViewCount() {
+            return 0;
+        }
+    }
+
     /**
      * Workaround as Spotify does not allow full playback of tracks via third party APIs using the web api for licencing
      * reasons. Gets the metadata and searches the corresponding YouTube video. The only way to stream from Spotify
@@ -157,7 +246,7 @@ public class YouTubeService extends AbstractShutdownable {
         SpotifyTrack spotifyTrack = youTubeVideo.getRedirectedSpotifyTrack();
 
         if (spotifyTrack == null) {
-            throw new IllegalArgumentException(youTubeVideo.toString() + " is not a placeholder for a redirected Spotify Track");
+            throw new IllegalArgumentException(youTubeVideo + " is not a placeholder for a redirected Spotify Track");
         }
 
         StringList artists = spotifyTrack.exhaustiveMatch(
@@ -172,8 +261,8 @@ public class YouTubeService extends AbstractShutdownable {
             }
         );
         String searchTerm = spotifyTrack.getName() + " " + artists.toSeparatedString(" ");
-        List<String> videoIds;
 
+        YouTubeVideoSearchResult video;
         if (currentQuota.get() < quotaThreshold) {
             YouTube.Search.List search = youTube.search().list(List.of("id", "snippet"));
             search.setKey(apiKey);
@@ -190,7 +279,14 @@ public class YouTubeService extends AbstractShutdownable {
                 return;
             }
 
-            videoIds = items.stream().map(item -> item.getId().getVideoId()).collect(Collectors.toList());
+            List<String> videoIds = items.stream().map(item -> item.getId().getVideoId()).collect(Collectors.toList());
+            List<Video> videos = getAllVideos(videoIds);
+            if (videos.isEmpty()) {
+                youTubeVideo.cancel();
+                return;
+            }
+
+            video = getBestMatch(videos.stream().map(VideoDelegate::new).toList(), spotifyTrack, artists);
         } else {
             AudioTrackLoader audioTrackLoader = new AudioTrackLoader(Aiode.get().getAudioManager().getPlayerManager());
             AudioItem audioItem;
@@ -201,12 +297,11 @@ public class YouTubeService extends AbstractShutdownable {
                 return;
             }
 
-            if (!(audioItem instanceof AudioPlaylist)) {
+            if (!(audioItem instanceof AudioPlaylist resultList)) {
                 youTubeVideo.cancel();
                 return;
             }
 
-            AudioPlaylist resultList = (AudioPlaylist) audioItem;
             List<AudioTrack> tracks = resultList.getTracks();
 
             if (tracks.isEmpty()) {
@@ -215,24 +310,14 @@ public class YouTubeService extends AbstractShutdownable {
             }
 
             List<AudioTrack> audioTracks = tracks.subList(0, Math.min(tracks.size(), REDIRECT_SEARCH_AMOUNT));
-            videoIds = audioTracks.stream().map(AudioTrack::getIdentifier).collect(Collectors.toList());
+            video = getBestMatch(audioTracks.stream().map(AudioTrackSearchResult::new).toList(), spotifyTrack, artists);
         }
-
-        List<Video> videos = getAllVideos(videoIds);
-        if (videos.isEmpty()) {
-            youTubeVideo.cancel();
-            return;
-        }
-
-        Video video = getBestMatch(videos, spotifyTrack, artists);
-        String videoId = video.getId();
-        long durationMillis = getDurationMillis(videoId);
 
         String artistString = artists.toSeparatedString(", ");
         String title = spotifyTrack.getName() + " by " + artistString;
         youTubeVideo.setTitle(title);
-        youTubeVideo.setId(videoId);
-        youTubeVideo.setDuration(durationMillis);
+        youTubeVideo.setId(video.getId());
+        youTubeVideo.setDuration(video.getDuration());
     }
 
     /**
@@ -386,6 +471,9 @@ public class YouTubeService extends AbstractShutdownable {
      * @param playlist the playlist for which to load the data of the individual videos
      */
     public void populateList(YouTubePlaylist playlist) throws IOException {
+        if (playlist.isPreLoaded()) {
+            return;
+        }
         if (currentQuota.get() < quotaThreshold) {
             YouTube.PlaylistItems.List itemSearch = youTube.playlistItems().list(List.of("snippet"));
             itemSearch.setKey(apiKey);
@@ -555,7 +643,7 @@ public class YouTubeService extends AbstractShutdownable {
             }
 
             Video video = items.get(0);
-            return new YouTubeVideoImpl(video.getSnippet().getTitle(), id, getDurationMillis(id));
+            return new YouTubeVideoImpl(video.getSnippet().getTitle(), id, parseDuration(video));
         } else {
             AudioTrackLoader audioTrackLoader = new AudioTrackLoader(Aiode.get().getAudioManager().getPlayerManager());
             AudioItem result;
@@ -565,9 +653,7 @@ public class YouTubeService extends AbstractShutdownable {
                 return null;
             }
 
-            if (result instanceof AudioTrack) {
-                AudioTrack track = (AudioTrack) result;
-
+            if (result instanceof AudioTrack track) {
                 YouTubeVideo youTubeVideo = new YouTubeVideoImpl(track.getInfo().title, track.getIdentifier(), track.getDuration());
                 youTubeVideo.setCached(track);
                 return youTubeVideo;
@@ -588,54 +674,77 @@ public class YouTubeService extends AbstractShutdownable {
      * @throws IOException             if the YouTube API request fails
      */
     public YouTubePlaylist playlistForId(String id) throws IOException {
-        YouTube.Playlists.List playlistRequest = youTube.playlists().list(List.of("snippet", "contentDetails"));
-        playlistRequest.setId(List.of(id));
-        playlistRequest.setFields("items(contentDetails/itemCount,snippet/title,snippet/channelTitle)");
-        playlistRequest.setKey(apiKey);
-        List<Playlist> items = doWithQuota(QUOTA_COST_LIST, () -> playlistRequest.execute().getItems());
+        if (currentQuota.get() < quotaThreshold) {
+            YouTube.Playlists.List playlistRequest = youTube.playlists().list(List.of("snippet", "contentDetails"));
+            playlistRequest.setId(List.of(id));
+            playlistRequest.setFields("items(contentDetails/itemCount,snippet/title,snippet/channelTitle)");
+            playlistRequest.setKey(apiKey);
+            List<Playlist> items = doWithQuota(QUOTA_COST_LIST, () -> playlistRequest.execute().getItems());
 
-        if (items.isEmpty()) {
-            throw new NoResultsFoundException(String.format("No YouTube playlist found for id '%s'", id));
+            if (items.isEmpty()) {
+                throw new NoResultsFoundException(String.format("No YouTube playlist found for id '%s'", id));
+            }
+
+            Playlist playlist = items.get(0);
+            List<HollowYouTubeVideo> videoPlaceholders = Lists.newArrayList();
+            for (int i = 0; i < playlist.getContentDetails().getItemCount(); i++) {
+                videoPlaceholders.add(new HollowYouTubeVideo(this));
+            }
+
+            return new YouTubePlaylist(playlist.getSnippet().getTitle(), id, playlist.getSnippet().getChannelTitle(), videoPlaceholders);
+        } else {
+            AudioTrackLoader audioTrackLoader = new AudioTrackLoader(Aiode.get().getAudioManager().getPlayerManager());
+            AudioItem result;
+            try {
+                result = audioTrackLoader.loadByIdentifier(String.format("https://www.youtube.com/playlist?list=%s", id));
+            } catch (FriendlyException e) {
+                throw new NoResultsFoundException(String.format("No YouTube playlist found for id '%s'", id));
+            }
+
+            if (result instanceof AudioPlaylist audioPlaylist) {
+                List<HollowYouTubeVideo> videos = Lists.newArrayList();
+                List<AudioTrack> tracks = audioPlaylist.getTracks();
+
+                for (AudioTrack track : tracks) {
+                    HollowYouTubeVideo video = new HollowYouTubeVideo(this);
+
+                    video.setTitle(track.getInfo().title);
+                    video.setId(track.getIdentifier());
+                    video.setDuration(track.getDuration());
+                    video.setCached(track);
+                    videos.add(video);
+                }
+
+                return new YouTubePlaylist(audioPlaylist.getName(), id, "", videos, true);
+            } else {
+                throw new NoResultsFoundException(String.format("No YouTube playlist found for id '%s'", id));
+            }
         }
-
-        Playlist playlist = items.get(0);
-
-        List<HollowYouTubeVideo> videoPlaceholders = Lists.newArrayList();
-        for (int i = 0; i < playlist.getContentDetails().getItemCount(); i++) {
-            videoPlaceholders.add(new HollowYouTubeVideo(this));
-        }
-
-        return new YouTubePlaylist(playlist.getSnippet().getTitle(), id, playlist.getSnippet().getChannelTitle(), videoPlaceholders);
     }
 
-    private Video getBestMatch(List<Video> videos, SpotifyTrack spotifyTrack, StringList artists) {
-        Video video;
+    private YouTubeVideoSearchResult getBestMatch(List<? extends YouTubeVideoSearchResult> videos, SpotifyTrack spotifyTrack, StringList artists) {
+        YouTubeVideoSearchResult video;
         int size = videos.size();
         if (size == 1) {
             video = videos.get(0);
         } else {
-            Map<Integer, Video> videosByScore = new HashMap<>();
-            Map<Video, Integer> editDistanceMap = new HashMap<>();
+            Map<Integer, YouTubeVideoSearchResult> videosByScore = new HashMap<>();
+            Map<YouTubeVideoSearchResult, Integer> editDistanceMap = new HashMap<>();
             long[] viewCounts = new long[size];
             for (int i = 0; i < size; i++) {
-                Video v = videos.get(i);
-                viewCounts[i] = getViewCount(v);
+                YouTubeVideoSearchResult v = videos.get(i);
+                viewCounts[i] = v.getViewCount();
                 editDistanceMap.put(v, getBestEditDistance(spotifyTrack, v));
             }
 
             int index = 0;
-            for (Video v : videos) {
+            for (YouTubeVideoSearchResult v : videos) {
                 int artistMatchScore = 0;
                 if (artists.stream().anyMatch(a -> {
                     String artist = a.toLowerCase();
                     String artistNoSpace = artist.replaceAll(" ", "");
-                    VideoSnippet snippet = v.getSnippet();
 
-                    if (snippet == null) {
-                        return false;
-                    }
-
-                    String channelTitle = snippet.getChannelTitle();
+                    String channelTitle = v.getChannelTitle();
 
                     if (channelTitle == null) {
                         return false;
@@ -648,7 +757,7 @@ public class YouTubeService extends AbstractShutdownable {
                     artistMatchScore = ARTIST_MATCH_SCORE_MULTIPLIER * size;
                 }
 
-                long viewCount = getViewCount(v);
+                long viewCount = v.getViewCount();
                 int editDistance = editDistanceMap.get(v);
                 long viewRank = Arrays.stream(viewCounts).filter(c -> viewCount < c).count();
                 long editDistanceRank = editDistanceMap.values().stream().filter(d -> d < editDistance).count();
@@ -669,10 +778,10 @@ public class YouTubeService extends AbstractShutdownable {
         return video;
     }
 
-    private int getBestEditDistance(SpotifyTrack spotifyTrack, Video video) {
+    private int getBestEditDistance(SpotifyTrack spotifyTrack, YouTubeVideoSearchResult video) {
         LevenshteinDistance levenshteinDistance = LevenshteinDistance.getDefaultInstance();
         String trackName = spotifyTrack.getName().toLowerCase().trim().replaceAll("\\s+", " ");
-        String videoTitle = video.getSnippet().getTitle().toLowerCase().trim().replaceAll("\\s+", " ");
+        String videoTitle = video.getTitle().toLowerCase().trim().replaceAll("\\s+", " ");
         return spotifyTrack.exhaustiveMatch(
             track -> {
                 ArtistSimplified[] artists = track.getArtists();
