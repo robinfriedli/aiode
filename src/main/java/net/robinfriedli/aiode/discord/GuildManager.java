@@ -29,6 +29,7 @@ import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.audio.AudioManager;
 import net.robinfriedli.aiode.audio.AudioPlayback;
+import net.robinfriedli.aiode.boot.VersionManager;
 import net.robinfriedli.aiode.boot.configurations.HibernateComponent;
 import net.robinfriedli.aiode.command.CommandManager;
 import net.robinfriedli.aiode.concurrent.ExecutionContext;
@@ -42,6 +43,7 @@ import net.robinfriedli.aiode.entities.Playlist;
 import net.robinfriedli.aiode.entities.PlaylistItem;
 import net.robinfriedli.aiode.entities.xml.CommandContribution;
 import net.robinfriedli.aiode.entities.xml.EmbedDocumentContribution;
+import net.robinfriedli.aiode.entities.xml.Version;
 import net.robinfriedli.aiode.function.HibernateInvoker;
 import net.robinfriedli.aiode.persist.interceptors.InterceptorChain;
 import net.robinfriedli.aiode.persist.interceptors.PlaylistItemTimestampInterceptor;
@@ -78,6 +80,7 @@ public class GuildManager {
     private final Mode mode;
     private final MutexSync<Long> guildSetupSync;
     private final QueryBuilderFactory queryBuilderFactory;
+    private final VersionManager versionManager;
     private AudioManager audioManager;
 
     public GuildManager(CommandManager commandManager,
@@ -86,7 +89,8 @@ public class GuildManager {
                         HibernateComponent hibernateComponent,
                         JxpBackend jxpBackend,
                         @Value("${aiode.preferences.mode_partitioned}") boolean modePartitioned,
-                        QueryBuilderFactory queryBuilderFactory) {
+                        QueryBuilderFactory queryBuilderFactory,
+                        VersionManager versionManager) {
         this.commandManager = commandManager;
         try {
             embedDocumentContext = jxpBackend.createLazyContext(embedDocumentsResource.getInputStream());
@@ -103,6 +107,7 @@ public class GuildManager {
         this.mode = modePartitioned ? GuildManager.Mode.PARTITIONED : GuildManager.Mode.SHARED;
         guildSetupSync = new MutexSync<>();
         this.queryBuilderFactory = queryBuilderFactory;
+        this.versionManager = versionManager;
     }
 
     public void addGuild(Guild guild) {
@@ -232,6 +237,11 @@ public class GuildManager {
                 return guildContext;
             } else {
                 GuildSpecification newSpecification = new GuildSpecification(guild);
+                Version currentVersion = versionManager.getCurrentVersion();
+                if (currentVersion != null) {
+                    // never send new guilds an update notification about the current version
+                    newSpecification.setVersionUpdateAlertSent(currentVersion.getVersion());
+                }
                 session.persist(newSpecification);
                 commandManager.getCommandContributionContext()
                     .query(attribute("restrictedAccess").is(true), CommandContribution.class)
@@ -324,8 +334,7 @@ public class GuildManager {
 
         // check if the guild's playback has a current communication text channel
         MessageChannel playbackCommunicationChannel = guildContext.getPlayback().getCommunicationChannel();
-        if (playbackCommunicationChannel instanceof TextChannel) {
-            TextChannel textChannelFromPlayback = (TextChannel) playbackCommunicationChannel;
+        if (playbackCommunicationChannel instanceof TextChannel textChannelFromPlayback) {
             if (selfMember.hasAccess(textChannelFromPlayback) && textChannelFromPlayback.canTalk(selfMember)) {
                 return textChannelFromPlayback;
             }
@@ -346,7 +355,7 @@ public class GuildManager {
             .getTextChannels()
             .stream()
             .filter(channel -> selfMember.hasAccess(channel) && channel.canTalk(selfMember))
-            .collect(Collectors.toList());
+            .toList();
 
         if (availableChannels.isEmpty()) {
             return null;
