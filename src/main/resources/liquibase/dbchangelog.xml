@@ -1066,4 +1066,9 @@ See application.properties -> spring.liquibase.contexts
       <column name="LOWER(name)"/>
     </createIndex>
   </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1690376893928-1">
+    <addColumn tableName="guild_specification">
+      <column name="version_update_alert_sent" type="varchar(255)"/>
+    </addColumn>
+  </changeSet>
 </databaseChangeLog>

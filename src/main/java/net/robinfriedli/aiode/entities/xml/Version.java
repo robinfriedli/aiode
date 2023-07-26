@@ -27,10 +27,6 @@ public class Version extends AbstractXmlElement implements Comparable<Version> {
         return getAttribute("version").getValue();
     }
 
-    public boolean isLaunched() {
-        return getAttribute("launched").getBool();
-    }
-
     public boolean isSilentUpdate() {
         return getAttribute("silent").getBool();
     }

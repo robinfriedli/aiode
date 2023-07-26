@@ -62,6 +62,8 @@ public class GuildSpecification implements Serializable {
     private Integer autoQueueMode;
     @Column(name = "enable_scripting")
     private Boolean enableScripting;
+    @Column(name = "version_update_alert_sent")
+    private String versionUpdateAlertSent;
     @OneToMany(mappedBy = "guildSpecification")
     private Set<AccessConfiguration> accessConfigurations = Sets.newHashSet();
 
@@ -221,5 +223,13 @@ public class GuildSpecification implements Serializable {
 
     public void setEnableScripting(Boolean enableScripting) {
         this.enableScripting = enableScripting;
+    }
+
+    public String getVersionUpdateAlertSent() {
+        return versionUpdateAlertSent;
+    }
+
+    public void setVersionUpdateAlertSent(String versionUpdateAlertSent) {
+        this.versionUpdateAlertSent = versionUpdateAlertSent;
     }
 }
