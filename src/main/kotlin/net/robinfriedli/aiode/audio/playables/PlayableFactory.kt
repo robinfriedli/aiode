@@ -172,11 +172,7 @@ class PlayableFactory(
                 SinglePlayableContainer(youTubeVideo)
             }
             uri.host == "open.spotify.com" -> {
-                try {
-                    createPlayableContainerFromSpotifyUrl(uri, spotifyService.spotifyApi)
-                } catch (e: NotFoundException) {
-                    throw NoResultsFoundException("No results found for provided spotify URL")
-                }
+                createPlayableContainerFromSpotifyUrl(uri, spotifyService.spotifyApi)
             }
             else -> createPlayableContainerFromUrl(uri.toString())
         }
