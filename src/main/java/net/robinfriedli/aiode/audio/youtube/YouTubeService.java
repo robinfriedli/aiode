@@ -270,7 +270,7 @@ public class YouTubeService extends AbstractShutdownable {
             // set topic to filter results to music video
             search.setTopicId("/m/04rlf");
             search.setType(List.of("video"));
-            search.setFields("items(snippet/title,id/videoId)");
+            search.setPart(List.of("id", "snippet"));
             search.setMaxResults((long) REDIRECT_SEARCH_AMOUNT);
 
             List<SearchResult> items = doWithQuota(QUOTA_COST_SEARCH, () -> search.execute().getItems());
@@ -338,7 +338,7 @@ public class YouTubeService extends AbstractShutdownable {
             VideoListResponse videoListResponse = doWithQuota(QUOTA_COST_LIST, () -> youTube.videos().list(List.of("snippet", "contentDetails"))
                 .setKey(apiKey)
                 .setId(List.of(videoId))
-                .setFields("items(snippet/title,contentDetails/duration)")
+                .setPart(List.of("snippet", "contentDetails"))
                 .setMaxResults(1L)
                 .execute());
             Video video = videoListResponse.getItems().get(0);
@@ -406,7 +406,7 @@ public class YouTubeService extends AbstractShutdownable {
             .list(List.of("contentDetails"))
             .setKey(apiKey)
             .setId(List.of(playlistId))
-            .setFields("items(contentDetails/itemCount)")
+            .setPart(List.of("contentDetails"))
             .setMaxResults(1L)
             .execute()
             .getItems()
@@ -478,7 +478,7 @@ public class YouTubeService extends AbstractShutdownable {
             YouTube.PlaylistItems.List itemSearch = youTube.playlistItems().list(List.of("snippet"));
             itemSearch.setKey(apiKey);
             itemSearch.setMaxResults(50L);
-            itemSearch.setFields("items(snippet/title,snippet/resourceId),nextPageToken");
+            itemSearch.setPart(List.of("snippet"));
             itemSearch.setPlaylistId(playlist.getId());
 
             String nextPageToken;
@@ -633,7 +633,7 @@ public class YouTubeService extends AbstractShutdownable {
         if (currentQuota.get() < quotaThreshold) {
             YouTube.Videos.List videoRequest = youTube.videos().list(List.of("snippet"));
             videoRequest.setId(List.of(id));
-            videoRequest.setFields("items(contentDetails/duration,snippet/title)");
+            videoRequest.setPart(List.of("contentDetails", "snippet"));
             videoRequest.setKey(apiKey);
             videoRequest.setMaxResults(1L);
             List<Video> items = doWithQuota(QUOTA_COST_LIST, () -> videoRequest.execute().getItems());
@@ -677,7 +677,7 @@ public class YouTubeService extends AbstractShutdownable {
         if (currentQuota.get() < quotaThreshold) {
             YouTube.Playlists.List playlistRequest = youTube.playlists().list(List.of("snippet", "contentDetails"));
             playlistRequest.setId(List.of(id));
-            playlistRequest.setFields("items(contentDetails/itemCount,snippet/title,snippet/channelTitle)");
+            playlistRequest.setPart(List.of("contentDetails", "snippet"));
             playlistRequest.setKey(apiKey);
             List<Playlist> items = doWithQuota(QUOTA_COST_LIST, () -> playlistRequest.execute().getItems());
 
@@ -873,7 +873,7 @@ public class YouTubeService extends AbstractShutdownable {
         YouTube.Search.List search = youTube.search().list(List.of("id", "snippet"));
         search.setQ(searchTerm);
         search.setType(List.of("video"));
-        search.setFields("items(snippet/title,id/videoId)");
+        search.setPart(List.of("snippet", "id"));
         search.setMaxResults(limit);
         search.setKey(apiKey);
 
@@ -890,7 +890,7 @@ public class YouTubeService extends AbstractShutdownable {
         YouTube.Videos.List query = youTube.videos().list(List.of("snippet", "contentDetails", "statistics"))
             .setKey(apiKey)
             .setId(videoIds)
-            .setFields("items(snippet/title,snippet/channelTitle,id,contentDetails/duration,statistics/viewCount)")
+            .setPart(List.of("snippet", "contentDetails", "statistics"))
             .setMaxResults(50L);
 
         String nextPageToken;
@@ -919,7 +919,7 @@ public class YouTubeService extends AbstractShutdownable {
         playlistSearch.setKey(apiKey);
         playlistSearch.setQ(searchTerm);
         playlistSearch.setType(List.of("playlist"));
-        playlistSearch.setFields("items(id/playlistId,snippet/title,snippet/channelTitle)");
+        playlistSearch.setPart(List.of("id", "snippet"));
         playlistSearch.setMaxResults(limit);
 
         List<SearchResult> items = doWithQuota(QUOTA_COST_SEARCH, () -> playlistSearch.execute().getItems());
@@ -994,7 +994,7 @@ public class YouTubeService extends AbstractShutdownable {
         YouTube.Videos.List videosRequest = youTube.videos().list(List.of("contentDetails"));
         videosRequest.setKey(apiKey);
         videosRequest.setId(List.of(videoId));
-        videosRequest.setFields("items(contentDetails/duration)");
+        videosRequest.setPart(List.of("contentDetails"));
         VideoListResponse videoListResponse = doWithQuota(QUOTA_COST_LIST, videosRequest::execute);
         List<Video> items = videoListResponse.getItems();
         if (items.size() == 1) {
@@ -1013,7 +1013,7 @@ public class YouTubeService extends AbstractShutdownable {
         YouTube.Videos.List videosRequest = youTube.videos().list(List.of("contentDetails"));
         videosRequest.setKey(apiKey);
         videosRequest.setId(videoIds);
-        videosRequest.setFields("items(contentDetails/duration,id)");
+        videosRequest.setPart(List.of("id", "contentDetails"));
         List<Video> videos = doWithQuota(QUOTA_COST_LIST, () -> videosRequest.execute().getItems());
 
         Map<String, Long> durationMap = new HashMap<>();
