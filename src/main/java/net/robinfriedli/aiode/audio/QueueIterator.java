@@ -135,8 +135,8 @@ public class QueueIterator extends AudioEventAdapter {
             return;
         }
 
-        // don't skip over more than 10 items to avoid a frozen queue
-        if (attemptCount.incrementAndGet() > 10) {
+        // don't skip over more than 3 items to avoid a frozen queue
+        if (attemptCount.incrementAndGet() > 3) {
             MessageChannel communicationChannel = playback.getCommunicationChannel();
             if (communicationChannel != null) {
                 EmbedBuilder embedBuilder = new EmbedBuilder();
