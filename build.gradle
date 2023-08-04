@@ -32,8 +32,8 @@ dependencies {
     implementation "com.google.apis:google-api-services-youtube:v3-rev20210915-1.32.1"
     implementation 'com.google.guava:guava:31.1-jre'
     implementation "com.sedmelluq:jda-nas:1.1.0"
-    implementation "com.github.walkyst:lavaplayer-fork:1.4.2"
-    implementation "com.github.walkyst.lavaplayer-fork:lavaplayer-ext-youtube-rotator:1.4.2"
+    implementation "dev.arbjerg:lavaplayer:2.0.0"
+    implementation "dev.arbjerg:lavaplayer-ext-youtube-rotator:2.0.0"
 
     implementation "commons-validator:commons-validator:1.7"
 
