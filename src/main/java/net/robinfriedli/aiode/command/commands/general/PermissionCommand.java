@@ -168,7 +168,7 @@ public class PermissionCommand extends AbstractCommand {
                         if (setRole.isPresent()) {
                             GrantedRole grantedRole = setRole.get();
                             accessConfiguration.removeRole(grantedRole);
-                            session.delete(grantedRole);
+                            session.remove(grantedRole);
                             takenAction = true;
                         }
                     }
@@ -198,8 +198,8 @@ public class PermissionCommand extends AbstractCommand {
                 if (accessConfiguration.isPresent()) {
                     AccessConfiguration ac = accessConfiguration.get();
                     takenAction = specification.removeAccessConfiguration(ac);
-                    ac.getRoles().forEach(session::delete);
-                    session.delete(ac);
+                    ac.getRoles().forEach(session::remove);
+                    session.remove(ac);
                 }
             }
 
@@ -226,7 +226,7 @@ public class PermissionCommand extends AbstractCommand {
                     Set<GrantedRole> setRoles = accessConfiguration.getRoles();
                     for (GrantedRole setRole : setRoles) {
                         accessConfiguration.removeRole(setRole);
-                        session.delete(setRole);
+                        session.remove(setRole);
                         takenAction = true;
                     }
                 } else {
@@ -284,12 +284,12 @@ public class PermissionCommand extends AbstractCommand {
             Optional<AccessConfiguration> accessConfiguration = securityManager.getAccessConfiguration(customPermissionTarget, context.getGuild());
             if (accessConfiguration.isPresent()) {
                 for (GrantedRole role : accessConfiguration.get().getRoles()) {
-                    session.delete(role);
+                    session.remove(role);
                 }
-                session.delete(accessConfiguration);
+                session.remove(accessConfiguration);
             }
 
-            session.delete(customPermissionTarget);
+            session.remove(customPermissionTarget);
         });
     }
 

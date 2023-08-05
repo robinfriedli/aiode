@@ -115,7 +115,7 @@ public class UpsertSlashCommandsTask implements StartupTask {
                                 guild,
                                 preset.getPk()
                             ));
-                            session.delete(preset);
+                            session.remove(preset);
                         } else {
                             commandsToAdd.add(commandData);
                         }
@@ -135,7 +135,7 @@ public class UpsertSlashCommandsTask implements StartupTask {
                                 continue;
                             }
 
-                            Preset reloadedPreset = futureSession.load(Preset.class, preset.getPk());
+                            Preset reloadedPreset = futureSession.getReference(Preset.class, preset.getPk());
                             reloadedPreset.setCommandId(command.getIdLong());
                         }
                     }));

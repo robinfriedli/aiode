@@ -88,7 +88,7 @@ public class SpotifyRedirectService {
                 runUpdateTask(spotifyTrackId, (index, session) -> index.setLastUsed(LocalDate.now()));
                 return;
             } else {
-                runUpdateTask(spotifyTrackId, (index, session) -> session.delete(index));
+                runUpdateTask(spotifyTrackId, (index, session) -> session.remove(index));
             }
         }
 

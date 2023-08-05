@@ -3,8 +3,7 @@ package net.robinfriedli.aiode.boot.configurations;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import javax.persistence.EntityManagerFactory;
-
+import jakarta.persistence.EntityManagerFactory;
 import net.robinfriedli.aiode.concurrent.ExecutionContext;
 import net.robinfriedli.aiode.function.HibernateInvoker;
 import net.robinfriedli.aiode.persist.StaticSessionProvider;

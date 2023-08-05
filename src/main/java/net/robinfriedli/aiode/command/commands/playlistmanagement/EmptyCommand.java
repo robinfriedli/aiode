@@ -32,7 +32,7 @@ public class EmptyCommand extends AbstractCommand {
 
         invoke(() -> {
             for (PlaylistItem item : playlist.getItems()) {
-                session.delete(item);
+                session.remove(item);
             }
         });
     }

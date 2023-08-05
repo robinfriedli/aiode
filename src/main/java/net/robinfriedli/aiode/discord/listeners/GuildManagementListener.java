@@ -3,13 +3,13 @@ package net.robinfriedli.aiode.discord.listeners;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaDelete;
-import javax.persistence.criteria.Root;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaDelete;
+import jakarta.persistence.criteria.Root;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Role;
@@ -93,7 +93,7 @@ public class GuildManagementListener extends ListenerAdapter {
                 CriteriaDelete<GrantedRole> deleteQuery = cb.createCriteriaDelete(GrantedRole.class);
                 Root<GrantedRole> queryRoot = deleteQuery.from(GrantedRole.class);
                 deleteQuery.where(cb.equal(queryRoot.get("id"), roleId));
-                int rowCount = session.createQuery(deleteQuery).executeUpdate();
+                int rowCount = session.createMutationQuery(deleteQuery).executeUpdate();
 
                 if (rowCount > 0) {
                     Guild guild = event.getGuild();

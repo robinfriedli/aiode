@@ -1,7 +1,6 @@
 package net.robinfriedli.aiode.command.commands.admin;
 
-import javax.persistence.LockModeType;
-
+import jakarta.persistence.LockModeType;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.audio.youtube.YouTubeService;

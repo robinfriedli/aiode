@@ -3,10 +3,9 @@ package net.robinfriedli.aiode.entities;
 import java.io.Serializable;
 import java.util.Date;
 
-import javax.persistence.Column;
-import javax.persistence.ManyToOne;
-import javax.persistence.MappedSuperclass;
-
+import jakarta.persistence.Column;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.MappedSuperclass;
 import net.dv8tion.jda.api.entities.User;
 
 @MappedSuperclass
@@ -24,6 +23,10 @@ public abstract class PlaylistItem implements Serializable {
     private Date createdTimestamp;
     @Column(name = "item_index")
     private Integer index;
+
+    @SuppressWarnings("unused")
+    @Column(name = "playlist_pk", insertable = false, updatable = false)
+    private long playlistPk;
 
     private transient int ordinal;
 

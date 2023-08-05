@@ -42,7 +42,7 @@ public class RemoveCommand extends AbstractCommand {
                 if (indices.size() == 1) {
                     int index = parse(indices.get(0));
                     checkIndex(index, playlist);
-                    invoke(() -> session.delete(playlist.getItemsSorted().get(index - 1)));
+                    invoke(() -> session.remove(playlist.getItemsSorted().get(index - 1)));
                 } else {
                     int start = parse(indices.get(0));
                     int end = parse(indices.get(1));
@@ -52,7 +52,7 @@ public class RemoveCommand extends AbstractCommand {
                         throw new InvalidCommandException("End index needs to be greater than start.");
                     }
 
-                    invoke(() -> playlist.getItemsSorted().subList(start - 1, end).forEach(session::delete));
+                    invoke(() -> playlist.getItemsSorted().subList(start - 1, end).forEach(session::remove));
                 }
             } else {
                 throw new InvalidCommandException("Expected one or two indices but found " + indices.size());
@@ -60,13 +60,15 @@ public class RemoveCommand extends AbstractCommand {
         } else {
             List<PlaylistItem> playlistItems = SearchEngine.searchPlaylistItems(playlist, getCommandInput());
             if (playlistItems.size() == 1) {
-                invoke(() -> session.delete(playlistItems.get(0)));
+                invoke(() -> session.remove(playlistItems.get(0)));
             } else if (playlistItems.isEmpty()) {
                 throw new NoResultsFoundException(String.format("No tracks found for '%s' on list '%s'", getCommandInput(), playlistName));
             } else {
-                askQuestion(playlistItems,
+                askQuestion(
+                    playlistItems,
                     PlaylistItem::display,
-                    item -> valueOf(item.getIndex() + 1));
+                    item -> valueOf(item.getIndex() + 1)
+                );
             }
         }
     }
@@ -96,13 +98,13 @@ public class RemoveCommand extends AbstractCommand {
             if (option instanceof Collection playlistItems) {
                 for (Object o : playlistItems) {
                     PlaylistItem playlistItem = (PlaylistItem) o;
-                    PlaylistItem reloadedItem = session.load(playlistItem.getClass(), playlistItem.getPk());
-                    session.delete(reloadedItem);
+                    PlaylistItem reloadedItem = session.getReference(playlistItem.getClass(), playlistItem.getPk());
+                    session.remove(reloadedItem);
                 }
             } else {
                 PlaylistItem playlistItem = (PlaylistItem) option;
-                PlaylistItem reloadedItem = session.load(playlistItem.getClass(), playlistItem.getPk());
-                session.delete(reloadedItem);
+                PlaylistItem reloadedItem = session.getReference(playlistItem.getClass(), playlistItem.getPk());
+                session.remove(reloadedItem);
             }
         });
 

@@ -26,7 +26,7 @@ public class SynchroniseCommand extends AddCommand {
             if (!playlist.isEmpty()) {
                 Session session = getContext().getSession();
                 for (PlaylistItem item : playlist.getItems()) {
-                    session.delete(item);
+                    session.remove(item);
                 }
             }
             super.addToList(playlist, items);

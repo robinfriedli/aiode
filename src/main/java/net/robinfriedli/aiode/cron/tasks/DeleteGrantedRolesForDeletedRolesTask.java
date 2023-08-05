@@ -51,7 +51,7 @@ public class DeleteGrantedRolesForDeletedRolesTask extends AbstractCronTask {
                         if (guildRole == null) {
                             // role has been deleted
                             accessConfiguration.removeRole(grantedRole);
-                            session.delete(grantedRole);
+                            session.remove(grantedRole);
                             ++deletionCounter;
                         }
                     }

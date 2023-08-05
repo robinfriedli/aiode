@@ -3,12 +3,11 @@ package net.robinfriedli.aiode.persist.qb.builders;
 import java.util.List;
 import java.util.function.BiFunction;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.From;
-import javax.persistence.criteria.Root;
-import javax.persistence.criteria.Selection;
-
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.From;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Selection;
 import net.robinfriedli.aiode.persist.qb.BaseQueryBuilder;
 import net.robinfriedli.aiode.persist.qb.PredicateBuilder;
 import net.robinfriedli.aiode.persist.qb.QueryConsumer;

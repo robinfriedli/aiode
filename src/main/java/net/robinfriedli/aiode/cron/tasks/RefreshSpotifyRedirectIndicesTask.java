@@ -8,16 +8,15 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Root;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.audio.spotify.SpotifyTrack;
 import net.robinfriedli.aiode.audio.spotify.SpotifyTrackBulkLoadingService;
@@ -89,8 +88,8 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
                     return;
                 }
 
-                BigDecimal averageDailyIndices = (BigDecimal) session
-                    .createSQLQuery("select avg(count) from (select count(*) as count from spotify_redirect_index group by last_updated) as sub")
+                BigDecimal averageDailyIndices = session
+                    .createNativeQuery("select avg(count) from (select count(*) as count from spotify_redirect_index group by last_updated) as sub", BigDecimal.class)
                     .uniqueResult();
                 int average = averageDailyIndices.setScale(0, RoundingMode.CEILING).intValue();
 
@@ -102,7 +101,7 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
                     if (!Strings.isNullOrEmpty(spotifyId)) {
                         spotifyTrackBulkLoadingService.add(createItem(spotifyId, kind), task);
                     } else {
-                        session.delete(index);
+                        session.remove(index);
                     }
                     ++updateCount;
 
@@ -121,9 +120,9 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
             try (Session session = sessionFactory.openSession()) {
                 transaction = session.beginTransaction();
                 // since hibernate is now bootstrapped by JPA rather than native after implementing spring boot
-                // the entity has the be merged because JPA does not allow the deletion of detached entities
+                // the entity has to be merged because JPA does not allow the deletion of detached entities
                 Object merge = session.merge(spotifyRedirectIndexModificationLock);
-                session.delete(merge);
+                session.remove(merge);
                 transaction.commit();
             } catch (Throwable e) {
                 // catch exceptions thrown in the finally block so as to not override exceptions thrown in the try block
@@ -156,13 +155,13 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
         public void accept(SpotifyTrack track) {
             try {
                 if (track == null) {
-                    session.delete(index);
+                    session.remove(index);
                     return;
                 }
 
                 LocalDate date2WeeksAgo = LocalDate.now().minusDays(14);
-                if (index.getLastUsed().compareTo(date2WeeksAgo) < 0) {
-                    session.delete(index);
+                if (index.getLastUsed().isBefore(date2WeeksAgo)) {
+                    session.remove(index);
                 } else {
                     HollowYouTubeVideo hollowYouTubeVideo = new HollowYouTubeVideo(youTubeService, track);
                     try {
@@ -175,7 +174,7 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
                         index.setYouTubeId(videoId);
                         index.setLastUpdated(LocalDate.now());
                     } else {
-                        session.delete(index);
+                        session.remove(index);
                     }
                 }
             } catch (UnavailableResourceException e) {

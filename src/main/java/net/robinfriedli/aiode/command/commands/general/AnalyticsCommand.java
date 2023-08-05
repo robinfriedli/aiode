@@ -39,12 +39,12 @@ public class AnalyticsCommand extends AbstractCommand {
 
         int guildCount = guilds.size();
         long playingCount = guilds.stream().map(audioManager::getPlaybackForGuild).filter(AudioPlayback::isPlaying).count();
-        long commandCount = ((BigInteger) session.createSQLQuery("SELECT cast(reltuples AS bigint) FROM pg_class where relname = 'command_history'").uniqueResult()).longValue();
-        long playlistCount = ((BigInteger) session.createSQLQuery("SELECT cast(reltuples AS bigint) FROM pg_class where relname = 'playlist'").uniqueResult()).longValue();
-        long trackCount = ((BigInteger) session.createSQLQuery("SELECT cast(reltuples AS bigint) FROM pg_class where relname = 'song'").uniqueResult()).longValue()
-            + ((BigInteger) session.createSQLQuery("SELECT cast(reltuples AS bigint) FROM pg_class where relname = 'video'").uniqueResult()).longValue()
-            + ((BigInteger) session.createSQLQuery("SELECT cast(reltuples AS bigint) FROM pg_class where relname = 'url_track'").uniqueResult()).longValue();
-        long playedCount = ((BigInteger) session.createSQLQuery("SELECT cast(reltuples AS bigint) FROM pg_class where relname = 'playback_history'").uniqueResult()).longValue();
+        long commandCount = session.createNativeQuery("SELECT cast(reltuples AS bigint) FROM pg_class where relname = 'command_history'", BigInteger.class).uniqueResult().longValue();
+        long playlistCount = session.createNativeQuery("SELECT cast(reltuples AS bigint) FROM pg_class where relname = 'playlist'", BigInteger.class).uniqueResult().longValue();
+        long trackCount = session.createNativeQuery("SELECT cast(reltuples AS bigint) FROM pg_class where relname = 'song'", BigInteger.class).uniqueResult().longValue()
+            + session.createNativeQuery("SELECT cast(reltuples AS bigint) FROM pg_class where relname = 'video'", BigInteger.class).uniqueResult().longValue()
+            + session.createNativeQuery("SELECT cast(reltuples AS bigint) FROM pg_class where relname = 'url_track'", BigInteger.class).uniqueResult().longValue();
+        long playedCount = session.createNativeQuery("SELECT cast(reltuples AS bigint) FROM pg_class where relname = 'playback_history'", BigInteger.class).uniqueResult().longValue();
         // convert to MB by right shifting by 20 bytes (same as dividing by 2^20)
         long maxMemory = runtime.maxMemory() >> 20;
         long allocatedMemory = runtime.totalMemory() >> 20;

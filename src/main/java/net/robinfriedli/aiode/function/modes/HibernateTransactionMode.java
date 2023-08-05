@@ -3,8 +3,8 @@ package net.robinfriedli.aiode.function.modes;
 import java.util.concurrent.Callable;
 
 import javax.annotation.Nullable;
-import javax.persistence.RollbackException;
 
+import jakarta.persistence.RollbackException;
 import net.robinfriedli.aiode.command.CommandContext;
 import net.robinfriedli.aiode.persist.StaticSessionProvider;
 import net.robinfriedli.exec.AbstractNestedModeWrapper;

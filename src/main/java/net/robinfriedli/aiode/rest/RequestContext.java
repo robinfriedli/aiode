@@ -1,6 +1,6 @@
 package net.robinfriedli.aiode.rest;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 public class RequestContext {
 

@@ -2,9 +2,8 @@ package net.robinfriedli.aiode.persist.qb.builders;
 
 import java.util.List;
 
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
-
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Root;
 import net.robinfriedli.aiode.persist.qb.BaseQueryBuilder;
 import net.robinfriedli.aiode.persist.qb.PredicateBuilder;
 import net.robinfriedli.aiode.persist.qb.QueryConsumer;

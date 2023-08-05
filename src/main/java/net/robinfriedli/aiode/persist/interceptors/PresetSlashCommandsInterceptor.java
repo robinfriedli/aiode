@@ -68,7 +68,7 @@ public class PresetSlashCommandsInterceptor extends CollectingInterceptor {
             SLASH_COMMAND_UPDATE_INVOKER.invoke(Mode.getEmpty(), () -> {
                 CompletableFuture<Command> future = guild.upsertCommand(affectedPreset.buildSlashCommandData(commandManager)).submit();
                 CompletableFutures.thenAccept(future, command -> hibernateInvoker.invokeConsumer(session -> {
-                    Preset reloadedPreset = session.load(Preset.class, presetPk);
+                    Preset reloadedPreset = session.getReference(Preset.class, presetPk);
                     reloadedPreset.setCommandId(command.getIdLong());
                 }));
             });

@@ -11,19 +11,18 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Index;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
-import javax.validation.constraints.Size;
-
 import com.google.api.client.util.Sets;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.Size;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.aiode.audio.playables.PlayableFactory;

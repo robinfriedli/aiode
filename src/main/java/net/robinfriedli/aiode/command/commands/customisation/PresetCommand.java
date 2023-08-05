@@ -31,7 +31,7 @@ public class PresetCommand extends AbstractCommand {
                 throw new InvalidCommandException(String.format("No preset found for '%s'", getCommandInput()));
             }
 
-            invoke(() -> session.delete(preset));
+            invoke(() -> session.remove(preset));
         } else if (getCommandInput().isBlank()) {
             List<Preset> presets = getQueryBuilderFactory().find(Preset.class).build(session).getResultList();
             EmbedBuilder embedBuilder = new EmbedBuilder();

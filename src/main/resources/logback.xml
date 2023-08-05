@@ -5,14 +5,14 @@
 
   <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
     <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-      <Pattern>%highlight(%-5level) %d{ISO8601} [%blue(%t)] %yellow(%C{1.}): %msg%n%throwable</Pattern>
+      <Pattern>%highlight(%-5level) %d{ISO8601} [%blue(%t)] %yellow(%C): %msg%n%throwable</Pattern>
     </encoder>
   </appender>
 
   <appender name="RollingFile" class="ch.qos.logback.core.rolling.RollingFileAppender">
     <file>${LOGS}/logs.log</file>
     <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-      <Pattern>%p %d [%t] %C{1.} %m%n</Pattern>
+      <Pattern>%p %d [%t] %C %m%n</Pattern>
     </encoder>
 
     <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
