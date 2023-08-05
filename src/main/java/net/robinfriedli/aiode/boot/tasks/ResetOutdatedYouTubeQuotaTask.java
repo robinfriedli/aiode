@@ -7,8 +7,8 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
 import javax.annotation.Nullable;
-import javax.persistence.LockModeType;
 
+import jakarta.persistence.LockModeType;
 import net.dv8tion.jda.api.JDA;
 import net.robinfriedli.aiode.audio.youtube.YouTubeService;
 import net.robinfriedli.aiode.boot.StartupTask;

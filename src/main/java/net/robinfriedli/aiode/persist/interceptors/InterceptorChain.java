@@ -9,7 +9,6 @@ import java.util.Iterator;
 import net.robinfriedli.aiode.util.InjectorService;
 import org.hibernate.CallbackException;
 import org.hibernate.EmptyInterceptor;
-import org.hibernate.EntityMode;
 import org.hibernate.Interceptor;
 import org.hibernate.Transaction;
 import org.hibernate.type.Type;
@@ -20,6 +19,10 @@ import org.hibernate.type.Type;
 public class InterceptorChain extends EmptyInterceptor {
 
     public static final ThreadLocal<Boolean> INTERCEPTORS_MUTED = ThreadLocal.withInitial(() -> false);
+
+    private static final Interceptor EMPTY_INTERCEPTOR = new Interceptor() {
+    };
+
     private final Interceptor first;
 
     public InterceptorChain(Interceptor first) {
@@ -29,7 +32,7 @@ public class InterceptorChain extends EmptyInterceptor {
     @SafeVarargs
     public static InterceptorChain of(Class<? extends ChainableInterceptor>... interceptors) {
         if (interceptors.length == 0) {
-            return new InterceptorChain(EmptyInterceptor.INSTANCE);
+            return new InterceptorChain(EMPTY_INTERCEPTOR);
         }
 
         Iterator<Class<? extends ChainableInterceptor>> chain = Arrays.stream(interceptors).iterator();
@@ -54,7 +57,7 @@ public class InterceptorChain extends EmptyInterceptor {
                 if (next.hasNext()) {
                     parameters[i] = instantiate(next.next(), next);
                 } else {
-                    parameters[i] = EmptyInterceptor.INSTANCE;
+                    parameters[i] = EMPTY_INTERCEPTOR;
                 }
             } else {
                 parameters[i] = InjectorService.get(parameterType);
@@ -135,15 +138,7 @@ public class InterceptorChain extends EmptyInterceptor {
         }
     }
 
-    @Override
-    public Object instantiate(String entityName, EntityMode entityMode, Serializable id) {
-        if (!INTERCEPTORS_MUTED.get()) {
-            return first.instantiate(entityName, entityMode, id);
-        } else {
-            return super.instantiate(entityName, entityMode, id);
-        }
-    }
-
+    @Deprecated
     @Override
     public int[] findDirty(Object entity, Serializable id, Object[] currentState, Object[] previousState, String[] propertyNames, Type[] types) {
         if (!INTERCEPTORS_MUTED.get()) {
@@ -162,6 +157,7 @@ public class InterceptorChain extends EmptyInterceptor {
         }
     }
 
+    @Deprecated
     @Override
     public Object getEntity(String entityName, Serializable id) {
         if (!INTERCEPTORS_MUTED.get()) {
@@ -200,15 +196,6 @@ public class InterceptorChain extends EmptyInterceptor {
 
     @Deprecated
     @Override
-    public String onPrepareStatement(String sql) {
-        if (!INTERCEPTORS_MUTED.get()) {
-            return first.onPrepareStatement(sql);
-        } else {
-            return super.onPrepareStatement(sql);
-        }
-    }
-
-    @Override
     public void onCollectionRemove(Object collection, Serializable key) throws CallbackException {
         if (!INTERCEPTORS_MUTED.get()) {
             first.onCollectionRemove(collection, key);
@@ -217,6 +204,7 @@ public class InterceptorChain extends EmptyInterceptor {
         }
     }
 
+    @Deprecated
     @Override
     public void onCollectionRecreate(Object collection, Serializable key) throws CallbackException {
         if (!INTERCEPTORS_MUTED.get()) {
@@ -226,6 +214,7 @@ public class InterceptorChain extends EmptyInterceptor {
         }
     }
 
+    @Deprecated
     @Override
     public void onCollectionUpdate(Object collection, Serializable key) throws CallbackException {
         if (!INTERCEPTORS_MUTED.get()) {

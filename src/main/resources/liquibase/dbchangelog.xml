@@ -810,7 +810,7 @@ See application.properties -> spring.liquibase.contexts
     </preConditions>
     <renameColumn tableName="access_configuration" oldColumnName="guild_specification_pk" newColumnName="fk_guild_specification"/>
   </changeSet>
-  <changeSet author="robinfriedli" id="">
+  <changeSet author="robinfriedli" id="add_fk_access_configuration_fk_guild_specification_fkey">
     <preConditions onFail="MARK_RAN">
       <not>
         <foreignKeyConstraintExists foreignKeyName="access_configuration_fk_guild_specification_fkey"/>
@@ -1080,5 +1080,17 @@ See application.properties -> spring.liquibase.contexts
     <addColumn tableName="guild_specification">
       <column name="version_update_alert_sent" type="varchar(255)"/>
     </addColumn>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1691262345044-1">
+    <modifyDataType columnName="bot_name" newDataType="varchar(32)" tableName="guild_specification"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1691262345044-2">
+    <modifyDataType columnName="name" newDataType="varchar(30)" tableName="playlist"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1691262345044-3">
+    <modifyDataType columnName="name" newDataType="varchar(30)" tableName="preset"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1691262345044-4">
+    <modifyDataType columnName="prefix" newDataType="varchar(5)" tableName="guild_specification"/>
   </changeSet>
 </databaseChangeLog>

@@ -3,14 +3,13 @@ package net.robinfriedli.aiode.persist.qb.builders.sub;
 import java.util.List;
 import java.util.function.BiFunction;
 
-import javax.persistence.criteria.AbstractQuery;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.Expression;
-import javax.persistence.criteria.From;
-import javax.persistence.criteria.Join;
-import javax.persistence.criteria.Root;
-import javax.persistence.criteria.Subquery;
-
+import jakarta.persistence.criteria.AbstractQuery;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.From;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import net.robinfriedli.aiode.persist.qb.AbstractQueryBuilder;
 import net.robinfriedli.aiode.persist.qb.PredicateBuilder;
 import net.robinfriedli.aiode.persist.qb.QueryBuilder;
@@ -79,9 +78,9 @@ public class CorrelatedSubQueryBuilder<E, R> extends AbstractQueryBuilder<E, Sub
         Subquery<R> subquery = unwrap(session);
         From<?, ?> root;
 
-        if (superRoot instanceof Root) {
+        if (superRoot instanceof Root<?>) {
             root = subquery.correlate((Root<?>) superRoot).join(relationAttribute);
-        } else if (superRoot instanceof Join) {
+        } else if (superRoot instanceof Join<?, ?>) {
             root = subquery.correlate((Join<?, ?>) superRoot).join(relationAttribute);
         } else {
             throw new UnsupportedOperationException("Unsupported root type: " + superRoot.getClass());

@@ -4,10 +4,9 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
 
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -149,7 +148,7 @@ public class RequestInterceptorHandler implements HandlerInterceptor {
             TextChannel finalTextChannel = textChannel;
             hibernateComponent.consumeSession(session -> {
                 clientSession.setTextChannelId(finalTextChannel.getIdLong());
-                session.update(clientSession);
+                session.merge(clientSession);
             });
         }
 

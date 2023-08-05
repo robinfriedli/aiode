@@ -1,9 +1,8 @@
 package net.robinfriedli.aiode.cron.tasks;
 
-import javax.persistence.LockModeType;
-
 import org.slf4j.LoggerFactory;
 
+import jakarta.persistence.LockModeType;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.audio.youtube.YouTubeService;
 import net.robinfriedli.aiode.cron.AbstractCronTask;

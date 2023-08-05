@@ -3,13 +3,13 @@ package net.robinfriedli.aiode.persist.interceptors;
 import java.io.Serializable;
 import java.util.Set;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
-import javax.validation.constraints.Size;
-
 import org.slf4j.Logger;
 
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
+import jakarta.validation.constraints.Size;
 import net.robinfriedli.aiode.exceptions.InvalidPropertyValueException;
 import org.hibernate.Interceptor;
 import org.hibernate.type.Type;
@@ -20,11 +20,8 @@ import org.hibernate.type.Type;
  */
 public class EntityValidationInterceptor extends ChainableInterceptor {
 
-    private final Validator validator;
-
     public EntityValidationInterceptor(Interceptor next, Logger logger) {
         super(next, logger);
-        validator = Validation.buildDefaultValidatorFactory().getValidator();
     }
 
     @Override
@@ -42,28 +39,31 @@ public class EntityValidationInterceptor extends ChainableInterceptor {
     }
 
     private void validateEntity(Object entity) {
-        Set<ConstraintViolation<Object>> constraintViolations = validator.validate(entity);
-        if (!constraintViolations.isEmpty()) {
-            int i = 0;
-            StringBuilder errorMessage = new StringBuilder();
-            for (ConstraintViolation<Object> constraintViolation : constraintViolations) {
-                String message = constraintViolation.getMessage();
-                int messageLength = message.length();
-                if (messageLength >= 1000) {
-                    throw new IllegalStateException("Message of constraint " + constraintViolation.getPropertyPath().toString() + " is too long.");
-                }
-                if (messageLength + errorMessage.length() < 1000) {
-                    errorMessage.append(message);
-                    if (i < constraintViolations.size() - 1) {
-                        errorMessage.append(System.lineSeparator());
+        try (ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory()) {
+            Validator validator = validatorFactory.getValidator();
+            Set<ConstraintViolation<Object>> constraintViolations = validator.validate(entity);
+            if (!constraintViolations.isEmpty()) {
+                int i = 0;
+                StringBuilder errorMessage = new StringBuilder();
+                for (ConstraintViolation<Object> constraintViolation : constraintViolations) {
+                    String message = constraintViolation.getMessage();
+                    int messageLength = message.length();
+                    if (messageLength >= 1000) {
+                        throw new IllegalStateException("Message of constraint " + constraintViolation.getPropertyPath().toString() + " is too long.");
                     }
-                } else {
-                    break;
+                    if (messageLength + errorMessage.length() < 1000) {
+                        errorMessage.append(message);
+                        if (i < constraintViolations.size() - 1) {
+                            errorMessage.append(System.lineSeparator());
+                        }
+                    } else {
+                        break;
+                    }
+                    ++i;
                 }
-                ++i;
-            }
 
-            throw new InvalidPropertyValueException(errorMessage.toString());
+                throw new InvalidPropertyValueException(errorMessage.toString());
+            }
         }
     }
 

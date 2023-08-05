@@ -36,7 +36,7 @@ public abstract class AbstractScriptCommand extends AbstractCommand {
         QueryBuilderFactory queryBuilderFactory = Aiode.get().getQueryBuilderFactory();
         if (argumentSet("delete")) {
             StoredScript foundScript = findScript(session);
-            invoke(() -> session.delete(foundScript));
+            invoke(() -> session.remove(foundScript));
         } else if (argumentSet("identifier") && !getCommandInput().isBlank()) {
             saveNewScript(queryBuilderFactory, session, context);
         } else if (argumentSet("activate")) {

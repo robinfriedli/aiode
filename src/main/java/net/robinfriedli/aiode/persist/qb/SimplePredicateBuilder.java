@@ -1,8 +1,8 @@
 package net.robinfriedli.aiode.persist.qb;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.From;
-import javax.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.From;
+import jakarta.persistence.criteria.Predicate;
 
 /**
  * Simplification of {@link PredicateBuilder} with only the essential parameters.

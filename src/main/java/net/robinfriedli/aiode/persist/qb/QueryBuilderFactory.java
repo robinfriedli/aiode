@@ -5,10 +5,9 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.From;
-import javax.persistence.criteria.Selection;
-
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.From;
+import jakarta.persistence.criteria.Selection;
 import net.robinfriedli.aiode.persist.qb.builders.CountQueryBuilder;
 import net.robinfriedli.aiode.persist.qb.builders.EntityQueryBuilder;
 import net.robinfriedli.aiode.persist.qb.builders.SelectQueryBuilder;

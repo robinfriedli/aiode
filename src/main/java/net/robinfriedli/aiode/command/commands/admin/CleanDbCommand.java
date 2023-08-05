@@ -3,11 +3,10 @@ package net.robinfriedli.aiode.command.commands.admin;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaDelete;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
-
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaDelete;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Root;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.ISnowflake;
 import net.dv8tion.jda.api.sharding.ShardManager;
@@ -133,7 +132,7 @@ public class CleanDbCommand extends AbstractAdminCommand {
         CriteriaDelete<Playlist> stalePlaylistsQuery = cb.createCriteriaDelete(Playlist.class);
         Root<Playlist> from = stalePlaylistsQuery.from(Playlist.class);
         stalePlaylistsQuery.where(cb.in(from.get("pk")).value(playlistIds));
-        session.createQuery(stalePlaylistsQuery).executeUpdate();
+        session.createMutationQuery(stalePlaylistsQuery).executeUpdate();
     }
 
     private void deleteStalePlaylistItems(CriteriaBuilder cb, Set<Long> stalePlaylistIds, Session session, Class<? extends PlaylistItem> itemClass) {
@@ -142,7 +141,7 @@ public class CleanDbCommand extends AbstractAdminCommand {
         CriteriaDelete<PlaylistItem> stalePlaylistItemsQuery = cb.createCriteriaDelete(playlistItemClass);
         Root<PlaylistItem> playlistItemRoot = stalePlaylistItemsQuery.from(playlistItemClass);
         stalePlaylistItemsQuery.where(cb.in(playlistItemRoot.get("playlist").get("pk")).value(stalePlaylistIds));
-        session.createQuery(stalePlaylistItemsQuery).executeUpdate();
+        session.createMutationQuery(stalePlaylistItemsQuery).executeUpdate();
     }
 
     private Set<Long> getStalePlaylistIds(CriteriaBuilder cb, Set<String> activeGuildIds, Session session) {

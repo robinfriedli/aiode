@@ -1,6 +1,5 @@
 package net.robinfriedli.aiode.command.commands.general;
 
-import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -126,12 +125,12 @@ public class ChartsCommand extends AbstractCommand {
 
     private void addArtists(List<Object[]> records, EmbedBuilder embedBuilder, String period) {
         Session session = getContext().getSession();
-        Map<Artist, BigInteger> artistsWithPlayedAmount = new HashMap<>();
+        Map<Artist, Long> artistsWithPlayedAmount = new HashMap<>();
         List<Artist> artists = Lists.newArrayList();
         for (Object[] record : records) {
-            BigInteger artistPk = (BigInteger) record[0];
-            BigInteger playedCount = (BigInteger) record[1];
-            Artist artist = session.load(Artist.class, artistPk.longValue());
+            Object artistPk = record[0];
+            Long playedCount = (Long) record[1];
+            Artist artist = session.getReference(Artist.class, artistPk);
             artists.add(artist);
             artistsWithPlayedAmount.put(artist, playedCount);
         }
@@ -152,11 +151,11 @@ public class ChartsCommand extends AbstractCommand {
 
     private Playable getTrackForRecord(Object[] record, Session session) throws Exception {
         long sourceEntityPk = (Long) record[0];
-        PlaybackHistorySource sourceEntity = session.load(PlaybackHistorySource.class, sourceEntityPk);
+        PlaybackHistorySource sourceEntity = session.getReference(PlaybackHistorySource.class, sourceEntityPk);
         Playable.Source source = sourceEntity.asEnum();
         String id = (String) record[1];
         Long spotifyItemKindPk = (Long) record[3];
-        SpotifyItemKind spotifyItemKind = spotifyItemKindPk != null ? session.load(SpotifyItemKind.class, spotifyItemKindPk) : null;
+        SpotifyItemKind spotifyItemKind = spotifyItemKindPk != null ? session.getReference(SpotifyItemKind.class, spotifyItemKindPk) : null;
         switch (source) {
             case SPOTIFY -> {
                 return runWithCredentials(() -> {

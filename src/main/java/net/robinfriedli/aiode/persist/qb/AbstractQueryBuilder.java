@@ -3,14 +3,13 @@ package net.robinfriedli.aiode.persist.qb;
 import java.util.List;
 import java.util.function.BiFunction;
 
-import javax.persistence.criteria.AbstractQuery;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.Expression;
-import javax.persistence.criteria.From;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Subquery;
-
 import com.google.common.collect.Lists;
+import jakarta.persistence.criteria.AbstractQuery;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.From;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Subquery;
 import net.robinfriedli.aiode.persist.qb.interceptor.QueryInterceptor;
 import net.robinfriedli.aiode.persist.qb.interceptor.QueryInterceptorRegistry;
 import org.hibernate.Session;

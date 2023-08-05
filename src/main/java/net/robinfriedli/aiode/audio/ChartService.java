@@ -1,6 +1,5 @@
 package net.robinfriedli.aiode.audio;
 
-import java.math.BigInteger;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -36,8 +35,8 @@ public class ChartService {
 
     public void refreshPersistentGlobalCharts() {
         hibernateComponent.consumeSession(session -> {
-            session.createSQLQuery("delete from global_artist_chart").executeUpdate();
-            session.createSQLQuery("delete from global_track_chart").executeUpdate();
+            session.createNativeMutationQuery("delete from global_artist_chart").executeUpdate();
+            session.createNativeMutationQuery("delete from global_track_chart").executeUpdate();
 
             for (Object[] record : getGlobalTrackChart(session)) {
                 GlobalTrackChart globalTrackChart = new GlobalTrackChart();
@@ -49,7 +48,7 @@ public class ChartService {
                     globalTrackChart.setSpotifyItemKind(session.get(SpotifyItemKind.class, spotifyItemKindPk));
                 }
                 globalTrackChart.setMonthly(false);
-                session.save(globalTrackChart);
+                session.persist(globalTrackChart);
             }
 
             for (Object[] record : getGlobalTrackMonthlyChart(session)) {
@@ -62,23 +61,23 @@ public class ChartService {
                     globalTrackChart.setSpotifyItemKind(session.get(SpotifyItemKind.class, spotifyItemKindPk));
                 }
                 globalTrackChart.setMonthly(true);
-                session.save(globalTrackChart);
+                session.persist(globalTrackChart);
             }
 
             for (Object[] record : getGlobalArtistChart(session)) {
                 GlobalArtistChart globalArtistChart = new GlobalArtistChart();
-                globalArtistChart.setArtist(session.get(Artist.class, ((BigInteger) record[0]).longValue()));
-                globalArtistChart.setCount(((BigInteger) record[1]).longValue());
+                globalArtistChart.setArtist(session.get(Artist.class, record[0]));
+                globalArtistChart.setCount((Long) record[1]);
                 globalArtistChart.setMonthly(false);
-                session.save(globalArtistChart);
+                session.persist(globalArtistChart);
             }
 
             for (Object[] record : getGlobalArtistMonthlyChart(session)) {
                 GlobalArtistChart globalArtistChart = new GlobalArtistChart();
-                globalArtistChart.setArtist(session.get(Artist.class, ((BigInteger) record[0]).longValue()));
-                globalArtistChart.setCount(((BigInteger) record[1]).longValue());
+                globalArtistChart.setArtist(session.get(Artist.class, record[0]));
+                globalArtistChart.setCount((Long) record[1]);
                 globalArtistChart.setMonthly(true);
-                session.save(globalArtistChart);
+                session.persist(globalArtistChart);
             }
         });
     }
@@ -181,8 +180,8 @@ public class ChartService {
     }
 
     public Query<Object[]> getGlobalArtistChartQuery(Session session) {
-        return session.createSQLQuery("select artist_pk, count(*) as c " +
-            "from playback_history_artist group by artist_pk order by c desc limit 5");
+        return session.createNativeQuery("select artist_pk, count(*) as c " +
+            "from playback_history_artist group by artist_pk order by c desc limit 5", Object[].class);
     }
 
     public List<Object[]> getGlobalArtistChart(Session session) {
@@ -190,8 +189,8 @@ public class ChartService {
     }
 
     public Query<Object[]> getPersistentGlobalArtistChartQuery(Session session) {
-        return session.createSQLQuery("select artist_pk, count as c " +
-            "from global_artist_chart where not is_monthly order by c desc limit 5");
+        return session.createNativeQuery("select artist_pk, count as c " +
+            "from global_artist_chart where not is_monthly order by c desc limit 5", Object[].class);
     }
 
     public List<Object[]> getPersistentGlobalArtistChart(Session session) {
@@ -201,10 +200,10 @@ public class ChartService {
     public Query<Object[]> getGlobalArtistMonthlyChartQuery(Session session) {
         LocalDateTime startOfMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay();
         Date dateAtStartOfMonth = Date.valueOf(startOfMonth.toLocalDate());
-        Query<Object[]> globalArtistMonthlyQuery = session.createSQLQuery("select artist_pk, count(*) as c " +
+        Query<Object[]> globalArtistMonthlyQuery = session.createNativeQuery("select artist_pk, count(*) as c " +
             "from playback_history_artist as p " +
             "where p.playback_history_pk in(select pk from playback_history where timestamp > ?) " +
-            "group by artist_pk order by c desc limit 5");
+            "group by artist_pk order by c desc limit 5", Object[].class);
         globalArtistMonthlyQuery.setParameter(1, dateAtStartOfMonth);
         return globalArtistMonthlyQuery;
     }
@@ -214,10 +213,10 @@ public class ChartService {
     }
 
     public Query<Object[]> getPersistentGlobalArtistMonthlyChartQuery(Session session) {
-        return session.createSQLQuery("select artist_pk, count as c " +
+        return session.createNativeQuery("select artist_pk, count as c " +
             "from global_artist_chart " +
             "where is_monthly " +
-            "order by c desc limit 5");
+            "order by c desc limit 5", Object[].class);
     }
 
     public List<Object[]> getPersistentGlobalArtistMonthlyChart(Session session) {
@@ -225,9 +224,9 @@ public class ChartService {
     }
 
     public Query<Object[]> getGuildArtistChartQuery(Guild guild, Session session) {
-        Query<Object[]> guildArtistQuery = session.createSQLQuery("select artist_pk, count(*) as c from " +
+        Query<Object[]> guildArtistQuery = session.createNativeQuery("select artist_pk, count(*) as c from " +
             "playback_history_artist as p where p.playback_history_pk in(select pk from playback_history where guild_id = ?) " +
-            "group by artist_pk order by c desc limit 5");
+            "group by artist_pk order by c desc limit 5", Object[].class);
         guildArtistQuery.setParameter(1, guild.getId());
         return guildArtistQuery;
     }
@@ -239,10 +238,10 @@ public class ChartService {
     public Query<Object[]> getGuildArtistMonthlyChartQuery(Guild guild, Session session) {
         LocalDateTime startOfMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay();
         Date dateAtStartOfMonth = Date.valueOf(startOfMonth.toLocalDate());
-        Query<Object[]> guildArtistMonthlyQuery = session.createSQLQuery("select artist_pk, count(*) as c " +
+        Query<Object[]> guildArtistMonthlyQuery = session.createNativeQuery("select artist_pk, count(*) as c " +
             "from playback_history_artist where playback_history_pk in(select pk from playback_history " +
             "where timestamp > ? and guild_id = ?) " +
-            "group by artist_pk order by c desc limit 5");
+            "group by artist_pk order by c desc limit 5", Object[].class);
         guildArtistMonthlyQuery.setParameter(1, dateAtStartOfMonth);
         guildArtistMonthlyQuery.setParameter(2, guild.getId());
         return guildArtistMonthlyQuery;
@@ -253,9 +252,9 @@ public class ChartService {
     }
 
     public Query<Object[]> getUserArtistChartQuery(User user, Session session) {
-        Query<Object[]> userArtistQuery = session.createSQLQuery("select artist_pk, count(*) as c from " +
+        Query<Object[]> userArtistQuery = session.createNativeQuery("select artist_pk, count(*) as c from " +
             "playback_history_artist as p where p.playback_history_pk in(select pk from playback_history where pk IN(SELECT playback_history_pk FROM user_playback_history WHERE user_id = ?)) " +
-            "group by artist_pk order by c desc limit 5");
+            "group by artist_pk order by c desc limit 5", Object[].class);
         userArtistQuery.setParameter(1, user.getId());
         return userArtistQuery;
     }
@@ -267,10 +266,10 @@ public class ChartService {
     public Query<Object[]> getUserArtistMonthlyChartQuery(User user, Session session) {
         LocalDateTime startOfMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay();
         Date dateAtStartOfMonth = Date.valueOf(startOfMonth.toLocalDate());
-        Query<Object[]> userArtistMonthlyQuery = session.createSQLQuery("select artist_pk, count(*) as c " +
+        Query<Object[]> userArtistMonthlyQuery = session.createNativeQuery("select artist_pk, count(*) as c " +
             "from playback_history_artist where playback_history_pk in(select pk from playback_history " +
             "where timestamp > ? and pk IN(SELECT playback_history_pk FROM user_playback_history WHERE user_id = ?)) " +
-            "group by artist_pk order by c desc limit 5");
+            "group by artist_pk order by c desc limit 5", Object[].class);
         userArtistMonthlyQuery.setParameter(1, dateAtStartOfMonth);
         userArtistMonthlyQuery.setParameter(2, user.getId());
         return userArtistMonthlyQuery;

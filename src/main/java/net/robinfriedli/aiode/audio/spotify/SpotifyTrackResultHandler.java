@@ -1,6 +1,5 @@
 package net.robinfriedli.aiode.audio.spotify;
 
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -86,16 +85,15 @@ public class SpotifyTrackResultHandler {
             .collect(Collectors.toSet());
         String artistIdString = StringList.create(artistIds).applyForEach(s -> s = "'" + s + "'").toSeparatedString(", ");
 
-        @SuppressWarnings("unchecked")
-        Query<Object[]> artistPopularityQuery = session.createSQLQuery("select a.id, count(*) from playback_history_artist as p " +
+        Query<Object[]> artistPopularityQuery = session.createNativeQuery("select a.id, count(*) from playback_history_artist as p " +
             "left join artist as a on p.artist_pk = a.pk " +
             "where p.playback_history_pk in (select pk from playback_history where guild_id = '" + guild.getId() + "') " +
-            "and a.id in(" + artistIdString + ") group by a.id");
+            "and a.id in(" + artistIdString + ") group by a.id", Object[].class);
         List<Object[]> artistPopularityList = artistPopularityQuery.getResultList();
 
         Map<String, Long> playbackCountWithArtistId = new HashMap<>();
         for (Object[] columns : artistPopularityList) {
-            playbackCountWithArtistId.put((String) columns[0], ((BigInteger) columns[1]).longValue());
+            playbackCountWithArtistId.put((String) columns[0], (Long) columns[1]);
         }
 
         return playbackCountWithArtistId;

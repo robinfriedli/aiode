@@ -127,7 +127,7 @@ public class ConnectCommand extends AbstractCommand {
                         clientSession.setSessionId(sessionId);
                         clientSession.setIpAddress(generatedToken.getIp());
                         session.persist(clientSession);
-                        session.delete(generatedToken);
+                        session.remove(generatedToken);
                         messageService.sendSuccess(String.format("Okay, a session connected to guild '%s' " +
                             "has been prepared. You may return to the web client to complete the setup. The client should " +
                             "connect automatically, else you can continue manually.", guild.getName()), user);

@@ -5,9 +5,9 @@ import java.io.Serializable;
 import java.util.Optional;
 
 import javax.annotation.Nullable;
-import javax.persistence.Column;
-import javax.persistence.MappedSuperclass;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.MappedSuperclass;
 import net.robinfriedli.aiode.Aiode;
 import org.hibernate.Session;
 

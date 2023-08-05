@@ -7,10 +7,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.hibernate.CallbackException;
-import org.hibernate.EmptyInterceptor;
-import org.hibernate.EntityMode;
 import org.hibernate.Interceptor;
 import org.hibernate.Transaction;
+import org.hibernate.metamodel.spi.EntityRepresentationStrategy;
 import org.hibernate.type.Type;
 
 /**
@@ -18,7 +17,7 @@ import org.hibernate.type.Type;
  * next interceptor in the chain automatically. See {@link InterceptorChain}.
  */
 @SuppressWarnings({"unused", "RedundantThrows", "WeakerAccess"})
-public class ChainableInterceptor extends EmptyInterceptor {
+public class ChainableInterceptor implements Interceptor {
 
     private final Interceptor next;
     private final Logger logger;
@@ -111,16 +110,6 @@ public class ChainableInterceptor extends EmptyInterceptor {
     }
 
     @Override
-    public Object instantiate(String entityName, EntityMode entityMode, Serializable id) {
-        try {
-            instantiateChained(entityName, entityMode, id);
-        } catch (Exception e) {
-            logger.error("Error in instantiate of ChainableInterceptor " + getClass().getSimpleName(), e);
-        }
-        return next.instantiate(entityName, entityMode, id);
-    }
-
-    @Override
     public int[] findDirty(Object entity, Serializable id, Object[] currentState, Object[] previousState, String[] propertyNames, Type[] types) {
         try {
             findDirtyChained(entity, id, currentState, previousState, propertyNames, types);
@@ -178,17 +167,6 @@ public class ChainableInterceptor extends EmptyInterceptor {
             logger.error("Error in beforeTransactionCompletion of ChainableInterceptor " + getClass().getSimpleName(), e);
         }
         next.beforeTransactionCompletion(tx);
-    }
-
-    @Deprecated
-    @Override
-    public String onPrepareStatement(String sql) {
-        try {
-            onPrepareStatementChained(sql);
-        } catch (Exception e) {
-            logger.error("Error in onPrepareStatement of ChainableInterceptor " + getClass().getSimpleName(), e);
-        }
-        return next.onPrepareStatement(sql);
     }
 
     @Override
@@ -251,7 +229,7 @@ public class ChainableInterceptor extends EmptyInterceptor {
     public void isTransientChained(Object entity) throws Exception {
     }
 
-    public void instantiateChained(String entityName, EntityMode entityMode, Serializable id) throws Exception {
+    public void instantiateChained(String entityName, EntityRepresentationStrategy representationStrategy, Serializable id) throws Exception {
     }
 
     public void findDirtyChained(Object entity, Serializable id, Object[] currentState, Object[] previousState, String[] propertyNames, Type[] types) throws Exception {

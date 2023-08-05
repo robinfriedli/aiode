@@ -6,10 +6,9 @@ import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.function.BiFunction;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.Expression;
-import javax.persistence.criteria.From;
-
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.From;
 import net.robinfriedli.aiode.persist.qb.builders.sub.CorrelatedSubQueryBuilder;
 import net.robinfriedli.aiode.persist.qb.builders.sub.UncorrelatedSubQueryBuilder;
 

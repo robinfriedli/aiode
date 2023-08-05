@@ -5,9 +5,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import javax.persistence.FlushModeType;
-
 import com.google.common.collect.Lists;
+import jakarta.persistence.FlushModeType;
 import net.robinfriedli.aiode.boot.SpringPropertiesConfig;
 import net.robinfriedli.aiode.entities.SanitizedEntity;
 import net.robinfriedli.aiode.exceptions.InvalidCommandException;

@@ -58,7 +58,7 @@ public class GuildContext {
     }
 
     public GuildSpecification getSpecification(Session session) {
-        return session.load(GuildSpecification.class, specificationPk);
+        return session.getReference(GuildSpecification.class, specificationPk);
     }
 
     public GuildSpecification getSpecification() {
