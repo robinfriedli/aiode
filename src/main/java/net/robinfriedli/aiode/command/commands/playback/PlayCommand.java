@@ -84,7 +84,7 @@ public class PlayCommand extends AbstractQueueLoadingCommand {
         GuildSpecification specification = getContext().getGuildContext().getSpecification();
         int autoQueueMode = guildPropertyManager.getPropertyValueOptional("autoQueueMode", Integer.class, specification).orElse(1);
 
-        if (autoQueueMode == 1 && !audioQueue.isEmpty() && !playback.isShuffle()) {
+        if (autoQueueMode == 1 && !audioQueue.isEmpty() && !playback.isShuffle() && (playback.isPlaying() || playback.isPaused())) {
             if (!playback.isPlaying()) {
                 int position = audioQueue.getPosition();
                 if (playback.isPaused()) {
@@ -100,7 +100,7 @@ public class PlayCommand extends AbstractQueueLoadingCommand {
                 audioQueue.insertNext(queueFragment);
             }
             sendSuccessMessage(true);
-        } else if ((autoQueueMode == 2 || autoQueueMode == 1) && !audioQueue.isEmpty()) {
+        } else if ((autoQueueMode == 2 || autoQueueMode == 1) && !audioQueue.isEmpty() && (playback.isPlaying() || playback.isPaused())) {
             audioQueue.add(queueFragment);
             if (!playback.isPlaying()) {
                 audioQueue.iterate();
@@ -149,7 +149,7 @@ public class PlayCommand extends AbstractQueueLoadingCommand {
         GuildSpecification specification = getContext().getGuildContext().getSpecification();
         int autoQueueMode = guildPropertyManager.getPropertyValueOptional("autoQueueMode", Integer.class, specification).orElse(1);
 
-        if (autoQueueMode == 1 && !queue.isEmpty() && !playback.isShuffle()) {
+        if (autoQueueMode == 1 && !queue.isEmpty() && !playback.isShuffle() && (playback.isPlaying() || playback.isPaused())) {
             if (!playback.isPlaying()) {
                 int position = queue.getPosition();
                 if (playback.isPaused()) {
@@ -165,7 +165,7 @@ public class PlayCommand extends AbstractQueueLoadingCommand {
                 loadedAmount = queue.addContainers(playableContainers, playableFactory, false, 0);
             }
             sendSuccessMessage(true);
-        } else if ((autoQueueMode == 2 || autoQueueMode == 1) && !queue.isEmpty()) {
+        } else if ((autoQueueMode == 2 || autoQueueMode == 1) && !queue.isEmpty() && (playback.isPlaying() || playback.isPaused())) {
             loadedAmount = queue.addContainers(playableContainers, playableFactory, false, null);
             if (!playback.isPlaying()) {
                 queue.iterate();
