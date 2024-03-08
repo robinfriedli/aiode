@@ -21,6 +21,11 @@ repositories {
         name "m2-dv8tion"
         url "https://m2.dv8tion.net/releases"
     }
+
+    maven {
+        name "arbjergDev-snapshots"
+        url "https://maven.lavalink.dev/snapshots"
+    }
 }
 
 compileJava.options.encoding = "UTF-8"
@@ -32,7 +37,7 @@ dependencies {
     implementation "com.google.apis:google-api-services-youtube:v3-rev20210915-1.32.1"
     implementation 'com.google.guava:guava:31.1-jre'
     implementation "com.sedmelluq:jda-nas:1.1.0"
-    implementation "dev.arbjerg:lavaplayer:2.0.0"
+    implementation "dev.arbjerg:lavaplayer:727959e9f621fc457b3a5adafcfffb55fdeaa538-SNAPSHOT"
     implementation "dev.arbjerg:lavaplayer-ext-youtube-rotator:2.0.0"
 
     implementation "commons-validator:commons-validator:1.7"
