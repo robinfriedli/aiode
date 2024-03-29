@@ -239,7 +239,7 @@ public class QueueIterator extends AudioEventAdapter {
                 embedBuilder.setTitle("Could not load current track");
             }
 
-            if (e.getMessage() != null) {
+            if (e.getMessage() != null && e.getMessage().length() <= 4096) {
                 embedBuilder.setDescription("Message returned by source: " + e.getMessage());
             }
 
