@@ -1,6 +1,10 @@
 ![# botify](https://raw.githubusercontent.com/robinfriedli/aiode/master/resources-public/img/aiode-logo-wide.png)
  Discord bot that plays Spotify tracks and YouTube videos or any URL including Soundcloud links and Twitch streams.
 
+Help keep aiode free and open source for everyone
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/R5R0XAC5J)
+
 * Play and search Spotify tracks and YouTube videos or playlists or play any URL including Soundcloud links and Twitch streams
 * Create cross-platform playlists with tracks from any source
 * Simple and customisable player commands
@@ -136,9 +140,9 @@ spring.jpa.properties.hibernate.javax.cache.missing_cache_strategy=create
 ### 6 Compile and run aiode
 Requires:
 * java jdk 17 or above (preferably 17, as it is the version used in development and thus main supported version)
-* rust and cargo-make with the `wasm32-unknown-unknown` target for the webapp
+* (only for the experimental webapp) rust and cargo-make with the `wasm32-unknown-unknown` target for the webapp
 
-#### 6.1 Compile webapp
+#### 6.1 Compile webapp (experimental only, skip for normal installation)
 Install rust, preferably via rustup, then add the `wasm32-unknown-unknown` target by running `rustup target add wasm32-unknown-unknown` and install cargo-make with `cargo install --force cargo-make`. Finally, navigate to `src/main/webapp` and compile the webapp with `cargo make build`.
 
 #### 6.2 Compile bot
