@@ -25,6 +25,7 @@ import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.audio.spotify.SpotifyService;
+import net.robinfriedli.aiode.boot.SpringPropertiesConfig;
 import net.robinfriedli.aiode.command.argument.ArgumentController;
 import net.robinfriedli.aiode.command.commands.general.AnswerCommand;
 import net.robinfriedli.aiode.command.interceptor.CommandInterceptorChain;
@@ -566,11 +567,13 @@ public abstract class AbstractCommand implements Command {
             public @Nullable MessageEmbed.Field createEmbedField() {
                 Aiode aiode = Aiode.get();
                 SecurityManager securityManager = aiode.getSecurityManager();
-                Boolean enableScriptingProp = aiode.getSpringPropertiesConfig().getApplicationProperty(Boolean.class, "aiode.preferences.enable_scripting");
+                SpringPropertiesConfig springPropertiesConfig = aiode.getSpringPropertiesConfig();
+                Boolean enableScriptingProp = springPropertiesConfig.getApplicationProperty(Boolean.class, "aiode.preferences.enable_scripting");
+                Boolean enableScriptingForSupporters = springPropertiesConfig.getApplicationProperty(Boolean.class, "aiode.preferences.enable_scripting_for_supporters");
                 Optional<User> currentUser = ExecutionContext.Current.optional().map(ExecutionContext::getUser);
                 if (!Boolean.TRUE.equals(enableScriptingProp)
                     && !currentUser.map(securityManager::isAdmin).orElse(false)
-                    && !currentUser.map(securityManager::isSupporter).orElse(false)) {
+                    && !(Boolean.TRUE.equals(enableScriptingForSupporters) && currentUser.map(securityManager::isSupporter).orElse(false))) {
                     return null;
                 }
 
