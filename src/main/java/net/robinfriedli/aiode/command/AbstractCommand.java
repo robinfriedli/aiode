@@ -564,8 +564,13 @@ public abstract class AbstractCommand implements Command {
         SCRIPTING("scripting", "Commands that execute or manage groovy scripts") {
             @Override
             public @Nullable MessageEmbed.Field createEmbedField() {
-                Boolean enableScriptingProp = Aiode.get().getSpringPropertiesConfig().getApplicationProperty(Boolean.class, "aiode.preferences.enable_scripting");
-                if (!Boolean.TRUE.equals(enableScriptingProp)) {
+                Aiode aiode = Aiode.get();
+                SecurityManager securityManager = aiode.getSecurityManager();
+                Boolean enableScriptingProp = aiode.getSpringPropertiesConfig().getApplicationProperty(Boolean.class, "aiode.preferences.enable_scripting");
+                Optional<User> currentUser = ExecutionContext.Current.optional().map(ExecutionContext::getUser);
+                if (!Boolean.TRUE.equals(enableScriptingProp)
+                    && !currentUser.map(securityManager::isAdmin).orElse(false)
+                    && !currentUser.map(securityManager::isSupporter).orElse(false)) {
                     return null;
                 }
 

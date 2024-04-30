@@ -57,14 +57,19 @@ public class HelpCommand extends AbstractCommand {
             String botName = specification.getBotName();
 
             String prefix;
+            String prefixRaw;
             if (!messageContentEnabled) {
                 prefix = guild.getSelfMember().getAsMention() + " ";
+                prefixRaw = "@" + guild.getSelfMember().getEffectiveName() + " ";
             } else if (!Strings.isNullOrEmpty(setPrefix)) {
                 prefix = setPrefix;
+                prefixRaw = prefix;
             } else if (!Strings.isNullOrEmpty(botName)) {
                 prefix = botName + " ";
+                prefixRaw = prefix;
             } else {
                 prefix = PrefixProperty.DEFAULT_FALLBACK + " ";
+                prefixRaw = prefix;
             }
             char argumentPrefix = ArgumentPrefixProperty.getForCurrentContext().getArgumentPrefix();
 
@@ -98,7 +103,7 @@ public class HelpCommand extends AbstractCommand {
                     .forEach(argument ->
                         embedBuilder.addField(
                             argumentPrefix + argument.getIdentifier(),
-                            String.format(argument.getDescription(), prefix, argumentPrefix),
+                            String.format(argument.getDescription(), prefix, argumentPrefix, prefixRaw),
                             false
                         )
                     );
@@ -108,8 +113,8 @@ public class HelpCommand extends AbstractCommand {
             if (!examples.isEmpty()) {
                 embedBuilder.addField("__Examples__", "Practical usage examples for this command.", false);
                 for (XmlElement example : examples) {
-                    String exampleText = String.format(example.getTextContent(), prefix, argumentPrefix);
-                    String titleText = String.format(example.getAttribute("title").getValue(), prefix, argumentPrefix);
+                    String exampleText = String.format(example.getTextContent(), prefix, argumentPrefix, prefixRaw);
+                    String titleText = String.format(example.getAttribute("title").getValue(), prefixRaw, argumentPrefix);
                     embedBuilder.addField(titleText, exampleText, false);
                 }
             }
