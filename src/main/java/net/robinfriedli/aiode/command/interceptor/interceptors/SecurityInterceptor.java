@@ -3,6 +3,7 @@ package net.robinfriedli.aiode.command.interceptor.interceptors;
 import java.util.Collection;
 
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.User;
 import net.robinfriedli.aiode.boot.SpringPropertiesConfig;
 import net.robinfriedli.aiode.command.AbstractCommand;
 import net.robinfriedli.aiode.command.Command;
@@ -46,13 +47,19 @@ public class SecurityInterceptor extends AbstractChainableCommandInterceptor {
         try {
             CommandContext context = command.getContext();
 
-            if (securityManager.isAdmin(context.getUser())) {
+            User user = context.getUser();
+            if (securityManager.isAdmin(user)) {
                 return;
             }
 
             if (command instanceof AbstractCommand && ((AbstractCommand) command).getCategory() == AbstractCommand.Category.SCRIPTING) {
-                if (!springPropertiesConfig.requireApplicationProperty(Boolean.class, "aiode.preferences.enable_scripting")) {
-                    throw new InvalidCommandException("The bot hoster disabled scripting. None of the commands in the scripting category may be used.");
+                Boolean enableScriptingForSupporters = springPropertiesConfig.getApplicationProperty(Boolean.class, "aiode.preferences.enable_scripting_for_supporters");
+                if (!springPropertiesConfig.requireApplicationProperty(Boolean.class, "aiode.preferences.enable_scripting") && !(Boolean.TRUE.equals(enableScriptingForSupporters) && securityManager.isSupporter(user))) {
+                    if (Boolean.TRUE.equals(enableScriptingForSupporters)) {
+                        throw new InvalidCommandException("Scripting commands are only available to [supporters](https://ko-fi.com/R5R0XAC5J). Make sure you have the 'supporter' role in the aiode server.");
+                    } else {
+                        throw new InvalidCommandException("The bot hoster disabled scripting. None of the commands in the scripting category may be used.");
+                    }
                 }
 
                 Session session = context.getSession();

@@ -546,11 +546,11 @@ the User instance (JDA entity) representing the user that sent the message, deri
 ```
     </example>
     <example title="Get member count of current guild">```groovy
-%1$seval context.guild.members.size()```
+%3$seval context.guild.members.size()```
     </example>
     <example title="Add reactions to your message, play a Spotify album, answer with the first option and send a message">
 ```groovy
-%1$seval context.message.addReaction(':ok_hand:').submit()
+%3$seval context.message.addReaction(':ok_hand:').submit()
 context.message.addReaction(':metal:').submit()
 command.run('play \$album meteora')
 command.run('answer 0')
@@ -559,7 +559,7 @@ return null
 ```
     </example>
     <example title="Send an embed message">```groovy
-%1$seval
+%3$seval
 def embedBuilder = new EmbedBuilder()
 embedBuilder.setTitle('Title')
 embedBuilder.setDescription('description')
@@ -568,7 +568,7 @@ return null
 ```
     </example>
     <example title="Enable shuffle if disabled, play a playlist and skip to title 'Numb'">```groovy
-%1$seval def playback = context.guildContext.playback
+%3$seval def playback = context.guildContext.playback
 def queue = playback.audioQueue
 if (!playback.isShuffle()) {
   command.run('shuffle')
@@ -590,12 +590,12 @@ command.run('play')
            description="Manage custom command interceptors. A command interceptor is a piece of code that is executed before running each command. Internally they are used to check permissions, parse the command input, check argument rules etc. The groovy scripting sandbox allows you to create additional custom interceptors that are queried and executed by the last interceptor in the chain before the actual command is executed. This command may create a new interceptor, delete an existing interceptor, display an interceptor or list all interceptors. Note that commands executed in scripts via 'command.run()' do not trigger custom command interceptors to avoid cycles. The interceptor and finalizer commands also do not trigger interceptors / finalizers so that malicious interceptors may always be deleted. See the help page for the eval command for available variables.">
     <example title="Create an interceptor that adds an 'ok hand' reaction to each message upon execution">
 ```groovy
-%1$sinterceptor %2$sidentifier="reaction" message.addReaction(':ok_hand:').submit()
+%3$sinterceptor %2$sidentifier="reaction" message.addReaction(':ok_hand:').submit()
 ```
     </example>
     <example title="Create an interceptor that introduces a chance to get rickrolled when entering a play command. This generates a random number up to 10000 and checks if it is divisible by 33, increase numbers to reduce likeness of rickroll.">
 ```groovy
-%1$sinterceptor %2$sidentifier="rickroll"
+%3$sinterceptor %2$sidentifier="rickroll"
 "if (command.getIdentifier() == 'play'
   &amp;&amp; !command.getCommandInput().isBlank()) {
 def rand = new Random()
@@ -637,7 +637,7 @@ if (i %% 33 == 0) {
     </argument>
     <example title="Create a script that adds a reaction to the command message, searches the album 'Meteora' and plays the first result">
 ```groovy
-%1$sscript %2$sidentifier="meteora"
+%3$sscript %2$sidentifier="meteora"
 "message.addReaction(':metal:').submit()
 command.run('play %2$salbum meteora')
 command.run('answer 0')"
@@ -645,12 +645,12 @@ command.run('answer 0')"
     </example>
     <example title="Create a script that enables shuffle if disabled">
 ```groovy
-%1$sscript %2$sidentifier="enableShuffle" if (!playback.isShuffle()) command.run('shuffle')
+%3$sscript %2$sidentifier="enableShuffle" if (!playback.isShuffle()) command.run('shuffle')
 ```
     </example>
     <example title="Create a script that skips to the specified track name in the queue (checking queue.hasNext with ignoreRepeat = true to avoid infinite loop)">
 ```groovy
-%1$sscript %2$sidentifier="skipTo"
+%3$sscript %2$sidentifier="skipTo"
 "def queue = playback.audioQueue
 if (queue.isEmpty()) {
   return null
@@ -681,7 +681,7 @@ command.run('play')"
            description="Creates and manages script interceptors that are executed after the command finished successfully. If the command runs into an error finalizers are not executed. Essentially &quot;finalizers&quot; are just interceptors that are queried and executed by a different internal interceptor that runs after the one that executes the command. Like the interceptor command running this command will not trigger custom command interceptors / finalizers. For more about interceptors see the help page for the interceptor command.">
     <example title="Create a finalizer that deletes the command message after the command completes">
 ```groovy
-%1$sfinalizer %2$sidentifier="deleteMessage" message.delete().submit()
+%3$sfinalizer %2$sidentifier="deleteMessage" message.delete().submit()
 ```
     </example>
     <example title="Show finalizer 'deleteMessage'">%1$sfinalizer deleteMessage</example>

@@ -275,12 +275,14 @@ public class QueueIterator extends AudioEventAdapter {
         footerBuilder.append(" | ").append("View the queue using the queue command");
 
         String albumCoverUrl = currentTrack.getAlbumCoverUrl();
+        SpringPropertiesConfig springPropertiesConfig = Aiode.get().getSpringPropertiesConfig();
+        String baseUri = springPropertiesConfig.requireApplicationProperty("aiode.server.base_uri");
         if (albumCoverUrl == null) {
-            SpringPropertiesConfig springPropertiesConfig = Aiode.get().getSpringPropertiesConfig();
-            String baseUri = springPropertiesConfig.requireApplicationProperty("aiode.server.base_uri");
-            albumCoverUrl = baseUri + "/resources-public/img/aiode-logo-small.png";
+            albumCoverUrl = baseUri + "/resources-public/img/aiode-logo.png";
         }
-        embedBuilder.setFooter(footerBuilder.toString(), albumCoverUrl);
+        embedBuilder.setFooter(footerBuilder.toString(), baseUri + "/resources-public/img/aiode-logo-small.png");
+        embedBuilder.setThumbnail(albumCoverUrl);
+        embedBuilder.setAuthor("Support aiode", "https://ko-fi.com/R5R0XAC5J", "https://storage.ko-fi.com/cdn/brandasset/kofi_s_logo_nolabel.png");
 
         Guild guild = playback.getGuild();
         Color color = StaticSessionProvider.invokeWithSession(session -> {

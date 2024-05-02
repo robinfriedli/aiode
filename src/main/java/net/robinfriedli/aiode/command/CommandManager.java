@@ -52,6 +52,7 @@ import static net.robinfriedli.jxp.queries.Conditions.*;
 public class CommandManager {
 
     private final boolean isScriptingEnabled;
+    private final boolean isScriptingEnabledForSupporters;
     private final Context commandContributionContext;
     private final Context commandInterceptorContext;
     private final EventWaiter eventWaiter;
@@ -65,12 +66,14 @@ public class CommandManager {
     private CommandInterceptorChain interceptorChainWithoutScripting;
 
     public CommandManager(@Value("${aiode.preferences.enable_scripting}") boolean isScriptingEnabled,
+                          @Value("${aiode.preferences.enable_scripting_for_supporters}") boolean isScriptingEnabledForSupporters,
                           @Value("classpath:xml-contributions/commands.xml") Resource commandResource,
                           @Value("classpath:xml-contributions/commandInterceptors.xml") Resource commandInterceptorResource,
                           EventWaiter eventWaiter,
                           JxpBackend jxpBackend,
                           QueryBuilderFactory queryBuilderFactory) {
         this.isScriptingEnabled = isScriptingEnabled;
+        this.isScriptingEnabledForSupporters = isScriptingEnabledForSupporters;
         try {
             this.commandContributionContext = jxpBackend.createContext(commandResource.getInputStream());
             this.commandInterceptorContext = jxpBackend.createContext(commandInterceptorResource.getInputStream());
@@ -133,7 +136,7 @@ public class CommandManager {
 
     public void doRunCommand(Command command) {
         try {
-            if (isScriptingEnabled) {
+            if (isScriptingEnabled || isScriptingEnabledForSupporters) {
                 interceptorChain.intercept(command);
             } else {
                 interceptorChainWithoutScripting.intercept(command);

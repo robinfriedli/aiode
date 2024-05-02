@@ -1,21 +1,31 @@
 package net.robinfriedli.aiode.command;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Strings;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.User;
+import net.robinfriedli.aiode.boot.SpringPropertiesConfig;
 import net.robinfriedli.aiode.boot.configurations.HibernateComponent;
 import net.robinfriedli.aiode.entities.AccessConfiguration;
 import net.robinfriedli.aiode.exceptions.ForbiddenCommandException;
 import net.robinfriedli.aiode.exceptions.NoResultsFoundException;
 import net.robinfriedli.aiode.persist.qb.QueryBuilderFactory;
 import net.robinfriedli.aiode.persist.qb.interceptor.interceptors.AccessConfigurationPartitionInterceptor;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -26,15 +36,19 @@ import org.springframework.stereotype.Component;
 @Component
 public class SecurityManager {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
     private final HibernateComponent hibernateComponent;
     private final QueryBuilderFactory queryBuilderFactory;
+    private final SpringPropertiesConfig springPropertiesConfig;
 
     @Value("#{'${aiode.security.admin_users}'.split('[\\s]*,[\\s]*')}")
     private List<String> adminUserIds;
 
-    public SecurityManager(HibernateComponent hibernateComponent, QueryBuilderFactory queryBuilderFactory) {
+    public SecurityManager(HibernateComponent hibernateComponent, QueryBuilderFactory queryBuilderFactory, SpringPropertiesConfig springPropertiesConfig) {
         this.hibernateComponent = hibernateComponent;
         this.queryBuilderFactory = queryBuilderFactory;
+        this.springPropertiesConfig = springPropertiesConfig;
     }
 
     /**
@@ -136,6 +150,38 @@ public class SecurityManager {
      */
     public boolean isAdmin(User user) {
         return adminUserIds.contains(user.getId());
+    }
+
+    /**
+     * Check if the provided user is a supporter / donor of aiode. If the check fails, the error is logged and returns false.
+     *
+     * @param user the user to check
+     * @return whether the provided user is a supporter
+     */
+    public boolean isSupporter(User user) {
+        boolean isSupporter;
+        try {
+            String glyphEndpoint = springPropertiesConfig.getPrivateProperty("glyph.endpoint_url");
+            if (!Strings.isNullOrEmpty(glyphEndpoint)) {
+                HttpClient httpClient = HttpClient.newHttpClient();
+                URI path = URI.create(glyphEndpoint).resolve(URI.create("is-aiode-supporter/" + user.getId()));
+                HttpRequest httpRequest = HttpRequest.newBuilder(path).GET().build();
+                HttpResponse<String> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+                if (response.statusCode() >= 300) {
+                    throw new IllegalStateException(String.format("Request to %s failed with status %d", path, response.statusCode()));
+                }
+
+                JSONObject jsonResponse = new JSONObject(response.body());
+                isSupporter = jsonResponse.getBoolean("is_supporter");
+            } else {
+                isSupporter = false;
+            }
+        } catch (Exception e) {
+            logger.error(String.format("Failed to check if user %s is supporter", user.getId()), e);
+            isSupporter = false;
+        }
+
+        return isSupporter;
     }
 
     /**

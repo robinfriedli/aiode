@@ -67,6 +67,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-jdbc:3.1.2'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa:3.1.2'
     implementation 'org.springframework:spring-core:6.0.11'
+    implementation 'org.json:json:20240303'
 
     // check if IPlaylistItem implementations were added when upgrading and update SpotifyTrack accordingly
     implementation 'se.michaelthelin.spotify:spotify-web-api-java:7.2.0'
