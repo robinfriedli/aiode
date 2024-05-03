@@ -39,8 +39,8 @@ public class AccessConfigurationPartitionInterceptor implements QueryInterceptor
             Session session = executionContext.map(ExecutionContext::getSession).orElse(this.session);
             String id = executionContext.map(ctx -> ctx.getGuild().getId()).orElse(guildId);
             queryBuilder.where((cb, root, subQueryFactory) -> cb.equal(
-                root.get("guildSpecification"),
-                subQueryFactory.createUncorrelatedSubQuery(GuildSpecification.class, "pk").where((cb1, root1, subQueryFactory1) ->
+                root.get("guildSpecification").get("pk"),
+                subQueryFactory.createUncorrelatedSubQuery(GuildSpecification.class, "pk", Long.class).where((cb1, root1, subQueryFactory1) ->
                     cb1.equal(root1.get("guildId"), id)).build(session)
             ));
         }

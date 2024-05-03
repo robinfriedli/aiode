@@ -32,7 +32,8 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 @Entity
 @Table(name = "access_configuration", indexes = {
-    @Index(name = "access_configuration_fk_guild_specification_idx", columnList = "fk_guild_specification")
+    @Index(name = "access_configuration_fk_guild_specification_idx", columnList = "fk_guild_specification"),
+    @Index(name = "access_configuration_fk_guild_specification_permission_identifier_unique_idx", columnList = "fk_guild_specification, permission_identifier", unique = true)
 })
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)

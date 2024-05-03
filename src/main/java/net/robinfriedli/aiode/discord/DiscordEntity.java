@@ -257,7 +257,7 @@ public abstract class DiscordEntity<T extends ISnowflake> {
                 net.dv8tion.jda.api.entities.Guild guildCached = guild.getCached();
 
                 if (guildCached != null) {
-                    return guildCached.getChannelById(net.dv8tion.jda.api.entities.channel.middleman.MessageChannel.class, getId());
+                    return guildCached.getTextChannelById(getId());
                 }
             }
             return null;

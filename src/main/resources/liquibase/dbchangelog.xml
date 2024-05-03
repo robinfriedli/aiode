@@ -1093,4 +1093,43 @@ See application.properties -> spring.liquibase.contexts
   <changeSet author="robinfriedli (generated)" id="1691262345044-4">
     <modifyDataType columnName="prefix" newDataType="varchar(5)" tableName="guild_specification"/>
   </changeSet>
+  <changeSet id="insert_script_usage_values-SD32dsf/v2.2" author="robinfriedli" runAlways="true">
+    <customChange class="net.robinfriedli.aiode.persist.customchange.ScriptUsageInitialValues"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1714669010676-1">
+    <addUniqueConstraint columnNames="fk_guild_specification, permission_identifier" constraintName="access_configuration_fk_guild_specification_permission_identifier_unique_idx" tableName="access_configuration"/>
+  </changeSet>
+  <changeSet id="restrict_eval_command_access-FEW3dsf/v2.2" author="robinfriedli">
+    <customChange class="net.robinfriedli.aiode.persist.customchange.RestrictCommandAccessChange">
+      <param name="commandId" value="eval"/>
+    </customChange>
+  </changeSet>
+  <changeSet id="restrict_interceptor_command_access-FEW3dsf/v2.2" author="robinfriedli">
+    <customChange class="net.robinfriedli.aiode.persist.customchange.RestrictCommandAccessChange">
+      <param name="commandId" value="interceptor"/>
+    </customChange>
+  </changeSet>
+  <changeSet id="restrict_script_command_access-FEW3dsf/v2.2" author="robinfriedli">
+    <customChange class="net.robinfriedli.aiode.persist.customchange.RestrictCommandAccessChange">
+      <param name="commandId" value="script"/>
+    </customChange>
+  </changeSet>
+  <changeSet id="restrict_finalizer_command_access-FEW3dsf/v2.2" author="robinfriedli">
+    <customChange class="net.robinfriedli.aiode.persist.customchange.RestrictCommandAccessChange">
+      <param name="commandId" value="finalizer"/>
+    </customChange>
+  </changeSet>
+  <changeSet id="restrict_trigger_command_access-FEW3dsf/v2.2" author="robinfriedli">
+    <customChange class="net.robinfriedli.aiode.persist.customchange.RestrictCommandAccessChange">
+      <param name="commandId" value="trigger"/>
+    </customChange>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1714672968693-2">
+    <addUniqueConstraint columnNames="guild_id, identifier, script_usage_pk" constraintName="stored_script_guild_identifier_usage_unique_idx" tableName="stored_script"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1714676528373-1">
+    <addColumn tableName="stored_script">
+      <column name="trigger_event" type="varchar(30)"/>
+    </addColumn>
+  </changeSet>
 </databaseChangeLog>

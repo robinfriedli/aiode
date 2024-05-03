@@ -9,7 +9,7 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.User;
-import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -119,7 +119,7 @@ public class CommandContext extends ExecutionContext {
         SpotifyApi.Builder spotifyApiBuilder,
         String commandBody,
         String id,
-        MessageChannelUnion textChannel,
+        MessageChannel textChannel,
         User user,
         boolean isSlashCommand,
         @Nullable InteractionHook interactionHook
@@ -150,7 +150,7 @@ public class CommandContext extends ExecutionContext {
         SessionFactory sessionFactory,
         SpotifyApi.Builder spotifyApiBuilder,
         String commandBody,
-        MessageChannelUnion textChannel,
+        MessageChannel textChannel,
         boolean isSlashCommand,
         @Nullable InteractionHook interactionHook
     ) {

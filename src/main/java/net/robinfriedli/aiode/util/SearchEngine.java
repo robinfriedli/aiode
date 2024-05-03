@@ -67,8 +67,8 @@ public class SearchEngine {
             .where((cb, root, subQueryFactory) -> cb.and(
                 cb.equal(cb.lower(root.get("identifier")), Util.normalizeWhiteSpace(identifier).toLowerCase()),
                 cb.equal(
-                    root.get("scriptUsage"),
-                    subQueryFactory.createUncorrelatedSubQuery(StoredScript.ScriptUsage.class, "pk")
+                    root.get("scriptUsage").get("pk"),
+                    subQueryFactory.createUncorrelatedSubQuery(StoredScript.ScriptUsage.class, "pk", Long.class)
                         .where((cb1, root1) -> cb1.equal(root1.get("uniqueId"), scriptUsageId))
                         .build(session)
                 )

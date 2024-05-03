@@ -12,7 +12,7 @@ import net.dv8tion.jda.api.entities.GuildVoiceState;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.middleman.AudioChannel;
-import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.robinfriedli.aiode.audio.spotify.SpotifyService;
 import net.robinfriedli.aiode.discord.GuildContext;
 import net.robinfriedli.aiode.persist.interceptors.AlertAccessConfigurationModificationInterceptor;
@@ -44,7 +44,7 @@ public class ExecutionContext implements CloseableThreadContext, ForkableThreadC
     protected final SpotifyApi spotifyApi;
     protected final SpotifyApi.Builder spotifyApiBuilder;
     protected final String id;
-    protected final MessageChannelUnion textChannel;
+    protected final MessageChannel textChannel;
     protected final User user;
     protected Session session;
     protected SpotifyService spotifyService;
@@ -57,7 +57,7 @@ public class ExecutionContext implements CloseableThreadContext, ForkableThreadC
         Member member,
         SessionFactory sessionFactory,
         SpotifyApi.Builder spotifyApiBuilder,
-        MessageChannelUnion textChannel
+        MessageChannel textChannel
     ) {
         this(
             guild,
@@ -83,7 +83,7 @@ public class ExecutionContext implements CloseableThreadContext, ForkableThreadC
         SessionFactory sessionFactory,
         SpotifyApi.Builder spotifyApiBuilder,
         String id,
-        MessageChannelUnion textChannel,
+        MessageChannel textChannel,
         User user
     ) {
         this(
@@ -110,7 +110,7 @@ public class ExecutionContext implements CloseableThreadContext, ForkableThreadC
         SpotifyApi spotifyApi,
         SpotifyApi.Builder spotifyApiBuilder,
         String id,
-        MessageChannelUnion textChannel,
+        MessageChannel textChannel,
         User user,
         SpotifyService spotifyService
     ) {
@@ -159,7 +159,7 @@ public class ExecutionContext implements CloseableThreadContext, ForkableThreadC
         return guild;
     }
 
-    public MessageChannelUnion getChannel() {
+    public MessageChannel getChannel() {
         return textChannel;
     }
 
@@ -216,6 +216,10 @@ public class ExecutionContext implements CloseableThreadContext, ForkableThreadC
 
     public SpotifyApi getSpotifyApi() {
         return spotifyApi;
+    }
+
+    public SpotifyApi.Builder getSpotifyApiBuilder() {
+        return spotifyApiBuilder;
     }
 
     public GuildContext getGuildContext() {

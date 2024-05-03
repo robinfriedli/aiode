@@ -156,7 +156,7 @@ public class ChartService {
     public SelectQueryBuilder<PlaybackHistory> getUserTrackChartQuery(User user, Session session) {
         return getGlobalTrackChartQuery().where((cb, root, subQueryFactory) -> root.get("pk").in(
             subQueryFactory
-                .createUncorrelatedSubQuery(UserPlaybackHistory.class, "playbackHistoryPk")
+                .createUncorrelatedSubQuery(UserPlaybackHistory.class, "playbackHistoryPk", Long.class)
                 .where((cb1, root1) -> cb1.equal(root1.get("userId"), user.getId()))
                 .build(session)
         ));
@@ -169,7 +169,7 @@ public class ChartService {
     public SelectQueryBuilder<PlaybackHistory> getUserTrackMonthlyChartQuery(User user, Session session) {
         return getGlobalTrackMonthlyChartQuery().fork().where((cb, root, subQueryFactory) -> root.get("pk").in(
             subQueryFactory
-                .createUncorrelatedSubQuery(UserPlaybackHistory.class, "playbackHistoryPk")
+                .createUncorrelatedSubQuery(UserPlaybackHistory.class, "playbackHistoryPk", Long.class)
                 .where((cb1, root1) -> cb1.equal(root1.get("userId"), user.getId()))
                 .build(session)
         ));

@@ -1,7 +1,7 @@
 package net.robinfriedli.aiode.discord.property.properties;
 
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.command.commands.customisation.RenameCommand;
@@ -53,14 +53,14 @@ public class BotNameProperty extends AbstractGuildProperty {
         Aiode aiode = Aiode.get();
         Guild guild = guildSpecification.getGuild(aiode.getShardManager());
         if (guild != null) {
-            RenameCommand.RENAME_SYNC.execute(guild.getIdLong(), () -> {
+            RenameCommand.RENAME_SYNC.run(guild.getIdLong(), () -> {
                 try {
                     guild.getSelfMember().modifyNickname(value).queue();
                 } catch (InsufficientPermissionException e) {
                     ExecutionContext executionContext = ExecutionContext.Current.get();
                     if (executionContext != null) {
                         MessageService messageService = aiode.getMessageService();
-                        MessageChannelUnion channel = executionContext.getChannel();
+                        MessageChannel channel = executionContext.getChannel();
                         messageService.sendError("I do not have permission to change my nickname, but you can still call me " + value, channel);
                     }
                 }

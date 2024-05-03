@@ -117,7 +117,7 @@ public class GuildManagementListener extends ListenerAdapter {
     public void onGuildMemberUpdateNickname(@Nonnull GuildMemberUpdateNicknameEvent event) {
         Guild guild = event.getGuild();
         if (event.getMember().equals(guild.getSelfMember())) {
-            EventHandlerPool.execute(() -> RenameCommand.RENAME_SYNC.execute(guild.getIdLong(), () -> {
+            EventHandlerPool.execute(() -> RenameCommand.RENAME_SYNC.run(guild.getIdLong(), () -> {
                     GuildContext guildContext = guildManager.getContextForGuild(guild);
                     String botName = guildContext.getBotName();
                     String name = event.getNewNickname();
