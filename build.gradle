@@ -1,8 +1,8 @@
 plugins {
     id "java"
-    id "org.springframework.boot" version "3.1.2"
-    id "org.jetbrains.kotlin.jvm" version "1.6.20"
-    id "org.liquibase.gradle" version "2.2.0"
+    id "org.springframework.boot" version "3.2.5"
+    id "org.jetbrains.kotlin.jvm" version "1.9.23"
+    id "org.liquibase.gradle" version "2.2.2"
 }
 
 repositories {
@@ -31,56 +31,54 @@ repositories {
 compileJava.options.encoding = "UTF-8"
 
 dependencies {
-    implementation "ch.qos.logback:logback-classic:1.4.9"
+    implementation "ch.qos.logback:logback-classic:1.5.6"
 
-    implementation "com.antkorwin:xsync:1.3"
-    implementation "com.google.apis:google-api-services-youtube:v3-rev20210915-1.32.1"
-    implementation 'com.google.guava:guava:31.1-jre'
+    implementation "com.google.apis:google-api-services-youtube:v3-rev20240417-2.0.0"
+    implementation 'com.google.guava:guava:33.1.0-jre'
     implementation "com.sedmelluq:jda-nas:1.1.0"
     implementation "dev.arbjerg:lavaplayer:afec211f05c9dcf0b6ee44276a02f0316ea2458a-SNAPSHOT"
     implementation "dev.arbjerg:lavaplayer-ext-youtube-rotator:2.1.1"
 
-    implementation "commons-validator:commons-validator:1.7"
+    implementation "commons-validator:commons-validator:1.8.0"
 
-    implementation 'io.github.resilience4j:resilience4j-ratelimiter:1.7.1'
+    implementation 'io.github.resilience4j:resilience4j-ratelimiter:2.2.0'
 
-    implementation "net.dv8tion:JDA:5.0.0-beta.12"
+    implementation "net.dv8tion:JDA:5.0.0-beta.23"
     implementation "com.github.robinfriedli:exec:1.4"
     implementation "com.github.robinfriedli:JXP:2.0.5"
     implementation "com.github.robinfriedli:StringList:1.6.1"
     implementation "com.github.robinfriedli:ThreadPool:1.2.0"
 
     implementation "org.apache.commons:commons-collections4:4.4"
-    implementation "org.apache.commons:commons-text:1.9"
-    implementation "org.codehaus.groovy:groovy-all:3.0.10"
+    implementation "org.apache.commons:commons-text:1.12.0"
+    implementation "org.codehaus.groovy:groovy-all:3.0.21"
     implementation "com.github.robinfriedli:topgg-java-sdk:1a1af5964a"
     implementation "org.ehcache:ehcache:3.10.8"
-    implementation "org.glassfish:javax.el:3.0.1-b11"
-    implementation "org.hibernate:hibernate-core:6.2.7.Final"
-    implementation "org.hibernate:hibernate-jcache:6.2.7.Final"
+    implementation "org.hibernate:hibernate-core:6.5.0.Final"
+    implementation "org.hibernate:hibernate-jcache:6.5.0.Final"
     implementation "org.hibernate.validator:hibernate-validator:8.0.1.Final"
-    implementation "org.liquibase:liquibase-core:4.23.0"
-    implementation "org.postgresql:postgresql:42.6.0"
+    implementation "org.liquibase:liquibase-core:4.27.0"
+    implementation "org.postgresql:postgresql:42.7.3"
     implementation "org.quartz-scheduler:quartz:2.3.2"
-    implementation 'org.springframework.boot:spring-boot-dependencies:3.1.2'
-    implementation 'org.springframework.boot:spring-boot-starter-web:3.1.2'
-    implementation 'org.springframework.boot:spring-boot-starter-jdbc:3.1.2'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa:3.1.2'
-    implementation 'org.springframework:spring-core:6.0.11'
+    implementation 'org.springframework.boot:spring-boot-dependencies:3.2.5'
+    implementation 'org.springframework.boot:spring-boot-starter-web:3.2.5'
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc:3.2.5'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa:3.2.5'
+    implementation 'org.springframework:spring-core:6.1.6'
     implementation 'org.json:json:20240303'
 
     // check if IPlaylistItem implementations were added when upgrading and update SpotifyTrack accordingly
-    implementation 'se.michaelthelin.spotify:spotify-web-api-java:7.2.0'
+    implementation 'se.michaelthelin.spotify:spotify-web-api-java:8.4.0'
 
-    liquibaseRuntime "org.liquibase:liquibase-core:4.23.0"
-    liquibaseRuntime "org.liquibase.ext:liquibase-hibernate6:4.23.0"
+    liquibaseRuntime "org.liquibase:liquibase-core:4.27.0"
+    liquibaseRuntime "org.liquibase.ext:liquibase-hibernate6:4.27.0"
     liquibaseRuntime sourceSets.main.runtimeClasspath
     liquibaseRuntime sourceSets.main.output
 
-    testImplementation 'org.testng:testng:7.8.0'
-    testImplementation "com.google.truth:truth:1.1.3"
+    testImplementation 'org.testng:testng:7.10.2'
+    testImplementation "com.google.truth:truth:1.4.2"
 
-    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor:3.1.2'
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor:3.2.5'
 }
 
 test {

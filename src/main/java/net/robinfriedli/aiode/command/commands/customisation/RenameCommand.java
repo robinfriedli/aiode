@@ -2,7 +2,6 @@ package net.robinfriedli.aiode.command.commands.customisation;
 
 import java.util.Objects;
 
-import com.antkorwin.xsync.XSync;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.robinfriedli.aiode.Aiode;
@@ -12,10 +11,11 @@ import net.robinfriedli.aiode.command.CommandContext;
 import net.robinfriedli.aiode.command.CommandManager;
 import net.robinfriedli.aiode.entities.xml.CommandContribution;
 import net.robinfriedli.aiode.exceptions.InvalidCommandException;
+import net.robinfriedli.exec.MutexSync;
 
 public class RenameCommand extends AbstractCommand {
 
-    public static final XSync<Long> RENAME_SYNC = new XSync<>();
+    public static final MutexSync<Long> RENAME_SYNC = new MutexSync<>();
 
     private boolean couldChangeNickname;
 
@@ -41,7 +41,7 @@ public class RenameCommand extends AbstractCommand {
             throw new InvalidCommandException("Length should be 1 - 32 characters");
         }
 
-        RENAME_SYNC.execute(guild.getIdLong(), () -> {
+        RENAME_SYNC.run(guild.getIdLong(), () -> {
             invoke(() -> context.getGuildContext().setBotName(name));
             try {
                 guild.getSelfMember().modifyNickname(name).complete();

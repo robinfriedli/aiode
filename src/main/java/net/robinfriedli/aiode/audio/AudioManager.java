@@ -168,6 +168,17 @@ public class AudioManager extends AbstractShutdownable {
         return new PlayableFactory(audioTrackLoader, spotifyService, trackLoadingExecutor, youTubeService, shouldRedirectSpotify);
     }
 
+    public void setChannel(AudioPlayback audioPlayback, AudioChannel channel) {
+        audioPlayback.setVoiceChannel(channel);
+        Guild guild = audioPlayback.getGuild();
+        guild.getAudioManager().setSendingHandler(new AudioPlayerSendHandler(audioPlayback.getAudioPlayer()));
+        try {
+            guild.getAudioManager().openAudioConnection(channel);
+        } catch (InsufficientPermissionException e) {
+            throw new InvalidCommandException("I do not have permission to join this voice channel!");
+        }
+    }
+
     void createHistoryEntry(Playable playable, Guild guild, AudioChannel audioChannel) {
         HistoryPool.execute(() -> {
             try {
@@ -196,17 +207,6 @@ public class AudioManager extends AbstractShutdownable {
         Guild guild = playback.getGuild();
         WidgetRegistry widgetRegistry = guildManager.getContextForGuild(guild).getWidgetRegistry();
         CompletableFutures.thenAccept(futureMessage, message -> new NowPlayingWidget(widgetRegistry, guild, message).initialise());
-    }
-
-    private void setChannel(AudioPlayback audioPlayback, AudioChannel channel) {
-        audioPlayback.setVoiceChannel(channel);
-        Guild guild = audioPlayback.getGuild();
-        guild.getAudioManager().setSendingHandler(new AudioPlayerSendHandler(audioPlayback.getAudioPlayer()));
-        try {
-            guild.getAudioManager().openAudioConnection(channel);
-        } catch (InsufficientPermissionException e) {
-            throw new InvalidCommandException("I do not have permission to join this voice channel!");
-        }
     }
 
     @Override

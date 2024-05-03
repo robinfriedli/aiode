@@ -12,7 +12,8 @@ public class SingletonVariableProvider implements GroovyVariableProvider {
         Aiode aiode = Aiode.get();
         return Map.of(
             "messages", aiode.getMessageService(),
-            "securityManager", aiode.getSecurityManager()
+            "securityManager", aiode.getSecurityManager(),
+            "audioManager", aiode.getAudioManager()
         );
     }
 

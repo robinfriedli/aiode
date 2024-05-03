@@ -26,6 +26,7 @@ import static net.robinfriedli.jxp.queries.Conditions.*;
 @Component
 public class GroovyVariableManager {
 
+    public static final String ADDITIONAL_VARIABLES_KEY = "additionalGroovyVariables";
     private static final String CACHE_KEY = "groovyVariableCache";
 
     private final List<GroovyVariableProvider> providers;
@@ -78,6 +79,12 @@ public class GroovyVariableManager {
                     throw new IllegalStateException(String.format("Duplicate groovy variable '%s'", variable.getKey()));
                 }
             }
+        }
+
+        @SuppressWarnings("unchecked")
+        Map<String, ?> additionalVariables = ThreadContext.Current.get(ADDITIONAL_VARIABLES_KEY, Map.class);
+        if (additionalVariables != null) {
+            variableMap.putAll(additionalVariables);
         }
 
         ThreadContext.Current.install(CACHE_KEY, variableMap);

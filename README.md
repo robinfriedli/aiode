@@ -95,7 +95,7 @@ aiode.server.spotify_login_callback=http://localhost:8000/login
 spring.liquibase.change-log=classpath:liquibase/dbchangelog.xml
 spring.liquibase.contexts=definition,initialvalue,constraint
 liquibase.change-log-path=src/main/resources/liquibase/dbchangelog.xml
-liquibase.referenceUrl=hibernate:spring:net.robinfriedli.aiode.entities?dialect=org.hibernate.dialect.PostgreSQL10Dialect
+liquibase.referenceUrl=hibernate:spring:net.robinfriedli.aiode.entities?dialect=org.hibernate.dialect.PostgreSQLDialect
 ###############
 # preferences #
 ###############
@@ -123,7 +123,7 @@ aiode.preferences.enable_scripting=true
 ##############
 spring.datasource.url=jdbc:postgresql://localhost:5432/aiode
 spring.datasource.driverClassName=org.postgresql.Driver
-spring.jpa.database-platform=org.hibernate.dialect.PostgreSQL10Dialect
+spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
 spring.jpa.properties.hibernate.current_session_context_class=thread
 # pool
 spring.datasource.hikari.minimumIdle=5

@@ -86,13 +86,6 @@ public class SubQueryBuilderFactory {
         return createUncorrelatedSubQuery(entityClass, (from, cb) -> from.get(selectionColumn), returnType);
     }
 
-    /**
-     * Overload for {@link #createUncorrelatedSubQuery(Class, String, Class)} that defaults to returning an Object.
-     */
-    public <E> UncorrelatedSubQueryBuilder<E, Object> createUncorrelatedSubQuery(Class<E> entityClass, String selectionColumn) {
-        return createUncorrelatedSubQuery(entityClass, selectionColumn, Object.class);
-    }
-
     private Class<?> tryDetermineTypeParamForCollection(Field attribute) {
         Type genericType = attribute.getGenericType();
         if (genericType instanceof ParameterizedType) {

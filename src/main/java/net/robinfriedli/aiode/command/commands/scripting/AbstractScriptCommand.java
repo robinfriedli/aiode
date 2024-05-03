@@ -1,7 +1,10 @@
 package net.robinfriedli.aiode.command.commands.scripting;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+
+import javax.annotation.Nullable;
 
 import groovy.lang.GroovyShell;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -9,6 +12,7 @@ import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.command.AbstractCommand;
 import net.robinfriedli.aiode.command.CommandContext;
 import net.robinfriedli.aiode.command.CommandManager;
+import net.robinfriedli.aiode.concurrent.ThreadContext;
 import net.robinfriedli.aiode.entities.StoredScript;
 import net.robinfriedli.aiode.entities.xml.CommandContribution;
 import net.robinfriedli.aiode.exceptions.ExceptionUtils;
@@ -58,8 +62,8 @@ public abstract class AbstractScriptCommand extends AbstractCommand {
         List<StoredScript> storedScripts = queryBuilderFactory
             .find(StoredScript.class)
             .where((cb, root, subQueryFactory) -> cb.equal(
-                root.get("scriptUsage"),
-                subQueryFactory.createUncorrelatedSubQuery(StoredScript.ScriptUsage.class, "pk")
+                root.get("scriptUsage").get("pk"),
+                subQueryFactory.createUncorrelatedSubQuery(StoredScript.ScriptUsage.class, "pk", Long.class)
                     .where((cb1, root1) -> cb1.equal(root1.get("uniqueId"), scriptUsageId))
                     .build(session)
             ))
@@ -75,6 +79,9 @@ public abstract class AbstractScriptCommand extends AbstractCommand {
             EmbedTable table = new EmbedTable(embedBuilder);
             table.addColumn("Identifier", storedScripts, StoredScript::getIdentifier);
             table.addColumn("Active", storedScripts, script -> String.valueOf(script.isActive()));
+            if ("trigger".equals(scriptUsageId)) {
+                table.addColumn("Trigger", storedScripts, StoredScript::getTriggerEvent);
+            }
             table.build();
             sendMessage(embedBuilder);
         }
@@ -100,7 +107,16 @@ public abstract class AbstractScriptCommand extends AbstractCommand {
             groovyShell = new GroovyShell(aiode.getGroovySandboxComponent().getCompilerConfiguration());
         }
 
+        Map<String, ?> variables = defineAdditionalVariables();
+        if (variables != null) {
+            ThreadContext.Current.install(GroovyVariableManager.ADDITIONAL_VARIABLES_KEY, variables);
+        }
         groovyVariableManager.prepareShell(groovyShell);
+        if (variables != null) {
+            for (Map.Entry<String, ?> variable : variables.entrySet()) {
+                groovyShell.setVariable(variable.getKey(), variable.getValue());
+            }
+        }
         try {
             groovyShell.parse(script);
         } catch (MultipleCompilationErrorsException e) {
@@ -121,8 +137,18 @@ public abstract class AbstractScriptCommand extends AbstractCommand {
         storedScript.setScript(script);
         storedScript.setScriptUsage(scriptUsage);
         storedScript.setActive(!argumentSet("deactivate"));
+        storedScript.setTriggerEvent(triggerEvent());
 
         invoke(() -> session.persist(storedScript));
+    }
+
+    protected String triggerEvent() {
+        return null;
+    }
+
+    @Nullable
+    protected Map<String, ?> defineAdditionalVariables() {
+        return null;
     }
 
     private void sendScript(String identifier, Session session) {
@@ -135,6 +161,9 @@ public abstract class AbstractScriptCommand extends AbstractCommand {
             EmbedBuilder embedBuilder = new EmbedBuilder();
             embedBuilder.setTitle(String.format("%s%s: %s", firstLetter, rest, script.getIdentifier()));
             embedBuilder.addField("Active", String.valueOf(script.isActive()), true);
+            if ("trigger".equals(scriptUsageId)) {
+                embedBuilder.addField("Trigger", script.getTriggerEvent(), true);
+            }
             embedBuilder.addField("Groovy script", "```groovy" + System.lineSeparator() + script.getScript() + System.lineSeparator() + "```", false);
             sendMessage(embedBuilder);
         } else {

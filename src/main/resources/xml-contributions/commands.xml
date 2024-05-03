@@ -688,6 +688,31 @@ command.run('play')"
     <example title="List all finalizers">%1$sfinalizer</example>
     <example title="Delete finalizer 'deleteMessage'">%1$sfinalizer %2$sdelete deleteMessage</example>
   </command>
+  <command identifier="trigger"
+           implementation="net.robinfriedli.aiode.command.commands.scripting.TriggerCommand"
+           requiresInput="false"
+           category="SCRIPTING"
+           restrictedAccess="true"
+           description="Creates and manages script triggers that are executed when a specific event occurs. Available are the 'voicejoin' and 'voiceleave' events fired when someone joins or leaves a voice channel. For more information about scripting, check the help command pages for the eval and script commands.">
+    <argument identifier="event" description="The event identifier for when this script should be triggered. Required when creating a new trigger.">
+      <requires argument="identifier"/>
+    </argument>
+    <example title="List all triggers">%1$strigger</example>
+    <example title="Show trigger 'numbOnJoin'">%1$strigger numbOnJoin</example>
+    <example title="Play 'numb' when a user joins a specific voice channel if the queue is empty.">
+```groovy
+%3$strigger %2$sevent=voicejoin %2$sidentifier=numbOnJoin "
+if (voiceChannel.getId() == '484071462622330889' &amp;&amp; playback.getAudioQueue().isEmpty()) {
+  audioManager.setChannel(playback, voiceChannel);
+  command.run('play numb');
+}
+"
+```
+    </example>
+    <example title="Delete trigger 'numbOnJoin'">%1$strigger %2$sdelete numbOnJoin</example>
+    <example title="Deactivate trigger 'numbOnJoin'">%1$strigger %2$sdeactivate numbOnJoin</example>
+    <example title="Activate trigger 'numbOnJoin'">%1$strigger %2$sactivate numbOnJoin</example>
+  </command>
   <command identifier="connect"
            implementation="net.robinfriedli.aiode.command.commands.web.ConnectCommand"
            category="WEB"

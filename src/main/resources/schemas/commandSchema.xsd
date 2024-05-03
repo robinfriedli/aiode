@@ -20,7 +20,15 @@
     <xs:attribute name="requiresInput" type="xs:boolean"/>
     <xs:attribute name="category" type="xs:string" use="required"/>
     <!-- restricted commands are only available to admins per default -->
-    <xs:attribute name="restrictedAccess" type="xs:boolean" default="false"/>
+    <xs:attribute name="restrictedAccess" type="xs:boolean" default="false">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">
+          Restricted commands are only available to admins per default by inserting an AccessConfiguration automatically
+          when a new GuildSpecification is created (i.e. when a new guild joins). When creating a new command, use the
+          RestrictCommandAccessChange task to create AccessConfigurations for existing guilds.
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <!-- commands with this attribute will not trigger script interceptors and finalizers -->
     <xs:attribute name="disableScriptInterceptors" type="xs:boolean" default="false"/>
     <xs:attribute name="description" type="xs:string" use="required"/>

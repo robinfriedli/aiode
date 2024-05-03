@@ -81,6 +81,40 @@ public class SafeGroovyScriptRunner {
         this.isPrivileged = isPrivileged;
     }
 
+    public void runScripts(List<StoredScript> scripts, String usageId) {
+        AtomicReference<StoredScript> currentScriptReference = new AtomicReference<>();
+        try {
+            doRunScripts(scripts, currentScriptReference, 5, TimeUnit.SECONDS);
+        } catch (ExecutionException e) {
+            Throwable error = e.getCause() != null ? e.getCause() : e;
+            MessageService messageService = Aiode.get().getMessageService();
+
+            if (error instanceof CommandFailure) {
+                messageService.sendError(
+                    String.format("Executing command %1$ss failed due to an error in %1$s '%2$s'", usageId, currentScriptReference.get().getIdentifier()),
+                    context.getChannel()
+                );
+            } else {
+                EmbedBuilder embedBuilder = ExceptionUtils.buildErrorEmbed(error);
+                StoredScript currentScript = currentScriptReference.get();
+                embedBuilder.setTitle(String.format("Error occurred while executing custom command %s%s",
+                    usageId,
+                    currentScript.getIdentifier() != null ? ": " + currentScript.getIdentifier() : "")
+                );
+                messageService.sendTemporary(embedBuilder.build(), context.getChannel());
+            }
+        } catch (TimeoutException e) {
+            StoredScript currentScript = currentScriptReference.get();
+            MessageService messageService = Aiode.get().getMessageService();
+            messageService.sendError(
+                String.format("Execution of script command %ss stopped because script%s has run into a timeout",
+                    usageId,
+                    currentScript != null ? String.format(" '%s'", currentScript.getIdentifier()) : ""),
+                context.getChannel()
+            );
+        }
+    }
+
     /**
      * Run all provided scripts sequentially in the same thread. This counts as one single script execution, thus all scripts
      * share the same method invocation limits and run with one time limit. This method is mainly used by the ScriptCommandInterceptor
@@ -95,7 +129,7 @@ public class SafeGroovyScriptRunner {
      * @throws ExecutionException if a script fails due to an exception
      * @throws TimeoutException   if not all scripts finish within the given time limit
      */
-    public void runScripts(List<StoredScript> scripts, AtomicReference<StoredScript> currentScript, long timeout, TimeUnit timeUnit) throws ExecutionException, TimeoutException {
+    public void doRunScripts(List<StoredScript> scripts, AtomicReference<StoredScript> currentScript, long timeout, TimeUnit timeUnit) throws ExecutionException, TimeoutException {
         GroovyShell groovyShell = createShell();
         Future<Object> result = scriptExecution(() -> {
             for (StoredScript script : scripts) {

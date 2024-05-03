@@ -206,8 +206,8 @@ public class CommandManager {
                         cb.substring(cb.literal(formattedCommandInput), cb.literal(1), cb.length(root.get("identifier")))
                     ),
                     cb.equal(
-                        root.get("scriptUsage"),
-                        subQueryFactory.createUncorrelatedSubQuery(StoredScript.ScriptUsage.class, "pk")
+                        root.get("scriptUsage").get("pk"),
+                        subQueryFactory.createUncorrelatedSubQuery(StoredScript.ScriptUsage.class, "pk", Long.class)
                             .where((cb1, root1) -> cb1.equal(root1.get("uniqueId"), "script"))
                             .build(session)
                     )

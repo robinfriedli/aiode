@@ -2,7 +2,7 @@ package net.robinfriedli.aiode.exceptions.handler.handlers;
 
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.exceptions.PermissionException;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.concurrent.ExecutionContext;
@@ -27,7 +27,7 @@ public class PermissionExceptionHandler implements ExceptionHandler<PermissionEx
             if (executionContext != null) {
                 MessageService messageService = aiode.getMessageService();
                 Permission permission = exceptionToHandle.getPermission();
-                MessageChannelUnion channel = executionContext.getChannel();
+                MessageChannel channel = executionContext.getChannel();
                 Guild guild = executionContext.getGuild();
                 Aiode.LOGGER.warn(String.format("Bot is missing permission %s on guild %s", permission, guild));
                 messageService.send("Bot is missing permission: " + permission.getName(), channel);

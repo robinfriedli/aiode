@@ -21,10 +21,12 @@ import net.robinfriedli.aiode.command.CommandManager;
 import net.robinfriedli.aiode.command.commands.scripting.ScriptCommand;
 import net.robinfriedli.aiode.entities.xml.CommandContribution;
 import net.robinfriedli.aiode.persist.qb.QueryBuilderFactory;
+import net.robinfriedli.aiode.scripting.ScriptUsageType;
 
 @Entity
 @Table(name = "stored_script", indexes = {
-    @Index(name = "stored_script_guild_id_idx", columnList = "guild_id")
+    @Index(name = "stored_script_guild_id_idx", columnList = "guild_id"),
+    @Index(name = "stored_script_guild_identifier_usage_unique_idx", columnList = "guild_id, identifier, script_usage_pk", unique = true)
 })
 public class StoredScript implements Serializable, SanitizedEntity {
 
@@ -33,10 +35,10 @@ public class StoredScript implements Serializable, SanitizedEntity {
     @Column(name = "pk")
     private long pk;
     @Column(length = 30)
-    @Size(min = 1, max = 30, message = "Maximum length for interceptor name is 30")
+    @Size(min = 1, max = 30, message = "Maximum length for script name is 30")
     private String identifier;
     @Column(length = 1000)
-    @Size(max = 1000, message = "Maximum length for interceptor script is 1000")
+    @Size(max = 1000, message = "Maximum length for script is 1000")
     private String script;
     @Column(name = "guild_id")
     private long guildId;
@@ -45,6 +47,9 @@ public class StoredScript implements Serializable, SanitizedEntity {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(nullable = false, name = "script_usage_pk")
     private ScriptUsage scriptUsage;
+    @Column(name = "trigger_event", length = 30)
+    @Size(min = 1, max = 30, message = "Maximum length for trigger name is 30")
+    private String triggerEvent;
 
     public long getPk() {
         return pk;
@@ -95,14 +100,14 @@ public class StoredScript implements Serializable, SanitizedEntity {
                         session -> queryBuilderFactory.select(StoredScript.class, (from, cb) -> cb.count(from.get("pk")), Long.class)
                             .where((cb, root, subQueryFactory) -> cb.or(
                                 cb.equal(
-                                    root.get("scriptUsage"),
-                                    subQueryFactory.createUncorrelatedSubQuery(StoredScript.ScriptUsage.class, "pk")
+                                    root.get("scriptUsage").get("pk"),
+                                    subQueryFactory.createUncorrelatedSubQuery(StoredScript.ScriptUsage.class, "pk", Long.class)
                                         .where((cb1, root1) -> cb1.equal(root1.get("uniqueId"), "interceptor"))
                                         .build(session)
                                 ),
                                 cb.equal(
-                                    root.get("scriptUsage"),
-                                    subQueryFactory.createUncorrelatedSubQuery(StoredScript.ScriptUsage.class, "pk")
+                                    root.get("scriptUsage").get("pk"),
+                                    subQueryFactory.createUncorrelatedSubQuery(ScriptUsage.class, "pk", Long.class)
                                         .where((cb1, root1) -> cb1.equal(root1.get("uniqueId"), "finalizer"))
                                         .build(session)
                                 )
@@ -135,8 +140,8 @@ public class StoredScript implements Serializable, SanitizedEntity {
                     this,
                     session -> queryBuilderFactory.select(StoredScript.class, (from, cb) -> cb.count(from.get("pk")), Long.class)
                         .where((cb, root, subQueryFactory) -> cb.equal(
-                            root.get("scriptUsage"),
-                            subQueryFactory.createUncorrelatedSubQuery(StoredScript.ScriptUsage.class, "pk")
+                            root.get("scriptUsage").get("pk"),
+                            subQueryFactory.createUncorrelatedSubQuery(ScriptUsage.class, "pk", Long.class)
                                 .where((cb1, root1) -> cb1.equal(root1.get("uniqueId"), scriptUsageId))
                                 .build(session)
                         )),
@@ -194,6 +199,14 @@ public class StoredScript implements Serializable, SanitizedEntity {
         this.active = active;
     }
 
+    public String getTriggerEvent() {
+        return triggerEvent;
+    }
+
+    public void setTriggerEvent(String triggerEvent) {
+        this.triggerEvent = triggerEvent;
+    }
+
     public ScriptCommand asCommand(CommandManager commandManager, CommandContext context, String input) {
         CommandContribution scriptCommandContribution = commandManager.getCommandContribution("script");
 
@@ -206,14 +219,12 @@ public class StoredScript implements Serializable, SanitizedEntity {
 
     @Entity
     @Table(name = "script_usage")
-    public static class ScriptUsage implements Serializable {
+    public static class ScriptUsage extends LookupEntity {
 
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)
         @Column(name = "pk")
         private long pk;
-        @Column(name = "unique_id", unique = true)
-        private String uniqueId;
 
         public long getPk() {
             return pk;
@@ -223,12 +234,8 @@ public class StoredScript implements Serializable, SanitizedEntity {
             this.pk = pk;
         }
 
-        public String getUniqueId() {
-            return uniqueId;
-        }
-
-        public void setUniqueId(String uniqueId) {
-            this.uniqueId = uniqueId;
+        public ScriptUsageType asEnum() {
+            return ScriptUsageType.valueOf(getUniqueId());
         }
 
     }

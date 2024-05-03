@@ -413,14 +413,15 @@
   </whitelistMethods>
   <whitelistMethods class="net.robinfriedli.aiode.command.CommandContext">
     <method name="getMessage"/>
+    <method name="getCommandBody"/>
+    <method name="getCommandHistory"/>
+  </whitelistMethods>
+  <whitelistMethods class="net.robinfriedli.aiode.concurrent.ExecutionContext">
     <method name="getUser"/>
     <method name="getMember"/>
-    <method name="getVoiceChannel"/>
     <method name="getGuild"/>
     <method name="getChannel"/>
-    <method name="getCommandBody"/>
     <method name="getGuildContext"/>
-    <method name="getCommandHistory"/>
   </whitelistMethods>
   <whitelistMethods class="net.robinfriedli.aiode.entities.CommandHistory">
     <method name="getTimestamp"/>
@@ -470,6 +471,7 @@
     <method name="ensurePermission"/>
     <method name="hasElevatedPermissions"/>
     <method name="isAdmin"/>
+    <method name="isSupporter"/>
   </whitelistMethods>
   <whitelistMethods class="net.robinfriedli.aiode.command.commands.general.AnswerCommand">
     <method name="getTargetCommand"/>
@@ -480,6 +482,14 @@
     <method name="getSpecification"/>
     <method name="getBotName"/>
     <method name="getPrefix"/>
+  </whitelistMethods>
+  <whitelistMethods class="net.robinfriedli.aiode.audio.AudioManager">
+    <method name="startPlayback"/>
+    <method name="startOrResumePlayback"/>
+    <method name="playTrack"/>
+    <method name="getPlaybackForGuild"/>
+    <method name="getQueue"/>
+    <method name="setChannel"/>
   </whitelistMethods>
   <whitelistMethods class="net.robinfriedli.aiode.audio.AudioPlayback">
     <method name="isPlaying"/>
@@ -540,6 +550,9 @@
     <method name="getArgumentPrefix"/>
     <method name="getTempMessageTimeout"/>
     <method name="getDefaultTextChannelId"/>
+  </whitelistMethods>
+  <whitelistMethods class="net.robinfriedli.aiode.scripting.ScriptCommandRunner">
+    <method name="run"/>
   </whitelistMethods>
   <whitelistMethods class="net.robinfriedli.aiode.util.Util">
     <method name="getKeysForValue"/>
@@ -709,6 +722,16 @@
      -->
     <method name="complete"/>
     <method name="submit"/>
+  </whitelistMethods>
+  <whitelistMethods class="net.dv8tion.jda.api.entities.channel.middleman.AudioChannel">
+    <method name="getUserLimit"/>
+  </whitelistMethods>
+  <whitelistMethods class="net.dv8tion.jda.api.entities.channel.middleman.GuildChannel">
+    <method name="getGuild"/>
+  </whitelistMethods>
+  <whitelistMethods class="net.dv8tion.jda.api.entities.channel.Channel">
+    <method name="getName"/>
+    <method name="getType"/>
   </whitelistMethods>
   <whitelistMethods class="java.lang.Thread">
     <method name="currentThread"/>
