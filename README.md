@@ -139,7 +139,7 @@ spring.jpa.properties.hibernate.javax.cache.missing_cache_strategy=create
 
 ### 6 Compile and run aiode
 Requires:
-* java jdk 17 or above (preferably 17, as it is the version used in development and thus main supported version)
+* java jdk 21 or above (preferably 21, as it is the version used in development and thus main supported version)
 * (only for the experimental webapp) rust and cargo-make with the `wasm32-unknown-unknown` target for the webapp
 
 #### 6.1 Compile webapp (experimental only, skip for normal installation)
