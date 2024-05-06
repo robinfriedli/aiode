@@ -88,8 +88,8 @@ test {
 group = "aiode"
 version = "1.0-SNAPSHOT"
 description = "aiode"
-sourceCompatibility = "17"
-targetCompatibility = "17"
+sourceCompatibility = "21"
+targetCompatibility = "21"
 
 jar {
     manifest {
@@ -101,7 +101,7 @@ jar {
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
     kotlinOptions {
-        jvmTarget = "17"
+        jvmTarget = "21"
     }
 }
 
