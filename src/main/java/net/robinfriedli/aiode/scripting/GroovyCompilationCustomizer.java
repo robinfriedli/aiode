@@ -1,8 +1,10 @@
 package net.robinfriedli.aiode.scripting;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 import com.google.common.collect.Lists;
@@ -11,9 +13,11 @@ import net.robinfriedli.aiode.Aiode;
 import org.codehaus.groovy.ast.ClassCodeExpressionTransformer;
 import org.codehaus.groovy.ast.ClassHelper;
 import org.codehaus.groovy.ast.ClassNode;
+import org.codehaus.groovy.ast.CodeVisitorSupport;
 import org.codehaus.groovy.ast.ConstructorNode;
 import org.codehaus.groovy.ast.MethodNode;
 import org.codehaus.groovy.ast.Parameter;
+import org.codehaus.groovy.ast.Variable;
 import org.codehaus.groovy.ast.VariableScope;
 import org.codehaus.groovy.ast.expr.ArgumentListExpression;
 import org.codehaus.groovy.ast.expr.BinaryExpression;
@@ -237,19 +241,39 @@ public class GroovyCompilationCustomizer extends CompilationCustomizer {
             ClassNode declaringClass,
             String methodName
         ) {
-            if (methodCall instanceof MethodCallExpression) {
-                MethodCallExpression methodCallExpression = (MethodCallExpression) methodCall;
+            if (methodCall instanceof MethodCallExpression methodCallExpression) {
                 methodCallExpression.setObjectExpression(transform(methodCallExpression.getObjectExpression()));
             }
 
             VariableScope closureScope = new VariableScope(variableScope);
+            // handle local variables referenced by method call to ensure they can be accessed from within the closure
+            MethodCallVariableVisitor methodCallVariableVisitor = new MethodCallVariableVisitor(variableScope);
+            methodCallVariableVisitor.visitMethodCall(methodCall);
+            for (Variable localVariable : methodCallVariableVisitor.getLocalVariables()) {
+                if (localVariable instanceof VariableExpression localVariableReference) {
+                    Variable accessedVariable = localVariableReference.getAccessedVariable();
+                    closureScope.putReferencedLocalVariable(accessedVariable);
+                    accessedVariable.setClosureSharedVariable(true);
+                    if (accessedVariable instanceof VariableExpression referencedLocalVariable) {
+                        // remove static type annotations when moving variables into closure to enforce dynamic type handling
+                        // this is especially relevant for primitive types because references to primitives outside the closure are of type groovy/lang/Reference, not a primitive
+                        // fixes jvm bytecode error `VerifyError: Bad local variable type Reason: Type 'groovy/lang/Reference' (current frame, locals[1]) is not assignable to integer`
+                        referencedLocalVariable.removeNodeMetaData(StaticTypesMarker.DECLARATION_INFERRED_TYPE);
+                        referencedLocalVariable.removeNodeMetaData(StaticTypesMarker.INFERRED_TYPE);
+                    }
+                }
+            }
+            for (Variable classVariable : methodCallVariableVisitor.getClassVariables()) {
+                closureScope.putReferencedClassVariable(classVariable);
+            }
+
             ClosureExpression methodInvocationClosure = new ClosureExpression(
                 new Parameter[0],
                 new BlockStatement(
                     new Statement[]{
                         new ExpressionStatement((Expression) methodCall)
                     },
-                    new VariableScope(closureScope)
+                    closureScope.copy()
                 )
             );
             methodInvocationClosure.setVariableScope(closureScope);
@@ -264,6 +288,48 @@ public class GroovyCompilationCustomizer extends CompilationCustomizer {
                     new ConstantExpression(methodName)
                 )
             );
+        }
+
+        private static class MethodCallVariableVisitor extends CodeVisitorSupport {
+
+            private final List<Variable> localVariables = new ArrayList<>();
+            private final List<Variable> classVariables = new ArrayList<>();
+
+            private final VariableScope variableScope;
+
+            private MethodCallVariableVisitor(VariableScope variableScope) {
+                this.variableScope = variableScope;
+            }
+
+            @Override
+            public void visitVariableExpression(VariableExpression expression) {
+                if (variableScope.getReferencedClassVariables().containsKey(expression.getName())) {
+                    classVariables.add(expression);
+                } else {
+                    localVariables.add(expression);
+                }
+                super.visitVariableExpression(expression);
+            }
+
+            public void visitMethodCall(MethodCall methodCall) {
+                switch (methodCall) {
+                    case MethodCallExpression methodCallExpression -> visitMethodCallExpression(methodCallExpression);
+                    case StaticMethodCallExpression staticMethodCallExpression ->
+                        visitStaticMethodCallExpression(staticMethodCallExpression);
+                    case ConstructorCallExpression constructorCallExpression ->
+                        visitConstructorCallExpression(constructorCallExpression);
+                    default -> {
+                    }
+                }
+            }
+
+            public List<Variable> getLocalVariables() {
+                return localVariables;
+            }
+
+            public List<Variable> getClassVariables() {
+                return classVariables;
+            }
         }
 
         /**
@@ -289,6 +355,7 @@ public class GroovyCompilationCustomizer extends CompilationCustomizer {
          *     def __botify_methodPointer__ = System&.__botify_methodName__
          *     __botify_methodPointer__.call(it)
          * })
+         *
          * @param expression
          * @return
          */
