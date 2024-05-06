@@ -489,7 +489,7 @@
     <method name="playTrack"/>
     <method name="getPlaybackForGuild"/>
     <method name="getQueue"/>
-    <method name="setChannel"/>
+    <method name="setChannel" maxInvocationCount="5"/>
   </whitelistMethods>
   <whitelistMethods class="net.robinfriedli.aiode.audio.AudioPlayback">
     <method name="isPlaying"/>
@@ -552,7 +552,7 @@
     <method name="getDefaultTextChannelId"/>
   </whitelistMethods>
   <whitelistMethods class="net.robinfriedli.aiode.scripting.ScriptCommandRunner">
-    <method name="run"/>
+    <method name="run" maxInvocationCount="5"/>
   </whitelistMethods>
   <whitelistMethods class="net.robinfriedli.aiode.util.Util">
     <method name="getKeysForValue"/>
