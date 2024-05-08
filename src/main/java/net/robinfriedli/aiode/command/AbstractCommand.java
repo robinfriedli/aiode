@@ -589,7 +589,11 @@ public abstract class AbstractCommand implements Command {
                 if (!Boolean.TRUE.equals(enableScriptingProp)
                     && !currentUser.map(securityManager::isAdmin).orElse(false)
                     && !(Boolean.TRUE.equals(enableScriptingForSupporters) && currentUser.map(securityManager::isSupporter).orElse(false))) {
-                    return null;
+                    if (!Boolean.TRUE.equals(enableScriptingProp) && Boolean.TRUE.equals(enableScriptingForSupporters)) {
+                        return new MessageEmbed.Field(getName(), "The scripting sandbox is only available to [supporters](https://ko-fi.com/R5R0XAC5J)", true);
+                    } else {
+                        return null;
+                    }
                 }
 
                 return super.createEmbedField();
