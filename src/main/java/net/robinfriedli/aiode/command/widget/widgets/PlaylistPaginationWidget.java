@@ -40,7 +40,12 @@ public class PlaylistPaginationWidget extends DynamicEmbedTablePaginationWidget<
             playlist.getName(),
             null,
             new Column[]{
-                new Column<>("Track", PlaylistItem::display),
+                new Column<PlaylistItem>("Track", playlistItem -> {
+                    String display = playlistItem.display();
+                    return display.length() > 50
+                        ? display.substring(0, 50) + "..."
+                        : display;
+                }),
                 new Column<PlaylistItem>("Duration", playlistItem -> Util.normalizeMillis(playlistItem.getDuration()))
             },
             playlist.getItemsSorted()
