@@ -1,8 +1,6 @@
 package net.robinfriedli.aiode.command.commands.search;
 
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -10,27 +8,24 @@ import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.User;
-import net.dv8tion.jda.api.exceptions.ErrorResponseException;
-import net.dv8tion.jda.api.requests.ErrorResponse;
-import net.dv8tion.jda.api.sharding.ShardManager;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.audio.spotify.SpotifyTrack;
 import net.robinfriedli.aiode.audio.youtube.YouTubePlaylist;
 import net.robinfriedli.aiode.audio.youtube.YouTubeService;
 import net.robinfriedli.aiode.audio.youtube.YouTubeVideo;
-import net.robinfriedli.aiode.boot.SpringPropertiesConfig;
 import net.robinfriedli.aiode.command.CommandContext;
 import net.robinfriedli.aiode.command.CommandManager;
 import net.robinfriedli.aiode.command.commands.AbstractSourceDecidingCommand;
+import net.robinfriedli.aiode.command.widget.DynamicEmbedTablePaginationWidget;
+import net.robinfriedli.aiode.command.widget.EmbedTablePaginationWidget;
+import net.robinfriedli.aiode.command.widget.WidgetRegistry;
+import net.robinfriedli.aiode.command.widget.widgets.PlaylistPaginationWidget;
 import net.robinfriedli.aiode.entities.Playlist;
-import net.robinfriedli.aiode.entities.PlaylistItem;
 import net.robinfriedli.aiode.entities.xml.CommandContribution;
 import net.robinfriedli.aiode.exceptions.InvalidCommandException;
 import net.robinfriedli.aiode.exceptions.NoResultsFoundException;
 import net.robinfriedli.aiode.exceptions.NoSpotifyResultsFoundException;
 import net.robinfriedli.aiode.exceptions.UnavailableResourceException;
-import net.robinfriedli.aiode.util.EmbedTable;
 import net.robinfriedli.aiode.util.SearchEngine;
 import net.robinfriedli.aiode.util.Util;
 import net.robinfriedli.stringlist.StringList;
@@ -169,71 +164,48 @@ public class SearchCommand extends AbstractSourceDecidingCommand {
     }
 
     private void listLocalList() {
+        WidgetRegistry widgetRegistry = getContext().getGuildContext().getWidgetRegistry();
         if (getCommandInput().isBlank()) {
             Session session = getContext().getSession();
-            List<Playlist> playlists = getQueryBuilderFactory().find(Playlist.class).build(session).getResultList();
-
-            EmbedBuilder embedBuilder = new EmbedBuilder();
+            List<Playlist> playlists = getQueryBuilderFactory()
+                .find(Playlist.class)
+                .orderBy((from, cb) -> cb.asc(from.get("name")))
+                .build(session)
+                .getResultList();
 
             if (playlists.isEmpty()) {
+                EmbedBuilder embedBuilder = new EmbedBuilder();
                 embedBuilder.setDescription("No playlists");
+                sendMessage(embedBuilder);
             } else {
-                EmbedTable table = new EmbedTable(embedBuilder);
-                table.addColumn("Playlist", playlists, Playlist::getName);
-                table.addColumn("Duration", playlists, playlist -> Util.normalizeMillis(playlist.getDuration()));
-                table.addColumn("Items", playlists, playlist -> String.valueOf(playlist.getSize()));
-                table.build();
+                DynamicEmbedTablePaginationWidget<Playlist> paginationWidget = new DynamicEmbedTablePaginationWidget<Playlist>(
+                    widgetRegistry,
+                    getContext().getGuild(),
+                    getContext().getChannel(),
+                    "Playlists",
+                    null,
+                    new EmbedTablePaginationWidget.Column[]{
+                        new EmbedTablePaginationWidget.Column<>("Playlist", Playlist::getName),
+                        new EmbedTablePaginationWidget.Column<Playlist>("Duration", playlist -> Util.normalizeMillis(playlist.getDuration())),
+                        new EmbedTablePaginationWidget.Column<Playlist>("Items", playlist -> String.valueOf(playlist.getSize())),
+                    },
+                    playlists
+                );
+                paginationWidget.initialise();
             }
-
-            sendMessage(embedBuilder);
         } else {
             Playlist playlist = SearchEngine.searchLocalList(getContext().getSession(), getCommandInput());
             if (playlist == null) {
                 throw new NoResultsFoundException(String.format("No local list found for '%s'", getCommandInput()));
             }
 
-            String createdUserId = playlist.getCreatedUserId();
-            String createdUser;
-            if (createdUserId.equals("system")) {
-                createdUser = playlist.getCreatedUser();
-            } else {
-                ShardManager shardManager = Aiode.get().getShardManager();
-                User userById;
-                try {
-                    userById = shardManager.retrieveUserById(createdUserId).complete();
-                } catch (ErrorResponseException e) {
-                    if (e.getErrorResponse() == ErrorResponse.UNKNOWN_USER) {
-                        userById = null;
-                    } else {
-                        throw e;
-                    }
-                }
-                createdUser = userById != null ? userById.getName() : playlist.getCreatedUser();
-            }
-
-
-            SpringPropertiesConfig springPropertiesConfig = Aiode.get().getSpringPropertiesConfig();
-            String baseUri = springPropertiesConfig.requireApplicationProperty("aiode.server.base_uri");
-            EmbedBuilder embedBuilder = new EmbedBuilder();
-            embedBuilder.addField("Name", playlist.getName(), true);
-            embedBuilder.addField("Duration", Util.normalizeMillis(playlist.getDuration()), true);
-            embedBuilder.addField("Created by", createdUser, true);
-            embedBuilder.addField("Tracks", String.valueOf(playlist.getSize()), true);
-            embedBuilder.addBlankField(false);
-
-            String url = baseUri +
-                String.format("/list?name=%s&guildId=%s", URLEncoder.encode(playlist.getName(), StandardCharsets.UTF_8), playlist.getGuildId());
-            embedBuilder.addField("First tracks:", "[Full list](" + url + ")", false);
-
-            List<PlaylistItem> items = playlist.getItemsSorted();
-            Util.appendEmbedList(
-                embedBuilder,
-                items.size() > 5 ? items.subList(0, 5) : items,
-                item -> item.display() + " - " + Util.normalizeMillis(item.getDuration()),
-                "Track - Duration"
+            PlaylistPaginationWidget playlistPaginationWidget = new PlaylistPaginationWidget(
+                widgetRegistry,
+                getContext().getGuild(),
+                getContext().getChannel(),
+                playlist
             );
-
-            sendWithLogo(embedBuilder);
+            playlistPaginationWidget.initialise();
         }
     }
 

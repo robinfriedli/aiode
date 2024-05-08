@@ -8,14 +8,14 @@ import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.robinfriedli.aiode.command.PermissionTarget;
 import net.robinfriedli.aiode.command.SecurityManager;
-import net.robinfriedli.aiode.command.widget.AbstractPaginationWidget;
+import net.robinfriedli.aiode.command.widget.EmbedTablePaginationWidget;
 import net.robinfriedli.aiode.command.widget.WidgetRegistry;
 import net.robinfriedli.aiode.entities.AccessConfiguration;
 import net.robinfriedli.aiode.util.EmbedTable;
 import net.robinfriedli.stringlist.StringList;
 import org.jetbrains.annotations.Nullable;
 
-public class PermissionListPaginationWidget extends AbstractPaginationWidget.EmbedTablePaginationWidget<PermissionTarget> {
+public class PermissionListPaginationWidget extends EmbedTablePaginationWidget<PermissionTarget> {
 
     private final SecurityManager securityManager;
 

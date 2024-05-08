@@ -6,8 +6,8 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.OptionalInt;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -34,13 +34,16 @@ public class EmbedTable {
     }
 
     public void build() {
-        OptionalInt partRowsOptional = columns.stream().mapToInt(Column::partsCount).max();
-
-        if (partRowsOptional.isEmpty()) {
-            throw new IllegalStateException("No rows");
+        int fieldCount = columns.stream().mapToInt(Column::fieldCount).max().orElseThrow(() -> new NoSuchElementException("No embed fields"));
+        for (int i = 0; i < fieldCount; i++) {
+            int fieldIdx = i;
+            if (columns.stream().anyMatch(c -> c.hasField(fieldIdx) && !c.fieldFitsIntoCurrentPart(fieldIdx))) {
+                columns.forEach(Column::appendNewPart);
+            }
+            columns.stream().filter(c -> c.hasField(fieldIdx)).forEach(c -> c.writeFieldToCurrentPart(fieldIdx));
         }
 
-        int partRows = partRowsOptional.getAsInt();
+        int partRows = columns.stream().mapToInt(Column::partsCount).max().orElseThrow(() -> new NoSuchElementException("No embed field parts"));
         for (int i = 0; i < partRows; i++) {
             for (Column column : columns) {
                 embedBuilder.addField(i == 0 ? column.getTitle() : "", column.getPart(i), true);
@@ -167,16 +170,7 @@ public class EmbedTable {
         public Column(String title, List<String> fields) {
             this.title = title;
             this.fields = fields;
-
             parts = Lists.newArrayList(new StringBuilder());
-            for (String field : fields) {
-                StringBuilder currentPart = parts.get(parts.size() - 1);
-                if (currentPart.length() + field.length() < 1000) {
-                    currentPart.append(field).append(System.lineSeparator());
-                } else {
-                    parts.add(new StringBuilder().append(field).append(System.lineSeparator()));
-                }
-            }
         }
 
         public String getTitle() {
@@ -185,6 +179,10 @@ public class EmbedTable {
 
         public List<String> getFields() {
             return fields;
+        }
+
+        public int fieldCount() {
+            return fields.size();
         }
 
         public List<StringBuilder> getParts() {
@@ -201,6 +199,24 @@ public class EmbedTable {
             } else {
                 return parts.get(i).toString();
             }
+        }
+
+        public boolean hasField(int fieldIdx) {
+            return fieldIdx < fieldCount();
+        }
+
+        public void writeFieldToCurrentPart(int fieldIdx) {
+            StringBuilder currentPart = parts.getLast();
+            currentPart.append(fields.get(fieldIdx)).append(System.lineSeparator());
+        }
+
+        public boolean fieldFitsIntoCurrentPart(int fieldIdx) {
+            StringBuilder currentPart = parts.getLast();
+            return currentPart.length() + fields.get(fieldIdx).length() < 1000;
+        }
+
+        public void appendNewPart() {
+            parts.add(new StringBuilder());
         }
     }
 
