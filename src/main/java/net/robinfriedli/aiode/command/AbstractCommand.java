@@ -145,18 +145,33 @@ public abstract class AbstractCommand implements Command {
         return newInstance;
     }
 
+    public void run(String command) {
+        run(command, true);
+    }
+
     /**
      * Run a custom command like you would enter it to discord, this includes commands and presets but excludes scripts
      * to avoid recursion.
      * This method is mainly used in groovy scripts.
      *
-     * @param command the command string
+     * @param command          the command string
+     * @param inheritArguments whether to inherit arguments from the current command invocation,
+     *                         useful to forward arguments from the scrip command invocation to commands invoked by the script
      */
-    public void run(String command) {
+    public void run(String command, boolean inheritArguments) {
         StaticSessionProvider.consumeSession(session -> {
             CommandContext fork = context.fork(command, session);
             AbstractCommand abstractCommand = commandManager.instantiateCommandForContext(fork, session, false)
                 .orElseThrow(() -> new InvalidCommandException("No command found for input"));
+
+            if (inheritArguments) {
+                ArgumentController sourceArgumentController = getArgumentController();
+                ArgumentController targetArgumentController = abstractCommand.getArgumentController();
+                for (Map.Entry<String, ArgumentController.ArgumentUsage> argumentUsage : sourceArgumentController.getUsedArguments().entrySet()) {
+                    targetArgumentController.setArgument(argumentUsage.getKey(), argumentUsage.getValue());
+                }
+            }
+
             ExecutionContext oldExecutionContext = ExecutionContext.Current.get();
             ExecutionContext.Current.set(fork);
             try {
