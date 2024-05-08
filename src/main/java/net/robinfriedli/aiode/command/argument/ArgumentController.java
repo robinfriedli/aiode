@@ -103,7 +103,11 @@ public class ArgumentController {
      */
     public void setArgument(String argument, String value) {
         ArgumentDefinition arg = require(argument);
-        usedArguments.put(argument, new ArgumentUsage(arg, value));
+        setArgument(argument, new ArgumentUsage(arg, value));
+    }
+
+    public void setArgument(String argument, ArgumentUsage argumentUsage) {
+        usedArguments.put(argument, argumentUsage);
     }
 
     public boolean hasArguments() {
