@@ -7,11 +7,13 @@ import net.robinfriedli.aiode.command.AbstractCommand;
 import net.robinfriedli.aiode.command.CommandContext;
 import net.robinfriedli.aiode.command.CommandManager;
 import net.robinfriedli.aiode.command.parser.CommandParser;
+import net.robinfriedli.aiode.command.widget.DynamicEmbedTablePaginationWidget;
+import net.robinfriedli.aiode.command.widget.EmbedTablePaginationWidget;
+import net.robinfriedli.aiode.command.widget.WidgetRegistry;
 import net.robinfriedli.aiode.discord.property.properties.ArgumentPrefixProperty;
 import net.robinfriedli.aiode.entities.Preset;
 import net.robinfriedli.aiode.entities.xml.CommandContribution;
 import net.robinfriedli.aiode.exceptions.InvalidCommandException;
-import net.robinfriedli.aiode.util.EmbedTable;
 import net.robinfriedli.aiode.util.SearchEngine;
 import org.hibernate.Session;
 
@@ -33,17 +35,27 @@ public class PresetCommand extends AbstractCommand {
 
             invoke(() -> session.remove(preset));
         } else if (getCommandInput().isBlank()) {
-            List<Preset> presets = getQueryBuilderFactory().find(Preset.class).build(session).getResultList();
-            EmbedBuilder embedBuilder = new EmbedBuilder();
+            List<Preset> presets = getQueryBuilderFactory().find(Preset.class).orderBy((from, cb) -> cb.asc(from.get("name"))).build(session).getResultList();
             if (presets.isEmpty()) {
+                EmbedBuilder embedBuilder = new EmbedBuilder();
                 embedBuilder.setDescription("No presets saved");
+                sendMessage(embedBuilder);
             } else {
-                EmbedTable table = new EmbedTable(embedBuilder);
-                table.addColumn("Name", presets, Preset::getName);
-                table.addColumn("Preset", presets, Preset::getPreset);
-                table.build();
+                WidgetRegistry widgetRegistry = getContext().getGuildContext().getWidgetRegistry();
+                DynamicEmbedTablePaginationWidget<Preset> paginationWidget = new DynamicEmbedTablePaginationWidget<Preset>(
+                    widgetRegistry,
+                    getContext().getGuild(),
+                    getContext().getChannel(),
+                    "Presets",
+                    null,
+                    new EmbedTablePaginationWidget.Column[]{
+                        new EmbedTablePaginationWidget.Column<>("Name", Preset::getName),
+                        new EmbedTablePaginationWidget.Column<>("Preset", Preset::getPreset)
+                    },
+                    presets
+                );
+                paginationWidget.initialise();
             }
-            sendMessage(embedBuilder);
         } else {
             String presetString = getCommandInput();
             String name = getArgumentValue("as");

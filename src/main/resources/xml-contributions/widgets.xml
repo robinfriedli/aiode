@@ -37,4 +37,20 @@
       <widgetAction identifier="lastPage" emojiUnicode="⏭" resetRequired="true" displayPredicate="widget.getPages().size() > 1" implementation="net.robinfriedli.aiode.command.widget.actions.LastPageAction"/>
     </action-row>
   </widget>
+  <widget allowMultipleActive="true" keepMessageOnDestroy="true" implementation="net.robinfriedli.aiode.command.widget.DynamicEmbedTablePaginationWidget">
+    <action-row>
+      <widgetAction identifier="firstPage" emojiUnicode="⏮" resetRequired="true" displayPredicate="widget.getPages().size() > 1" implementation="net.robinfriedli.aiode.command.widget.actions.FirstPageAction"/>
+      <widgetAction identifier="prevPage" emojiUnicode="⏪" resetRequired="true" displayPredicate="widget.getPages().size() > 1" implementation="net.robinfriedli.aiode.command.widget.actions.PrevPageAction"/>
+      <widgetAction identifier="nextPage" emojiUnicode="⏩" resetRequired="true" displayPredicate="widget.getPages().size() > 1" implementation="net.robinfriedli.aiode.command.widget.actions.NextPageAction"/>
+      <widgetAction identifier="lastPage" emojiUnicode="⏭" resetRequired="true" displayPredicate="widget.getPages().size() > 1" implementation="net.robinfriedli.aiode.command.widget.actions.LastPageAction"/>
+    </action-row>
+  </widget>
+  <widget allowMultipleActive="true" keepMessageOnDestroy="true" implementation="net.robinfriedli.aiode.command.widget.widgets.PlaylistPaginationWidget">
+    <action-row>
+      <widgetAction identifier="firstPage" emojiUnicode="⏮" resetRequired="true" displayPredicate="widget.getPages().size() > 1" implementation="net.robinfriedli.aiode.command.widget.actions.FirstPageAction"/>
+      <widgetAction identifier="prevPage" emojiUnicode="⏪" resetRequired="true" displayPredicate="widget.getPages().size() > 1" implementation="net.robinfriedli.aiode.command.widget.actions.PrevPageAction"/>
+      <widgetAction identifier="nextPage" emojiUnicode="⏩" resetRequired="true" displayPredicate="widget.getPages().size() > 1" implementation="net.robinfriedli.aiode.command.widget.actions.NextPageAction"/>
+      <widgetAction identifier="lastPage" emojiUnicode="⏭" resetRequired="true" displayPredicate="widget.getPages().size() > 1" implementation="net.robinfriedli.aiode.command.widget.actions.LastPageAction"/>
+    </action-row>
+  </widget>
 </widgets>

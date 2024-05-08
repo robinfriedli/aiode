@@ -3,7 +3,6 @@ package net.robinfriedli.aiode.command.widget;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 
 import javax.annotation.Nullable;
 
@@ -19,7 +18,6 @@ import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.boot.SpringPropertiesConfig;
 import net.robinfriedli.aiode.command.CommandContext;
 import net.robinfriedli.aiode.discord.MessageService;
-import net.robinfriedli.aiode.util.EmbedTable;
 
 /**
  * Abstract widget implementation that enables simple pagination of large lists of elements. Create a specific implementation
@@ -30,13 +28,17 @@ import net.robinfriedli.aiode.util.EmbedTable;
  */
 public abstract class AbstractPaginationWidget<E> extends AbstractWidget {
 
-    private final List<List<E>> pages;
+    protected volatile List<List<E>> pages;
 
     private int currentPage;
 
     public AbstractPaginationWidget(WidgetRegistry widgetRegistry, Guild guild, MessageChannel channel, List<E> elements, int pageSize) {
+        this(widgetRegistry, guild, channel, Lists.partition(elements, pageSize));
+    }
+
+    public AbstractPaginationWidget(WidgetRegistry widgetRegistry, Guild guild, MessageChannel channel, List<List<E>> pages) {
         super(widgetRegistry, guild, channel);
-        this.pages = Lists.partition(elements, pageSize);
+        this.pages = pages;
     }
 
     @Override
@@ -92,14 +94,21 @@ public abstract class AbstractPaginationWidget<E> extends AbstractWidget {
         }
     }
 
+    protected EmbedBuilder prepareEmbedBuilder() {
+        return new EmbedBuilder();
+    }
+
     private EmbedBuilder prepareEmbedBuilderForPage() {
-        int pageCount = pages.size();
-        if (currentPage >= pageCount && !pages.isEmpty()) {
+        int pageCount = getPages().size();
+        if (currentPage >= pageCount && !getPages().isEmpty()) {
             throw new IllegalStateException(String.format("Current page is out of bounds. Current index: %d; page count: %d", currentPage, pageCount));
         }
 
-        EmbedBuilder embedBuilder = new EmbedBuilder();
-        embedBuilder.setTitle(getTitle());
+        EmbedBuilder embedBuilder = prepareEmbedBuilder();
+        String title = getTitle();
+        if (!Strings.isNullOrEmpty(title)) {
+            embedBuilder.setTitle(title);
+        }
 
         String description = getDescription();
         if (!Strings.isNullOrEmpty(description)) {
@@ -113,63 +122,9 @@ public abstract class AbstractPaginationWidget<E> extends AbstractWidget {
 
         embedBuilder.setFooter(String.format("Page %d of %d", currentPage + 1, Math.max(pageCount, 1)), logoUrl);
 
-        List<E> page = pages.isEmpty() ? Collections.emptyList() : pages.get(currentPage);
+        List<E> page = getPages().isEmpty() ? Collections.emptyList() : getPages().get(currentPage);
         handlePage(embedBuilder, page);
         return embedBuilder;
-    }
-
-    public abstract static class EmbedTablePaginationWidget<E> extends AbstractPaginationWidget<E> {
-
-        public EmbedTablePaginationWidget(WidgetRegistry widgetRegistry, Guild guild, MessageChannel channel, List<E> elements, int pageSize) {
-            super(widgetRegistry, guild, channel, elements, pageSize);
-        }
-
-        protected abstract Column<E>[] getColumns();
-
-        @Override
-        protected void handlePage(EmbedBuilder embedBuilder, List<E> page) {
-            EmbedTable embedTable = new EmbedTable(embedBuilder);
-            for (Column<E> column : getColumns()) {
-                Function<E, EmbedTable.Group> groupFunction = column.getGroupFunction();
-                if (groupFunction != null) {
-                    embedTable.addColumn(column.getTitle(), page, column.getDisplayFunc(), groupFunction);
-                } else {
-                    embedTable.addColumn(column.getTitle(), page, column.getDisplayFunc());
-                }
-            }
-            embedTable.build();
-        }
-
-        public static class Column<E> {
-
-            private final String title;
-            private final Function<E, String> displayFunc;
-            @Nullable
-            private final Function<E, EmbedTable.Group> groupFunction;
-
-            public Column(String title, Function<E, String> displayFunc) {
-                this(title, displayFunc, null);
-            }
-
-            public Column(String title, Function<E, String> displayFunc, @Nullable Function<E, EmbedTable.Group> groupFunction) {
-                this.title = title;
-                this.displayFunc = displayFunc;
-                this.groupFunction = groupFunction;
-            }
-
-            public String getTitle() {
-                return title;
-            }
-
-            public Function<E, String> getDisplayFunc() {
-                return displayFunc;
-            }
-
-            @Nullable
-            public Function<E, EmbedTable.Group> getGroupFunction() {
-                return groupFunction;
-            }
-        }
     }
 
 }
