@@ -124,7 +124,7 @@ public class HelpCommand extends AbstractCommand {
                 getContext().getGuildContext().getWidgetRegistry(),
                 guild,
                 getContext().getChannel(),
-                embedBuilder.build()
+                embedBuilder
             );
 
             paginatedMessageEmbedWidget.initialise();
