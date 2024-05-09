@@ -47,6 +47,11 @@ class PlayableFactory(
     val redirectSpotify: Boolean
 ) {
 
+    companion object {
+        @JvmStatic
+        val BASE62_REGEX = "^[a-zA-Z0-9]{22}\$".toRegex()
+    }
+
     private val spotifyInvoker: SpotifyInvoker = SpotifyInvoker.createForCurrentContext()
 
     private var batchLoadingTasks: MutableMap<Class<*>, TrackLoadingRunnable<*>>? = null
@@ -252,7 +257,10 @@ class PlayableFactory(
     private fun createPlayableForSpotifyUrlType(pathFragments: StringList, type: String, loadFunc: CheckedFunction<String, PlayableContainer<*>>): PlayableContainer<*> {
         val id = pathFragments.tryGet(pathFragments.indexOf(type) + 1)
         if (Strings.isNullOrEmpty(id)) {
-            throw InvalidCommandException("No $type id provided")
+            throw InvalidCommandException("No $type ID provided")
+        }
+        if (!BASE62_REGEX.matches(id!!)) {
+            throw InvalidCommandException("'$id' is not a valid Spotify ID")
         }
         return try {
             spotifyInvoker.invoke(Callable { loadFunc.apply(id) })
