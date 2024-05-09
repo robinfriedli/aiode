@@ -142,6 +142,9 @@ public class AudioManager extends AbstractShutdownable {
         if (playback.isPaused() && resumePaused) {
             playback.unpause();
         } else {
+            if (playback.getAudioQueue().isEmpty()) {
+                throw new InvalidCommandException("Queue is empty");
+            }
             QueueIterator queueIterator = new QueueIterator(playback, this);
             playback.setCurrentQueueIterator(queueIterator);
             queueIterator.playNext();

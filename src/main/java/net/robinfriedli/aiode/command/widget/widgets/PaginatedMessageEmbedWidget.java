@@ -12,22 +12,25 @@ import org.jetbrains.annotations.Nullable;
 
 public class PaginatedMessageEmbedWidget extends AbstractPaginationWidget<MessageEmbed.Field> {
 
-    private final MessageEmbed messageEmbed;
+    private final EmbedBuilder embedBuilder;
 
-    public PaginatedMessageEmbedWidget(WidgetRegistry widgetRegistry, Guild guild, MessageChannel channel, MessageEmbed messageEmbed) {
-        super(widgetRegistry, guild, channel, messageEmbed.getFields(), 25);
-        this.messageEmbed = messageEmbed;
+    public PaginatedMessageEmbedWidget(WidgetRegistry widgetRegistry, Guild guild, MessageChannel channel, EmbedBuilder embedBuilder) {
+        super(widgetRegistry, guild, channel, embedBuilder.getFields(), 25);
+        this.embedBuilder = embedBuilder;
     }
+
+
+    // title and description provided by prepareEmbedBuilder()
 
     @Override
     protected String getTitle() {
-        return messageEmbed.getTitle();
+        return "";
     }
 
     @Nullable
     @Override
     protected String getDescription() {
-        return messageEmbed.getDescription();
+        return null;
     }
 
     @Override
@@ -35,5 +38,13 @@ public class PaginatedMessageEmbedWidget extends AbstractPaginationWidget<Messag
         for (MessageEmbed.Field field : page) {
             embedBuilder.addField(field);
         }
+    }
+
+    @Override
+    protected EmbedBuilder prepareEmbedBuilder() {
+        EmbedBuilder builderForPage = new EmbedBuilder();
+        builderForPage.copyFrom(embedBuilder);
+        builderForPage.clearFields();
+        return builderForPage;
     }
 }
