@@ -7,6 +7,7 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.ISnowflake;
 import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
 import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.requests.RestAction;
@@ -257,7 +258,7 @@ public abstract class DiscordEntity<T extends ISnowflake> {
                 net.dv8tion.jda.api.entities.Guild guildCached = guild.getCached();
 
                 if (guildCached != null) {
-                    return guildCached.getTextChannelById(getId());
+                    return guildCached.getChannelById(GuildMessageChannel.class, getId());
                 }
             }
             return null;
