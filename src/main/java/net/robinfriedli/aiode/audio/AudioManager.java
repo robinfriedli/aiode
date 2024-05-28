@@ -22,11 +22,11 @@ import com.sedmelluq.discord.lavaplayer.source.http.HttpAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.source.soundcloud.SoundCloudAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.source.twitch.TwitchStreamAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.source.vimeo.VimeoAudioSourceManager;
-import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager;
 import com.sedmelluq.lava.extensions.youtuberotator.YoutubeIpRotatorSetup;
 import com.sedmelluq.lava.extensions.youtuberotator.planner.RotatingNanoIpRoutePlanner;
 import com.sedmelluq.lava.extensions.youtuberotator.tools.ip.IpBlock;
 import com.sedmelluq.lava.extensions.youtuberotator.tools.ip.Ipv6Block;
+import dev.lavalink.youtube.YoutubeAudioSourceManager;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -71,9 +71,7 @@ public class AudioManager extends AbstractShutdownable {
         GuildManager guildManager,
         HibernateComponent hibernateComponent,
         YouTubeService youTubeService,
-        @Value("${aiode.preferences.ipv6_blocks:#{null}}") String ipv6Blocks,
-        @Value("${aiode.tokens.yt-email:#{null}}") String ytEmail,
-        @Value("${aiode.tokens.yt-password:#{null}}") String ytPassword
+        @Value("${aiode.preferences.ipv6_blocks:#{null}}") String ipv6Blocks
     ) {
         playerManager = new DefaultAudioPlayerManager();
         audioTrackLoader = new AudioTrackLoader(playerManager);
@@ -83,7 +81,7 @@ public class AudioManager extends AbstractShutdownable {
         this.logger = LoggerFactory.getLogger(getClass());
         this.youTubeService = youTubeService;
 
-        playerManager.registerSourceManager(new YoutubeAudioSourceManager(true, ytEmail, ytPassword));
+        playerManager.registerSourceManager(new YoutubeAudioSourceManager());
         playerManager.registerSourceManager(SoundCloudAudioSourceManager.createDefault());
         playerManager.registerSourceManager(new BandcampAudioSourceManager());
         playerManager.registerSourceManager(new VimeoAudioSourceManager());
@@ -108,7 +106,9 @@ public class AudioManager extends AbstractShutdownable {
                 .collect(Collectors.toList());
 
             YoutubeIpRotatorSetup youtubeIpRotatorSetup = new YoutubeIpRotatorSetup(new RotatingNanoIpRoutePlanner(ipv6BlockList, ip -> true, true));
-            youtubeIpRotatorSetup.forSource(youtubeAudioSourceManager).setup();
+            youtubeIpRotatorSetup.forConfiguration(youtubeAudioSourceManager.getHttpInterfaceManager(), false)
+                .withMainDelegateFilter(null)
+                .setup();
             logger.info("YouTubeIpRotator set up with block: " + ipv6Blocks);
         }
     }
