@@ -76,9 +76,10 @@ public class VoiceChannelListener extends ListenerAdapter {
     public void onGuildVoiceUpdate(@NotNull GuildVoiceUpdateEvent event) {
         AudioChannel oldValue = event.getOldValue();
         AudioChannel newValue = event.getNewValue();
-        if (newValue == null && oldValue != null) {
+        if (oldValue != null) {
             onGuildVoiceLeave(event, event.getMember(), oldValue);
-        } else if (newValue != null) {
+        }
+        if (newValue != null) {
             onGuildVoiceJoin(event, event.getMember(), newValue);
         }
     }
