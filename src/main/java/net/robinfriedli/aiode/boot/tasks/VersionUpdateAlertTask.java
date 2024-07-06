@@ -24,11 +24,9 @@ import net.robinfriedli.aiode.discord.MessageService;
 import net.robinfriedli.aiode.entities.GuildSpecification;
 import net.robinfriedli.aiode.entities.xml.StartupTaskContribution;
 import net.robinfriedli.aiode.entities.xml.Version;
-import net.robinfriedli.aiode.function.CheckedConsumer;
 import net.robinfriedli.aiode.persist.StaticSessionProvider;
 import net.robinfriedli.aiode.persist.qb.QueryBuilderFactory;
 import net.robinfriedli.jxp.api.XmlElement;
-import org.hibernate.Session;
 
 import static net.robinfriedli.jxp.queries.Conditions.*;
 
@@ -126,30 +124,34 @@ public class VersionUpdateAlertTask implements StartupTask {
             // with the other shards
             synchronized (DISPATCH_LOCK) {
                 try {
-                    // setup current thread session and handle all guilds within one session instead of opening a new session for each
-                    StaticSessionProvider.consumeSession((CheckedConsumer<Session>) session -> {
-                        int counter = 0;
-                        long currentTimeMillis = System.currentTimeMillis();
-                        for (Guild guild : guilds) {
+                    int counter = 0;
+                    long currentTimeMillis = System.currentTimeMillis();
+                    for (Guild guild : guilds) {
+                        boolean alreadyNotified = StaticSessionProvider.invokeWithSession(session -> {
                             GuildContext guildContext = guildManager.getContextForGuild(guild);
                             GuildSpecification guildSpecification = guildContext.getSpecification(session);
                             if (Objects.equals(guildSpecification.getVersionUpdateAlertSent(), version)) {
-                                continue;
+                                return true;
                             } else {
                                 guildSpecification.setVersionUpdateAlertSent(version);
+                                return false;
                             }
+                        });
 
-                            messageService.sendWithLogo(embedBuilder, guild);
-
-                            if (++counter % MESSAGES_PER_SECOND == 0) {
-                                long delta = System.currentTimeMillis() - currentTimeMillis;
-                                if (delta < 1000) {
-                                    Thread.sleep(1000 - delta);
-                                }
-                                currentTimeMillis = System.currentTimeMillis();
-                            }
+                        if (alreadyNotified) {
+                            continue;
                         }
-                    });
+
+                        messageService.sendWithLogo(embedBuilder, guild);
+
+                        if (++counter % MESSAGES_PER_SECOND == 0) {
+                            long delta = System.currentTimeMillis() - currentTimeMillis;
+                            if (delta < 1000) {
+                                Thread.sleep(1000 - delta);
+                            }
+                            currentTimeMillis = System.currentTimeMillis();
+                        }
+                    }
                 } catch (Exception e) {
                     logger.error("Error sending version update alert", e);
                 }
