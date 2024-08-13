@@ -41,9 +41,9 @@ dependencies {
     implementation "com.google.apis:google-api-services-youtube:v3-rev20240417-2.0.0"
     implementation 'com.google.guava:guava:33.1.0-jre'
     implementation "com.sedmelluq:jda-nas:1.1.0"
-    implementation "dev.arbjerg:lavaplayer:2.1.2"
-    implementation "dev.arbjerg:lavaplayer-ext-youtube-rotator:2.1.2"
-    implementation "dev.lavalink.youtube:common:b2c8c070cdc4caa1fa93d0d7ac3f9d468bfa27a8-SNAPSHOT"
+    implementation "dev.arbjerg:lavaplayer:2.2.1"
+    implementation "dev.arbjerg:lavaplayer-ext-youtube-rotator:2.2.1"
+    implementation "dev.lavalink.youtube:common:1.5.2"
 
     implementation "commons-validator:commons-validator:1.8.0"
 
