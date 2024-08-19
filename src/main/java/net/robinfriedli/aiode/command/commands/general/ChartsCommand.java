@@ -3,6 +3,7 @@ package net.robinfriedli.aiode.command.commands.general;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +29,9 @@ import net.robinfriedli.aiode.entities.Artist;
 import net.robinfriedli.aiode.entities.PlaybackHistorySource;
 import net.robinfriedli.aiode.entities.SpotifyItemKind;
 import net.robinfriedli.aiode.entities.xml.CommandContribution;
+import net.robinfriedli.aiode.filebroker.FilebrokerPlayableWrapper;
 import net.robinfriedli.aiode.util.Util;
+import net.robinfriedli.filebroker.FilebrokerApi;
 import org.hibernate.Session;
 
 public class ChartsCommand extends AbstractCommand {
@@ -184,6 +187,11 @@ public class ChartsCommand extends AbstractCommand {
             }
             case URL -> {
                 return playableFactory.createPlayableContainerForUrl(id).loadPlayable(playableFactory);
+            }
+            case FILEBROKER -> {
+                FilebrokerApi filebrokerApi = Aiode.get().getFilebrokerApi();
+                FilebrokerApi.PostDetailed postDetailed = filebrokerApi.getPostAsync(Long.parseLong(id), null, null).get(10, TimeUnit.SECONDS);
+                return new FilebrokerPlayableWrapper(new FilebrokerApi.Post(postDetailed));
             }
         }
 

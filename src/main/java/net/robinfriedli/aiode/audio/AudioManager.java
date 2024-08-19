@@ -52,6 +52,7 @@ import net.robinfriedli.aiode.discord.GuildManager;
 import net.robinfriedli.aiode.entities.PlaybackHistory;
 import net.robinfriedli.aiode.entities.UserPlaybackHistory;
 import net.robinfriedli.aiode.exceptions.InvalidCommandException;
+import net.robinfriedli.filebroker.FilebrokerApi;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -65,12 +66,14 @@ public class AudioManager extends AbstractShutdownable {
 
     private final AudioPlayerManager playerManager;
     private final AudioTrackLoader audioTrackLoader;
+    private final FilebrokerApi filebrokerApi;
     private final GuildManager guildManager;
     private final HibernateComponent hibernateComponent;
     private final Logger logger;
     private final YouTubeService youTubeService;
 
     public AudioManager(
+        FilebrokerApi filebrokerApi,
         GuildManager guildManager,
         HibernateComponent hibernateComponent,
         YouTubeService youTubeService,
@@ -79,6 +82,7 @@ public class AudioManager extends AbstractShutdownable {
         playerManager = new DefaultAudioPlayerManager();
         audioTrackLoader = new AudioTrackLoader(playerManager);
 
+        this.filebrokerApi = filebrokerApi;
         this.guildManager = guildManager;
         this.hibernateComponent = hibernateComponent;
         this.logger = LoggerFactory.getLogger(getClass());
@@ -171,7 +175,7 @@ public class AudioManager extends AbstractShutdownable {
     }
 
     public PlayableFactory createPlayableFactory(SpotifyService spotifyService, TrackLoadingExecutor trackLoadingExecutor, boolean shouldRedirectSpotify) {
-        return new PlayableFactory(audioTrackLoader, spotifyService, trackLoadingExecutor, youTubeService, shouldRedirectSpotify);
+        return new PlayableFactory(audioTrackLoader, spotifyService, trackLoadingExecutor, youTubeService, shouldRedirectSpotify, filebrokerApi);
     }
 
     public void setChannel(AudioPlayback audioPlayback, AudioChannel channel) {

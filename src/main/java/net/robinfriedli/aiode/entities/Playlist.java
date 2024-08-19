@@ -3,13 +3,13 @@ package net.robinfriedli.aiode.entities;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.apache.commons.lang3.tuple.Pair;
 
 import com.google.api.client.util.Sets;
 import com.google.common.base.Strings;
@@ -25,12 +25,14 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.User;
+import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.audio.playables.PlayableFactory;
 import net.robinfriedli.aiode.audio.spotify.SpotifyTrack;
 import net.robinfriedli.aiode.audio.spotify.SpotifyTrackBulkLoadingService;
 import net.robinfriedli.aiode.audio.spotify.SpotifyTrackKind;
 import net.robinfriedli.aiode.audio.youtube.YouTubeVideo;
 import net.robinfriedli.aiode.boot.SpringPropertiesConfig;
+import net.robinfriedli.aiode.filebroker.FilebrokerPostBulkLoadingService;
 import se.michaelthelin.spotify.SpotifyApi;
 
 import static net.robinfriedli.aiode.audio.spotify.SpotifyTrackBulkLoadingService.*;
@@ -65,6 +67,8 @@ public class Playlist implements Serializable, SanitizedEntity {
     private Set<UrlTrack> urlTracks = Sets.newHashSet();
     @OneToMany(mappedBy = "playlist")
     private Set<Episode> episodes = Sets.newHashSet();
+    @OneToMany(mappedBy = "playlist")
+    private Set<FilebrokerTrack> filebrokerTracks = Sets.newHashSet();
 
     public Playlist() {
     }
@@ -98,7 +102,7 @@ public class Playlist implements Serializable, SanitizedEntity {
     }
 
     public int getSize() {
-        return songs.size() + videos.size() + urlTracks.size() + episodes.size();
+        return songs.size() + videos.size() + urlTracks.size() + episodes.size() + filebrokerTracks.size();
     }
 
     public String getCreatedUser() {
@@ -134,7 +138,7 @@ public class Playlist implements Serializable, SanitizedEntity {
     }
 
     public List<PlaylistItem> getItems() {
-        return Stream.of(getSongs(), getVideos(), getUrlTracks(), getEpisodes())
+        return Stream.of(getSongs(), getVideos(), getUrlTracks(), getEpisodes(), getFilebrokerTracks())
             .flatMap(Collection::stream)
             .collect(Collectors.toList());
     }
@@ -144,7 +148,7 @@ public class Playlist implements Serializable, SanitizedEntity {
     }
 
     public List<PlaylistItem> getItemsSorted(boolean ignoreNullIndex) {
-        return Stream.of(getSongs(), getVideos(), getUrlTracks(), getEpisodes())
+        return Stream.of(getSongs(), getVideos(), getUrlTracks(), getEpisodes(), getFilebrokerTracks())
             .flatMap(Collection::stream)
             .filter(item -> {
                 if (ignoreNullIndex) {
@@ -158,7 +162,7 @@ public class Playlist implements Serializable, SanitizedEntity {
     }
 
     public Stream<PlaylistItem> stream() {
-        return Stream.of(getSongs(), getVideos(), getUrlTracks(), getEpisodes()).flatMap(Collection::stream);
+        return Stream.of(getSongs(), getVideos(), getUrlTracks(), getEpisodes(), getFilebrokerTracks()).flatMap(Collection::stream);
     }
 
     /**
@@ -168,21 +172,22 @@ public class Playlist implements Serializable, SanitizedEntity {
     public List<Object> getTracks(SpotifyApi spotifyApi) {
         List<PlaylistItem> playlistItems = getItemsSorted();
         SpotifyTrackBulkLoadingService service = new SpotifyTrackBulkLoadingService(spotifyApi);
+        FilebrokerPostBulkLoadingService filebrokerLoadingService = new FilebrokerPostBulkLoadingService(Aiode.get().getFilebrokerApi());
 
-        Map<Object, Integer> itemsWithIndex = new HashMap<>();
+        List<Pair<Object, Integer>> itemsWithIndex = Lists.newArrayList();
         for (int i = 0; i < playlistItems.size(); i++) {
             PlaylistItem item = playlistItems.get(i);
             if (item instanceof Song) {
                 String id = ((Song) item).getId();
                 int finalI = i;
-                service.add(createItem(id, TRACK), track -> itemsWithIndex.put(track, finalI));
+                service.add(createItem(id, TRACK), track -> itemsWithIndex.add(Pair.of(track, finalI)));
             } else if (item instanceof Episode) {
                 String id = ((Episode) item).getId();
                 int finalI = i;
-                service.add(createItem(id, EPISODE), track -> itemsWithIndex.put(track, finalI));
+                service.add(createItem(id, EPISODE), track -> itemsWithIndex.add(Pair.of(track, finalI)));
             } else if (item instanceof Video video) {
                 YouTubeVideo youtubeVideo = video.asYouTubeVideo();
-                itemsWithIndex.put(youtubeVideo, i);
+                itemsWithIndex.add(Pair.of(youtubeVideo, i));
                 String spotifyId = video.getRedirectedSpotifyId();
                 if (!Strings.isNullOrEmpty(spotifyId)) {
                     SpotifyItemKind kindEntity = video.getRedirectedSpotifyKind();
@@ -190,12 +195,16 @@ public class Playlist implements Serializable, SanitizedEntity {
                     service.add(createItem(spotifyId, kind), youtubeVideo::setRedirectedSpotifyTrack);
                 }
             } else if (item instanceof UrlTrack) {
-                itemsWithIndex.put(item, i);
+                itemsWithIndex.add(Pair.of(item, i));
+            } else if (item instanceof FilebrokerTrack filebrokerTrack) {
+                int finalI = i;
+                filebrokerLoadingService.add(filebrokerTrack.getPostPk(), post -> itemsWithIndex.add(Pair.of(post, finalI)));
             }
         }
 
         service.perform();
-        return itemsWithIndex.keySet().stream().sorted(Comparator.comparing(itemsWithIndex::get)).collect(Collectors.toList());
+        filebrokerLoadingService.perform();
+        return itemsWithIndex.stream().sorted(Comparator.comparing(Pair::getRight)).map(Pair::getLeft).collect(Collectors.toList());
     }
 
     /**
@@ -257,8 +266,16 @@ public class Playlist implements Serializable, SanitizedEntity {
         this.episodes = episodes;
     }
 
+    public Set<FilebrokerTrack> getFilebrokerTracks() {
+        return filebrokerTracks;
+    }
+
+    public void setFilebrokerTracks(Set<FilebrokerTrack> filebrokerTracks) {
+        this.filebrokerTracks = filebrokerTracks;
+    }
+
     public boolean isEmpty() {
-        return songs.isEmpty() && videos.isEmpty() && urlTracks.isEmpty() && episodes.isEmpty();
+        return songs.isEmpty() && videos.isEmpty() && urlTracks.isEmpty() && episodes.isEmpty() && filebrokerTracks.isEmpty();
     }
 
     @Override

@@ -33,6 +33,8 @@ public abstract class AbstractSourceDecidingCommand extends AbstractCommand {
             return Source.LOCAL;
         } else if (argumentSet("soundcloud")) {
             return Source.SOUNDCLOUD;
+        } else if (argumentSet("filebroker")) {
+            return Source.FILEBROKER;
         } else {
             return getDefaultSource();
         }
@@ -67,7 +69,8 @@ public abstract class AbstractSourceDecidingCommand extends AbstractCommand {
         SPOTIFY,
         YOUTUBE,
         LOCAL,
-        SOUNDCLOUD;
+        SOUNDCLOUD,
+        FILEBROKER;
 
         public boolean isSpotify() {
             return this == SPOTIFY;
@@ -83,6 +86,10 @@ public abstract class AbstractSourceDecidingCommand extends AbstractCommand {
 
         public boolean isSoundCloud() {
             return this == SOUNDCLOUD;
+        }
+
+        public boolean isFilebroker() {
+            return this == FILEBROKER;
         }
     }
 

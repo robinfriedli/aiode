@@ -39,6 +39,7 @@ import net.robinfriedli.aiode.login.LoginManager;
 import net.robinfriedli.aiode.persist.qb.QueryBuilderFactory;
 import net.robinfriedli.aiode.scripting.GroovyVariableManager;
 import net.robinfriedli.aiode.servers.HttpServerManager;
+import net.robinfriedli.filebroker.FilebrokerApi;
 import net.robinfriedli.jxp.api.JxpBackend;
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -70,6 +71,7 @@ public class Aiode {
     private final ConfigurableApplicationContext springBootContext;
     private final CronJobService cronJobService;
     private final ExceptionHandlerRegistry exceptionHandlerRegistry;
+    private final FilebrokerApi filebrokerApi;
     private final GroovySandboxComponent groovySandboxComponent;
     private final GroovyVariableManager groovyVariableManager;
     private final GuildManager guildManager;
@@ -99,6 +101,7 @@ public class Aiode {
         ConfigurableApplicationContext springBootContext,
         CronJobService cronJobService,
         ExceptionHandlerRegistry exceptionHandlerRegistry,
+        FilebrokerApi filebrokerApi,
         GroovySandboxComponent groovySandboxComponent,
         GroovyVariableManager groovyVariableManager,
         GuildManager guildManager,
@@ -127,6 +130,7 @@ public class Aiode {
         this.springBootContext = springBootContext;
         this.cronJobService = cronJobService;
         this.exceptionHandlerRegistry = exceptionHandlerRegistry;
+        this.filebrokerApi = filebrokerApi;
         this.groovySandboxComponent = groovySandboxComponent;
         this.groovyVariableManager = groovyVariableManager;
         this.guildManager = guildManager;
@@ -286,6 +290,10 @@ public class Aiode {
 
     public ExceptionHandlerRegistry getExceptionHandlerRegistry() {
         return exceptionHandlerRegistry;
+    }
+
+    public FilebrokerApi getFilebrokerApi() {
+        return filebrokerApi;
     }
 
     public GroovySandboxComponent getGroovySandboxComponent() {

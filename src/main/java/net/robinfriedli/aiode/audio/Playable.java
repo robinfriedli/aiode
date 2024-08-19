@@ -225,7 +225,8 @@ public interface Playable {
 
         SPOTIFY("Spotify"),
         YOUTUBE("YouTube"),
-        URL("Url");
+        URL("Url"),
+        FILEBROKER("filebroker");
 
         private final String name;
 

@@ -4,6 +4,7 @@ import com.google.common.base.Strings
 import com.google.common.collect.Lists
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
+import net.robinfriedli.aiode.Aiode
 import net.robinfriedli.aiode.audio.AudioTrackLoader
 import net.robinfriedli.aiode.audio.Playable
 import net.robinfriedli.aiode.audio.exec.SpotifyTrackRedirectionRunnable
@@ -14,6 +15,7 @@ import net.robinfriedli.aiode.audio.playables.containers.*
 import net.robinfriedli.aiode.audio.spotify.PlayableTrackWrapper
 import net.robinfriedli.aiode.audio.spotify.SpotifyService
 import net.robinfriedli.aiode.audio.spotify.SpotifyTrack
+import net.robinfriedli.aiode.audio.spotify.SpotifyTrackRedirect
 import net.robinfriedli.aiode.audio.youtube.HollowYouTubeVideo
 import net.robinfriedli.aiode.audio.youtube.YouTubePlaylist
 import net.robinfriedli.aiode.audio.youtube.YouTubeService
@@ -23,6 +25,7 @@ import net.robinfriedli.aiode.exceptions.NoResultsFoundException
 import net.robinfriedli.aiode.function.ChainableRunnable
 import net.robinfriedli.aiode.function.CheckedFunction
 import net.robinfriedli.aiode.function.SpotifyInvoker
+import net.robinfriedli.filebroker.FilebrokerApi
 import net.robinfriedli.stringlist.StringList
 import org.apache.hc.core5.http.ParseException
 import org.apache.http.NameValuePair
@@ -36,6 +39,8 @@ import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.util.*
 import java.util.concurrent.Callable
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.TimeUnit
 import java.util.function.Function
 import java.util.stream.Collectors
 
@@ -44,12 +49,19 @@ class PlayableFactory(
     val spotifyService: SpotifyService,
     val trackLoadingExecutor: TrackLoadingExecutor,
     val youTubeService: YouTubeService,
-    val redirectSpotify: Boolean
+    val redirectSpotify: Boolean,
+    val filebrokerApi: FilebrokerApi,
 ) {
 
     companion object {
         @JvmStatic
         val BASE62_REGEX = "^[a-zA-Z0-9]{22}\$".toRegex()
+        @JvmStatic
+        val FILEBROKER_POST_REGEX = ".*/post/([0-9]+)(\\?.*)?".toRegex()
+        @JvmStatic
+        val FILEBROKER_COLLECTION_REGEX = ".*/collection/([0-9]+)(\\?.*)?".toRegex()
+        @JvmStatic
+        val FILEBROKER_COLLECTION_ITEM_REGEX = ".*/collection/([0-9]+)/post/([0-9]+)(\\?.*)?".toRegex()
     }
 
     private val spotifyInvoker: SpotifyInvoker = SpotifyInvoker.createForCurrentContext()
@@ -85,11 +97,11 @@ class PlayableFactory(
 
     fun createPlayable(spotifyTrack: SpotifyTrack): Playable {
         return if (redirectSpotify) {
-            val youTubeVideo = HollowYouTubeVideo(youTubeService, spotifyTrack)
-            executeOrAppendTrackLoadingTask(SpotifyTrackRedirectionRunnable::class.java, youTubeVideo) { video ->
-                SpotifyTrackRedirectionRunnable(youTubeService, video)
+            val spotifyTrackRedirect = SpotifyTrackRedirect(spotifyTrack, youTubeService)
+            executeOrAppendTrackLoadingTask(SpotifyTrackRedirectionRunnable::class.java, spotifyTrackRedirect) { trackRedirect ->
+                SpotifyTrackRedirectionRunnable(filebrokerApi, youTubeService, trackRedirect)
             }
-            youTubeVideo
+            spotifyTrackRedirect
         } else {
             PlayableTrackWrapper(spotifyTrack)
         }
@@ -146,6 +158,24 @@ class PlayableFactory(
         return loadAll(trackPlayableContainers)
     }
 
+    fun createPlayables(filebrokerCollection: FilebrokerApi.PostCollection): List<Playable> {
+        val items = ArrayList<FilebrokerApi.PostCollectionItem>()
+        var page = 0L
+        do {
+            val result = filebrokerApi.searchPostCollectionItemsAsync(filebrokerCollection.pk, page = page, limit = 100).get(10, TimeUnit.SECONDS)
+            val currItems = result.collection_items ?: emptyList()
+            items.addAll(currItems)
+
+            if (currItems.size < 100) {
+                break
+            }
+            page++
+        } while (true)
+
+        val postContainers = items.map { item -> FilebrokerPostPlayableContainer(item.post) }
+        return loadAll(postContainers)
+    }
+
     @Throws(IOException::class)
     fun createPlayableContainerForUrl(url: String): PlayableContainer<*> {
         val uri = try {
@@ -154,6 +184,8 @@ class PlayableFactory(
             throw InvalidCommandException("'$url' is not a valid URL")
         }
 
+        val filebrokerBaseUrl = Aiode.get().springPropertiesConfig.getApplicationProperty("aiode.filebroker.api_base_url")
+        val filebrokerBaseUri = filebrokerBaseUrl?.let { URI.create(it) }
         return when {
             uri.host.contains("youtube.com") -> {
                 val parameterMap = getParameterMap(uri)
@@ -185,6 +217,36 @@ class PlayableFactory(
                 } catch (e: CommandRuntimeException) {
                     if (e.cause is NotFoundException) {
                         throw NoResultsFoundException("No results found for provided spotify URL", e.cause)
+                    } else {
+                        throw e
+                    }
+                }
+            }
+            (uri.host == "filebroker.io" || (filebrokerBaseUri != null && uri.host == filebrokerBaseUri.host)) && !uri.path.startsWith("/api/get-object/") -> {
+                val postPkStr = FILEBROKER_POST_REGEX.find(url)?.groups?.get(1)?.value
+                val postCollectionPk = FILEBROKER_COLLECTION_REGEX.find(url)?.groups?.get(1)?.value
+                val postCollectionItemMatch = FILEBROKER_COLLECTION_ITEM_REGEX.find(url)
+
+                return try {
+                    if (postCollectionItemMatch != null && postCollectionItemMatch.groups.size >= 3) {
+                        val postCollectionPk = postCollectionItemMatch.groups[1]!!.value
+                        val postCollectionItemPk = postCollectionItemMatch.groups[2]!!.value
+                        val post = filebrokerApi.getPostCollectionItemAsync(postCollectionPk.toLong(), postCollectionItemPk.toLong()).get(10, TimeUnit.SECONDS)
+                        FilebrokerPostDetailedPlayableContainer(post)
+                    } else if (postPkStr != null) {
+                        val post = filebrokerApi.getPostAsync(postPkStr.toLong()).get(10, TimeUnit.SECONDS)
+                        FilebrokerPostDetailedPlayableContainer(post)
+                    } else if (postCollectionPk != null) {
+                        val postCollection = filebrokerApi.getPostCollectionAsync(postCollectionPk.toLong()).get(10, TimeUnit.SECONDS)
+                        FilebrokerPostCollectionDetailedPlayableContainer(postCollection)
+                    } else {
+                        throw InvalidCommandException("Filebroker URL unsupported, must link to a post or collection.")
+                    }
+                } catch (e: NumberFormatException) {
+                    throw InvalidCommandException("Filebroker URL is invalid")
+                } catch (e: ExecutionException) {
+                    if (e.cause is FilebrokerApi.InvalidHttpResponseException && (e.cause as FilebrokerApi.InvalidHttpResponseException).status == 403) {
+                        throw NoResultsFoundException("Aiode could not access the provided filebroker URL. Make sure the content is public or shared with the aiode community or supporters group.")
                     } else {
                         throw e
                     }

@@ -23,6 +23,7 @@ import net.robinfriedli.aiode.audio.Playable;
 import net.robinfriedli.aiode.audio.spotify.PlayableTrackWrapper;
 import net.robinfriedli.aiode.audio.spotify.SpotifyTrack;
 import net.robinfriedli.aiode.audio.spotify.SpotifyTrackKind;
+import net.robinfriedli.aiode.audio.spotify.SpotifyTrackRedirect;
 import net.robinfriedli.aiode.audio.youtube.YouTubeVideo;
 import net.robinfriedli.aiode.exceptions.UnavailableResourceException;
 import org.hibernate.Session;
@@ -85,6 +86,9 @@ public class PlaybackHistory implements Serializable {
             }
             if (playable instanceof YouTubeVideo) {
                 spotifyTrack = ((YouTubeVideo) playable).getRedirectedSpotifyTrack();
+            }
+            if (playable instanceof SpotifyTrackRedirect) {
+                spotifyTrack = ((SpotifyTrackRedirect) playable).getSpotifyTrack();
             }
             if (spotifyTrack != null) {
                 title = spotifyTrack.getName();

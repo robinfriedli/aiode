@@ -1132,4 +1132,40 @@ See application.properties -> spring.liquibase.contexts
       <column name="trigger_event" type="varchar(30)"/>
     </addColumn>
   </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1723745145409-1">
+    <createTable tableName="filebroker_track">
+      <column autoIncrement="true" name="pk" type="BIGINT">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="filebroker_trackPK"/>
+      </column>
+      <column name="added_user" type="VARCHAR(255)"/>
+      <column name="added_user_id" type="VARCHAR(255)"/>
+      <column name="created_timestamp" type="TIMESTAMP(6) WITHOUT TIME ZONE"/>
+      <column name="duration" type="BIGINT"/>
+      <column name="item_index" type="INTEGER"/>
+      <column name="playlist_pk" type="BIGINT"/>
+      <column name="artist" type="VARCHAR(255)"/>
+      <column name="post_pk" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="title" type="VARCHAR(255)"/>
+    </createTable>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1723745145409-2">
+    <createIndex indexName="filebroker_track_playlist_pk_idx" tableName="filebroker_track">
+      <column name="playlist_pk"/>
+    </createIndex>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1723745145409-3">
+    <createIndex indexName="filebroker_track_post_pk" tableName="filebroker_track">
+      <column name="post_pk"/>
+    </createIndex>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1723745145409-4">
+    <addForeignKeyConstraint baseColumnNames="playlist_pk" baseTableName="filebroker_track" constraintName="FKq9lo6oqjvdyt03hmpkofsqdr7" deferrable="false" initiallyDeferred="false" referencedColumnNames="pk" referencedTableName="playlist" validate="true"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1723830800548-1">
+    <addColumn tableName="spotify_redirect_index">
+      <column name="filebroker_pk" type="bigint"/>
+    </addColumn>
+  </changeSet>
 </databaseChangeLog>

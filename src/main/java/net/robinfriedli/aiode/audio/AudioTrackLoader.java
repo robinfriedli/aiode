@@ -42,6 +42,20 @@ public class AudioTrackLoader {
      */
     @Nullable
     public AudioItem loadByIdentifier(String identifier) {
+        return loadByIdentifier(identifier, 2, TimeUnit.MINUTES);
+    }
+
+    /**
+     * Load an {@link AudioTrack} or {@link AudioPlaylist} via an identifier. This is usually its URL or a YouTube
+     * search query, if preceded by the prefix "ytsearch:"
+     *
+     * @param identifier the url or YouTube search query
+     * @param timeout    amount of time to wait for result
+     * @param unit       unit of time
+     * @return the loaded {@link AudioTrack} or {@link AudioPlaylist} or the resulting {@link FriendlyException} or null
+     */
+    @Nullable
+    public AudioItem loadByIdentifier(String identifier, long timeout, TimeUnit unit) {
         CompletableFuture<AudioItem> result = new CompletableFuture<>();
         playerManager.loadItem(identifier, new AudioLoadResultHandler() {
             @Override
@@ -69,7 +83,7 @@ public class AudioTrackLoader {
         });
 
         try {
-            return result.get(2, TimeUnit.MINUTES);
+            return result.get(timeout, unit);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return null;

@@ -5,50 +5,53 @@ import java.util.List;
 
 import com.google.common.collect.Lists;
 import net.robinfriedli.aiode.audio.spotify.SpotifyRedirectService;
-import net.robinfriedli.aiode.audio.youtube.HollowYouTubeVideo;
+import net.robinfriedli.aiode.audio.spotify.SpotifyTrackRedirect;
 import net.robinfriedli.aiode.audio.youtube.YouTubeService;
 import net.robinfriedli.aiode.function.CheckedConsumer;
 import net.robinfriedli.aiode.persist.StaticSessionProvider;
+import net.robinfriedli.filebroker.FilebrokerApi;
 import org.hibernate.Session;
 
-public class SpotifyTrackRedirectionRunnable implements TrackLoadingRunnable<HollowYouTubeVideo> {
+public class SpotifyTrackRedirectionRunnable implements TrackLoadingRunnable<SpotifyTrackRedirect> {
 
-    private final List<HollowYouTubeVideo> tracksToRedirect;
+    private final List<SpotifyTrackRedirect> tracksToRedirect;
+    private final FilebrokerApi filebrokerApi;
     private final YouTubeService youTubeService;
 
     private SpotifyRedirectService spotifyRedirectService;
 
-    public SpotifyTrackRedirectionRunnable(YouTubeService youTubeService, HollowYouTubeVideo... tracksToRedirect) {
-        this(Lists.newArrayList(tracksToRedirect), youTubeService);
+    public SpotifyTrackRedirectionRunnable(FilebrokerApi filebrokerApi, YouTubeService youTubeService, SpotifyTrackRedirect... tracksToRedirect) {
+        this(filebrokerApi, Lists.newArrayList(tracksToRedirect), youTubeService);
     }
 
-    public SpotifyTrackRedirectionRunnable(List<HollowYouTubeVideo> tracksToRedirect, YouTubeService youTubeService) {
+    public SpotifyTrackRedirectionRunnable(FilebrokerApi filebrokerApi, List<SpotifyTrackRedirect> tracksToRedirect, YouTubeService youTubeService) {
+        this.filebrokerApi = filebrokerApi;
         this.tracksToRedirect = tracksToRedirect;
         this.youTubeService = youTubeService;
     }
 
     @Override
-    public void addItems(Collection<HollowYouTubeVideo> items) {
+    public void addItems(Collection<SpotifyTrackRedirect> items) {
         tracksToRedirect.addAll(items);
     }
 
     @Override
-    public List<HollowYouTubeVideo> getItems() {
+    public List<SpotifyTrackRedirect> getItems() {
         return tracksToRedirect;
     }
 
     @Override
     public void handleCancellation() {
-        tracksToRedirect.stream().filter(HollowYouTubeVideo::isHollow).forEach(HollowYouTubeVideo::cancel);
+        tracksToRedirect.stream().filter(track -> !track.isDone()).forEach(SpotifyTrackRedirect::cancel);
     }
 
     @Override
-    public void loadItem(HollowYouTubeVideo item) throws Exception {
+    public void loadItem(SpotifyTrackRedirect item) throws Exception {
         if (spotifyRedirectService != null) {
             spotifyRedirectService.redirectTrack(item);
         } else {
             StaticSessionProvider.consumeSession((CheckedConsumer<Session>) session -> {
-                SpotifyRedirectService spotifyRedirectService = new SpotifyRedirectService(session, youTubeService);
+                SpotifyRedirectService spotifyRedirectService = new SpotifyRedirectService(filebrokerApi, session, youTubeService);
                 spotifyRedirectService.redirectTrack(item);
             });
         }
@@ -58,7 +61,7 @@ public class SpotifyTrackRedirectionRunnable implements TrackLoadingRunnable<Hol
     public void doRun() {
         if (!tracksToRedirect.isEmpty()) {
             StaticSessionProvider.consumeSession((CheckedConsumer<Session>) session -> {
-                spotifyRedirectService = new SpotifyRedirectService(session, youTubeService);
+                spotifyRedirectService = new SpotifyRedirectService(filebrokerApi, session, youTubeService);
                 loadItems();
             });
         }

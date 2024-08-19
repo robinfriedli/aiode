@@ -18,6 +18,7 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Root;
 import net.robinfriedli.aiode.Aiode;
+import net.robinfriedli.aiode.audio.spotify.SpotifyRedirectService;
 import net.robinfriedli.aiode.audio.spotify.SpotifyTrack;
 import net.robinfriedli.aiode.audio.spotify.SpotifyTrackBulkLoadingService;
 import net.robinfriedli.aiode.audio.spotify.SpotifyTrackKind;
@@ -32,6 +33,7 @@ import net.robinfriedli.aiode.function.modes.HibernateTransactionMode;
 import net.robinfriedli.aiode.function.modes.SpotifyAuthorizationMode;
 import net.robinfriedli.aiode.persist.StaticSessionProvider;
 import net.robinfriedli.exec.Mode;
+import net.robinfriedli.filebroker.FilebrokerApi;
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
 import org.hibernate.Session;
@@ -77,6 +79,7 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
             LocalDate date4WeeksAgo = currentDate.minusDays(28);
 
             StaticSessionProvider.consumeSession(session -> {
+                SpotifyRedirectService spotifyRedirectService = new SpotifyRedirectService(aiode.getFilebrokerApi(), session, youTubeService);
                 CriteriaBuilder cb = session.getCriteriaBuilder();
                 CriteriaQuery<SpotifyRedirectIndex> query = cb.createQuery(SpotifyRedirectIndex.class);
                 Root<SpotifyRedirectIndex> root = query.from(SpotifyRedirectIndex.class);
@@ -96,7 +99,7 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
                 int updateCount = 0;
                 for (SpotifyRedirectIndex index : indices) {
                     SpotifyTrackKind kind = index.getSpotifyItemKind().asEnum();
-                    RefreshTrackIndexTask task = new RefreshTrackIndexTask(session, index, youTubeService);
+                    RefreshTrackIndexTask task = new RefreshTrackIndexTask(session, index, spotifyRedirectService, youTubeService);
                     String spotifyId = index.getSpotifyId();
                     if (!Strings.isNullOrEmpty(spotifyId)) {
                         spotifyTrackBulkLoadingService.add(createItem(spotifyId, kind), task);
@@ -143,11 +146,13 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
 
         private final Session session;
         private final SpotifyRedirectIndex index;
+        private final SpotifyRedirectService spotifyRedirectService;
         private final YouTubeService youTubeService;
 
-        private RefreshTrackIndexTask(Session session, SpotifyRedirectIndex index, YouTubeService youTubeService) {
+        private RefreshTrackIndexTask(Session session, SpotifyRedirectIndex index, SpotifyRedirectService spotifyRedirectService, YouTubeService youTubeService) {
             this.session = session;
             this.index = index;
+            this.spotifyRedirectService = spotifyRedirectService;
             this.youTubeService = youTubeService;
         }
 
@@ -163,18 +168,25 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
                 if (index.getLastUsed().isBefore(date2WeeksAgo)) {
                     session.remove(index);
                 } else {
-                    HollowYouTubeVideo hollowYouTubeVideo = new HollowYouTubeVideo(youTubeService, track);
-                    try {
-                        youTubeService.redirectSpotify(hollowYouTubeVideo);
-                    } catch (CommandRuntimeException e) {
-                        throw e.getCause();
-                    }
-                    if (!hollowYouTubeVideo.isCanceled() && !Strings.isNullOrEmpty(track.getId())) {
-                        String videoId = hollowYouTubeVideo.getVideoId();
-                        index.setYouTubeId(videoId);
-                        index.setLastUpdated(LocalDate.now());
+                    FilebrokerApi.Post post = spotifyRedirectService.findFilebrokerPostForSpotifyTrack(track);
+
+                    if (post != null) {
+                        index.setFileBrokerPk(post.getPk());
                     } else {
-                        session.remove(index);
+                        index.setFileBrokerPk(null);
+                        HollowYouTubeVideo hollowYouTubeVideo = new HollowYouTubeVideo(youTubeService, track);
+                        try {
+                            youTubeService.redirectSpotify(hollowYouTubeVideo);
+                        } catch (CommandRuntimeException e) {
+                            throw e.getCause();
+                        }
+                        if (!hollowYouTubeVideo.isCanceled() && !Strings.isNullOrEmpty(track.getId())) {
+                            String videoId = hollowYouTubeVideo.getVideoId();
+                            index.setYouTubeId(videoId);
+                            index.setLastUpdated(LocalDate.now());
+                        } else {
+                            session.remove(index);
+                        }
                     }
                 }
             } catch (UnavailableResourceException e) {

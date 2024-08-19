@@ -21,15 +21,15 @@ import com.google.common.collect.Lists;
 public class BulkOperationService<K, V> {
 
     // the amount of items that can be loaded within one request
-    private final int size;
+    protected final int size;
     // the function that executes loading the items, the provided list does not exceed the size defined by the size
     // parameter; if the amount of items loaded exceeds the size this function is called several times; returns the loaded
     // items paired with the key they were loaded with
-    private final Function<List<K>, List<Pair<K, V>>> loadFunc;
+    protected final Function<List<K>, List<Pair<K, V>>> loadFunc;
     // the keys for all items that will be loaded
-    private final List<K> keys = Lists.newArrayList();
+    protected final List<K> keys = Lists.newArrayList();
     // the map containing all keys mapped to the action that should be performed with the loaded item
-    private final Map<K, ResultConsumerManager<V>> actionMap = new HashMap<>();
+    protected final Map<K, ResultConsumerManager<V>> actionMap = new HashMap<>();
 
     public BulkOperationService(int size, Function<List<K>, List<Pair<K, V>>> loadFunc) {
         this.size = size;
@@ -70,12 +70,12 @@ public class BulkOperationService<K, V> {
         }
     }
 
-    private static class ResultConsumerManager<T> {
+    protected static class ResultConsumerManager<T> {
 
         private final List<Consumer<T>> resultConsumers = Lists.newArrayList();
         private Iterator<Consumer<T>> iterator = null;
 
-        Consumer<T> next() {
+        public Consumer<T> next() {
             if (iterator == null) {
                 iterator = resultConsumers.iterator();
             }
@@ -89,7 +89,14 @@ public class BulkOperationService<K, V> {
             return iterator.next();
         }
 
-        void add(Consumer<T> consumer) {
+        public boolean hasNext() {
+            if (iterator == null) {
+                iterator = resultConsumers.iterator();
+            }
+            return iterator.hasNext();
+        }
+
+        public void add(Consumer<T> consumer) {
             if (iterator != null) {
                 // invalidate iterator
                 iterator = null;
