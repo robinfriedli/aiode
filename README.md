@@ -42,6 +42,7 @@ router's public ip and setup port forwarding for your router.
 ##### 4.1.1 Navigate to your cloned project and go to `src/main/resources` and create the `settings-private.properties` from the example below and fill in the blanks. This file is included in gitignore to make sure you don't accidentally publish it.
 ##### 4.1.2 Adjust datasource properties and enter the database user and password, database setup will be discussed further in 4.2.1.
 ##### 4.1.3 To take advantage of the admin commands that can perform administrative actions, such as updating and restarting the bot, be sure to add your Discord user id to the `aiode.security.admin_users` property. To find your Discord user id, enable Developer Mode in the App Settings > Appearance. Then go to any guild, right click your user and click "Copy ID".
+##### 4.1.4 To supplement [filebroker.io](https://github.com/filebroker) integration, you may set up a bot account and paste the username and password below. This ensures that the bot has access to all posts shared with that bot account.
 ```properties
 ##########
 # tokens #
@@ -78,6 +79,11 @@ aiode.tokens.topgg_token=
 # set these properties to support age restricted videos on YouTube, see https://github.com/Walkyst/lavaplayer-fork/issues/18
 aiode.tokens.yt-email=
 aiode.tokens.yt-password=
+##############
+# filebroker #
+##############
+aiode.filebroker.bot_user_name=
+aiode.filebroker.bot_user_password=
 ```
 #### 4.2 Adjust application.properties
 ##### 4.2.1 Review the datasource properties and make necessary adjustments. If you are using a local postgres server and name your database "aiode" you can leave it as it is. If you need help setting up your postgres server, please refer to their official documentation: http://www.postgresqltutorial.com/.
@@ -134,6 +140,10 @@ spring.jpa.properties.hibernate.cache.use_second_level_cache=true
 spring.jpa.properties.hibernate.cache.region.factory_class=org.hibernate.cache.jcache.JCacheRegionFactory
 spring.jpa.properties.hibernate.javax.cache.provider=org.ehcache.jsr107.EhcacheCachingProvider
 spring.jpa.properties.hibernate.javax.cache.missing_cache_strategy=create
+##############
+# filebroker #
+##############
+aiode.filebroker.api_base_url=https://filebroker.io/api/
 ```
 
 

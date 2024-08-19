@@ -797,7 +797,7 @@ if (voiceChannel.getId() == '484071462622330889' &amp;&amp; playback.getAudioQue
 
   <!-- abstract super commands -->
   <abstractCommand class="net.robinfriedli.aiode.command.commands.AbstractPlayableLoadingCommand">
-    <argument identifier="list" requiresInput="true" description="Search for a youtube, spotify or aiode playlist. Note that this argument is only required when searching, not when entering a URL."/>
+    <argument identifier="list" requiresInput="true" description="Search for a youtube, spotify or aiode playlist or filebroker collection. Note that this argument is only required when searching, not when entering a URL."/>
     <argument identifier="spotify" requiresInput="true" description="Search for a Spotify track, list or album. This supports Spotify query syntax (i.e. the filters &quot;artist:&quot;, &quot;album:&quot;, etc.). Note that this argument is only required when searching, not when entering a URL.">
       <excludes argument="youtube"/>
       <excludes argument="soundcloud"/>
@@ -814,17 +814,17 @@ if (voiceChannel.getId() == '484071462622330889' &amp;&amp; playback.getAudioQue
       <excludes argument="youtube"/>
       <requires argument="list"/>
     </argument>
-    <argument identifier="album" requiresInput="true" description="Search for a Spotify album. Note that this argument is only required when searching, not when entering a URL.">
+    <argument identifier="album" requiresInput="true" description="Search for a Spotify album or filebroker collection. Note that this argument is only required when searching, not when entering a URL.">
       <excludes argument="list"/>
       <excludes argument="episode"/>
       <excludes argument="podcast"/>
-      <rule errorMessage="Argument 'album' may only be used with Spotify.">command.getSource().isSpotify()</rule>
+      <rule errorMessage="Argument 'album' may only be used with Spotify or filebroker.">command.getSource().isSpotify() || command.getSource().isFilebroker()</rule>
     </argument>
     <argument identifier="select" valueType="java.lang.Integer" requiresInput="true" description="Show a selection of YouTube playlists / videos or Spotify tracks to chose from. May be assigned a value from 1 to 20: %2$sselect=5">
       <valueCheck errorMessage="Limit must be between 1 and 20" check="value &gt; 0 &amp;&amp; value &lt;= 20"/>
-      <rule errorMessage="Argument 'select' may only be used with YouTube or Spotify.">
+      <rule errorMessage="Argument 'select' may only be used with YouTube, Spotify or filebroker.">
         def source = command.getSource();
-        source.isYouTube() || source.isSpotify()
+        source.isYouTube() || source.isSpotify() || command.getSource().isFilebroker()
       </rule>
     </argument>
     <argument identifier="soundcloud" requiresInput="true" description="Search a track on soundcloud. Note that this argument is only required when searching, not when entering a URL.">
@@ -854,6 +854,11 @@ if (voiceChannel.getId() == '484071462622330889' &amp;&amp; playback.getAudioQue
         }
         return true;
       </rule>
+    </argument>
+    <argument identifier="filebroker" requiresInput="true" description="Search for posts or collections on [filebroker](https://filebroker.io/). The input must be in the form of a filebroker query, check [the documentation](https://github.com/filebroker/filebroker-server/wiki/filebroker-query-cheat-sheet). By default this will auto-select the first result, use the %2$sselect argument to get a list of results. Note that this argument is only required when searching, not when entering a URL.">
+      <excludes argument="spotify"/>
+      <excludes argument="youtube"/>
+      <excludes argument="soundcloud"/>
     </argument>
   </abstractCommand>
   <abstractCommand class="net.robinfriedli.aiode.command.commands.AbstractQueueLoadingCommand">

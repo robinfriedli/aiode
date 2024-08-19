@@ -3,7 +3,13 @@ package net.robinfriedli.aiode.command.commands;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.apache.commons.validator.routines.UrlValidator;
 
 import com.google.common.base.Strings;
@@ -20,6 +26,8 @@ import net.robinfriedli.aiode.audio.playables.PlayableContainerManager;
 import net.robinfriedli.aiode.audio.playables.PlayableFactory;
 import net.robinfriedli.aiode.audio.playables.containers.AudioTrackPlayableContainer;
 import net.robinfriedli.aiode.audio.playables.containers.EpisodePlayableContainer;
+import net.robinfriedli.aiode.audio.playables.containers.FilebrokerPostCollectionPlayableContainer;
+import net.robinfriedli.aiode.audio.playables.containers.FilebrokerPostPlayableContainer;
 import net.robinfriedli.aiode.audio.playables.containers.PlaylistPlayableContainer;
 import net.robinfriedli.aiode.audio.playables.containers.SinglePlayableContainer;
 import net.robinfriedli.aiode.audio.playables.containers.SpotifyAlbumSimplifiedPlayableContainer;
@@ -37,11 +45,18 @@ import net.robinfriedli.aiode.command.CommandContext;
 import net.robinfriedli.aiode.command.CommandManager;
 import net.robinfriedli.aiode.entities.Playlist;
 import net.robinfriedli.aiode.entities.xml.CommandContribution;
+import net.robinfriedli.aiode.exceptions.CommandRuntimeException;
+import net.robinfriedli.aiode.exceptions.InvalidCommandException;
 import net.robinfriedli.aiode.exceptions.NoResultsFoundException;
 import net.robinfriedli.aiode.exceptions.NoSpotifyResultsFoundException;
 import net.robinfriedli.aiode.exceptions.UnavailableResourceException;
+import net.robinfriedli.aiode.filebroker.FilebrokerPlayableWrapper;
 import net.robinfriedli.aiode.util.SearchEngine;
+import net.robinfriedli.filebroker.FilebrokerApi;
 import net.robinfriedli.stringlist.StringList;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import se.michaelthelin.spotify.model_objects.specification.AlbumSimplified;
 import se.michaelthelin.spotify.model_objects.specification.ArtistSimplified;
 import se.michaelthelin.spotify.model_objects.specification.Episode;
@@ -50,6 +65,8 @@ import se.michaelthelin.spotify.model_objects.specification.ShowSimplified;
 import se.michaelthelin.spotify.model_objects.specification.Track;
 
 public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecidingCommand {
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final TrackLoadingExecutor trackLoadingExecutor;
 
@@ -62,6 +79,7 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
     protected AudioTrack loadedAudioTrack;
     protected AudioPlaylist loadedAudioPlaylist;
     protected ShowSimplified loadedShow;
+    protected FilebrokerApi.PostCollection loadedFilebrokerCollection;
 
     public AbstractPlayableLoadingCommand(CommandContribution commandContribution,
                                           CommandContext context,
@@ -90,6 +108,8 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
                 loadSpotifyList(audioManager);
             } else if (source.isYouTube()) {
                 loadYouTubeList(audioManager);
+            } else if (source.isFilebroker()) {
+                loadFilebrokerCollections(audioManager);
             } else {
                 loadLocalList(audioManager);
             }
@@ -103,6 +123,12 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
                 loadYouTubeVideo(audioManager);
             } else if (source.isSoundCloud()) {
                 loadSoundCloudTrack(audioManager);
+            } else if (source.isFilebroker()) {
+                if (argumentSet("album")) {
+                    loadFilebrokerCollections(audioManager);
+                } else {
+                    loadFilebrokerPosts(audioManager);
+                }
             } else if (argumentSet("album")) {
                 loadSpotifyAlbum(audioManager);
             } else {
@@ -154,6 +180,9 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
             String name = loadedShow.getName();
             sendSuccess("Queued podcast " + name + (playingNext ? " to play next" : ""));
         }
+        if (loadedFilebrokerCollection != null) {
+            sendSuccess("Queued filebroker collection " + loadedFilebrokerCollection.getTitle() + (playingNext ? " to play next" : ""));
+        }
     }
 
     private void loadUrlItems(AudioManager audioManager) throws IOException {
@@ -177,15 +206,13 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
         handleResult(playableContainer, playableFactory);
     }
 
-    private void loadLocalList(AudioManager audioManager) throws Exception {
+    private void loadLocalList(AudioManager audioManager) {
         Playlist playlist = SearchEngine.searchLocalList(getContext().getSession(), getCommandInput());
         if (playlist == null) {
             throw new NoResultsFoundException(String.format("No local playlist found for '%s'", getCommandInput()));
         }
 
-        List<Object> items = runWithCredentials(() -> playlist.getTracks(getContext().getSpotifyApi()));
-
-        if (items.isEmpty()) {
+        if (playlist.isEmpty()) {
             throw new NoResultsFoundException("Playlist is empty");
         }
 
@@ -305,24 +332,29 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
         PlayableFactory playableFactory = audioManager.createPlayableFactory(getSpotifyService(), trackLoadingExecutor, shouldRedirectSpotify());
         String commandInput = getCommandInput();
         AudioItem audioItem = audioTrackLoader.loadByIdentifier("scsearch:" + commandInput);
-        if (audioItem instanceof AudioTrack audioTrack) {
-            this.loadedAudioTrack = audioTrack;
-            handleResult(new AudioTrackPlayableContainer(audioTrack), playableFactory);
-        } else if (audioItem == null) {
-            throw new NoResultsFoundException(String.format("No soundcloud track found for '%s'", commandInput));
-        } else if (audioItem instanceof AudioPlaylist) {
-            int limit = getArgumentValueWithTypeOrElse("select", Integer.class, 20);
-            List<AudioTrack> tracks = ((AudioPlaylist) audioItem).getTracks();
-
-            if (tracks.isEmpty()) {
+        switch (audioItem) {
+            case AudioTrack audioTrack -> {
+                this.loadedAudioTrack = audioTrack;
+                handleResult(new AudioTrackPlayableContainer(audioTrack), playableFactory);
+            }
+            case null ->
                 throw new NoResultsFoundException(String.format("No soundcloud track found for '%s'", commandInput));
-            }
+            case AudioPlaylist audioPlaylist -> {
+                int limit = getArgumentValueWithTypeOrElse("select", Integer.class, 20);
+                List<AudioTrack> tracks = audioPlaylist.getTracks();
 
-            if (tracks.size() > limit) {
-                tracks = tracks.subList(0, limit);
-            }
+                if (tracks.isEmpty()) {
+                    throw new NoResultsFoundException(String.format("No soundcloud track found for '%s'", commandInput));
+                }
 
-            askQuestion(tracks, audioTrack -> audioTrack.getInfo().title, audioTrack -> audioTrack.getInfo().author);
+                if (tracks.size() > limit) {
+                    tracks = tracks.subList(0, limit);
+                }
+
+                askQuestion(tracks, audioTrack -> audioTrack.getInfo().title, audioTrack -> audioTrack.getInfo().author);
+            }
+            default -> {
+            }
         }
     }
 
@@ -409,6 +441,128 @@ public abstract class AbstractPlayableLoadingCommand extends AbstractSourceDecid
             YouTubeVideo youTubeVideo = youTubeService.searchVideo(getCommandInput());
             loadedTrack = youTubeVideo;
             handleResult(new SinglePlayableContainer(youTubeVideo), playableFactory);
+        }
+    }
+
+    private void loadFilebrokerPosts(AudioManager audioManager) {
+        FilebrokerApi filebrokerApi = Aiode.get().getFilebrokerApi();
+        PlayableFactory playableFactory = audioManager.createPlayableFactory(getSpotifyService(), trackLoadingExecutor, shouldRedirectSpotify());
+        CompletableFuture<FilebrokerApi.SearchResult> searchResultCompletableFuture;
+        String query = getCommandInput();
+        if (argumentSet("select")) {
+            Integer select = getArgumentValueWithTypeOrElse("select", Integer.class, 20);
+            searchResultCompletableFuture = filebrokerApi.searchPostsAsync(query, null, select);
+        } else {
+            searchResultCompletableFuture = filebrokerApi.searchPostsAsync(query, null, 1);
+        }
+
+        try {
+            FilebrokerApi.SearchResult searchResult = searchResultCompletableFuture.get(10, TimeUnit.SECONDS);
+            List<FilebrokerApi.Post> posts = searchResult.getPosts();
+            if (posts == null || posts.isEmpty()) {
+                throw new NoResultsFoundException("No filebroker posts found for query, check [the documentation](https://github.com/filebroker/filebroker-server/wiki/filebroker-query-cheat-sheet).");
+            } else {
+                if (posts.size() > 1 && argumentSet("select")) {
+                    askQuestion(
+                        posts,
+                        post -> new FilebrokerPlayableWrapper(post).getDisplay(),
+                        post -> String.valueOf(post.getPk())
+                    );
+                } else {
+                    FilebrokerPostPlayableContainer playableContainer = new FilebrokerPostPlayableContainer(posts.getFirst());
+                    loadedTrack = playableContainer.loadPlayable(playableFactory);
+                    handleResult(playableContainer, playableFactory);
+                }
+            }
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof FilebrokerApi.InvalidHttpResponseException filebrokerApiException) {
+                handleFilebrokerQueryException(query, filebrokerApiException);
+            }
+            logger.error("Failed to execute filebroker search", e);
+            throw new NoResultsFoundException("Failed to execute filebroker search", e);
+        } catch (TimeoutException e) {
+            throw new NoResultsFoundException("Filebroker search timed out", e);
+        } catch (InterruptedException e) {
+            throw new CommandRuntimeException(e);
+        }
+    }
+
+    private void loadFilebrokerCollections(AudioManager audioManager) {
+        FilebrokerApi filebrokerApi = Aiode.get().getFilebrokerApi();
+        PlayableFactory playableFactory = audioManager.createPlayableFactory(getSpotifyService(), trackLoadingExecutor, shouldRedirectSpotify());
+        CompletableFuture<FilebrokerApi.SearchResult> searchResultCompletableFuture;
+        String query = getCommandInput();
+        if (argumentSet("select")) {
+            Integer select = getArgumentValueWithTypeOrElse("select", Integer.class, 20);
+            searchResultCompletableFuture = filebrokerApi.searchPostCollectionsAsync(query, null, select);
+        } else {
+            searchResultCompletableFuture = filebrokerApi.searchPostCollectionsAsync(query, null, 1);
+        }
+
+        try {
+            FilebrokerApi.SearchResult searchResult = searchResultCompletableFuture.get(10, TimeUnit.SECONDS);
+            List<FilebrokerApi.PostCollection> collections = searchResult.getCollections();
+            if (collections == null || collections.isEmpty()) {
+                throw new NoResultsFoundException("No filebroker collections found for query, check [the documentation](https://github.com/filebroker/filebroker-server/wiki/filebroker-query-cheat-sheet).");
+            } else {
+                if (collections.size() > 1 && argumentSet("select")) {
+                    askQuestion(
+                        collections,
+                        FilebrokerApi.PostCollection::getTitle,
+                        collection -> String.valueOf(collection.getPk())
+                    );
+                } else {
+                    FilebrokerApi.PostCollection collection = collections.getFirst();
+                    FilebrokerPostCollectionPlayableContainer playableContainer = new FilebrokerPostCollectionPlayableContainer(collection);
+                    loadedFilebrokerCollection = collection;
+                    handleResult(playableContainer, playableFactory);
+                }
+            }
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof FilebrokerApi.InvalidHttpResponseException filebrokerApiException) {
+                handleFilebrokerQueryException(query, filebrokerApiException);
+            }
+            logger.error("Failed to execute filebroker search", e);
+            throw new NoResultsFoundException("Failed to execute filebroker search", e);
+        } catch (TimeoutException e) {
+            throw new NoResultsFoundException("Filebroker search timed out", e);
+        } catch (InterruptedException e) {
+            throw new CommandRuntimeException(e);
+        }
+    }
+
+    private void handleFilebrokerQueryException(String query, FilebrokerApi.InvalidHttpResponseException filebrokerApiException) {
+        try {
+            JSONObject errorObject = new JSONObject(filebrokerApiException.getBody());
+            if (errorObject.getInt("error_code") == 400_010 && errorObject.has("compilation_errors")) {
+                StringBuilder errorMsgBuilder = new StringBuilder("Invalid filebroker query, check [the documentation](https://github.com/filebroker/filebroker-server/wiki/filebroker-query-cheat-sheet).");
+                JSONArray compilationErrors = errorObject.getJSONArray("compilation_errors");
+                if (!compilationErrors.isEmpty()) {
+                    errorMsgBuilder.append(System.lineSeparator()).append("```").append(System.lineSeparator());
+                    JSONObject compilationError = (JSONObject) compilationErrors.get(0);
+                    JSONObject location = compilationError.getJSONObject("location");
+                    int start = location.getInt("start");
+                    int end = location.getInt("end");
+                    int startIdx = Math.max(0, start - 25);
+                    int endIdx = Math.min(query.length(), end + 25);
+                    String queryPart = query.substring(startIdx, endIdx);
+                    String marker;
+                    if (end > start) {
+                        marker = " ".repeat(start - startIdx) + "^" + "-".repeat(Math.max(0, end - start - 1)) + "^";
+                    } else {
+                        marker = " ".repeat(start - startIdx) + "^";
+                    }
+                    errorMsgBuilder.append(queryPart).append(System.lineSeparator()).append(marker);
+                    String msg = compilationError.getString("msg");
+                    errorMsgBuilder.append(System.lineSeparator()).append(msg);
+                    errorMsgBuilder.append(System.lineSeparator()).append("```").append(System.lineSeparator());
+                }
+                throw new InvalidCommandException(errorMsgBuilder.toString());
+            } else {
+                throw new InvalidCommandException(errorObject.getString("message"));
+            }
+        } catch (JSONException | ClassCastException jsonException) {
+            logger.error("Failed to deserialize error response body", jsonException);
         }
     }
 

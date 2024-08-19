@@ -9,6 +9,7 @@ import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nullable;
 
+import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.audio.AbstractSoftCachedPlayable;
 import net.robinfriedli.aiode.audio.Playable;
 import net.robinfriedli.aiode.audio.spotify.SpotifyRedirectService;
@@ -147,8 +148,8 @@ public class HollowYouTubeVideo extends AbstractSoftCachedPlayable implements Yo
         if (isHollow() && redirectedSpotifyTrack != null) {
             markLoading();
             EagerFetchQueue.submitFetch(() -> StaticSessionProvider.consumeSession((CheckedConsumer<Session>) session -> {
-                SpotifyRedirectService spotifyRedirectService = new SpotifyRedirectService(session, youTubeService);
-                spotifyRedirectService.redirectTrack(this);
+                SpotifyRedirectService spotifyRedirectService = new SpotifyRedirectService(Aiode.get().getFilebrokerApi(), session, youTubeService);
+                spotifyRedirectService.redirectTrackToYouTube(this);
             }));
         }
         return this;

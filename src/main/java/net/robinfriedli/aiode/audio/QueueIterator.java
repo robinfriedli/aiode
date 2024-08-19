@@ -21,6 +21,7 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.audio.queue.AudioQueue;
+import net.robinfriedli.aiode.audio.spotify.SpotifyTrackRedirect;
 import net.robinfriedli.aiode.boot.SpringPropertiesConfig;
 import net.robinfriedli.aiode.discord.MessageService;
 import net.robinfriedli.aiode.discord.property.GuildPropertyManager;
@@ -28,6 +29,7 @@ import net.robinfriedli.aiode.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.aiode.entities.GuildSpecification;
 import net.robinfriedli.aiode.exceptions.UnavailableResourceException;
 import net.robinfriedli.aiode.exceptions.handler.handlers.LoggingUncaughtExceptionHandler;
+import net.robinfriedli.aiode.filebroker.FilebrokerPlayableWrapper;
 import net.robinfriedli.aiode.persist.StaticSessionProvider;
 import net.robinfriedli.aiode.util.EmojiConstants;
 import net.robinfriedli.threadpool.ThreadPool;
@@ -272,7 +274,13 @@ public class QueueIterator extends AudioEventAdapter {
         appendIfTrue(footerBuilder, EmojiConstants.SHUFFLE, playback.isShuffle());
         appendIfTrue(footerBuilder, EmojiConstants.REPEAT, playback.isRepeatAll());
         appendIfTrue(footerBuilder, EmojiConstants.REPEAT_ONE, playback.isRepeatOne());
-        footerBuilder.append(" | ").append("View the queue using the queue command");
+        boolean isFilebroker = currentTrack instanceof FilebrokerPlayableWrapper
+            || (currentTrack instanceof SpotifyTrackRedirect spotifyTrackRedirect && spotifyTrackRedirect.isRedirectedToFilebroker());
+        if (isFilebroker) {
+            footerBuilder.append(" | ").append("Powered by filebroker.io");
+        } else {
+            footerBuilder.append(" | ").append("View the queue using the queue command");
+        }
 
         String albumCoverUrl = currentTrack.getAlbumCoverUrl();
         SpringPropertiesConfig springPropertiesConfig = Aiode.get().getSpringPropertiesConfig();
@@ -280,7 +288,7 @@ public class QueueIterator extends AudioEventAdapter {
         if (albumCoverUrl == null) {
             albumCoverUrl = baseUri + "/resources-public/img/aiode-logo.png";
         }
-        embedBuilder.setFooter(footerBuilder.toString(), baseUri + "/resources-public/img/aiode-logo-small.png");
+        embedBuilder.setFooter(footerBuilder.toString(), baseUri + (isFilebroker ? "/resources-public/img/filebroker-logo-small.png" : "/resources-public/img/aiode-logo-small.png"));
         embedBuilder.setThumbnail(albumCoverUrl);
         embedBuilder.setAuthor("Support aiode", "https://ko-fi.com/R5R0XAC5J", "https://storage.ko-fi.com/cdn/brandasset/kofi_s_logo_nolabel.png");
 
