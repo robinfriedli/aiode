@@ -145,14 +145,14 @@ public class SpotifyRedirectService {
     public FilebrokerApi.Post findFilebrokerPostForSpotifyTrack(SpotifyTrack spotifyTrack) throws InterruptedException, TimeoutException {
         StringBuilder filebrokerQueryBuilder = new StringBuilder("(@type ~= \"audio\" OR @type ~= \"video\" OR music)");
         String trackName = spotifyTrack.getName();
-        filebrokerQueryBuilder.append(" (@title ~= \"").append(trackName.replaceAll("\"", "_")).append("%\"");
+        filebrokerQueryBuilder.append(" (@title ~= \"").append(trackName.replaceAll("[\"\\\\]", "_")).append("%\"");
         String trackNameWithParenthesisRemoved = trackName.replaceAll("\\(.*\\)|\\[.*]", "").trim().replaceAll("\\s+", " ");
         String trackNameWithHyphenRemoved = trackName.split("-")[0].trim();
         if (!trackNameWithParenthesisRemoved.isEmpty() && !trackNameWithParenthesisRemoved.equals(trackName)) {
-            filebrokerQueryBuilder.append(" OR @title ~= \"").append(trackNameWithParenthesisRemoved.replaceAll("\"", "_")).append("%\"");
+            filebrokerQueryBuilder.append(" OR @title ~= \"").append(trackNameWithParenthesisRemoved.replaceAll("[\"\\\\]", "_")).append("%\"");
         }
         if (!trackNameWithHyphenRemoved.isEmpty() && !trackNameWithHyphenRemoved.equals(trackName)) {
-            filebrokerQueryBuilder.append(" OR @title ~= \"").append(trackNameWithHyphenRemoved.replaceAll("\"", "_")).append("%\"");
+            filebrokerQueryBuilder.append(" OR @title ~= \"").append(trackNameWithHyphenRemoved.replaceAll("[\"\\\\]", "_")).append("%\"");
         }
         filebrokerQueryBuilder.append(")");
         String[] artists = spotifyTrack.exhaustiveMatch(
@@ -162,7 +162,7 @@ public class SpotifyRedirectService {
         if (artists.length > 0) {
             filebrokerQueryBuilder.append(" (");
             for (int i = 0; i < artists.length; i++) {
-                filebrokerQueryBuilder.append("@artist ~= \"%").append(artists[i].replaceAll("\"", "_")).append("%\"");
+                filebrokerQueryBuilder.append("@artist ~= \"%").append(artists[i].replaceAll("[\"\\\\]", "_")).append("%\"");
                 if (i < artists.length - 1) {
                     filebrokerQueryBuilder.append(" OR ");
                 }
