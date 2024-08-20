@@ -37,7 +37,9 @@ import net.robinfriedli.aiode.function.HibernateInvoker;
 import net.robinfriedli.aiode.persist.StaticSessionProvider;
 import net.robinfriedli.filebroker.FilebrokerApi;
 import org.hibernate.Session;
+import se.michaelthelin.spotify.model_objects.specification.AlbumSimplified;
 import se.michaelthelin.spotify.model_objects.specification.ArtistSimplified;
+import se.michaelthelin.spotify.model_objects.specification.ShowSimplified;
 
 import static net.robinfriedli.aiode.entities.SpotifyRedirectIndex.*;
 
@@ -157,7 +159,7 @@ public class SpotifyRedirectService {
         filebrokerQueryBuilder.append(")");
         String[] artists = spotifyTrack.exhaustiveMatch(
             track -> Arrays.stream(track.getArtists()).map(ArtistSimplified::getName).toArray(String[]::new),
-            episode -> new String[]{episode.getShow().getName()}
+            episode -> Optional.ofNullable(episode.getShow()).map(show -> new String[]{show.getName()}).orElse(new String[0])
         );
         if (artists.length > 0) {
             filebrokerQueryBuilder.append(" (");
@@ -196,8 +198,8 @@ public class SpotifyRedirectService {
                 )
             ).min().orElseGet(() -> Objects.requireNonNullElse(post.getS3_object_metadata().getArtist(), "").length());
             String album = spotifyTrack.exhaustiveMatch(
-                track -> track.getAlbum().getName(),
-                episode -> episode.getShow().getName()
+                track -> Optional.ofNullable(track.getAlbum()).map(AlbumSimplified::getName).orElse(""),
+                episode -> Optional.ofNullable(episode.getShow()).map(ShowSimplified::getName).orElse("")
             );
             Integer albumDistance = levenshteinDistance.apply(album, Objects.requireNonNullElse(post.getS3_object_metadata().getAlbum(), ""));
 
