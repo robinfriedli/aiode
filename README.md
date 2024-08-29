@@ -43,7 +43,9 @@ router's public ip and setup port forwarding for your router.
 ##### 4.1.2 Adjust datasource properties and enter the database user and password, database setup will be discussed further in 4.2.1.
 ##### 4.1.3 To take advantage of the admin commands that can perform administrative actions, such as updating and restarting the bot, be sure to add your Discord user id to the `aiode.security.admin_users` property. To find your Discord user id, enable Developer Mode in the App Settings > Appearance. Then go to any guild, right click your user and click "Copy ID".
 ##### 4.1.4 To supplement [filebroker.io](https://github.com/filebroker) integration, you may set up a bot account and paste the username and password below. This ensures that the bot has access to all posts shared with that bot account.
-##### 4.1.5 Enable YouTube OAUTH support for lavaplayer to avoid YouTube bot detection (causing the "sing in to confirm you are not a bot" error). Set value of `aiode.tokens.yt-oauth-refresh-token` to "init" and follow [the oauth flow](https://github.com/lavalink-devs/youtube-source?tab=readme-ov-file#using-oauth-tokens), then replace the value with your token.
+##### 4.1.5 Set up YouTube bot detection countermeasures if you are getting the "sign in to confirm you are not a bot" error (optional)
+##### 4.1.5.1 Enable YouTube OAUTH support for lavaplayer to avoid YouTube bot detection (causing the "sing in to confirm you are not a bot" error). Set value of `aiode.tokens.yt-oauth-refresh-token` to "init" and follow [the oauth flow](https://github.com/lavalink-devs/youtube-source?tab=readme-ov-file#using-oauth-tokens), then replace the value with your token.
+##### 4.1.5.2 Set up a poToken by following [the guide](https://github.com/lavalink-devs/youtube-source?tab=readme-ov-file#using-a-potoken) and setting the `aiode.tokens.yt-po-token` and `aiode.tokens.yt-po-visitor-data` properties.
 ```properties
 ##########
 # tokens #
@@ -81,6 +83,8 @@ aiode.tokens.topgg_token=
 aiode.tokens.yt-email=
 aiode.tokens.yt-password=
 aiode.tokens.yt-oauth-refresh-token=
+aiode.tokens.yt-po-token=
+aiode.tokens.yt-po-visitor-data=
 ##############
 # filebroker #
 ##############
