@@ -8,7 +8,6 @@ plugins {
 
 repositories {
     mavenCentral()
-    jcenter()
 
     maven {
         url = "https://jitpack.io"
@@ -41,7 +40,6 @@ dependencies {
 
     implementation "com.google.apis:google-api-services-youtube:v3-rev20240417-2.0.0"
     implementation 'com.google.guava:guava:33.1.0-jre'
-    implementation "com.sedmelluq:jda-nas:1.1.0"
     implementation "dev.arbjerg:lavaplayer:2.2.1"
     implementation "dev.arbjerg:lavaplayer-ext-youtube-rotator:2.2.1"
     implementation "dev.lavalink.youtube:common:1.5.2"
@@ -63,6 +61,16 @@ dependencies {
     implementation "com.github.robinfriedli:JXP:2.0.5"
     implementation "com.github.robinfriedli:StringList:1.6.1"
     implementation "com.github.robinfriedli:ThreadPool:1.2.0"
+
+    implementation("club.minnced:udpqueue-native-linux-x86-64:0.2.9")
+    implementation("club.minnced:udpqueue-native-linux-x86:0.2.9")
+    implementation("club.minnced:udpqueue-native-linux-aarch64:0.2.9")
+    implementation("club.minnced:udpqueue-native-linux-arm:0.2.9")
+    implementation("club.minnced:udpqueue-native-linux-musl-x86-64:0.2.9")
+    implementation("club.minnced:udpqueue-native-linux-musl-aarch64:0.2.9")
+    implementation("club.minnced:udpqueue-native-win-x86-64:0.2.9")
+    implementation("club.minnced:udpqueue-native-win-x86:0.2.9")
+    implementation("club.minnced:udpqueue-native-darwin:0.2.9")
 
     implementation "org.apache.commons:commons-collections4:4.4"
     implementation "org.apache.commons:commons-text:1.12.0"

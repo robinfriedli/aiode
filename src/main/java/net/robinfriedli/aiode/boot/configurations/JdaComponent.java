@@ -111,8 +111,16 @@ public class JdaComponent {
     public static boolean platformSupportsJdaNas() {
         String osName = System.getProperty("os.name").toLowerCase();
         String osArch = System.getProperty("os.arch").toLowerCase();
-        return (osName.contains("linux") || osName.contains("windows"))
-            && (osArch.contains("amd64") || osArch.contains("x86"));
+        boolean isLinux = osName.contains("linux");
+        boolean isWindows = osName.contains("windows");
+        boolean isMac = osName.contains("mac");
+        boolean isAmd = osArch.contains("amd64");
+        boolean isX86 = osArch.contains("x86");
+        boolean isAarch64 = osArch.contains("aarch64");
+        boolean isMusl = osArch.contains("musl");
+        return (isLinux && (isAmd || isX86 || isAarch64 || isMusl))
+            || (isWindows && (isAmd || isX86))
+            || (isMac && (isX86 || isAarch64));
     }
 
 }
