@@ -78,7 +78,9 @@ public class AudioManager extends AbstractShutdownable {
         HibernateComponent hibernateComponent,
         YouTubeService youTubeService,
         @Value("${aiode.preferences.ipv6_blocks:#{null}}") String ipv6Blocks,
-        @Value("${aiode.tokens.yt-oauth-refresh-token:#{null}}") String ytOauthRefreshToken
+        @Value("${aiode.tokens.yt-oauth-refresh-token:#{null}}") String ytOauthRefreshToken,
+        @Value("${aiode.tokens.yt-po-token:#{null}}") String ytPoToken,
+        @Value("${aiode.tokens.yt-po-visitor-data:#{null}}") String ytPoVisitorData
     ) {
         playerManager = new DefaultAudioPlayerManager();
         audioTrackLoader = new AudioTrackLoader(playerManager);
@@ -107,6 +109,9 @@ public class AudioManager extends AbstractShutdownable {
             } else {
                 youtubeAudioSourceManager.useOauth2(ytOauthRefreshToken, true);
             }
+        }
+        if (!Strings.isNullOrEmpty(ytPoToken) && !Strings.isNullOrEmpty(ytPoVisitorData)) {
+            Web.setPoTokenAndVisitorData(ytPoToken, ytPoVisitorData);
         }
 
         if (!Strings.isNullOrEmpty(ipv6Blocks)) {
