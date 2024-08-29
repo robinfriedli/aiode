@@ -77,7 +77,8 @@ public class AudioManager extends AbstractShutdownable {
         GuildManager guildManager,
         HibernateComponent hibernateComponent,
         YouTubeService youTubeService,
-        @Value("${aiode.preferences.ipv6_blocks:#{null}}") String ipv6Blocks
+        @Value("${aiode.preferences.ipv6_blocks:#{null}}") String ipv6Blocks,
+        @Value("${aiode.tokens.yt-oauth-refresh-token:#{null}}") String ytOauthRefreshToken
     ) {
         playerManager = new DefaultAudioPlayerManager();
         audioTrackLoader = new AudioTrackLoader(playerManager);
@@ -100,6 +101,13 @@ public class AudioManager extends AbstractShutdownable {
         YoutubeAudioSourceManager youtubeAudioSourceManager = playerManager.source(YoutubeAudioSourceManager.class);
         // there is 100 videos per page and the maximum playlist size is 5000
         youtubeAudioSourceManager.setPlaylistPageCount(50);
+        if (!Strings.isNullOrEmpty(ytOauthRefreshToken)) {
+            if ("init".equalsIgnoreCase(ytOauthRefreshToken)) {
+                youtubeAudioSourceManager.useOauth2(null, false);
+            } else {
+                youtubeAudioSourceManager.useOauth2(ytOauthRefreshToken, true);
+            }
+        }
 
         if (!Strings.isNullOrEmpty(ipv6Blocks)) {
             // NanoIpRoutePlanner uses raw type
