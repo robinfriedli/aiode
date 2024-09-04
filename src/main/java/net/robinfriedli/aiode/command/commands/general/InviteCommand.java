@@ -59,6 +59,7 @@ public class InviteCommand extends AbstractCommand {
                         GuildSpecification.class
                     ).setParameter(1, context.getGuild().getId()).getSingleResultOrNull();
 
+                    session.refresh(updatedGuildSpecification);
                     PrivateBotInstance assignedBotInstance = updatedGuildSpecification.getPrivateBotInstance();
                     if (assignedBotInstance != null) {
                         EmbedBuilder embedBuilder = new EmbedBuilder();
