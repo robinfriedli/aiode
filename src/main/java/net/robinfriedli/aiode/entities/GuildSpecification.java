@@ -1,6 +1,7 @@
 package net.robinfriedli.aiode.entities;
 
 import java.io.Serializable;
+import java.time.OffsetDateTime;
 import java.util.Set;
 
 import javax.annotation.Nullable;
@@ -9,9 +10,12 @@ import com.google.api.client.util.Sets;
 import jakarta.persistence.Cacheable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
@@ -66,6 +70,13 @@ public class GuildSpecification implements Serializable {
     private String versionUpdateAlertSent;
     @OneToMany(mappedBy = "guildSpecification")
     private Set<AccessConfiguration> accessConfigurations = Sets.newHashSet();
+    @ManyToOne
+    @JoinColumn(name = "assigned_private_bot_instance", referencedColumnName = "identifier", foreignKey = @ForeignKey(name = "guild_specification_assigned_private_bot_instance_fkey"))
+    private PrivateBotInstance privateBotInstance;
+    @Column(name = "assigned_private_bot_instance", insertable = false, updatable = false)
+    private String privateBotInstanceId;
+    @Column(name = "private_bot_assignment_last_heartbeat", columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    private OffsetDateTime privateBotAssignmentLastHeartbeat;
 
     public GuildSpecification() {
     }
@@ -231,5 +242,21 @@ public class GuildSpecification implements Serializable {
 
     public void setVersionUpdateAlertSent(String versionUpdateAlertSent) {
         this.versionUpdateAlertSent = versionUpdateAlertSent;
+    }
+
+    public PrivateBotInstance getPrivateBotInstance() {
+        return privateBotInstance;
+    }
+
+    public void setPrivateBotInstance(PrivateBotInstance privateBotInstance) {
+        this.privateBotInstance = privateBotInstance;
+    }
+
+    public OffsetDateTime getPrivateBotAssignmentLastHeartbeat() {
+        return privateBotAssignmentLastHeartbeat;
+    }
+
+    public void setPrivateBotAssignmentLastHeartbeat(OffsetDateTime privateBotAssignmentLastHeartbeat) {
+        this.privateBotAssignmentLastHeartbeat = privateBotAssignmentLastHeartbeat;
     }
 }

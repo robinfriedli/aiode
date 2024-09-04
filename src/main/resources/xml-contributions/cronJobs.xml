@@ -7,4 +7,5 @@
   <cronJob id="resetCurrentYouTubeQuota" cron="0 0 0 * * ? *" timeZone="PST" mainInstanceOnly="true" implementation="net.robinfriedli.aiode.cron.tasks.ResetCurrentYouTubeQuotaTask"/>
   <cronJob id="refreshPersistentGlobalCharts" cron="0 0 6 * * ? *" mainInstanceOnly="true" implementation="net.robinfriedli.aiode.cron.tasks.RefreshPersistentGlobalChartsTask"/>
   <cronJob id="inactiveWidgetsCleanup" cron="0 */10 * * * ? *" implementation="net.robinfriedli.aiode.cron.tasks.DestroyInactiveWidgetsTask"/>
+  <cronJob id="privateBotAssignmentHeartbeat" cron="0 */20 * * * ? *" implementation="net.robinfriedli.aiode.cron.tasks.PrivateBotAssignmentHeartbeatTask"/>
 </cronJobs>

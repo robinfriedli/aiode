@@ -11,4 +11,5 @@
   <startupTask runForEachShard="true" implementation="net.robinfriedli.aiode.boot.tasks.UpsertSlashCommandsTask"/>
   <startupTask runForEachShard="false" mainInstanceOnly="true" implementation="net.robinfriedli.aiode.boot.tasks.RefreshPersistentGlobalChartsStartupTask"/>
   <startupTask runForEachShard="true" implementation="net.robinfriedli.aiode.boot.tasks.UpdateTopGGStatsTask"/>
+  <startupTask runForEachShard="true" implementation="net.robinfriedli.aiode.boot.tasks.LeaveUnassignedPrivateBotTask"/>
 </startupTasks>
