@@ -1168,4 +1168,33 @@ See application.properties -> spring.liquibase.contexts
       <column name="filebroker_pk" type="bigint"/>
     </addColumn>
   </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1725414843868-1">
+    <createTable tableName="private_bot_instance">
+      <column name="identifier" type="VARCHAR(255)">
+        <constraints nullable="false" primaryKey="true" primaryKeyName="private_bot_instancePK"/>
+      </column>
+      <column name="invite_link" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="server_limit" type="INTEGER">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1725414843868-2">
+    <addColumn tableName="guild_specification">
+      <column name="assigned_private_bot_instance" type="varchar(255)"/>
+    </addColumn>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1725414843868-3">
+    <addColumn tableName="guild_specification">
+      <column name="private_bot_assignment_last_heartbeat" type="TIMESTAMP WITH TIME ZONE"/>
+    </addColumn>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1725414843868-4">
+    <addUniqueConstraint columnNames="identifier" constraintName="UC_PRIVATE_BOT_INSTANCEIDENTIFIER_COL" tableName="private_bot_instance"/>
+  </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1725414843868-5">
+    <addForeignKeyConstraint baseColumnNames="assigned_private_bot_instance" baseTableName="guild_specification" constraintName="guild_specification_assigned_private_bot_instance_fkey" deferrable="false" initiallyDeferred="false" referencedColumnNames="identifier" referencedTableName="private_bot_instance" validate="true"/>
+  </changeSet>
 </databaseChangeLog>

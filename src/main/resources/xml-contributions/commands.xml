@@ -713,13 +713,22 @@ if (voiceChannel.getId() == '484071462622330889' &amp;&amp; playback.getAudioQue
     <example title="Deactivate trigger 'numbOnJoin'">%1$strigger %2$sdeactivate numbOnJoin</example>
     <example title="Activate trigger 'numbOnJoin'">%1$strigger %2$sactivate numbOnJoin</example>
   </command>
-  <command identifier="connect"
-           implementation="net.robinfriedli.aiode.command.commands.web.ConnectCommand"
-           category="WEB"
-           requiresInput="false"
-           description="Connect a web client. After using this command you can DM me the token provided by the web client. This will prepare a session connected to this guild and user enabling the client to connect via the token.">
-    <example title="Prepare a session based on this guild and user">%1$sconnect</example>
+  <command identifier="invite" implementation="net.robinfriedli.aiode.command.commands.general.InviteCommand" category="GENERAL" description="Provides invite links for the public bot, as well as private bots for [supporters](https://ko-fi.com/R5R0XAC5J). Private bots are limited to 100 servers per bot, with more bots being created on demand. Private bots feature YouTube bot detection circumvention, enable traditional text commands with custom prefixes and provide access to the bot's scripting sandbox. You must be a [supporter](https://ko-fi.com/R5R0XAC5J) to invite a private bot. To be verified as a supporter, you must have the supporters role in the [aiode discord](https://discord.gg/gdc25AG). This role is assigned automatically if your Ko-fi account is connected to discord.">
+    <argument identifier="public" description="Get an invite link for the public bot."/>
+    <argument identifier="private" description="Assign a private bot to your server and receive an invite link. This is only available for [supporters](https://ko-fi.com/R5R0XAC5J).">
+      <excludes argument="public"/>
+    </argument>
+    <example title="Get the public invite link, as well as the invite link for the private bot assigned to this server or view the number of available private bots.">%1$sinvite</example>
+    <example title="Get the invite link for the public bot.">%1$sinvite %2$spublic</example>
+    <example title="Get the invite link for the private bot assigned to this server, or assign a new private bot to this server">%1$sinvite %2$sprivate</example>
   </command>
+<!--  <command identifier="connect"-->
+<!--           implementation="net.robinfriedli.aiode.command.commands.web.ConnectCommand"-->
+<!--           category="WEB"-->
+<!--           requiresInput="false"-->
+<!--           description="Connect a web client. After using this command you can DM me the token provided by the web client. This will prepare a session connected to this guild and user enabling the client to connect via the token.">-->
+<!--    <example title="Prepare a session based on this guild and user">%1$sconnect</example>-->
+<!--  </command>-->
 
   <!-- Administrator commands -->
   <command identifier="reboot"

@@ -1,5 +1,6 @@
 package net.robinfriedli.aiode.discord.listeners;
 
+import java.time.OffsetDateTime;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -7,6 +8,7 @@ import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Strings;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.Root;
@@ -32,7 +34,10 @@ import net.robinfriedli.aiode.discord.GuildManager;
 import net.robinfriedli.aiode.discord.MessageService;
 import net.robinfriedli.aiode.discord.property.properties.ColorSchemeProperty;
 import net.robinfriedli.aiode.entities.GrantedRole;
+import net.robinfriedli.aiode.entities.GuildSpecification;
+import net.robinfriedli.aiode.entities.PrivateBotInstance;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
@@ -48,25 +53,53 @@ public class GuildManagementListener extends ListenerAdapter {
     private final MessageService messageService;
     private final TopGGComponent topGGComponent;
 
+    private final String privateInstanceIdentifier;
+
     public GuildManagementListener(CommandExecutionQueueManager executionQueueManager,
                                    GuildManager guildManager,
                                    HibernateComponent hibernateComponent,
                                    MessageService messageService,
-                                   TopGGComponent topGGComponent) {
+                                   TopGGComponent topGGComponent,
+                                   @Value("${aiode.preferences.private_instance_identifier}") String privateInstanceIdentifier) {
         this.executionQueueManager = executionQueueManager;
         this.topGGComponent = topGGComponent;
         this.guildManager = guildManager;
         this.hibernateComponent = hibernateComponent;
         logger = LoggerFactory.getLogger(getClass());
         this.messageService = messageService;
+
+        this.privateInstanceIdentifier = privateInstanceIdentifier;
     }
 
     @Override
     public void onGuildJoin(@NotNull GuildJoinEvent event) {
         EventHandlerPool.execute(() -> {
             Guild guild = event.getGuild();
+
             guildManager.addGuild(guild);
             executionQueueManager.addGuild(guild);
+
+            if (!Strings.isNullOrEmpty(privateInstanceIdentifier)) {
+                PrivateBotInstance assignedBotInstance = hibernateComponent.invokeWithSession(session -> guildManager.getContextForGuild(guild).getSpecification(session).getPrivateBotInstance());
+                if (assignedBotInstance == null || !privateInstanceIdentifier.equals(assignedBotInstance.getIdentifier())) {
+                    TextChannel textChannel = guildManager.getDefaultTextChannelForGuild(guild);
+                    if (textChannel != null) {
+                        messageService.sendError("This is a private bot instance that is not assigned to this guild / server. Use the invite command to assign a private bot to your server.", textChannel)
+                            .whenComplete((r, e) -> {
+                                if (e != null) {
+                                    logger.warn("Failed to send unassigned private bot error message", e);
+                                }
+                                guild.leave().queue();
+                            });
+                    } else {
+                        guild.leave().queue();
+                    }
+                    guildManager.removeGuild(guild);
+                    executionQueueManager.removeGuild(guild);
+                } else {
+                    hibernateComponent.consumeSession(session -> guildManager.getContextForGuild(guild).getSpecification(session).setPrivateBotAssignmentLastHeartbeat(OffsetDateTime.now()));
+                }
+            }
 
             updateDiscordBotsApiStats(event);
         });
@@ -76,6 +109,15 @@ public class GuildManagementListener extends ListenerAdapter {
     public void onGuildLeave(@NotNull GuildLeaveEvent event) {
         EventHandlerPool.execute(() -> {
             Guild guild = event.getGuild();
+
+            if (!Strings.isNullOrEmpty(privateInstanceIdentifier)) {
+                hibernateComponent.consumeSession(session -> {
+                    GuildSpecification specification = guildManager.getContextForGuild(guild).getSpecification(session);
+                    specification.setPrivateBotInstance(null);
+                });
+                logger.info("Unassigned private bot instance {} for guild {}", privateInstanceIdentifier, guild);
+            }
+
             guildManager.removeGuild(guild);
             executionQueueManager.removeGuild(guild);
 
