@@ -84,7 +84,7 @@ public class GuildManagementListener extends ListenerAdapter {
                 if (assignedBotInstance == null || !privateInstanceIdentifier.equals(assignedBotInstance.getIdentifier())) {
                     TextChannel textChannel = guildManager.getDefaultTextChannelForGuild(guild);
                     if (textChannel != null) {
-                        messageService.sendError("This is a private bot instance that is not assigned to this guild / server. Use the invite command to assign a private bot to your server.", textChannel)
+                        messageService.sendError("This is a private bot instance that is not assigned to this guild / server. Use the invite command to assign a private bot to your server.", textChannel, false)
                             .whenComplete((r, e) -> {
                                 if (e != null) {
                                     logger.warn("Failed to send unassigned private bot error message", e);

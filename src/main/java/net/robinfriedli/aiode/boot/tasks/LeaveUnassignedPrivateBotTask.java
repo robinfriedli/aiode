@@ -51,7 +51,10 @@ public class LeaveUnassignedPrivateBotTask implements StartupTask {
                     .select(GuildSpecification.class, "guildId", String.class)
                     .where((cb, root) -> cb.and(
                         root.get("guildId").in(guilds.stream().map(ISnowflake::getId).toList()),
-                        cb.notEqual(root.get("privateBotInstanceId"), privateInstanceIdentifier)
+                        cb.or(
+                            cb.isNull(root.get("privateBotInstanceId")),
+                            cb.notEqual(root.get("privateBotInstanceId"), privateInstanceIdentifier)
+                        )
                     ))
                     .build(session)
                     .getResultList();
