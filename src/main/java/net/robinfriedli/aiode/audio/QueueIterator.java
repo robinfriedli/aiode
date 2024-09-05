@@ -22,6 +22,7 @@ import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.robinfriedli.aiode.Aiode;
 import net.robinfriedli.aiode.audio.queue.AudioQueue;
 import net.robinfriedli.aiode.audio.spotify.SpotifyTrackRedirect;
+import net.robinfriedli.aiode.audio.youtube.YouTubeVideo;
 import net.robinfriedli.aiode.boot.SpringPropertiesConfig;
 import net.robinfriedli.aiode.discord.MessageService;
 import net.robinfriedli.aiode.discord.property.GuildPropertyManager;
@@ -182,6 +183,11 @@ public class QueueIterator extends AudioEventAdapter {
             try {
                 result = audioTrackLoader.loadByIdentifier(playbackUrl);
             } catch (FriendlyException e) {
+                if (e.severity == FriendlyException.Severity.COMMON) {
+                    logger.warn("Common lavaplayer track error: " + e.getMessage());
+                } else {
+                    logger.error("Lavaplayer track exception", e);
+                }
                 sendError(track, e);
 
                 iterateQueue(playback, queue, true);
@@ -241,7 +247,14 @@ public class QueueIterator extends AudioEventAdapter {
                 embedBuilder.setTitle("Could not load current track");
             }
 
-            if (e.getMessage() != null && e.getMessage().length() <= 4096) {
+            if (e.getMessage() != null
+                && (track instanceof YouTubeVideo || (track instanceof SpotifyTrackRedirect spotifyTrackRedirect && spotifyTrackRedirect.isYouTube()))
+                && (e.getMessage().contains("not a bot") || e.getMessage().contains("403"))) {
+                embedBuilder.setDescription("YouTube blocked playback due to bot detection. Note that Spotify tracks are looked up on YouTube, unless they are found on [filebroker](https://filebroker.io/) or SoundCloud. " +
+                    "[Supporters](https://ko-fi.com/R5R0XAC5J) may circumvent YouTube bot detection by inviting a limited private bot using the invite command. " +
+                    "Larger bots generating too much traffic will eventually get banned, thus stable YouTube support for the public bot is no longer possible. " +
+                    "To continue playing Spotify content on the public bot, you can help by uploading content to [filebroker](https://filebroker.io/register).");
+            } else if (e.getMessage() != null && e.getMessage().length() <= 4096) {
                 embedBuilder.setDescription("Message returned by source: " + e.getMessage());
             }
 

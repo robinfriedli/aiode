@@ -13,6 +13,7 @@ import net.robinfriedli.aiode.audio.AbstractSoftCachedPlayable;
 import net.robinfriedli.aiode.audio.Playable;
 import net.robinfriedli.aiode.audio.youtube.HollowYouTubeVideo;
 import net.robinfriedli.aiode.audio.youtube.YouTubeService;
+import net.robinfriedli.aiode.audio.youtube.YouTubeVideo;
 import net.robinfriedli.aiode.concurrent.EagerFetchQueue;
 import net.robinfriedli.aiode.entities.Episode;
 import net.robinfriedli.aiode.entities.Playlist;
@@ -60,6 +61,10 @@ public class SpotifyTrackRedirect extends AbstractSoftCachedPlayable {
 
     public boolean isCanceled() {
         return canceled;
+    }
+
+    public boolean isYouTube() {
+        return applyToEither(playable -> playable instanceof YouTubeVideo);
     }
 
     public void cancel() {
