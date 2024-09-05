@@ -40,6 +40,8 @@ public class SpotifyRedirectIndex implements Serializable {
     private String youTubeId;
     @Column(name = "filebroker_pk")
     private Long fileBrokerPk;
+    @Column(name = "soundcloud_uri")
+    private String soundCloudUri;
     @Column(name = "last_updated")
     private LocalDate lastUpdated;
     @Column(name = "last_used")
@@ -51,10 +53,11 @@ public class SpotifyRedirectIndex implements Serializable {
     public SpotifyRedirectIndex() {
     }
 
-    public SpotifyRedirectIndex(String spotifyId, String youTubeId, Long fileBrokerPk, SpotifyTrackKind kind, Session session) {
+    public SpotifyRedirectIndex(String spotifyId, String youTubeId, Long fileBrokerPk, String soundCloudUri, SpotifyTrackKind kind, Session session) {
         this.spotifyId = spotifyId;
         this.youTubeId = youTubeId;
         this.fileBrokerPk = fileBrokerPk;
+        this.soundCloudUri = soundCloudUri;
         lastUpdated = LocalDate.now();
         lastUsed = LocalDate.now();
         spotifyItemKind = LookupEntity.require(session, SpotifyItemKind.class, kind.name());
@@ -125,5 +128,13 @@ public class SpotifyRedirectIndex implements Serializable {
 
     public void setFileBrokerPk(Long fileBrokerPk) {
         this.fileBrokerPk = fileBrokerPk;
+    }
+
+    public String getSoundCloudUri() {
+        return soundCloudUri;
+    }
+
+    public void setSoundCloudUri(String soundCloudUri) {
+        this.soundCloudUri = soundCloudUri;
     }
 }

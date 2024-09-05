@@ -1,5 +1,6 @@
 package net.robinfriedli.aiode.audio;
 
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
@@ -95,7 +96,7 @@ public class UrlPlayable implements Playable {
     @Nullable
     @Override
     public String getAlbumCoverUrl() {
-        return null;
+        return Optional.ofNullable(audioTrack).map(AudioTrack::getInfo).map(info -> info.artworkUrl).orElse(null);
     }
 
     @Override

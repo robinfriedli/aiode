@@ -1197,4 +1197,9 @@ See application.properties -> spring.liquibase.contexts
   <changeSet author="robinfriedli (generated)" id="1725414843868-5">
     <addForeignKeyConstraint baseColumnNames="assigned_private_bot_instance" baseTableName="guild_specification" constraintName="guild_specification_assigned_private_bot_instance_fkey" deferrable="false" initiallyDeferred="false" referencedColumnNames="identifier" referencedTableName="private_bot_instance" validate="true"/>
   </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1725559121587-1">
+    <addColumn tableName="spotify_redirect_index">
+      <column name="soundcloud_uri" type="varchar(255)"/>
+    </addColumn>
+  </changeSet>
 </databaseChangeLog>
