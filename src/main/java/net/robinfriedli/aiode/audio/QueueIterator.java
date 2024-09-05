@@ -133,11 +133,6 @@ public class QueueIterator extends AudioEventAdapter {
 
     @Override
     public void onTrackException(AudioPlayer player, AudioTrack track, FriendlyException exception) {
-        if (exception.severity == FriendlyException.Severity.COMMON) {
-            logger.warn("Common lavaplayer track error: " + exception.getMessage());
-        } else {
-            logger.error("Lavaplayer track exception", exception);
-        }
         Throwable e = ExceptionUtils.getRootCause(exception);
         Playable playable = track.getUserData(Playable.class);
         if (!isYouTubeBanned && isYouTubeBanError(playable, e)) {
@@ -145,12 +140,23 @@ public class QueueIterator extends AudioEventAdapter {
             if (playable instanceof SpotifyTrackRedirect spotifyTrackRedirect) {
                 // don't send error if the yt redirect failed and a soundcloud track is present because the track will get retried
                 if (spotifyTrackRedirect.isYouTube() && spotifyTrackRedirect.getCompletedSoundCloudTrack() != null) {
+                    logger.warn("Failed to play YouTube video for redirected Spotify track, trying SoundCloud instead");
                     retryCurrent = true;
                 } else {
+                    if (exception.severity == FriendlyException.Severity.COMMON) {
+                        logger.warn("Common lavaplayer track error: " + exception.getMessage());
+                    } else {
+                        logger.error("Lavaplayer track exception", exception);
+                    }
                     sendError(playable, e);
                 }
             }
         } else {
+            if (exception.severity == FriendlyException.Severity.COMMON) {
+                logger.warn("Common lavaplayer track error: " + exception.getMessage());
+            } else {
+                logger.error("Lavaplayer track exception", exception);
+            }
             sendError(playable, e);
         }
     }
@@ -223,20 +229,21 @@ public class QueueIterator extends AudioEventAdapter {
             try {
                 result = audioTrackLoader.loadByIdentifier(playbackUrl);
             } catch (FriendlyException e) {
-                if (e.severity == FriendlyException.Severity.COMMON) {
-                    logger.warn("Common lavaplayer track error: " + e.getMessage());
-                } else {
-                    logger.error("Lavaplayer track exception", e);
-                }
-
                 if (!isYouTubeBanned && isYouTubeBanError(track, e)) {
                     isYouTubeBanned = true;
                     if (track instanceof SpotifyTrackRedirect) {
                         // retry redirect using soundcloud on yt ban
                         retryCurrent = true;
+                        logger.warn("Failed to play YouTube video for redirected Spotify track, trying SoundCloud instead");
                         playNext();
                         return;
                     }
+                }
+
+                if (e.severity == FriendlyException.Severity.COMMON) {
+                    logger.warn("Common lavaplayer track error: " + e.getMessage());
+                } else {
+                    logger.error("Lavaplayer track exception", e);
                 }
 
                 sendError(track, e);
