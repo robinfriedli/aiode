@@ -3,6 +3,7 @@ package net.robinfriedli.aiode.audio.spotify;
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -23,7 +24,12 @@ import org.slf4j.LoggerFactory;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 
 import com.google.common.base.Strings;
+import com.sedmelluq.discord.lavaplayer.track.AudioItem;
+import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import net.robinfriedli.aiode.Aiode;
+import net.robinfriedli.aiode.audio.AudioTrackLoader;
+import net.robinfriedli.aiode.audio.UrlPlayable;
 import net.robinfriedli.aiode.audio.youtube.HollowYouTubeVideo;
 import net.robinfriedli.aiode.audio.youtube.YouTubeService;
 import net.robinfriedli.aiode.audio.youtube.YouTubeVideo;
@@ -106,8 +112,57 @@ public class SpotifyRedirectService {
 
                 FilebrokerApi.Post post = findFilebrokerPostForSpotifyTrack(spotifyTrack);
                 if (post == null) {
+                    AudioTrack soundCloudTrack = null;
+                    if (persistedSpotifyRedirectIndex.isPresent() && !Strings.isNullOrEmpty(persistedSpotifyRedirectIndex.get().getSoundCloudUri())) {
+                        try {
+                            AudioTrackLoader audioTrackLoader = new AudioTrackLoader(Aiode.get().getAudioManager().getPlayerManager());
+                            soundCloudTrack = (AudioTrack) audioTrackLoader.loadByIdentifier(persistedSpotifyRedirectIndex.get().getSoundCloudUri());
+                        } catch (Exception e) {
+                            logger.error("Failed to load soundcloud track with uri {} for track {}", persistedSpotifyRedirectIndex.get().getSoundCloudUri(), spotifyTrackId, e);
+                        }
+                    }
+                    if (soundCloudTrack == null) {
+                        // if the index already exists, only try to find a soundcloud track again if the last time the index was updated was before soundcloud search was implemented
+                        if (persistedSpotifyRedirectIndex.isEmpty() || persistedSpotifyRedirectIndex.get().getLastUpdated().isBefore(LocalDate.of(2024, Month.SEPTEMBER, 7))) {
+                            soundCloudTrack = findSoundCloudTrackForSpotifyTrack(spotifyTrack);
+                        }
+                    }
                     redirectTrackToYouTube(spotifyTrackRedirect.getYouTubeVideo());
-                    spotifyTrackRedirect.complete(null);
+                    if (soundCloudTrack == null) {
+                        spotifyTrackRedirect.complete(null);
+                    } else {
+                        String soundCloudUri = soundCloudTrack.getInfo().uri;
+                        if (persistedSpotifyRedirectIndex.isPresent()) {
+                            runUpdateTask(spotifyTrackId, (index, session) -> {
+                                LocalDate now = LocalDate.now();
+                                index.setLastUsed(now);
+                                index.setLastUpdated(now);
+                                index.setSoundCloudUri(soundCloudUri);
+                            });
+                        } else {
+                            SINGE_THREAD_EXECUTOR_SERVICE.execute(() -> StaticSessionProvider.consumeSession(otherThreadSession -> {
+                                try {
+                                    SpotifyRedirectIndex spotifyRedirectIndex = new SpotifyRedirectIndex(spotifyTrack.getId(), null, null, soundCloudUri, spotifyTrack.getKind(), otherThreadSession);
+                                    // check again if the index was not created by other thread
+                                    Optional<SpotifyRedirectIndex> createdIndex = queryExistingIndex(otherThreadSession, spotifyTrackId);
+                                    if (createdIndex.isEmpty()) {
+                                        invoker.invoke(() -> otherThreadSession.persist(spotifyRedirectIndex));
+                                    } else {
+                                        runUpdateTask(spotifyTrackId, (index, session) -> {
+                                            LocalDate now = LocalDate.now();
+                                            index.setLastUsed(now);
+                                            index.setLastUpdated(now);
+                                            index.setSoundCloudUri(soundCloudUri);
+                                        });
+                                    }
+                                } catch (Exception e) {
+                                    logger.error("Exception while creating SpotifyRedirectIndex", e);
+                                }
+                            }));
+                        }
+                        UrlPlayable soundCloudPlayable = new UrlPlayable(soundCloudTrack);
+                        spotifyTrackRedirect.complete(soundCloudPlayable);
+                    }
                     return;
                 }
 
@@ -121,7 +176,7 @@ public class SpotifyRedirectService {
                 } else {
                     SINGE_THREAD_EXECUTOR_SERVICE.execute(() -> StaticSessionProvider.consumeSession(otherThreadSession -> {
                         try {
-                            SpotifyRedirectIndex spotifyRedirectIndex = new SpotifyRedirectIndex(spotifyTrack.getId(), null, post.getPk(), spotifyTrack.getKind(), otherThreadSession);
+                            SpotifyRedirectIndex spotifyRedirectIndex = new SpotifyRedirectIndex(spotifyTrack.getId(), null, post.getPk(), null, spotifyTrack.getKind(), otherThreadSession);
                             // check again if the index was not created by other thread
                             if (queryExistingIndex(otherThreadSession, spotifyTrackId).isEmpty()) {
                                 invoker.invoke(() -> otherThreadSession.persist(spotifyRedirectIndex));
@@ -210,6 +265,55 @@ public class SpotifyRedirectService {
         return postsByLevenshteinDistance.get(bestScore);
     }
 
+    @Nullable
+    public AudioTrack findSoundCloudTrackForSpotifyTrack(SpotifyTrack spotifyTrack) {
+        String trackName = spotifyTrack.getName();
+        String trackNameWithParenthesisRemoved = trackName.replaceAll("\\(.*\\)|\\[.*]", "").trim().replaceAll("\\s+", " ").toLowerCase();
+        String trackNameWithHyphenRemoved = trackName.split("-")[0].trim().toLowerCase();
+        String[] artists = spotifyTrack.exhaustiveMatch(
+            track -> Arrays.stream(track.getArtists()).map(ArtistSimplified::getName).toArray(String[]::new),
+            episode -> Optional.ofNullable(episode.getShow()).map(show -> new String[]{show.getName()}).orElse(new String[0])
+        );
+        String artist = artists.length > 0 ? artists[0] : "";
+
+        if ((Strings.isNullOrEmpty(trackName) || trackName.isBlank())) {
+            return null;
+        }
+
+        AudioTrackLoader audioTrackLoader = new AudioTrackLoader(Aiode.get().getAudioManager().getPlayerManager());
+        AudioItem audioItem = audioTrackLoader.loadByIdentifier(String.format("scsearch:%s %s", trackName, artist));
+        if (!(audioItem instanceof AudioPlaylist audioPlaylist)) {
+            return null;
+        }
+
+        List<AudioTrack> tracks = audioPlaylist.getTracks();
+        LevenshteinDistance levenshteinDistance = LevenshteinDistance.getDefaultInstance();
+        Map<Integer, AudioTrack> tracksByLevenshteinDistance = new HashMap<>();
+        for (AudioTrack track : tracks) {
+            long duration = track.getDuration();
+            if (Strings.isNullOrEmpty(track.getInfo().uri)
+                || Strings.isNullOrEmpty(track.getInfo().title)
+                || !(track.getInfo().title.toLowerCase().contains(trackName.toLowerCase()) || track.getInfo().title.contains(trackNameWithParenthesisRemoved) || track.getInfo().title.contains(trackNameWithHyphenRemoved))
+                || !(track.getInfo().author != null && Arrays.stream(artists).anyMatch(a -> track.getInfo().author.toLowerCase().contains(a.toLowerCase())))
+                || Math.abs(spotifyTrack.getDurationMs() - duration) > 10000) {
+                continue;
+            }
+
+            Integer titleDistance = levenshteinDistance.apply(trackName, Objects.requireNonNullElse(track.getInfo().title, ""));
+
+            String author = Objects.requireNonNullElse(track.getInfo().author, "");
+            int artistDistance = Arrays.stream(artists).mapToInt(a -> levenshteinDistance.apply(a, author)).min().orElseGet(() -> levenshteinDistance.apply(artist, author));
+
+            tracksByLevenshteinDistance.put(titleDistance + artistDistance, track);
+        }
+        if (tracksByLevenshteinDistance.isEmpty()) {
+            return null;
+        }
+
+        int bestScore = tracksByLevenshteinDistance.keySet().stream().mapToInt(Integer::intValue).min().getAsInt();
+        return tracksByLevenshteinDistance.get(bestScore);
+    }
+
     public void redirectTrackToYouTube(HollowYouTubeVideo youTubeVideo) throws IOException {
         SpotifyTrack spotifyTrack = youTubeVideo.getRedirectedSpotifyTrack();
 
@@ -269,7 +373,7 @@ public class SpotifyRedirectService {
                 SINGE_THREAD_EXECUTOR_SERVICE.execute(() -> StaticSessionProvider.consumeSession(otherThreadSession -> {
                     try {
                         String videoId = youTubeVideo.getVideoId();
-                        SpotifyRedirectIndex spotifyRedirectIndex = new SpotifyRedirectIndex(spotifyTrack.getId(), videoId, null, spotifyTrack.getKind(), otherThreadSession);
+                        SpotifyRedirectIndex spotifyRedirectIndex = new SpotifyRedirectIndex(spotifyTrack.getId(), videoId, null, null, spotifyTrack.getKind(), otherThreadSession);
                         // check again if the index was not created by other thread
                         if (queryExistingIndex(otherThreadSession, spotifyTrackId).isEmpty()) {
                             invoker.invoke(() -> otherThreadSession.persist(spotifyRedirectIndex));

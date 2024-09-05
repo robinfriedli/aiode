@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Root;
@@ -168,10 +169,12 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
                 if (index.getLastUsed().isBefore(date2WeeksAgo)) {
                     session.remove(index);
                 } else {
+                    boolean updated = false;
                     FilebrokerApi.Post post = spotifyRedirectService.findFilebrokerPostForSpotifyTrack(track);
 
                     if (post != null) {
                         index.setFileBrokerPk(post.getPk());
+                        updated = true;
                     } else {
                         index.setFileBrokerPk(null);
                         HollowYouTubeVideo hollowYouTubeVideo = new HollowYouTubeVideo(youTubeService, track);
@@ -183,10 +186,20 @@ public class RefreshSpotifyRedirectIndicesTask extends AbstractCronTask {
                         if (!hollowYouTubeVideo.isCanceled() && !Strings.isNullOrEmpty(track.getId())) {
                             String videoId = hollowYouTubeVideo.getVideoId();
                             index.setYouTubeId(videoId);
-                            index.setLastUpdated(LocalDate.now());
-                        } else {
-                            session.remove(index);
+                            updated = true;
                         }
+
+                        AudioTrack soundCloudTrack = spotifyRedirectService.findSoundCloudTrackForSpotifyTrack(track);
+                        if (soundCloudTrack != null && !Strings.isNullOrEmpty(soundCloudTrack.getInfo().uri)) {
+                            index.setSoundCloudUri(soundCloudTrack.getInfo().uri);
+                            updated = true;
+                        }
+                    }
+
+                    if (updated) {
+                        index.setLastUpdated(LocalDate.now());
+                    } else {
+                        session.remove(index);
                     }
                 }
             } catch (UnavailableResourceException e) {
