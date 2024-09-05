@@ -231,7 +231,7 @@ public class QueueIterator extends AudioEventAdapter {
             } catch (FriendlyException e) {
                 if (!isYouTubeBanned && isYouTubeBanError(track, e)) {
                     isYouTubeBanned = true;
-                    if (track instanceof SpotifyTrackRedirect) {
+                    if (track instanceof SpotifyTrackRedirect spotifyTrackRedirect && spotifyTrackRedirect.getCompletedSoundCloudTrack() != null) {
                         // retry redirect using soundcloud on yt ban
                         retryCurrent = true;
                         logger.warn("Failed to play YouTube video for redirected Spotify track, trying SoundCloud instead");
