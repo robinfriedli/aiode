@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Strings;
 import net.dv8tion.jda.api.entities.ISnowflake;
 import net.robinfriedli.aiode.Aiode;
@@ -24,6 +27,8 @@ import org.quartz.JobExecutionContext;
  */
 public class PrivateBotAssignmentHeartbeatTask extends AbstractCronTask {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
     @Override
     protected void run(JobExecutionContext jobExecutionContext) throws Exception {
         String privateInstanceIdentifier = Aiode.get().getSpringPropertiesConfig().getApplicationProperty("aiode.preferences.private_instance_identifier");
@@ -37,6 +42,7 @@ public class PrivateBotAssignmentHeartbeatTask extends AbstractCronTask {
                     .getResultList();
 
                 for (GuildSpecification assignedGuildSpecification : assignedGuildSpecifications) {
+                    session.refresh(assignedGuildSpecification);
                     if (guildIds.contains(assignedGuildSpecification.getGuildId())) {
                         assignedGuildSpecification.setPrivateBotAssignmentLastHeartbeat(OffsetDateTime.now());
                     } else {
@@ -44,6 +50,7 @@ public class PrivateBotAssignmentHeartbeatTask extends AbstractCronTask {
                         OffsetDateTime now = OffsetDateTime.now();
                         if (privateBotAssignmentLastHeartbeat == null
                             || Duration.between(privateBotAssignmentLastHeartbeat, now).compareTo(Duration.ofHours(2)) > 0) {
+                            logger.info("Clearing private bot assignment to {} for guild {} since it had no heartbeat for more than two hours, indicating the bot is no longer a member", privateInstanceIdentifier, assignedGuildSpecification.getGuildId());
                             assignedGuildSpecification.setPrivateBotInstance(null);
                             assignedGuildSpecification.setPrivateBotAssignmentLastHeartbeat(null);
                         }
