@@ -1,5 +1,7 @@
 package net.robinfriedli.aiode.command.commands.general;
 
+import java.time.OffsetDateTime;
+
 import com.google.common.base.Strings;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.robinfriedli.aiode.Aiode;
@@ -62,6 +64,7 @@ public class InviteCommand extends AbstractCommand {
                     session.refresh(updatedGuildSpecification);
                     PrivateBotInstance assignedBotInstance = updatedGuildSpecification.getPrivateBotInstance();
                     if (assignedBotInstance != null) {
+                        updatedGuildSpecification.setPrivateBotAssignmentLastHeartbeat(OffsetDateTime.now());
                         EmbedBuilder embedBuilder = new EmbedBuilder();
                         embedBuilder.setTitle("Private Invite");
                         embedBuilder.setDescription(String.format("[Invite link](%s)", assignedBotInstance.getInviteLink()));
