@@ -42,6 +42,7 @@ public class PrivateBotAssignmentHeartbeatTask extends AbstractCronTask {
                     .getResultList();
 
                 for (GuildSpecification assignedGuildSpecification : assignedGuildSpecifications) {
+                    session.refresh(assignedGuildSpecification);
                     if (guildIds.contains(assignedGuildSpecification.getGuildId())) {
                         assignedGuildSpecification.setPrivateBotAssignmentLastHeartbeat(OffsetDateTime.now());
                     } else {
