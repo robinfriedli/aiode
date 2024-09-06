@@ -80,7 +80,11 @@ public class GuildManagementListener extends ListenerAdapter {
             executionQueueManager.addGuild(guild);
 
             if (!Strings.isNullOrEmpty(privateInstanceIdentifier)) {
-                PrivateBotInstance assignedBotInstance = hibernateComponent.invokeWithSession(session -> guildManager.getContextForGuild(guild).getSpecification(session).getPrivateBotInstance());
+                PrivateBotInstance assignedBotInstance = hibernateComponent.invokeWithSession(session -> {
+                    GuildSpecification specification = guildManager.getContextForGuild(guild).getSpecification(session);
+                    session.refresh(specification);
+                    return specification.getPrivateBotInstance();
+                });
                 if (assignedBotInstance == null || !privateInstanceIdentifier.equals(assignedBotInstance.getIdentifier())) {
                     TextChannel textChannel = guildManager.getDefaultTextChannelForGuild(guild);
                     if (textChannel != null) {
