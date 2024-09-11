@@ -145,23 +145,16 @@ public class QueueIterator extends AudioEventAdapter {
                 if (spotifyTrackRedirect.isYouTube() && spotifyTrackRedirect.getCompletedSoundCloudTrack() != null) {
                     logger.warn("Failed to play YouTube video for redirected Spotify track, trying SoundCloud instead");
                     retryCurrent = true;
-                } else {
-                    if (exception.severity == FriendlyException.Severity.COMMON) {
-                        logger.warn("Common lavaplayer track error: " + exception.getMessage());
-                    } else {
-                        logger.error("Lavaplayer track exception", exception);
-                    }
-                    sendError(playable, e);
+                    return;
                 }
             }
-        } else {
-            if (exception.severity == FriendlyException.Severity.COMMON) {
-                logger.warn("Common lavaplayer track error: " + exception.getMessage());
-            } else {
-                logger.error("Lavaplayer track exception", exception);
-            }
-            sendError(playable, e);
         }
+        if (exception.severity == FriendlyException.Severity.COMMON) {
+            logger.warn("Common lavaplayer track error: " + exception.getMessage());
+        } else {
+            logger.error("Lavaplayer track exception", exception);
+        }
+        sendError(playable, e);
     }
 
     void setReplaced() {
