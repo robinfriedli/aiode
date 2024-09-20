@@ -1,7 +1,6 @@
 package net.robinfriedli.aiode.audio.spotify;
 
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -22,10 +21,10 @@ import net.robinfriedli.aiode.entities.Episode;
 import net.robinfriedli.aiode.entities.Playlist;
 import net.robinfriedli.aiode.entities.PlaylistItem;
 import net.robinfriedli.aiode.entities.Song;
+import net.robinfriedli.aiode.exceptions.CommandRuntimeException;
 import net.robinfriedli.aiode.exceptions.UnavailableResourceException;
 import net.robinfriedli.aiode.filebroker.FilebrokerPlayableWrapper;
 import net.robinfriedli.aiode.function.CheckedConsumer;
-import net.robinfriedli.aiode.function.CheckedFunction;
 import net.robinfriedli.aiode.persist.StaticSessionProvider;
 import org.hibernate.Session;
 import org.jetbrains.annotations.Nullable;
@@ -69,7 +68,11 @@ public class SpotifyTrackRedirect extends AbstractSoftCachedPlayable {
     }
 
     public boolean isYouTube() {
-        return applyToEither(playable -> playable instanceof YouTubeVideo);
+        try {
+            return applyToEither(playable -> playable instanceof YouTubeVideo);
+        } catch (UnavailableResourceException e) {
+            throw new CommandRuntimeException(e);
+        }
     }
 
     public void cancel() {
@@ -139,7 +142,12 @@ public class SpotifyTrackRedirect extends AbstractSoftCachedPlayable {
         return getCompletedFuture(soundCloudTrack);
     }
 
-    private <T> T applyToEither(CheckedFunction<Playable, T> function) {
+    @FunctionalInterface
+    interface ResourceLoadingFunction<T, R> {
+        R apply(T value) throws UnavailableResourceException;
+    }
+
+    private <T> T applyToEither(ResourceLoadingFunction<Playable, T> function) throws UnavailableResourceException {
         FilebrokerPlayableWrapper filebrokerPost = getCompletedFilebrokerPost();
         if (filebrokerPost != null) {
             return function.apply(filebrokerPost);
@@ -151,7 +159,7 @@ public class SpotifyTrackRedirect extends AbstractSoftCachedPlayable {
         return function.apply(Objects.requireNonNullElse(soundCloudTrack, youTubeVideo));
     }
 
-    private <T> T applyToEitherWithTimeout(long timeOut, TimeUnit unit, CheckedFunction<Playable, T> function) throws TimeoutException {
+    private <T> T applyToEitherWithTimeout(long timeOut, TimeUnit unit, ResourceLoadingFunction<Playable, T> function) throws TimeoutException, UnavailableResourceException {
         if (isDone()) {
             return applyToEither(function);
         }
@@ -174,7 +182,7 @@ public class SpotifyTrackRedirect extends AbstractSoftCachedPlayable {
         }
     }
 
-    private <T> T applyToEitherNow(T altValue, CheckedFunction<Playable, T> function) {
+    private <T> T applyToEitherNow(T altValue, ResourceLoadingFunction<Playable, T> function) throws UnavailableResourceException {
         if (isDone()) {
             return applyToEither(function);
         } else {
@@ -194,7 +202,12 @@ public class SpotifyTrackRedirect extends AbstractSoftCachedPlayable {
 
     @Override
     public String getTitle() throws UnavailableResourceException {
-        return Optional.ofNullable(spotifyTrack.getName()).orElseGet(() -> applyToEither(Playable::getTitle));
+        String name = spotifyTrack.getName();
+        if (!Strings.isNullOrEmpty(name)) {
+            return name;
+        } else {
+            return applyToEither(Playable::getTitle);
+        }
     }
 
     @Override
@@ -206,7 +219,7 @@ public class SpotifyTrackRedirect extends AbstractSoftCachedPlayable {
     }
 
     @Override
-    public String getTitleNow(String alternativeValue) {
+    public String getTitleNow(String alternativeValue) throws UnavailableResourceException {
         if (!Strings.isNullOrEmpty(spotifyTrack.getName())) {
             return spotifyTrack.getName();
         }
@@ -261,7 +274,11 @@ public class SpotifyTrackRedirect extends AbstractSoftCachedPlayable {
         if (!Strings.isNullOrEmpty(albumCoverUrl)) {
             return albumCoverUrl;
         }
-        return applyToEither(Playable::getAlbumCoverUrl);
+        try {
+            return applyToEither(Playable::getAlbumCoverUrl);
+        } catch (UnavailableResourceException e) {
+            throw new CommandRuntimeException(e);
+        }
     }
 
     @Override
