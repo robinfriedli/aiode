@@ -1202,4 +1202,14 @@ See application.properties -> spring.liquibase.contexts
       <column name="soundcloud_uri" type="varchar(255)"/>
     </addColumn>
   </changeSet>
+  <changeSet author="robinfriedli (generated)" id="1729025751088-1">
+    <addColumn tableName="guild_specification">
+      <column name="initialized" type="boolean"/>
+    </addColumn>
+  </changeSet>
+  <changeSet id="set_existing_guild_specifications_initialized-d32Kl3/v2.3.1" author="robinfriedli">
+    <update tableName="guild_specification">
+      <column name="initialized" valueBoolean="true"/>
+    </update>
+  </changeSet>
 </databaseChangeLog>

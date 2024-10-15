@@ -1,0 +1,5 @@
+/target
+/.idea
+/.env.local
+/.env.secret
+/logs/
