@@ -227,7 +227,7 @@ public class GuildManager {
                 .build(session)
                 .uniqueResultOptional();
 
-            if (existingSpecification.isPresent()) {
+            if (existingSpecification.isPresent() && existingSpecification.get().isInitialized()) {
                 AudioPlayback playback = new AudioPlayback(player, guild);
                 GuildSpecification guildSpecification = existingSpecification.get();
                 GuildContext guildContext = new GuildContext(guild, playback, guildSpecification.getPk());
@@ -236,13 +236,13 @@ public class GuildManager {
                 }
                 return guildContext;
             } else {
-                GuildSpecification newSpecification = new GuildSpecification(guild);
+                GuildSpecification newSpecification = existingSpecification.orElseGet(() -> new GuildSpecification(guild));
                 Version currentVersion = versionManager.getCurrentVersion();
                 if (currentVersion != null) {
                     // never send new guilds an update notification about the current version
                     newSpecification.setVersionUpdateAlertSent(currentVersion.getVersion());
                 }
-                session.persist(newSpecification);
+                session.merge(newSpecification);
                 commandManager.getCommandContributionContext()
                     .query(attribute("restrictedAccess").is(true), CommandContribution.class)
                     .getResultStream()
@@ -251,6 +251,7 @@ public class GuildManager {
                         session.persist(permissionConfiguration);
                         newSpecification.addAccessConfiguration(permissionConfiguration);
                     });
+                newSpecification.setInitialized(true);
                 session.flush();
 
                 GuildContext guildContext = new GuildContext(guild, new AudioPlayback(player, guild), newSpecification.getPk());
