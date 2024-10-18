@@ -236,7 +236,11 @@ public class GuildManager {
                 }
                 return guildContext;
             } else {
-                GuildSpecification newSpecification = existingSpecification.orElseGet(() -> new GuildSpecification(guild));
+                GuildSpecification newSpecification = existingSpecification.orElseGet(() -> {
+                    GuildSpecification gs = new GuildSpecification(guild);
+                    session.persist(gs);
+                    return gs;
+                });
                 Version currentVersion = versionManager.getCurrentVersion();
                 if (currentVersion != null) {
                     // never send new guilds an update notification about the current version
