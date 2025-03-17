@@ -1,4 +1,13 @@
+use crate::{
+    command::{self, BotCommand},
+    db::acquire_db_connection,
+    error::Error,
+    model::{GuildSpecification, NewGuildSpecification},
+    schema::guild_specification,
+};
+use diesel::{ExpressionMethods, OptionalExtension, QueryDsl};
 use diesel_async::RunQueryDsl;
+use serenity::all::GuildId;
 use serenity::{
     all::{
         Colour, Command, CommandOptionType, Context, CreateCommand, CreateCommandOption,
@@ -6,13 +15,6 @@ use serenity::{
         EditInteractionResponse, EventHandler, Guild, Interaction, Ready,
     },
     async_trait,
-};
-
-use crate::{
-    command::{self, BotCommand},
-    db::acquire_db_connection,
-    model::NewGuildSpecification,
-    schema::guild_specification,
 };
 
 pub struct DiscordEventHandler;
@@ -70,6 +72,21 @@ impl EventHandler for DiscordEventHandler {
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         if let Interaction::Command(command) = interaction {
+            if let Some(guild_id) = command.guild_id {
+                match create_guild_specification_if_missing(guild_id, &ctx).await {
+                    Ok(created) => {
+                        if created {
+                            log::info!(
+                                "Created specification for missing guild \"{}\" ({})",
+                                get_name_for_guild(&ctx, guild_id).await.unwrap_or_default(),
+                                guild_id.get()
+                            );
+                        }
+                    }
+                    Err(e) => log::error!("Failed to check for missing guild specification: {e}"),
+                }
+            }
+
             let defer_response = CreateInteractionResponse::Defer(
                 CreateInteractionResponseMessage::new().content("Loading"),
             );
@@ -162,4 +179,40 @@ impl EventHandler for DiscordEventHandler {
             }
         }
     }
+}
+
+async fn create_guild_specification_if_missing(
+    guild_id: GuildId,
+    ctx: &Context,
+) -> Result<bool, Error> {
+    let guild_id_str = guild_id.get().to_string();
+    let guild_name = get_name_for_guild(ctx, guild_id).await?;
+    let mut connection = acquire_db_connection().await?;
+    let existing_specification = guild_specification::table
+        .filter(guild_specification::guild_id.eq(&guild_id_str))
+        .first::<GuildSpecification>(&mut connection)
+        .await
+        .optional()?;
+    if existing_specification.is_none() {
+        let inserted = diesel::insert_into(guild_specification::table)
+            .values(NewGuildSpecification {
+                guild_id: guild_id_str,
+                guild_name: guild_name.clone(),
+                initialized: false,
+            })
+            .on_conflict_do_nothing()
+            .execute(&mut connection)
+            .await?;
+        Ok(inserted > 0)
+    } else {
+        Ok(false)
+    }
+}
+
+async fn get_name_for_guild(ctx: &Context, guild_id: GuildId) -> Result<String, Error> {
+    if let Some(guild) = ctx.cache.guild(guild_id) {
+        return Ok(guild.name.clone()); // Clone immediately
+    }
+
+    Ok(guild_id.to_partial_guild(&ctx.http).await?.name.clone())
 }
