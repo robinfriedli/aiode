@@ -27,10 +27,12 @@ import com.sedmelluq.lava.extensions.youtuberotator.planner.RotatingNanoIpRouteP
 import com.sedmelluq.lava.extensions.youtuberotator.tools.ip.IpBlock;
 import com.sedmelluq.lava.extensions.youtuberotator.tools.ip.Ipv6Block;
 import dev.lavalink.youtube.YoutubeAudioSourceManager;
+import dev.lavalink.youtube.YoutubeSource;
 import dev.lavalink.youtube.clients.MWeb;
 import dev.lavalink.youtube.clients.Music;
 import dev.lavalink.youtube.clients.TvHtml5Embedded;
 import dev.lavalink.youtube.clients.Web;
+import dev.lavalink.youtube.clients.WebEmbedded;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -92,7 +94,7 @@ public class AudioManager extends AbstractShutdownable {
         this.logger = LoggerFactory.getLogger(getClass());
         this.youTubeService = youTubeService;
 
-        playerManager.registerSourceManager(new YoutubeAudioSourceManager(new Music(), new TvHtml5Embedded(), new MWeb()));
+        playerManager.registerSourceManager(new YoutubeAudioSourceManager(new Music(), new TvHtml5Embedded(), new MWeb(), new Web(), new WebEmbedded()));
         playerManager.registerSourceManager(SoundCloudAudioSourceManager.createDefault());
         playerManager.registerSourceManager(new BandcampAudioSourceManager());
         playerManager.registerSourceManager(new VimeoAudioSourceManager());
@@ -112,7 +114,7 @@ public class AudioManager extends AbstractShutdownable {
             }
         }
         if (!Strings.isNullOrEmpty(ytPoToken) && !Strings.isNullOrEmpty(ytPoVisitorData)) {
-            Web.setPoTokenAndVisitorData(ytPoToken, ytPoVisitorData);
+            YoutubeSource.setPoTokenAndVisitorData(ytPoToken, ytPoVisitorData);
         }
 
         if (!Strings.isNullOrEmpty(ipv6Blocks)) {
