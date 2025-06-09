@@ -176,7 +176,7 @@ class FilebrokerApi(
         val description: String? = null,
         val is_editable: Boolean,
         val is_deletable: Boolean,
-        val tags: List<Tag>,
+        val tags: List<TagUsage>,
         val group_access: List<PostCollectionGroupAccessDetailed>,
     )
 
@@ -217,7 +217,7 @@ class FilebrokerApi(
         val description: String? = null,
         val is_editable: Boolean,
         val is_deletable: Boolean,
-        val tags: List<Tag>,
+        val tags: List<TagUsage>,
         val group_access: List<PostGroupAccessDetailed>
     )
 
@@ -283,6 +283,12 @@ class FilebrokerApi(
         val loaded: Boolean,
         val track_count: Int? = null,
         val disc_count: Int? = null,
+    )
+
+    @Serializable
+    class TagUsage(
+        val tag: Tag,
+        val auto_matched: Boolean,
     )
 
     @Serializable
