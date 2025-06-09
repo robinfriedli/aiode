@@ -42,7 +42,7 @@ dependencies {
     implementation 'com.google.guava:guava:33.1.0-jre'
     implementation "dev.arbjerg:lavaplayer:2.2.3"
     implementation "dev.arbjerg:lavaplayer-ext-youtube-rotator:2.2.3"
-    implementation "dev.lavalink.youtube:common:1.13.2"
+    implementation "dev.lavalink.youtube:common:1.13.3"
 
     implementation "commons-validator:commons-validator:1.8.0"
 
