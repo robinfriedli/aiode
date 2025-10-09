@@ -85,8 +85,6 @@ aiode.tokens.yt-password=
 aiode.tokens.yt-oauth-refresh-token=
 aiode.tokens.yt-po-token=
 aiode.tokens.yt-po-visitor-data=
-aiode.tokens.yt-remote-cipher-endpoint=https://cipher.kikkia.dev/api/
-aiode.tokens.yt-remote-cipher-password=
 ##############
 # filebroker #
 ##############
