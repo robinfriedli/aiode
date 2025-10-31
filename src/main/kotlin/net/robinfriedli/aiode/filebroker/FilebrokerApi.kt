@@ -321,7 +321,6 @@ class FilebrokerApi(
         val pk: Long,
         val name: String,
         val is_public: Boolean,
-        val hidden: Boolean,
         val fk_owner: Int,
         val creation_timestamp: String
     )
