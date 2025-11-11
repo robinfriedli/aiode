@@ -1,0 +1,32 @@
+# Use postgres/example user/password credentials
+version: '3.1'
+
+services:
+
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: aiodedbpassword
+      POSTGRES_DB: aiode
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - aiode_postgres:/var/lib/postgresql/data
+
+  bot:
+    image: <image_name>:latest
+    restart: always
+    depends_on:
+      - postgres
+    environment:
+      POSTGRES_PASSWORD: aiodedbpassword
+      POSTGRES_USERNAME: postgres
+      ADMIN_USERS: ""
+      YOUTUBE_CREDENTIALS: ""
+      SPOTIFY_CLIENT_ID: ""
+      SPOTIFY_CLIENT_SECRET: ""
+      DISCORD_TOKEN: ""
+      POSTGRES_JDBC_URI: jdbc:postgresql://postgres:5432/aiode
+    ports:
+      - 8000:8000
+      - 8080:8080
