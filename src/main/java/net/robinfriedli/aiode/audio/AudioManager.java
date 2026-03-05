@@ -1,5 +1,15 @@
 package net.robinfriedli.aiode.audio;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.sedmelluq.discord.lavaplayer.container.MediaContainerRegistry;
@@ -19,7 +29,11 @@ import com.sedmelluq.lava.extensions.youtuberotator.tools.ip.Ipv6Block;
 import dev.lavalink.youtube.YoutubeAudioSourceManager;
 import dev.lavalink.youtube.YoutubeSource;
 import dev.lavalink.youtube.YoutubeSourceOptions;
-import dev.lavalink.youtube.clients.*;
+import dev.lavalink.youtube.clients.MWeb;
+import dev.lavalink.youtube.clients.Music;
+import dev.lavalink.youtube.clients.TvHtml5Simply;
+import dev.lavalink.youtube.clients.Web;
+import dev.lavalink.youtube.clients.WebEmbedded;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -43,16 +57,8 @@ import net.robinfriedli.aiode.entities.PlaybackHistory;
 import net.robinfriedli.aiode.entities.UserPlaybackHistory;
 import net.robinfriedli.aiode.exceptions.InvalidCommandException;
 import net.robinfriedli.filebroker.FilebrokerApi;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import javax.annotation.Nullable;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 /**
  * Provides access to all {@link AudioPlayback} for all guilds and methods to retrieve all audio related factories and
@@ -92,10 +98,10 @@ public class AudioManager extends AbstractShutdownable {
         this.youTubeService = youTubeService;
 
         YoutubeSourceOptions youtubeSourceOptions = new YoutubeSourceOptions();
-        if (!Strings.isNullOrEmpty(ytOauthRefreshToken)) {
-            youtubeSourceOptions.setRemoteCipherUrl(ytRemoteCipherEndpoint, ytRemoteCipherPassword);
+        if (!Strings.isNullOrEmpty(ytRemoteCipherEndpoint)) {
+            youtubeSourceOptions.setRemoteCipher(ytRemoteCipherEndpoint, ytRemoteCipherPassword, null);
         }
-        playerManager.registerSourceManager(new YoutubeAudioSourceManager(youtubeSourceOptions, new Music(), new TvHtml5Embedded(), new MWeb(), new Web(), new WebEmbedded()));
+        playerManager.registerSourceManager(new YoutubeAudioSourceManager(youtubeSourceOptions, new Music(), new TvHtml5Simply(), new MWeb(), new Web(), new WebEmbedded()));
         playerManager.registerSourceManager(SoundCloudAudioSourceManager.createDefault());
         playerManager.registerSourceManager(new BandcampAudioSourceManager());
         playerManager.registerSourceManager(new VimeoAudioSourceManager());
