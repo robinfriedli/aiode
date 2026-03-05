@@ -178,5 +178,10 @@ public class TriggerCommand extends AbstractScriptCommand {
         public long getIdLong() {
             return 0;
         }
+
+        @Override
+        public boolean isDetached() {
+            return false;
+        }
     }
 }
