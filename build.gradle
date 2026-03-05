@@ -62,6 +62,11 @@ dependencies {
     implementation "com.github.robinfriedli:StringList:1.6.1"
     implementation "com.github.robinfriedli:ThreadPool:1.2.0"
 
+    implementation("club.minnced:jdave-api:0.1.7")
+    implementation("club.minnced:jdave-native-linux-x86-64:0.1.7")
+    implementation("club.minnced:jdave-native-linux-aarch64:0.1.7")
+    implementation("club.minnced:jdave-native-win-x86-64:0.1.7")
+    implementation("club.minnced:jdave-native-darwin:0.1.7")
     implementation("club.minnced:udpqueue-native-linux-x86-64:0.2.9")
     implementation("club.minnced:udpqueue-native-linux-x86:0.2.9")
     implementation("club.minnced:udpqueue-native-linux-aarch64:0.2.9")

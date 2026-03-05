@@ -6,9 +6,11 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import club.minnced.discord.jdave.interop.JDaveSessionFactory;
 import com.google.common.base.Strings;
 import com.sedmelluq.discord.lavaplayer.jdaudp.NativeAudioSendFactory;
 import net.dv8tion.jda.api.OnlineStatus;
+import net.dv8tion.jda.api.audio.AudioModuleConfig;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder;
 import net.dv8tion.jda.api.sharding.ShardManager;
@@ -83,16 +85,20 @@ public class JdaComponent {
             .setShardsTotal(shardTotal)
             .addEventListeners(startupListener);
 
+        AudioModuleConfig audioModuleConfig = new AudioModuleConfig();
         if (nativeBufferDuration > 0) {
             if (platformSupportsJdaNas()) {
                 logger.info("Using NativeAudioSendFactory as AudioSendFactory with a buffer duration of " + nativeBufferDuration + "ms");
-                shardManagerBuilder = shardManagerBuilder.setAudioSendFactory(new NativeAudioSendFactory(nativeBufferDuration));
+                audioModuleConfig = audioModuleConfig.withAudioSendFactory(new NativeAudioSendFactory(nativeBufferDuration));
             } else {
                 logger.info("NativeAudioSendFactory not supported on this platform");
             }
         } else {
             logger.info("Native audio buffer disabled");
         }
+
+        audioModuleConfig = audioModuleConfig.withDaveSessionFactory(new JDaveSessionFactory());
+        shardManagerBuilder.setAudioModuleConfig(audioModuleConfig);
 
         if (!Strings.isNullOrEmpty(shardRange)) {
             String[] split = shardRange.split("\\s*-\\s*");
