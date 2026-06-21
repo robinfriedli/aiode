@@ -29,12 +29,7 @@ import com.sedmelluq.lava.extensions.youtuberotator.tools.ip.Ipv6Block;
 import dev.lavalink.youtube.YoutubeAudioSourceManager;
 import dev.lavalink.youtube.YoutubeSource;
 import dev.lavalink.youtube.YoutubeSourceOptions;
-import dev.lavalink.youtube.clients.MWeb;
-import dev.lavalink.youtube.clients.Music;
-import dev.lavalink.youtube.clients.Tv;
-import dev.lavalink.youtube.clients.TvHtml5Simply;
-import dev.lavalink.youtube.clients.Web;
-import dev.lavalink.youtube.clients.WebEmbedded;
+import dev.lavalink.youtube.clients.*;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -102,7 +97,10 @@ public class AudioManager extends AbstractShutdownable {
         if (!Strings.isNullOrEmpty(ytRemoteCipherEndpoint)) {
             youtubeSourceOptions.setRemoteCipher(ytRemoteCipherEndpoint, ytRemoteCipherPassword, null);
         }
-        playerManager.registerSourceManager(new YoutubeAudioSourceManager(youtubeSourceOptions, new Music(), new TvHtml5Simply(), new Tv(), new MWeb(), new Web(), new WebEmbedded()));
+        playerManager.registerSourceManager(new YoutubeAudioSourceManager(
+            youtubeSourceOptions,
+            new Music(), new AndroidMusic(), new AndroidVr(), new TvHtml5Simply(), new Tv(), new MWeb(), new Web(), new WebEmbedded()
+        ));
         playerManager.registerSourceManager(SoundCloudAudioSourceManager.createDefault());
         playerManager.registerSourceManager(new BandcampAudioSourceManager());
         playerManager.registerSourceManager(new VimeoAudioSourceManager());
